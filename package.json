@@ -1,0 +1,13 @@
+{
+  "name": "plonopolis-html5",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Plonopolis HTML5 z rankingiem online",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
