@@ -108,7 +108,7 @@ body {
 /* login */
 .auth-login-row {
   left: 118px;
-  top: 176px;
+  top: 190px;
 }
 
 /* email */
@@ -120,7 +120,7 @@ body {
 /* hasło - logowanie */
 .auth-password-row {
   left: 118px;
-  top: 331px;
+  top: 310px;
 }
 
 /* hasło - rejestracja */
