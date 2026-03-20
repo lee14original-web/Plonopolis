@@ -9,52 +9,51 @@
 <body>
   <div id="auth-screen" class="screen active auth-mode-login">
     <div class="auth-bg-layer"></div>
-    <div class="auth-ui-wrap">
-      <div class="auth-topbar">
-        <div class="language-switch">
-          <button data-lang="pl" class="lang-btn active">PL</button>
-          <button data-lang="en" class="lang-btn">EN</button>
-        </div>
+
+    <div class="auth-topbar">
+      <div class="language-switch">
+        <button data-lang="pl" class="lang-btn active">PL</button>
+        <button data-lang="en" class="lang-btn">EN</button>
+      </div>
+    </div>
+
+    <div class="auth-form-frame">
+      <div class="tabs auth-tabs">
+        <button id="login-tab" class="tab-btn active" type="button" aria-label="Logowanie"></button>
+        <button id="register-tab" class="tab-btn" type="button" aria-label="Rejestracja"></button>
       </div>
 
-      <div class="auth-form-frame">
-        <div class="tabs auth-tabs">
-          <button id="login-tab" class="tab-btn active">Logowanie</button>
-          <button id="register-tab" class="tab-btn">Rejestracja</button>
-        </div>
+      <form id="auth-form" class="auth-theme-form" autocomplete="on">
+        <label class="auth-row auth-login-row">
+          <span id="login-label">Login</span>
+          <input id="auth-login" type="text" required />
+        </label>
 
-        <form id="auth-form" class="auth-theme-form">
-          <label class="auth-row">
-            <span id="login-label">Login</span>
-            <input id="auth-login" type="text" required />
-          </label>
+        <label id="register-email-wrapper" class="auth-row auth-email-row hidden">
+          <span id="email-label">Email</span>
+          <input id="auth-email" type="email" />
+        </label>
 
-          <label id="register-email-wrapper" class="auth-row hidden">
-            <span id="email-label">Email</span>
-            <input id="auth-email" type="email" />
-          </label>
+        <label class="auth-row auth-password-row">
+          <span id="password-label">Hasło</span>
+          <input id="auth-password" type="password" required />
+        </label>
 
-          <label class="auth-row">
-            <span id="password-label">Hasło</span>
-            <input id="auth-password" type="password" required />
-          </label>
+        <label id="confirm-wrapper" class="auth-row auth-confirm-row hidden">
+          <span id="confirm-label">Powtórz hasło</span>
+          <input id="auth-confirm" type="password" />
+        </label>
 
-          <label id="confirm-wrapper" class="auth-row hidden">
-            <span id="confirm-label">Powtórz hasło</span>
-            <input id="auth-confirm" type="password" />
-          </label>
+        <label class="remember-row" id="remember-wrapper">
+          <input id="remember-me" type="checkbox" />
+          <span id="remember-label">Zapamiętaj mnie</span>
+        </label>
 
-          <label class="remember-row" id="remember-wrapper">
-            <input id="remember-me" type="checkbox" />
-            <span id="remember-label">Zapamiętaj mnie</span>
-          </label>
+        <button class="auth-main-btn" id="auth-submit" type="submit" aria-label="Zaloguj się"></button>
+      </form>
 
-          <button class="primary-btn auth-main-btn" id="auth-submit" type="submit">Zaloguj się</button>
-        </form>
-
-        <p id="auth-subtitle" class="auth-subtitle">Przeglądarkowa gra HTML5 z rankingiem online</p>
-        <p id="auth-message" class="message auth-message"></p>
-      </div>
+      <p id="auth-subtitle" class="auth-subtitle">Przeglądarkowa gra HTML5 z rankingiem online</p>
+      <p id="auth-message" class="message auth-message"></p>
     </div>
   </div>
 
@@ -64,6 +63,7 @@
         <div><strong id="player-name">Gracz</strong></div>
         <div><span id="level-label">Poziom</span>: <span id="player-level">1</span></div>
       </div>
+
       <div class="exp-wrap">
         <div class="exp-head">
           <span id="exp-label">EXP</span>
@@ -71,16 +71,19 @@
         </div>
         <div class="exp-bar"><div id="exp-fill"></div></div>
       </div>
+
       <div class="resources">
         <div>⭐ <span id="player-points">0</span></div>
         <div>💰 <span id="coins">0</span></div>
         <div>♻️ <span id="compost">0</span>/250</div>
       </div>
+
       <div class="top-actions">
         <button id="ranking-btn" class="small-btn">Ranking</button>
         <button id="upgrades-btn" class="small-btn">Ulepszenia</button>
         <button id="logout-btn" class="small-btn danger">Wyloguj</button>
       </div>
+
       <div class="save-box">
         <span id="points-label">Punkty</span>
         <span id="save-status">Zapisano</span>
