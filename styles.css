@@ -1,227 +1,86 @@
-:root {
-  --bg: #17120d;
-  --panel: rgba(36, 24, 16, 0.92);
-  --panel-2: rgba(58, 38, 27, 0.95);
-  --gold: #e2b45f;
-  --green: #75bb44;
-  --red: #bc5c47;
-  --text: #f4e7cf;
-  --muted: #d6c09b;
-  --border: rgba(235, 199, 135, 0.35);
-  --shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  background: radial-gradient(circle at top, #514030, var(--bg));
-  color: var(--text);
-}
-
-button,
-input,
-select {
-  font: inherit;
-}
-
-.screen {
-  display: none;
-  min-height: 100vh;
-}
-
-.screen.active {
-  display: block;
-}
-
-.hidden {
-  display: none !important;
-}
-
-/* =========================
-   AUTH SCREEN
-========================= */
-
-#auth-screen {
-  position: relative;
-  min-height: 100vh;
-  overflow: hidden;
-  background: #1b140f;
-}
-
-.auth-bg-layer {
-  position: absolute;
-  inset: 0;
-  background: center center / cover no-repeat;
-  transition: background-image 0.2s ease;
-}
-
-#auth-screen.auth-mode-login .auth-bg-layer {
-  background-image: url("assets/oknostartowe.png");
-}
-
-#auth-screen.auth-mode-register .auth-bg-layer {
-  background-image: url("assets/oknorejestracji.png");
-}
-
-.auth-topbar {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 5;
-}
-
-.language-switch {
-  display: flex;
-  gap: 8px;
-}
-
-.lang-btn {
-  border: 1px solid rgba(96, 69, 41, 0.85);
-  background: rgba(56, 35, 22, 0.8);
-  color: #f6e6c8;
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.lang-btn.active {
-  background: rgba(211, 173, 110, 0.95);
-  color: #3d2716;
-}
+/* ===== POPRAWIONE POZYCJE POD GRAFIKĘ ===== */
 
 .auth-form-frame {
   position: absolute;
   left: 50%;
-  top: 53.5%;
+  top: 55.2%;
   transform: translate(-50%, -50%);
-  width: 520px;
-  height: 560px;
+  width: 560px;
+  height: 590px;
   padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
-/* Klikalne strefy zakładek na grafice */
+/* zakładki */
 .auth-tabs {
   position: absolute;
-  left: 92px;
-  top: 67px;
-  width: 336px;
+  left: 108px;
+  top: 72px;
+  width: 344px;
   height: 58px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
-.auth-tabs .tab-btn {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: transparent;
-  box-shadow: none;
-  cursor: pointer;
+/* login */
+.auth-login-row {
+  left: 111px;
+  top: 176px;
 }
 
-/* Formularz jako warstwa na grafice */
-.auth-theme-form {
-  position: absolute;
-  inset: 0;
+/* email przy rejestracji */
+.auth-email-row {
+  left: 111px;
+  top: 255px;
 }
 
-.auth-row {
-  position: absolute;
-  display: block;
+/* hasło */
+.auth-password-row {
+  left: 111px;
+  top: 255px;
 }
 
-.auth-row span,
-.auth-subtitle,
-.auth-message {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+/* w rejestracji hasło schodzi niżej */
+#auth-screen.auth-mode-register .auth-password-row {
+  top: 334px;
 }
 
-/* INPUTY */
+/* powtórz hasło */
+.auth-confirm-row {
+  left: 111px;
+  top: 414px;
+}
+
+/* inputy */
 .auth-row input {
-  width: 350px;
-  height: 44px;
+  width: 330px;
+  height: 42px;
   border: none;
   border-radius: 10px;
   background: transparent;
   box-shadow: none;
   color: #3b2617;
-  font-size: 27px;
-  padding: 4px 12px 4px 46px;
+  font-size: 24px;
+  padding: 4px 12px 4px 44px;
   outline: none;
 }
 
-/* Pozycje pól */
-.auth-login-row {
-  left: 92px;
-  top: 160px;
-}
-
-.auth-password-row {
-  left: 92px;
-  top: 238px;
-}
-
-.auth-email-row {
-  left: 92px;
-  top: 238px;
-}
-
-.auth-confirm-row {
-  left: 92px;
-  top: 392px;
-}
-
-/* Rejestracja przesuwa hasło niżej */
-#auth-screen.auth-mode-register .auth-password-row {
-  top: 315px;
-}
-
-/* Checkbox "Zapamiętaj mnie" */
+/* zapamiętaj mnie */
 .remember-row {
-  position: absolute;
-  left: 94px;
-  top: 315px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  left: 112px;
+  top: 333px;
 }
 
-#remember-me {
-  width: 28px;
-  height: 28px;
-  margin: 0;
-  opacity: 0.02;
-  cursor: pointer;
-}
-
-#remember-label {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* W rejestracji checkbox znika */
-#auth-screen.auth-mode-register #remember-wrapper {
-  display: none;
-}
-
-/* Przycisk submit jako niewidzialna klikalna strefa */
+/* przycisk */
 .auth-main-btn {
   position: absolute;
-  left: 92px;
-  top: 408px;
-  width: 352px;
-  height: 78px;
+  left: 108px;
+  top: 438px;
+  width: 340px;
+  height: 70px;
   border: none;
   background: transparent;
   box-shadow: none;
@@ -230,364 +89,6 @@ select {
 }
 
 #auth-screen.auth-mode-register .auth-main-btn {
-  top: 468px;
-}
-
-/* =========================
-   GAME UI
-========================= */
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-}
-
-.primary-btn,
-.secondary-btn,
-.small-btn,
-.danger-btn {
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  cursor: pointer;
-  border-radius: 12px;
-  padding: 10px 14px;
-}
-
-.primary-btn {
-  background: linear-gradient(180deg, #7ec44c, #578e31);
-}
-
-.danger {
-  background: #7b3026;
-}
-
-#game-screen.active {
-  display: block;
-  padding: 12px;
-}
-
-.topbar {
-  display: grid;
-  grid-template-columns: 170px 1fr 220px auto auto;
-  gap: 14px;
-  align-items: center;
-  padding: 14px 18px;
-  margin-bottom: 12px;
-}
-
-.exp-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.exp-bar {
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-#exp-fill {
-  height: 100%;
-  width: 0;
-  background: linear-gradient(90deg, #65c44f, #b2ef59);
-}
-
-.resources {
-  display: grid;
-  gap: 4px;
-  justify-items: end;
-}
-
-.top-actions,
-.save-box {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.game-area {
-  display: flex;
-  justify-content: center;
-}
-
-.scene {
-  position: relative;
-  width: min(100%, 1240px);
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-.scene img {
-  width: 100%;
-  display: block;
-}
-
-.hitbox {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px dashed rgba(255, 255, 255, 0);
-  cursor: pointer;
-  border-radius: 18px;
-}
-
-.hitbox:hover {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-#modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 10;
-}
-
-#modal {
-  width: min(980px, 100%);
-  max-height: calc(100vh - 32px);
-  overflow: auto;
-  padding: 20px;
-}
-
-.modal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.storage-grid,
-.upgrade-grid,
-.crop-list {
-  display: grid;
-  gap: 12px;
-}
-
-.card {
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 14px;
-}
-
-.card h3,
-.card h4 {
-  margin-top: 0;
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.small {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.crop-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 10px;
-  border-radius: 12px;
-}
-
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
-  gap: 10px;
-}
-
-.field-tile {
-  min-height: 132px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.18);
-  display: grid;
-  gap: 8px;
-}
-
-.field-tile.locked {
-  opacity: 0.75;
-}
-
-.field-title {
-  font-weight: bold;
-  color: var(--gold);
-}
-
-.progress {
-  height: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.progress > div {
-  height: 100%;
-  background: linear-gradient(90deg, #73bf37, #b8ee6a);
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.actions button {
-  flex: 1 1 auto;
-}
-
-#toast {
-  position: fixed;
-  left: 50%;
-  bottom: 22px;
-  transform: translateX(-50%);
-  background: rgba(26, 18, 12, 0.95);
-  border: 1px solid var(--border);
-  padding: 10px 16px;
-  border-radius: 999px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  z-index: 20;
-}
-
-#toast.show {
-  opacity: 1;
-}
-
-/* =========================
-   MOBILE
-========================= */
-
-@media (max-width: 980px) {
-  .topbar {
-    grid-template-columns: 1fr;
-  }
-
-  .resources {
-    justify-items: start;
-  }
-
-  .grid-2 {
-    grid-template-columns: 1fr;
-  }
-
-  .field-grid {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .auth-topbar {
-    right: 10px;
-    top: 10px;
-  }
-
-  .auth-form-frame {
-    width: min(100vw, 360px);
-    height: 440px;
-    top: 55%;
-  }
-
-  .auth-tabs {
-    left: 64px;
-    top: 52px;
-    width: 232px;
-    height: 42px;
-    gap: 8px;
-  }
-
-  .auth-row input {
-    width: 240px;
-    height: 34px;
-    font-size: 18px;
-    padding-left: 34px;
-  }
-
-  .auth-login-row {
-    left: 66px;
-    top: 126px;
-  }
-
-  .auth-email-row {
-    left: 66px;
-    top: 179px;
-  }
-
-  .auth-password-row {
-    left: 66px;
-    top: 179px;
-  }
-
-  #auth-screen.auth-mode-register .auth-password-row {
-    top: 232px;
-  }
-
-  .auth-confirm-row {
-    left: 66px;
-    top: 286px;
-  }
-
-  .remember-row {
-    left: 68px;
-    top: 233px;
-  }
-
-  #remember-me {
-    width: 22px;
-    height: 22px;
-  }
-
-  .auth-main-btn {
-    left: 66px;
-    top: 314px;
-    width: 242px;
-    height: 54px;
-  }
-
-  #auth-screen.auth-mode-register .auth-main-btn {
-    top: 367px;
-  }
-
-  #game-screen.active {
-    padding: 8px;
-  }
-
-  .field-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .crop-row {
-    grid-template-columns: 1fr;
-  }
+  top: 495px;
+  height: 64px;
 }
