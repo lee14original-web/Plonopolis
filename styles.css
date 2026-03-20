@@ -8,20 +8,42 @@
   --text: #f4e7cf;
   --muted: #d6c09b;
   --border: rgba(235, 199, 135, 0.35);
-  --shadow: 0 10px 32px rgba(0,0,0,0.35);
+  --shadow: 0 10px 32px rgba(0, 0, 0, 0.35);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Georgia, "Times New Roman", serif;
   background: radial-gradient(circle at top, #514030, var(--bg));
   color: var(--text);
 }
-button, input, select { font: inherit; }
-.screen { display: none; min-height: 100vh; }
-.screen.active { display: block; }
-.hidden { display: none !important; }
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+
+.screen.active {
+  display: block;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =========================
+   AUTH SCREEN
+========================= */
 
 #auth-screen {
   position: relative;
@@ -29,38 +51,43 @@ button, input, select { font: inherit; }
   overflow: hidden;
   background: #1b140f;
 }
+
 .auth-bg-layer {
   position: absolute;
   inset: 0;
   background: center center / cover no-repeat;
-  transition: background-image .2s ease;
+  transition: background-image 0.2s ease;
 }
+
 #auth-screen.auth-mode-login .auth-bg-layer {
-  background-image: url('assets/oknostartowe.png');
+  background-image: url("assets/oknostartowe.png");
 }
+
 #auth-screen.auth-mode-register .auth-bg-layer {
-  background-image: url('assets/oknorejestracji.png');
+  background-image: url("assets/oknorejestracji.png");
 }
-.auth-ui-wrap {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-}
+
 .auth-topbar {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 2;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
 }
-.language-switch { display: flex; gap: 8px; }
+
+.language-switch {
+  display: flex;
+  gap: 8px;
+}
+
 .lang-btn {
   border: 1px solid rgba(96, 69, 41, 0.85);
-  background: rgba(56, 35, 22, 0.85);
+  background: rgba(56, 35, 22, 0.8);
   color: #f6e6c8;
   border-radius: 10px;
   padding: 8px 12px;
   cursor: pointer;
 }
+
 .lang-btn.active {
   background: rgba(211, 173, 110, 0.95);
   color: #3d2716;
@@ -69,93 +96,146 @@ button, input, select { font: inherit; }
 .auth-form-frame {
   position: absolute;
   left: 50%;
-  top: 56%;
+  top: 53.5%;
   transform: translate(-50%, -50%);
-  width: min(100%, 520px);
-  padding: 16px 18px 22px;
-  border-radius: 18px;
-  background: rgba(62, 40, 22, 0.12);
+  width: 520px;
+  height: 560px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
+/* Klikalne strefy zakładek na grafice */
 .auth-tabs {
+  position: absolute;
+  left: 92px;
+  top: 67px;
+  width: 336px;
+  height: 58px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 0 auto 14px;
-  width: 100%;
+  gap: 10px;
 }
-.tab-btn {
-  border: 1px solid rgba(97, 69, 39, 0.95);
-  background: linear-gradient(180deg, rgba(126, 88, 50, 0.95), rgba(84, 56, 31, 0.95));
-  color: #f2e4c8;
-  border-radius: 12px;
-  padding: 11px 12px;
-  font-size: 18px;
-  font-weight: 700;
+
+.auth-tabs .tab-btn {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: transparent;
+  box-shadow: none;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
-}
-.tab-btn.active {
-  background: linear-gradient(180deg, rgba(226, 214, 186, 0.98), rgba(192, 167, 126, 0.98));
-  color: #4d311d;
 }
 
-.auth-theme-form { display: grid; gap: 12px; }
-.auth-row { display: grid; gap: 6px; }
-.auth-row span {
-  color: #3c2414;
-  font-size: 17px;
-  font-weight: 700;
+/* Formularz jako warstwa na grafice */
+.auth-theme-form {
+  position: absolute;
+  inset: 0;
 }
+
+.auth-row {
+  position: absolute;
+  display: block;
+}
+
+.auth-row span,
+.auth-subtitle,
+.auth-message {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* INPUTY */
 .auth-row input {
-  width: 100%;
+  width: 350px;
+  height: 44px;
+  border: none;
   border-radius: 10px;
-  border: 1px solid rgba(119, 87, 54, 0.9);
-  background: rgba(240, 223, 192, 0.92);
-  color: #2f1f14;
-  padding: 12px 14px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+  background: transparent;
+  box-shadow: none;
+  color: #3b2617;
+  font-size: 27px;
+  padding: 4px 12px 4px 46px;
+  outline: none;
 }
 
+/* Pozycje pól */
+.auth-login-row {
+  left: 92px;
+  top: 160px;
+}
+
+.auth-password-row {
+  left: 92px;
+  top: 238px;
+}
+
+.auth-email-row {
+  left: 92px;
+  top: 238px;
+}
+
+.auth-confirm-row {
+  left: 92px;
+  top: 392px;
+}
+
+/* Rejestracja przesuwa hasło niżej */
+#auth-screen.auth-mode-register .auth-password-row {
+  top: 315px;
+}
+
+/* Checkbox "Zapamiętaj mnie" */
 .remember-row {
+  position: absolute;
+  left: 94px;
+  top: 315px;
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #3b2415;
-  font-size: 16px;
-  font-weight: 700;
-  margin-top: 2px;
 }
-#auth-screen.auth-mode-register .remember-row {
-  visibility: hidden;
-  pointer-events: none;
-  height: 0;
+
+#remember-me {
+  width: 28px;
+  height: 28px;
   margin: 0;
+  opacity: 0.02;
+  cursor: pointer;
 }
+
+#remember-label {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* W rejestracji checkbox znika */
+#auth-screen.auth-mode-register #remember-wrapper {
+  display: none;
+}
+
+/* Przycisk submit jako niewidzialna klikalna strefa */
 .auth-main-btn {
-  min-height: 58px;
-  border-radius: 12px;
-  border: 1px solid rgba(109, 71, 20, 0.95);
-  background: linear-gradient(180deg, #d79a34, #9d6118);
-  color: #fff4e2;
-  font-size: 21px;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 6px 12px rgba(0,0,0,0.2);
+  position: absolute;
+  left: 92px;
+  top: 408px;
+  width: 352px;
+  height: 78px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: transparent;
+  cursor: pointer;
 }
-.auth-subtitle {
-  min-height: 22px;
-  margin: 14px 0 0;
-  text-align: center;
-  color: rgba(255, 245, 225, 0.0);
+
+#auth-screen.auth-mode-register .auth-main-btn {
+  top: 468px;
 }
-.auth-message {
-  min-height: 22px;
-  margin: 10px 0 0;
-  text-align: center;
-  color: #fff1d2;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
-}
+
+/* =========================
+   GAME UI
+========================= */
 
 .panel {
   background: var(--panel);
@@ -163,18 +243,32 @@ button, input, select { font: inherit; }
   border-radius: 18px;
   box-shadow: var(--shadow);
 }
-.tabs, .small-btn, .primary-btn, .secondary-btn, .danger-btn {
+
+.primary-btn,
+.secondary-btn,
+.small-btn,
+.danger-btn {
   border: 1px solid var(--border);
-}
-.primary-btn, .secondary-btn, .small-btn, .danger-btn {
   background: var(--panel-2);
   color: var(--text);
   cursor: pointer;
+  border-radius: 12px;
+  padding: 10px 14px;
 }
-.primary-btn { background: linear-gradient(180deg, #7ec44c, #578e31); }
-.danger { background: #7b3026; }
 
-#game-screen.active { display: block; padding: 12px; }
+.primary-btn {
+  background: linear-gradient(180deg, #7ec44c, #578e31);
+}
+
+.danger {
+  background: #7b3026;
+}
+
+#game-screen.active {
+  display: block;
+  padding: 12px;
+}
+
 .topbar {
   display: grid;
   grid-template-columns: 170px 1fr 220px auto auto;
@@ -183,6 +277,7 @@ button, input, select { font: inherit; }
   padding: 14px 18px;
   margin-bottom: 12px;
 }
+
 .exp-head {
   display: flex;
   justify-content: space-between;
@@ -190,25 +285,38 @@ button, input, select { font: inherit; }
   color: var(--muted);
   margin-bottom: 6px;
 }
+
 .exp-bar {
   height: 18px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   overflow: hidden;
   border: 1px solid var(--border);
 }
+
 #exp-fill {
   height: 100%;
   width: 0;
   background: linear-gradient(90deg, #65c44f, #b2ef59);
 }
-.resources { display: grid; gap: 4px; justify-items: end; }
-.top-actions, .save-box { display: flex; gap: 8px; align-items: center; }
-.small-btn {
-  border-radius: 12px;
-  padding: 10px 14px;
+
+.resources {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
 }
-.game-area { display: flex; justify-content: center; }
+
+.top-actions,
+.save-box {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.game-area {
+  display: flex;
+  justify-content: center;
+}
 
 .scene {
   position: relative;
@@ -218,35 +326,43 @@ button, input, select { font: inherit; }
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
-.scene img { width: 100%; display: block; }
+
+.scene img {
+  width: 100%;
+  display: block;
+}
+
 .hitbox {
   position: absolute;
-  background: rgba(255,255,255,0.02);
-  border: 2px dashed rgba(255,255,255,0.0);
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0);
   cursor: pointer;
   border-radius: 18px;
 }
+
 .hitbox:hover {
-  border-color: rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.08);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 #modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   z-index: 10;
 }
+
 #modal {
   width: min(980px, 100%);
   max-height: calc(100vh - 32px);
   overflow: auto;
   padding: 20px;
 }
+
 .modal-head {
   display: flex;
   justify-content: space-between;
@@ -254,55 +370,101 @@ button, input, select { font: inherit; }
   gap: 12px;
   margin-bottom: 16px;
 }
-.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.storage-grid, .upgrade-grid, .crop-list { display: grid; gap: 12px; }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.storage-grid,
+.upgrade-grid,
+.crop-list {
+  display: grid;
+  gap: 12px;
+}
+
 .card {
-  background: rgba(0,0,0,0.18);
+  background: rgba(0, 0, 0, 0.18);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px;
 }
-.card h3, .card h4 { margin-top: 0; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.small { font-size: 13px; color: var(--muted); }
+
+.card h3,
+.card h4 {
+  margin-top: 0;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .crop-row {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 10px;
   align-items: center;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   padding: 10px;
   border-radius: 12px;
 }
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 10px;
 }
+
 .field-tile {
   min-height: 132px;
   padding: 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(0,0,0,0.18);
+  background: rgba(0, 0, 0, 0.18);
   display: grid;
   gap: 8px;
 }
-.field-tile.locked { opacity: 0.75; }
-.field-title { font-weight: bold; color: var(--gold); }
+
+.field-tile.locked {
+  opacity: 0.75;
+}
+
+.field-title {
+  font-weight: bold;
+  color: var(--gold);
+}
+
 .progress {
   height: 12px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   overflow: hidden;
   border: 1px solid var(--border);
 }
+
 .progress > div {
   height: 100%;
   background: linear-gradient(90deg, #73bf37, #b8ee6a);
 }
-.actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.actions button { flex: 1 1 auto; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.actions button {
+  flex: 1 1 auto;
+}
 
 #toast {
   position: fixed;
@@ -318,25 +480,114 @@ button, input, select { font: inherit; }
   transition: opacity 0.2s ease;
   z-index: 20;
 }
-#toast.show { opacity: 1; }
+
+#toast.show {
+  opacity: 1;
+}
+
+/* =========================
+   MOBILE
+========================= */
 
 @media (max-width: 980px) {
-  .topbar { grid-template-columns: 1fr; }
-  .resources { justify-items: start; }
-  .grid-2 { grid-template-columns: 1fr; }
-  .field-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-}
-@media (max-width: 640px) {
-  .auth-topbar { right: 10px; top: 10px; }
-  .auth-form-frame {
-    width: min(100%, 360px);
-    top: 56%;
-    padding: 12px 14px 16px;
+  .topbar {
+    grid-template-columns: 1fr;
   }
-  .tab-btn { font-size: 16px; padding: 9px 10px; }
-  .auth-row span { font-size: 15px; }
-  .auth-main-btn { min-height: 50px; font-size: 18px; }
-  #game-screen.active { padding: 8px; }
-  .field-grid { grid-template-columns: 1fr; }
-  .crop-row { grid-template-columns: 1fr; }
+
+  .resources {
+    justify-items: start;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .field-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-topbar {
+    right: 10px;
+    top: 10px;
+  }
+
+  .auth-form-frame {
+    width: min(100vw, 360px);
+    height: 440px;
+    top: 55%;
+  }
+
+  .auth-tabs {
+    left: 64px;
+    top: 52px;
+    width: 232px;
+    height: 42px;
+    gap: 8px;
+  }
+
+  .auth-row input {
+    width: 240px;
+    height: 34px;
+    font-size: 18px;
+    padding-left: 34px;
+  }
+
+  .auth-login-row {
+    left: 66px;
+    top: 126px;
+  }
+
+  .auth-email-row {
+    left: 66px;
+    top: 179px;
+  }
+
+  .auth-password-row {
+    left: 66px;
+    top: 179px;
+  }
+
+  #auth-screen.auth-mode-register .auth-password-row {
+    top: 232px;
+  }
+
+  .auth-confirm-row {
+    left: 66px;
+    top: 286px;
+  }
+
+  .remember-row {
+    left: 68px;
+    top: 233px;
+  }
+
+  #remember-me {
+    width: 22px;
+    height: 22px;
+  }
+
+  .auth-main-btn {
+    left: 66px;
+    top: 314px;
+    width: 242px;
+    height: 54px;
+  }
+
+  #auth-screen.auth-mode-register .auth-main-btn {
+    top: 367px;
+  }
+
+  #game-screen.active {
+    padding: 8px;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crop-row {
+    grid-template-columns: 1fr;
+  }
 }
