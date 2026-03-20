@@ -1,19 +1,50 @@
-/* ===== POPRAWIONE POZYCJE POD GRAFIKĘ ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #1b140f;
+  font-family: Arial, sans-serif;
+}
+
+/* ===== AUTH ===== */
+
+#auth-screen {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.auth-bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+#auth-screen.auth-mode-login .auth-bg-layer {
+  background-image: url("assets/oknostartowe.png");
+}
+
+#auth-screen.auth-mode-register .auth-bg-layer {
+  background-image: url("assets/oknorejestracji.png");
+}
+
+/* FRAME */
 
 .auth-form-frame {
   position: absolute;
   left: 50%;
-  top: 55.2%;
+  top: 55%;
   transform: translate(-50%, -50%);
   width: 560px;
   height: 590px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
 }
 
-/* zakładki */
+/* ===== TABS ===== */
+
 .auth-tabs {
   position: absolute;
   left: 108px;
@@ -22,73 +53,170 @@
   height: 58px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* login */
+.auth-tabs button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+/* ===== INPUTY ===== */
+
+.auth-row {
+  position: absolute;
+}
+
+.auth-row span {
+  display: none;
+}
+
+.auth-row input {
+  width: 330px;
+  height: 42px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 24px;
+  padding-left: 44px;
+  color: #3b2617;
+}
+
+/* POZYCJE */
+
 .auth-login-row {
   left: 111px;
   top: 176px;
 }
 
-/* email przy rejestracji */
 .auth-email-row {
   left: 111px;
   top: 255px;
 }
 
-/* hasło */
 .auth-password-row {
   left: 111px;
   top: 255px;
 }
 
-/* w rejestracji hasło schodzi niżej */
 #auth-screen.auth-mode-register .auth-password-row {
   top: 334px;
 }
 
-/* powtórz hasło */
 .auth-confirm-row {
   left: 111px;
   top: 414px;
 }
 
-/* inputy */
-.auth-row input {
-  width: 330px;
-  height: 42px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  box-shadow: none;
-  color: #3b2617;
-  font-size: 24px;
-  padding: 4px 12px 4px 44px;
-  outline: none;
-}
+/* ===== CHECKBOX ===== */
 
-/* zapamiętaj mnie */
 .remember-row {
+  position: absolute;
   left: 112px;
-  top: 333px;
+  top: 334px;
 }
 
-/* przycisk */
+#auth-screen.auth-mode-register .remember-row {
+  display: none;
+}
+
+#remember-label {
+  display: none;
+}
+
+/* ===== PRZYCISK ===== */
+
 .auth-main-btn {
   position: absolute;
   left: 108px;
-  top: 438px;
+  top: 440px;
   width: 340px;
   height: 70px;
-  border: none;
   background: transparent;
-  box-shadow: none;
-  color: transparent;
+  border: none;
   cursor: pointer;
 }
 
 #auth-screen.auth-mode-register .auth-main-btn {
-  top: 495px;
-  height: 64px;
+  top: 500px;
+}
+
+/* ===== LANGUAGE ===== */
+
+.auth-topbar {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
+
+.lang-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+/* ===== MOBILE ===== */
+
+@media (max-width: 640px) {
+  .auth-form-frame {
+    width: 390px;
+    height: 455px;
+  }
+
+  .auth-tabs {
+    left: 74px;
+    top: 55px;
+    width: 244px;
+    height: 42px;
+  }
+
+  .auth-row input {
+    width: 228px;
+    height: 32px;
+    font-size: 17px;
+    padding-left: 32px;
+  }
+
+  .auth-login-row {
+    left: 78px;
+    top: 126px;
+  }
+
+  .auth-email-row {
+    left: 78px;
+    top: 182px;
+  }
+
+  .auth-password-row {
+    left: 78px;
+    top: 182px;
+  }
+
+  #auth-screen.auth-mode-register .auth-password-row {
+    top: 238px;
+  }
+
+  .auth-confirm-row {
+    left: 78px;
+    top: 295px;
+  }
+
+  .remember-row {
+    left: 80px;
+    top: 238px;
+  }
+
+  .auth-main-btn {
+    left: 76px;
+    top: 320px;
+    width: 234px;
+    height: 52px;
+  }
+
+  #auth-screen.auth-mode-register .auth-main-btn {
+    top: 374px;
+  }
 }
