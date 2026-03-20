@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="auth-screen" class="screen active auth-mode-login">
+  <div id="auth-screen" class="screen active">
     <div class="auth-bg-layer"></div>
+    <div class="auth-overlay"></div>
 
     <div class="auth-topbar">
       <div class="language-switch">
@@ -17,43 +18,47 @@
       </div>
     </div>
 
-    <div class="auth-form-frame">
-      <div class="tabs auth-tabs">
-        <button id="login-tab" class="tab-btn active" type="button" aria-label="Logowanie"></button>
-        <button id="register-tab" class="tab-btn" type="button" aria-label="Rejestracja"></button>
+    <div class="auth-center-wrap">
+      <div class="auth-card">
+        <div class="tabs auth-tabs">
+          <button id="login-tab" class="tab-btn active" type="button">Logowanie</button>
+          <button id="register-tab" class="tab-btn" type="button">Rejestracja</button>
+        </div>
+
+        <h1 class="auth-title">Plonopolis</h1>
+        <p id="auth-subtitle" class="auth-subtitle">Zaloguj się do swojej farmy</p>
+
+        <form id="auth-form" class="auth-form" autocomplete="on">
+          <label class="auth-field">
+            <span id="login-label">Login</span>
+            <input id="auth-login" type="text" required />
+          </label>
+
+          <label id="register-email-wrapper" class="auth-field hidden">
+            <span id="email-label">Email</span>
+            <input id="auth-email" type="email" />
+          </label>
+
+          <label class="auth-field">
+            <span id="password-label">Hasło</span>
+            <input id="auth-password" type="password" required />
+          </label>
+
+          <label id="confirm-wrapper" class="auth-field hidden">
+            <span id="confirm-label">Powtórz hasło</span>
+            <input id="auth-confirm" type="password" />
+          </label>
+
+          <label class="remember-row" id="remember-wrapper">
+            <input id="remember-me" type="checkbox" />
+            <span id="remember-label">Zapamiętaj mnie</span>
+          </label>
+
+          <button class="auth-submit-btn" id="auth-submit" type="submit">Zaloguj się</button>
+        </form>
+
+        <p id="auth-message" class="auth-message"></p>
       </div>
-
-      <form id="auth-form" class="auth-theme-form" autocomplete="on">
-        <label class="auth-row auth-login-row">
-          <span id="login-label">Login</span>
-          <input id="auth-login" type="text" required />
-        </label>
-
-        <label id="register-email-wrapper" class="auth-row auth-email-row hidden">
-          <span id="email-label">Email</span>
-          <input id="auth-email" type="email" />
-        </label>
-
-        <label class="auth-row auth-password-row">
-          <span id="password-label">Hasło</span>
-          <input id="auth-password" type="password" required />
-        </label>
-
-        <label id="confirm-wrapper" class="auth-row auth-confirm-row hidden">
-          <span id="confirm-label">Powtórz hasło</span>
-          <input id="auth-confirm" type="password" />
-        </label>
-
-        <label class="remember-row" id="remember-wrapper">
-          <input id="remember-me" type="checkbox" />
-          <span id="remember-label">Zapamiętaj mnie</span>
-        </label>
-
-        <button class="auth-main-btn" id="auth-submit" type="submit" aria-label="Zaloguj się"></button>
-      </form>
-
-      <p id="auth-subtitle" class="auth-subtitle">Przeglądarkowa gra HTML5 z rankingiem online</p>
-      <p id="auth-message" class="message auth-message"></p>
     </div>
   </div>
 
