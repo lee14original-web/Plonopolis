@@ -13,10 +13,10 @@ export const FARM_HITBOXES = [
     id: "barn",
     label: "Stodoła",
     action: "open_animals",
-    x: 820,
-    y: 140,
-    width: 300,
-    height: 170,
+    x: 840,
+    y: 160,
+    width: 320,
+    height: 190,
   },
 
   {
