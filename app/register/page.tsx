@@ -1,6 +1,34 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function RegisterPage() {
+  const router = useRouter();
+
+  const [login, setLogin] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!login || !email || !password || !repeatPassword) {
+      alert("Uzupełnij wszystkie pola");
+      return;
+    }
+
+    if (password !== repeatPassword) {
+      alert("Hasła się nie zgadzają");
+      return;
+    }
+
+    // tymczasowo przechodzimy do logowania
+    router.push("/login");
+  }
+
   return (
     <main
       style={{
@@ -22,6 +50,7 @@ export default function RegisterPage() {
           padding: "28px",
         }}
       >
+        {/* TABS */}
         <div
           style={{
             display: "flex",
@@ -59,6 +88,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
+        {/* HEADER */}
         <h1 style={{ margin: 0, textAlign: "center", color: "#f6dc9a" }}>
           Plonopolis
         </h1>
@@ -70,68 +100,67 @@ export default function RegisterPage() {
             color: "rgba(245,231,200,0.75)",
           }}
         >
-          Załóż konto i zacznij rozwijać farmę
+          Załóż konto i zacznij farmę
         </p>
 
-        <form style={{ marginTop: "24px", display: "grid", gap: "16px" }}>
+        {/* FORM */}
+        <form onSubmit={handleSubmit} style={{ marginTop: "24px", display: "grid", gap: "16px" }}>
           <div>
-            <label style={{ display: "block", marginBottom: "6px" }}>Login</label>
+            <label>Login</label>
             <input
               type="text"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               style={{
                 width: "100%",
-                borderRadius: "10px",
-                border: "none",
                 padding: "12px",
+                borderRadius: "10px",
                 background: "#d9cbb3",
-                color: "#111",
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "6px" }}>Email</label>
+            <label>Email</label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               style={{
                 width: "100%",
-                borderRadius: "10px",
-                border: "none",
                 padding: "12px",
+                borderRadius: "10px",
                 background: "#d9cbb3",
-                color: "#111",
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "6px" }}>Hasło</label>
+            <label>Hasło</label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={{
                 width: "100%",
-                borderRadius: "10px",
-                border: "none",
                 padding: "12px",
+                borderRadius: "10px",
                 background: "#d9cbb3",
-                color: "#111",
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: "block", marginBottom: "6px" }}>
-              Powtórz hasło
-            </label>
+            <label>Powtórz hasło</label>
             <input
               type="password"
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
               style={{
                 width: "100%",
-                borderRadius: "10px",
-                border: "none",
                 padding: "12px",
+                borderRadius: "10px",
                 background: "#d9cbb3",
-                color: "#111",
               }}
             />
           </div>
@@ -139,12 +168,11 @@ export default function RegisterPage() {
           <button
             type="submit"
             style={{
-              border: "none",
-              borderRadius: "12px",
               padding: "14px",
+              borderRadius: "12px",
               background: "linear-gradient(#f0b63f, #b87413)",
-              color: "#fff7df",
               fontWeight: 700,
+              border: "none",
               cursor: "pointer",
             }}
           >
