@@ -1,6 +1,25 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!login || !password) {
+      alert("Wpisz login i hasło");
+      return;
+    }
+
+    router.push("/game");
+  }
+
   return (
     <main
       style={{
@@ -73,11 +92,13 @@ export default function LoginPage() {
           Zaloguj się do swojej farmy
         </p>
 
-        <form style={{ marginTop: "24px", display: "grid", gap: "16px" }}>
+        <form onSubmit={handleSubmit} style={{ marginTop: "24px", display: "grid", gap: "16px" }}>
           <div>
             <label style={{ display: "block", marginBottom: "6px" }}>Login</label>
             <input
               type="text"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
               style={{
                 width: "100%",
                 borderRadius: "10px",
@@ -93,6 +114,8 @@ export default function LoginPage() {
             <label style={{ display: "block", marginBottom: "6px" }}>Hasło</label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               style={{
                 width: "100%",
                 borderRadius: "10px",
