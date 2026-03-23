@@ -15,7 +15,7 @@ export interface Hitbox {
   action: string;
 }
 
-export const farmHitboxes: Hitbox[] = [
+export const FARM_HITBOXES: Hitbox[] = [
   {
     id: 'dom',
     left: 18,
