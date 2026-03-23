@@ -1,13 +1,8 @@
-export type FarmArea =
-  | 'dom'
-  | 'stodola'
-  | 'sad'
-  | 'ule'
-  | 'rower'
-  | 'pola';
+export type FarmArea = 'dom' | 'stodola' | 'sad' | 'ule' | 'rower' | 'pola';
 
-export interface Hitbox {
+export interface FarmHitbox {
   id: FarmArea;
+  label: string;
   left: number;
   top: number;
   width: number;
@@ -15,9 +10,10 @@ export interface Hitbox {
   action: string;
 }
 
-export const FARM_HITBOXES: Hitbox[] = [
+export const FARM_HITBOXES: FarmHitbox[] = [
   {
     id: 'dom',
+    label: 'DOM',
     left: 18,
     top: 33,
     width: 16,
@@ -26,6 +22,7 @@ export const FARM_HITBOXES: Hitbox[] = [
   },
   {
     id: 'stodola',
+    label: 'STODOŁA',
     left: 60,
     top: 28,
     width: 23,
@@ -34,6 +31,7 @@ export const FARM_HITBOXES: Hitbox[] = [
   },
   {
     id: 'sad',
+    label: 'SAD',
     left: 45,
     top: 52,
     width: 30,
@@ -42,6 +40,7 @@ export const FARM_HITBOXES: Hitbox[] = [
   },
   {
     id: 'ule',
+    label: 'ULE',
     left: 80,
     top: 48,
     width: 16,
@@ -50,6 +49,7 @@ export const FARM_HITBOXES: Hitbox[] = [
   },
   {
     id: 'rower',
+    label: 'ROWER',
     left: 12,
     top: 58,
     width: 16,
@@ -58,6 +58,7 @@ export const FARM_HITBOXES: Hitbox[] = [
   },
   {
     id: 'pola',
+    label: 'POLA UPRAWNE',
     left: 40,
     top: 70,
     width: 35,
