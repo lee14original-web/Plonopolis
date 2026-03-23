@@ -1,82 +1,29 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
-type UserRecord = {
+type Profile = {
   id: string;
   login: string;
   email: string;
-  password: string; // mock only
-  createdAt: string;
-  save?: {
-    level?: number;
-    location?: string;
-    lastPlayedAt?: string;
-  };
+  created_at?: string;
+  level?: number | null;
+  location?: string | null;
+  last_played_at?: string | null;
 };
 
-type SessionRecord = {
-  userId: string;
-  login: string;
-  loggedInAt: string;
+type Message = {
+  type: "success" | "error" | "info";
+  title: string;
+  text: string;
 };
-
-const USERS_KEY = "plonopolis_users";
-const SESSION_KEY = "plonopolis_session";
-
-function readUsers(): UserRecord[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeUsers(users: UserRecord[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function readSession(): SessionRecord | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeSession(session: SessionRecord) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-}
-
-function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-}
-
-function normalize(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function isEmailValid(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function createId() {
-  return crypto.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [session, setSession] = useState<SessionRecord | null>(null);
   const [ready, setReady] = useState(false);
-
-  const [message, setMessage] = useState<{
-    type: "success" | "error" | "info";
-    title: string;
-    text: string;
-  } | null>(null);
+  const [message, setMessage] = useState<Message | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
     login: "",
@@ -90,18 +37,72 @@ export default function Page() {
     password: "",
   });
 
+  const displayLocation = useMemo(
+    () => profile?.location || "Startowa Polana",
+    [profile]
+  );
+
+  const displayLevel = useMemo(() => profile?.level ?? 1, [profile]);
+
   useEffect(() => {
-    setUsers(readUsers());
-    setSession(readSession());
-    setReady(true);
+    let mounted = true;
+
+    const bootstrap = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user && mounted) {
+        await loadProfile(session.user.id);
+      }
+
+      if (mounted) setReady(true);
+    };
+
+    bootstrap();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
+      if (session?.user) {
+        await loadProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const currentUser = useMemo(() => {
-    if (!session) return null;
-    return users.find((u) => u.id === session.userId) ?? null;
-  }, [session, users]);
+  async function loadProfile(userId: string) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, login, email, created_at, level, location, last_played_at")
+      .eq("id", userId)
+      .single();
 
-  const handleRegister = (e: React.FormEvent) => {
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd profilu",
+        text: error.message,
+      });
+      return;
+    }
+
+    setProfile(data as Profile);
+  }
+
+  function isEmailValid(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
 
@@ -155,8 +156,13 @@ export default function Page() {
       return;
     }
 
-    const loginTaken = users.some((u) => normalize(u.login) === normalize(login));
-    if (loginTaken) {
+    const { data: existingLogin } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("login", login)
+      .limit(1);
+
+    if (existingLogin && existingLogin.length > 0) {
       setMessage({
         type: "error",
         title: "Login zajęty",
@@ -165,8 +171,13 @@ export default function Page() {
       return;
     }
 
-    const emailTaken = users.some((u) => normalize(u.email) === normalize(email));
-    if (emailTaken) {
+    const { data: existingEmail } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .limit(1);
+
+    if (existingEmail && existingEmail.length > 0) {
       setMessage({
         type: "error",
         title: "Email zajęty",
@@ -175,31 +186,49 @@ export default function Page() {
       return;
     }
 
-    const newUser: UserRecord = {
-      id: createId(),
-      login,
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      createdAt: new Date().toISOString(),
-      save: {
-        level: 1,
-        location: "Startowa Polana",
-        lastPlayedAt: new Date().toISOString(),
-      },
-    };
+    });
 
-    const nextUsers = [...users, newUser];
-    setUsers(nextUsers);
-    writeUsers(nextUsers);
+    if (signUpError) {
+      setMessage({
+        type: "error",
+        title: "Błąd rejestracji",
+        text: signUpError.message,
+      });
+      return;
+    }
 
-    const nextSession: SessionRecord = {
-      userId: newUser.id,
-      login: newUser.login,
-      loggedInAt: new Date().toISOString(),
-    };
+    const userId = signUpData.user?.id;
+    if (!userId) {
+      setMessage({
+        type: "info",
+        title: "Sprawdź pocztę",
+        text: "Konto zostało utworzone. Dokończ aktywację z linku w emailu, jeśli masz włączone potwierdzanie adresu.",
+      });
+      return;
+    }
 
-    setSession(nextSession);
-    writeSession(nextSession);
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: userId,
+      login,
+      email,
+      level: 1,
+      location: "Startowa Polana",
+      last_played_at: new Date().toISOString(),
+    });
+
+    if (profileError) {
+      setMessage({
+        type: "error",
+        title: "Błąd zapisu profilu",
+        text: profileError.message,
+      });
+      return;
+    }
+
+    await loadProfile(userId);
 
     setRegisterForm({
       login: "",
@@ -212,11 +241,11 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Konto utworzone",
-      text: "Rejestracja zakończona sukcesem. Użytkownik został automatycznie zalogowany.",
+      text: "Rejestracja zakończona sukcesem. To konto będzie działało na komputerze i telefonie.",
     });
-  };
+  }
 
-  const handleLogin = (e: React.FormEvent) => {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
 
@@ -232,75 +261,90 @@ export default function Page() {
       return;
     }
 
-    const foundUser = users.find(
-      (u) =>
-        normalize(u.login) === normalize(identifier) ||
-        normalize(u.email) === normalize(identifier)
-    );
+    let emailToUse = identifier;
 
-    if (!foundUser || foundUser.password !== password) {
+    if (!isEmailValid(identifier)) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("email")
+        .ilike("login", identifier)
+        .single();
+
+      if (error || !data?.email) {
+        setMessage({
+          type: "error",
+          title: "Nie znaleziono konta",
+          text: "Nie istnieje konto z takim loginem.",
+        });
+        return;
+      }
+
+      emailToUse = data.email;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: emailToUse,
+      password,
+    });
+
+    if (error) {
       setMessage({
         type: "error",
         title: "Błędne logowanie",
-        text: "Niepoprawny login/email lub hasło.",
+        text: error.message,
       });
       return;
     }
-
-    const nextSession: SessionRecord = {
-      userId: foundUser.id,
-      login: foundUser.login,
-      loggedInAt: new Date().toISOString(),
-    };
-
-    setSession(nextSession);
-    writeSession(nextSession);
 
     setLoginForm({ identifier: "", password: "" });
     setMessage({
       type: "success",
       title: "Witaj ponownie",
-      text: `Zalogowano jako ${foundUser.login}. Możesz wrócić do gry.`,
+      text: "Zalogowano pomyślnie. Możesz wrócić do gry.",
     });
-  };
+  }
 
-  const handleLogout = () => {
-    clearSession();
-    setSession(null);
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setProfile(null);
     setMessage({
       type: "info",
       title: "Wylogowano",
-      text: "Sesja została usunięta z localStorage.",
+      text: "Sesja została zakończona.",
     });
-  };
+  }
 
-  const handleMockSaveProgress = () => {
-    if (!currentUser) return;
+  async function handleSaveProgress() {
+    if (!profile) return;
 
-    const nextUsers = users.map((u) => {
-      if (u.id !== currentUser.id) return u;
+    const nextLevel = (profile.level ?? 1) + 1;
 
-      const nextLevel = (u.save?.level ?? 1) + 1;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        level: nextLevel,
+        location: `Sektor ${nextLevel}`,
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
 
-      return {
-        ...u,
-        save: {
-          level: nextLevel,
-          location: `Sektor ${nextLevel}`,
-          lastPlayedAt: new Date().toISOString(),
-        },
-      };
-    });
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd zapisu",
+        text: error.message,
+      });
+      return;
+    }
 
-    setUsers(nextUsers);
-    writeUsers(nextUsers);
+    await loadProfile(profile.id);
 
     setMessage({
       type: "success",
       title: "Postęp zapisany",
-      text: "Mock zapisu konta został zaktualizowany w localStorage.",
+      text: "Postęp został zapisany w Supabase.",
     });
-  };
+  }
 
   if (!ready) {
     return (
@@ -346,7 +390,7 @@ export default function Page() {
                   </div>
                 )}
 
-                {!session ? (
+                {!profile ? (
                   <>
                     <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                       <button
@@ -478,21 +522,19 @@ export default function Page() {
                   <div className="space-y-6 text-[#f3e6c8]">
                     <div className="rounded-3xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-5">
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Aktywna sesja</p>
-                      <p className="mt-2 text-3xl font-black">{currentUser?.login}</p>
-                      <p className="mt-1 text-sm text-[#d8c39b]">{currentUser?.email}</p>
+                      <p className="mt-2 text-3xl font-black">{profile.login}</p>
+                      <p className="mt-1 text-sm text-[#d8c39b]">{profile.email}</p>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom gospodarstwa</p>
-                        <p className="mt-2 text-3xl font-black">{currentUser?.save?.level ?? 1}</p>
+                        <p className="mt-2 text-3xl font-black">{displayLevel}</p>
                       </div>
 
                       <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                         <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Lokacja</p>
-                        <p className="mt-2 text-3xl font-black">
-                          {currentUser?.save?.location ?? "Startowa Polana"}
-                        </p>
+                        <p className="mt-2 text-3xl font-black">{displayLocation}</p>
                       </div>
                     </div>
 
@@ -502,7 +544,7 @@ export default function Page() {
                       </button>
 
                       <button
-                        onClick={handleMockSaveProgress}
+                        onClick={handleSaveProgress}
                         className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-4 py-3 font-bold text-[#f3e6c8] transition hover:bg-[rgba(40,25,14,0.85)]"
                       >
                         Zapisz konto
@@ -522,47 +564,30 @@ export default function Page() {
 
             <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
               <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
-                Ekran startowy
+                Supabase
               </div>
 
-              <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Twoje gospodarstwo czeka</h2>
+              <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Jedno konto na wszystkich urządzeniach</h2>
               <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                Ten plik działa jako ekran logowania do gry przeglądarkowej. Ma gotowe formularze,
-                sesję w localStorage oraz przywracanie konta po odświeżeniu.
+                Ta wersja zapisuje konto w Supabase, więc możesz zalogować się na komputerze i telefonie na to samo konto.
               </p>
 
               <div className="mt-6 space-y-4">
                 <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                  <p className="font-bold text-[#f9e7b2]">Tło gry</p>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Umieść grafikę dokładnie w:
-                    <span className="ml-2 rounded bg-black/30 px-2 py-1 font-mono text-[#f5d57f]">
-                      /public/assetsmain-lobby.png
-                    </span>
-                  </p>
+                  <p className="font-bold text-[#f9e7b2]">Wymagane pliki</p>
+                  <p className="mt-2 text-sm text-[#dfcfab]">1. app/page.tsx</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">2. lib/supabase.ts</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">3. .env.local</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">4. SQL z tabelą profiles</p>
                 </div>
 
                 <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                  <p className="font-bold text-[#f9e7b2]">Mock backend</p>
+                  <p className="font-bold text-[#f9e7b2]">Tło gry</p>
                   <p className="mt-2 text-sm text-[#dfcfab]">
-                    Użytkownicy:
+                    Obrazek trzymaj tutaj:
                     <span className="ml-2 rounded bg-black/30 px-2 py-1 font-mono text-[#f5d57f]">
-                      plonopolis_users
+                      /public/assetsmain-lobby.png
                     </span>
-                  </p>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Sesja:
-                    <span className="ml-2 rounded bg-black/30 px-2 py-1 font-mono text-[#f5d57f]">
-                      plonopolis_session
-                    </span>
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-amber-400/40 bg-amber-950/20 p-4 text-amber-100">
-                  <p className="font-bold">Uwaga produkcyjna</p>
-                  <p className="mt-2 text-sm leading-6">
-                    Hasła w localStorage są tylko na etap mocka. Później przeniesiesz rejestrację i
-                    logowanie do API oraz prawdziwej bazy danych.
                   </p>
                 </div>
               </div>
