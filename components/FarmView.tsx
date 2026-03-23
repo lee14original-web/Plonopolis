@@ -3,7 +3,7 @@
     key={box.id}
     onClick={() => handle(box.action)}
     style={{
-      position: 'absolute',
+      position: "absolute",
       left: `${box.left}%`,
       top: `${box.top}%`,
       width: `${box.width}%`,
