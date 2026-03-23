@@ -11,7 +11,7 @@ export default function FarmView({ image }: FarmViewProps) {
   const [debug, setDebug] = useState(true);
 
   const handleClick = (action: string) => {
-    console.log("Kliknięto:", action);
+    console.log("Klik:", action);
   };
 
   return (
@@ -29,10 +29,10 @@ export default function FarmView({ image }: FarmViewProps) {
             width: `${box.width}%`,
             height: `${box.height}%`,
           }}
-          className="cursor-pointer border-2 border-red-600 bg-red-500/20 hover:bg-yellow-400/20 hover:scale-[1.02] transition"
+          className="cursor-pointer border-2 border-red-700 bg-red-500/20 transition hover:scale-[1.02] hover:bg-yellow-400/20"
         >
           {debug && (
-            <span className="flex h-full w-full items-center justify-center text-[22px] font-bold text-red-900">
+            <span className="flex h-full w-full items-center justify-center text-center text-xl font-bold text-red-900">
               {box.label}
             </span>
           )}
@@ -42,7 +42,7 @@ export default function FarmView({ image }: FarmViewProps) {
       <button
         type="button"
         onClick={() => setDebug((v) => !v)}
-        className="absolute left-4 top-4 z-50 rounded bg-black/70 px-3 py-2 text-white"
+        className="absolute left-4 top-4 z-50 rounded bg-black/70 px-3 py-2 text-sm text-white"
       >
         {debug ? "Ukryj debug" : "Pokaż debug"}
       </button>
