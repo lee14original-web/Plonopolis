@@ -10,11 +10,10 @@ export default function Game() {
 
   return (
     <main style={{ padding: 20 }}>
-      
       <h1>Plonopolis - Farma</h1>
 
       <div style={{ marginBottom: 20 }}>
-        {[1,5,10,15,20].map(l => (
+        {[1, 5, 10, 15, 20].map((l) => (
           <button key={l} onClick={() => setLvl(l)}>
             LV {l}
           </button>
