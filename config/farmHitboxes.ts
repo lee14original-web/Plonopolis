@@ -1,61 +1,67 @@
-export const FARM_HITBOXES = [
-  {
-    id: "house",
-    label: "Dom",
-    action: "open_profile",
-    x: 240,
-    y: 140,
-    width: 260,
-    height: 160,
-  },
+export type FarmArea =
+  | 'dom'
+  | 'stodola'
+  | 'sad'
+  | 'ule'
+  | 'rower'
+  | 'pola';
 
-  {
-    id: "barn",
-    label: "Stodoła",
-    action: "open_animals",
-    x: 760,
-    y: 90,
-    width: 360,
-    height: 180,
-  },
+export interface Hitbox {
+  id: FarmArea;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  action: string;
+}
 
+export const farmHitboxes: Hitbox[] = [
   {
-    id: "orchard",
-    label: "Sad",
-    action: "open_orchard",
-    x: 600,
-    y: 420,
-    width: 520,
-    height: 160,
+    id: 'dom',
+    left: 18,
+    top: 33,
+    width: 16,
+    height: 20,
+    action: 'profil',
   },
-
   {
-    id: "beehive",
-    label: "Ule",
-    action: "open_beehive",
-    x: 1100,
-    y: 360,
-    width: 200,
-    height: 130,
+    id: 'stodola',
+    left: 60,
+    top: 28,
+    width: 23,
+    height: 22,
+    action: 'zwierzeta',
   },
-
   {
-    id: "fields",
-    label: "Pola",
-    action: "open_fields",
-    x: 460,
-    y: 560,
-    width: 700,
-    height: 230,
+    id: 'sad',
+    left: 45,
+    top: 52,
+    width: 30,
+    height: 15,
+    action: 'drzewa',
   },
-
   {
-    id: "bike",
-    label: "Miasto",
-    action: "go_to_city",
-    x: 180,
-    y: 500,
-    width: 220,
-    height: 180,
+    id: 'ule',
+    left: 80,
+    top: 48,
+    width: 16,
+    height: 17,
+    action: 'ule',
+  },
+  {
+    id: 'rower',
+    left: 12,
+    top: 58,
+    width: 16,
+    height: 20,
+    action: 'miasto',
+  },
+  {
+    id: 'pola',
+    left: 40,
+    top: 70,
+    width: 35,
+    height: 20,
+    action: 'uprawy',
   },
 ];
