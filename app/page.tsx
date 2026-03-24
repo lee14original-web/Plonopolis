@@ -72,27 +72,27 @@ export default function Page() {
     let mounted = true;
 
     const bootstrap = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-        if (session?.user && mounted) {
-          await loadProfile(session.user.id);
-        }
-      } catch (error) {
-        console.error("BOOTSTRAP ERROR:", error);
-        if (mounted) {
-          setMessage({
-            type: "error",
-            title: "Błąd połączenia",
-            text: "Nie udało się wczytać sesji gracza.",
-          });
-        }
-      } finally {
-        if (mounted) setReady(true);
-      }
-    };
+    if (session?.user && mounted) {
+      await loadProfile(session.user.id);
+    }
+  } catch (error) {
+    console.error("BOOTSTRAP ERROR:", error);
+    if (mounted) {
+      setMessage({
+        type: "error",
+        title: "Błąd połączenia",
+        text: "Nie udało się wczytać sesji gracza.",
+      });
+    }
+  } finally {
+    if (mounted) setReady(true);
+  }
+};
 
     bootstrap();
 
