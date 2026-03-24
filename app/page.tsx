@@ -26,7 +26,7 @@ type Message = {
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
 const DEFAULT_XP_TO_NEXT_LEVEL = 100;
-const DEFAULT_MONEY = 250;
+const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 
