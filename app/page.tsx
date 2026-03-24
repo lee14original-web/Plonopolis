@@ -480,13 +480,13 @@ export default function Page() {
                 <div className="p-6 md:p-8">
                   {message && (
                     <div
-                      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-                        message.type === "error"
-                          ? "border-red-400/40 bg-red-950/40 text-red-100"
-                          : message.type === "success"
-                          ? "border-emerald-400/40 bg-emerald-950/40 text-emerald-100"
-                          : "border-sky-400/40 bg-sky-950/40 text-sky-100"
-                      }`}
+  className={`fixed bottom-4 left-4 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-2xl ${
+    message.type === "error"
+      ? "border-red-400/40 bg-red-950/90 text-red-100"
+      : message.type === "success"
+      ? "border-emerald-400/40 bg-emerald-950/90 text-emerald-100"
+      : "border-sky-400/40 bg-sky-950/90 text-sky-100"
+  }`}
                     >
                       <p className="font-semibold">{message.title}</p>
                       <p className="mt-1 opacity-90">{message.text}</p>
