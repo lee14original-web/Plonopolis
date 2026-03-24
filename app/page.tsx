@@ -102,6 +102,15 @@ export default function Page() {
       mounted = false;
     };
   }, []);
+  useEffect(() => {
+  if (!message) return;
+
+  const timer = setTimeout(() => {
+    setMessage(null);
+  }, 3000);
+
+  return () => clearTimeout(timer);
+}, [message]);
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
