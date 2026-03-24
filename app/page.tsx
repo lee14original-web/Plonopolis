@@ -9,7 +9,11 @@ type Profile = {
   email: string;
   created_at?: string;
   level?: number | null;
+  xp?: number | null;
+  xp_to_next_level?: number | null;
+  money?: number | null;
   location?: string | null;
+  current_map?: string | null;
   last_played_at?: string | null;
 };
 
@@ -18,6 +22,13 @@ type Message = {
   title: string;
   text: string;
 };
+
+const DEFAULT_LEVEL = 1;
+const DEFAULT_XP = 0;
+const DEFAULT_XP_TO_NEXT_LEVEL = 100;
+const DEFAULT_MONEY = 250;
+const DEFAULT_LOCATION = "Startowa Polana";
+const DEFAULT_MAP = "farm1";
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -37,26 +48,50 @@ export default function Page() {
     password: "",
   });
 
-  const displayLocation = useMemo(
-    () => profile?.location || "Startowa Polana",
-    [profile]
-  );
+  const displayLocation = profile?.location ?? DEFAULT_LOCATION;
+  const displayLevel = profile?.level ?? DEFAULT_LEVEL;
+  const displayXp = profile?.xp ?? DEFAULT_XP;
+  const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
+  const displayMoney = profile?.money ?? DEFAULT_MONEY;
+  const currentMap = profile?.current_map ?? DEFAULT_MAP;
 
-  const displayLevel = useMemo(() => profile?.level ?? 1, [profile]);
+  const xpPercent = useMemo(() => {
+    if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((displayXp / displayXpToNextLevel) * 100)));
+  }, [displayXp, displayXpToNextLevel]);
+
+  const moneyFormatted = useMemo(() => {
+    return new Intl.NumberFormat("pl-PL", {
+      style: "currency",
+      currency: "PLN",
+      maximumFractionDigits: 0,
+    }).format(displayMoney);
+  }, [displayMoney]);
 
   useEffect(() => {
     let mounted = true;
 
     const bootstrap = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session?.user && mounted) {
-        await loadProfile(session.user.id);
+        if (session?.user && mounted) {
+          await loadProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error("BOOTSTRAP ERROR:", error);
+        if (mounted) {
+          setMessage({
+            type: "error",
+            title: "Błąd połączenia",
+            text: "Nie udało się wczytać sesji gracza.",
+          });
+        }
+      } finally {
+        if (mounted) setReady(true);
       }
-
-      if (mounted) setReady(true);
     };
 
     bootstrap();
@@ -82,7 +117,9 @@ export default function Page() {
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, login, email, created_at, level, location, last_played_at")
+      .select(
+        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at"
+      )
       .eq("id", userId)
       .single();
 
@@ -214,8 +251,12 @@ export default function Page() {
       id: userId,
       login,
       email,
-      level: 1,
-      location: "Startowa Polana",
+      level: DEFAULT_LEVEL,
+      xp: DEFAULT_XP,
+      xp_to_next_level: DEFAULT_XP_TO_NEXT_LEVEL,
+      money: DEFAULT_MONEY,
+      location: DEFAULT_LOCATION,
+      current_map: DEFAULT_MAP,
       last_played_at: new Date().toISOString(),
     });
 
@@ -241,7 +282,7 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Konto utworzone",
-      text: "Rejestracja zakończona sukcesem. To konto będzie działało na komputerze i telefonie.",
+      text: "Nowy gracz startuje na mapie początkowej.",
     });
   }
 
@@ -274,7 +315,7 @@ export default function Page() {
         setMessage({
           type: "error",
           title: "Nie znaleziono konta",
-          text: "Nie istnieje konto z takim loginem.",
+          text: "Nie istnieje konto z takim loginem. Spróbuj zalogować się emailem.",
         });
         return;
       }
@@ -300,7 +341,7 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Witaj ponownie",
-      text: "Zalogowano pomyślnie. Możesz wrócić do gry.",
+      text: "Sesja gracza została wczytana.",
     });
   }
 
@@ -317,13 +358,28 @@ export default function Page() {
   async function handleSaveProgress() {
     if (!profile) return;
 
-    const nextLevel = (profile.level ?? 1) + 1;
+    const nextXp = displayXp + 15;
+    let nextLevel = displayLevel;
+    let nextXpStored = nextXp;
+    let nextXpToNextLevel = displayXpToNextLevel;
+    let nextMoney = displayMoney + 25;
+
+    if (nextXp >= displayXpToNextLevel) {
+      nextLevel += 1;
+      nextXpStored = nextXp - displayXpToNextLevel;
+      nextXpToNextLevel = displayXpToNextLevel + 50;
+      nextMoney += 100;
+    }
 
     const { error } = await supabase
       .from("profiles")
       .update({
         level: nextLevel,
-        location: `Sektor ${nextLevel}`,
+        xp: nextXpStored,
+        xp_to_next_level: nextXpToNextLevel,
+        money: nextMoney,
+        location: displayLocation,
+        current_map: currentMap,
         last_played_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
@@ -342,7 +398,7 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Postęp zapisany",
-      text: "Postęp został zapisany w Supabase.",
+      text: "Sesja gracza została zapisana w Supabase.",
     });
   }
 
@@ -360,21 +416,238 @@ export default function Page() {
   return (
     <main
       className="min-h-screen bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/assetsmain-lobby.png')" }}
+      style={{
+        backgroundImage: profile
+          ? "url('/farm1.png')"
+          : "url('/assetsmain-lobby.png')",
+      }}
     >
-      <div className="min-h-screen bg-black/50">
-        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-8">
-          <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
-              <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
-                <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
-                <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
-                <p className="mt-2 text-sm text-[#f2ddb0]">
-                  Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
-                </p>
-              </div>
+      <div className="min-h-screen bg-black/40">
+        {profile && (
+          <>
+            <button
+              onClick={handleLogout}
+              className="absolute right-4 top-4 z-20 rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
+            >
+              Wyloguj
+            </button>
 
-              <div className="p-6 md:p-8">
+            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-4">
+              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-3 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+                <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                      <span>EXP do następnego poziomu</span>
+                      <span>{xpPercent}%</span>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                      <div
+                        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                        style={{ width: `${xpPercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
+                    <p className="text-2xl font-black text-white">{displayLevel}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
+                    <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-8">
+          {!profile ? (
+            <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
+                <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
+                  <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
+                  <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
+                  <p className="mt-2 text-sm text-[#f2ddb0]">
+                    Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
+                  </p>
+                </div>
+
+                <div className="p-6 md:p-8">
+                  {message && (
+                    <div
+                      className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
+                        message.type === "error"
+                          ? "border-red-400/40 bg-red-950/40 text-red-100"
+                          : message.type === "success"
+                          ? "border-emerald-400/40 bg-emerald-950/40 text-emerald-100"
+                          : "border-sky-400/40 bg-sky-950/40 text-sky-100"
+                      }`}
+                    >
+                      <p className="font-semibold">{message.title}</p>
+                      <p className="mt-1 opacity-90">{message.text}</p>
+                    </div>
+                  )}
+
+                  <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
+                    <button
+                      onClick={() => setTab("login")}
+                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        tab === "login"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
+                      }`}
+                    >
+                      Logowanie
+                    </button>
+                    <button
+                      onClick={() => setTab("register")}
+                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        tab === "register"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
+                      }`}
+                    >
+                      Rejestracja
+                    </button>
+                  </div>
+
+                  {tab === "login" ? (
+                    <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Login lub email</label>
+                        <input
+                          type="text"
+                          placeholder="np. zastral11 lub gracz@plonopolis.pl"
+                          value={loginForm.identifier}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                        <input
+                          type="password"
+                          placeholder="Wpisz hasło"
+                          value={loginForm.password}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, password: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Zaloguj i wczytaj sesję
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Login</label>
+                        <input
+                          type="text"
+                          placeholder="Unikalny login"
+                          value={registerForm.login}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Email</label>
+                        <input
+                          type="email"
+                          placeholder="twoj@email.pl"
+                          value={registerForm.email}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                          <input
+                            type="password"
+                            placeholder="Minimum 6 znaków"
+                            value={registerForm.password}
+                            onChange={(e) =>
+                              setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
+                            }
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
+                          <input
+                            type="password"
+                            placeholder="Powtórz hasło"
+                            value={registerForm.confirmPassword}
+                            onChange={(e) =>
+                              setRegisterForm((prev) => ({
+                                ...prev,
+                                confirmPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Utwórz konto
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </section>
+
+              <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
+                  Sesja gracza
+                </div>
+
+                <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
+                <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+                  Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz na mapie startowej
+                  z poziomem 1, 0 EXP i początkową ilością pieniędzy.
+                </p>
+
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                    <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 250 PLN</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                    <p className="font-bold text-[#f9e7b2]">W grze</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Wyloguj w prawym górnym rogu</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Na górze: poziom, EXP i pieniądze</p>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <div className="w-full px-4 pt-20 md:px-8">
+              <div className="mx-auto max-w-6xl">
                 {message && (
                   <div
                     className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
@@ -390,209 +663,30 @@ export default function Page() {
                   </div>
                 )}
 
-                {!profile ? (
-                  <>
-                    <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
-                      <button
-                        onClick={() => setTab("login")}
-                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                          tab === "login"
-                            ? "bg-[#d4a64f] text-[#2b180c]"
-                            : "text-[#f1dfb5] hover:bg-white/5"
-                        }`}
-                      >
-                        Logowanie
-                      </button>
-                      <button
-                        onClick={() => setTab("register")}
-                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                          tab === "register"
-                            ? "bg-[#d4a64f] text-[#2b180c]"
-                            : "text-[#f1dfb5] hover:bg-white/5"
-                        }`}
-                      >
-                        Rejestracja
-                      </button>
-                    </div>
-
-                    {tab === "login" ? (
-                      <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold">Login lub email</label>
-                          <input
-                            type="text"
-                            placeholder="np. farmer123 lub gracz@plonopolis.pl"
-                            value={loginForm.identifier}
-                            onChange={(e) =>
-                              setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
-                            }
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold">Hasło</label>
-                          <input
-                            type="password"
-                            placeholder="Wpisz hasło"
-                            value={loginForm.password}
-                            onChange={(e) =>
-                              setLoginForm((prev) => ({ ...prev, password: e.target.value }))
-                            }
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                          />
-                        </div>
-
-                        <button
-                          type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                        >
-                          Zaloguj i wróć do gry
-                        </button>
-                      </form>
-                    ) : (
-                      <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold">Login</label>
-                          <input
-                            type="text"
-                            placeholder="Unikalny login"
-                            value={registerForm.login}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
-                            }
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold">Email</label>
-                          <input
-                            type="email"
-                            placeholder="twoj@email.pl"
-                            value={registerForm.email}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
-                            }
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                          />
-                        </div>
-
-                        <div className="grid gap-5 md:grid-cols-2">
-                          <div>
-                            <label className="mb-2 block text-sm font-semibold">Hasło</label>
-                            <input
-                              type="password"
-                              placeholder="Minimum 6 znaków"
-                              value={registerForm.password}
-                              onChange={(e) =>
-                                setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
-                              }
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
-                            <input
-                              type="password"
-                              placeholder="Powtórz hasło"
-                              value={registerForm.confirmPassword}
-                              onChange={(e) =>
-                                setRegisterForm((prev) => ({
-                                  ...prev,
-                                  confirmPassword: e.target.value,
-                                }))
-                              }
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                        >
-                          Utwórz konto
-                        </button>
-                      </form>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-6 text-[#f3e6c8]">
-                    <div className="rounded-3xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-5">
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Aktywna sesja</p>
-                      <p className="mt-2 text-3xl font-black">{profile.login}</p>
-                      <p className="mt-1 text-sm text-[#d8c39b]">{profile.email}</p>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom gospodarstwa</p>
-                        <p className="mt-2 text-3xl font-black">{displayLevel}</p>
-                      </div>
-
-                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                        <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Lokacja</p>
-                        <p className="mt-2 text-3xl font-black">{displayLocation}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <button className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105">
-                        Graj dalej
-                      </button>
-
+                <div className="flex min-h-[70vh] items-end justify-center md:justify-start">
+                  <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-5 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
+                    <h2 className="mt-2 text-3xl font-black text-[#f9e7b2]">{profile.login}</h2>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <button
                         onClick={handleSaveProgress}
+                        className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Zapisz postęp
+                      </button>
+                      <button
                         className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-4 py-3 font-bold text-[#f3e6c8] transition hover:bg-[rgba(40,25,14,0.85)]"
                       >
-                        Zapisz konto
-                      </button>
-
-                      <button
-                        onClick={handleLogout}
-                        className="rounded-2xl border border-red-400/40 bg-red-950/30 px-4 py-3 font-bold text-red-100 transition hover:bg-red-950/50"
-                      >
-                        Wyloguj
+                        Graj dalej
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            </section>
-
-            <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-              <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
-                Supabase
-              </div>
-
-              <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Jedno konto na wszystkich urządzeniach</h2>
-              <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                Ta wersja zapisuje konto w Supabase, więc możesz zalogować się na komputerze i telefonie na to samo konto.
-              </p>
-
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                  <p className="font-bold text-[#f9e7b2]">Wymagane pliki</p>
-                  <p className="mt-2 text-sm text-[#dfcfab]">1. app/page.tsx</p>
-                  <p className="mt-1 text-sm text-[#dfcfab]">2. lib/supabase.ts</p>
-                  <p className="mt-1 text-sm text-[#dfcfab]">3. .env.local</p>
-                  <p className="mt-1 text-sm text-[#dfcfab]">4. SQL z tabelą profiles</p>
-                </div>
-
-                <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                  <p className="font-bold text-[#f9e7b2]">Tło gry</p>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Obrazek trzymaj tutaj:
-                    <span className="ml-2 rounded bg-black/30 px-2 py-1 font-mono text-[#f5d57f]">
-                      /public/assetsmain-lobby.png
-                    </span>
-                  </p>
                 </div>
               </div>
-            </aside>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
