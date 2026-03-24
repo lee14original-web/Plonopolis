@@ -519,10 +519,10 @@ export default function Page() {
                   {tab === "login" ? (
                     <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
                       <div>
-                        <label className="mb-2 block text-sm font-semibold">Login lub email</label>
+                        <label className="mb-2 block text-sm font-semibold">Email</label>
                         <input
                           type="text"
-                          placeholder="np. zastral11 lub gracz@plonopolis.pl"
+                          placeholder="twoj@email.pl"
                           value={loginForm.identifier}
                           onChange={(e) =>
                             setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
