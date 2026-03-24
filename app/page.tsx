@@ -409,7 +409,7 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Postęp zapisany",
-      text: "Sesja gracza została zapisana w Supabase.",
+      text: "",
     });
   }
 
