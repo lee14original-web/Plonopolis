@@ -72,8 +72,6 @@ export default function Page() {
     let mounted = true;
 
     const bootstrap = async () => {
-  console.log("BOOTSTRAP START");
-
   try {
     const {
       data: { session },
@@ -81,15 +79,14 @@ export default function Page() {
 
     console.log("SESSION:", session);
 
-    if (session?.user) {
-      await loadProfile(session.user.id);
-    } else {
-      console.log("NO SESSION");
-    }
+    // ❌ WYŁĄCZ TO NA CHWILĘ
+    // if (session?.user) {
+    //   await loadProfile(session.user.id);
+    // }
+
   } catch (error) {
     console.error("BOOTSTRAP ERROR:", error);
   } finally {
-    console.log("SET READY TRUE");
     setReady(true);
   }
 };
