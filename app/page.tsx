@@ -72,25 +72,25 @@ export default function Page() {
     let mounted = true;
 
     const bootstrap = async () => {
+  console.log("BOOTSTRAP START");
+
   try {
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
-    if (session?.user && mounted) {
+    console.log("SESSION:", session);
+
+    if (session?.user) {
       await loadProfile(session.user.id);
+    } else {
+      console.log("NO SESSION");
     }
   } catch (error) {
     console.error("BOOTSTRAP ERROR:", error);
-    if (mounted) {
-      setMessage({
-        type: "error",
-        title: "Błąd połączenia",
-        text: "Nie udało się wczytać sesji gracza.",
-      });
-    }
   } finally {
-    if (mounted) setReady(true);
+    console.log("SET READY TRUE");
+    setReady(true);
   }
 };
 
@@ -115,29 +115,32 @@ export default function Page() {
   }, []);
 
   async function loadProfile(userId: string) {
+  console.log("LOAD PROFILE START");
+
   const { data, error } = await supabase
     .from("profiles")
-    .select(
-      "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at"
-    )
+    .select("*")
     .eq("id", userId)
     .single();
 
-  console.log("PROFILE DATA:", data);
-  console.log("PROFILE ERROR:", error);
+  console.log("DATA:", data);
+  console.log("ERROR:", error);
 
   if (error) {
+    console.error("PROFILE ERROR:", error);
     setMessage({
       type: "error",
       title: "Błąd profilu",
       text: error.message,
     });
+
+    // 🔥 KLUCZOWE
+    setProfile(null);
     return;
   }
 
   setProfile(data as Profile);
 }
-
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
