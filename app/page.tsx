@@ -115,25 +115,28 @@ export default function Page() {
   }, []);
 
   async function loadProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at"
-      )
-      .eq("id", userId)
-      .single();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(
+      "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at"
+    )
+    .eq("id", userId)
+    .single();
 
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd profilu",
-        text: error.message,
-      });
-      return;
-    }
+  console.log("PROFILE DATA:", data);
+  console.log("PROFILE ERROR:", error);
 
-    setProfile(data as Profile);
+  if (error) {
+    setMessage({
+      type: "error",
+      title: "Błąd profilu",
+      text: error.message,
+    });
+    return;
   }
+
+  setProfile(data as Profile);
+}
 
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
