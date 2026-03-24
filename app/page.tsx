@@ -13,6 +13,7 @@ export default function Page() {
     const bootstrap = async () => {
       try {
         setDebug("before getSession");
+
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -20,8 +21,29 @@ export default function Page() {
         if (!mounted) return;
 
         setDebug(`after getSession: ${session ? "session yes" : "session no"}`);
+
+        if (session?.user) {
+          setDebug("before profile query");
+
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("id, login, email")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (!mounted) return;
+
+          if (error) {
+            console.error("PROFILE ERROR:", error);
+            setDebug(`profile error: ${error.message}`);
+          } else if (!data) {
+            setDebug("profile not found");
+          } else {
+            setDebug(`profile ok: ${data.login}`);
+          }
+        }
       } catch (error) {
-        console.error(error);
+        console.error("BOOTSTRAP ERROR:", error);
         if (mounted) setDebug("bootstrap error");
       } finally {
         if (mounted) setReady(true);
