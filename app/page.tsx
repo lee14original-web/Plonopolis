@@ -635,7 +635,7 @@ export default function Page() {
           ) : (
             <div className="w-full px-4 pt-12 md:px-8">
   <div className="mx-auto max-w-6xl">
-    <div className="flex min-h-[45vh] items-start justify-start">
+    <div className="absolute left-4 top-16 z-20">
                   <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-5 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                     <h2 className="mt-2 text-3xl font-black text-[#f9e7b2]">{profile.login}</h2>
