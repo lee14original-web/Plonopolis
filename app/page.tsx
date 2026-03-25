@@ -23,12 +23,156 @@ type Message = {
   text: string;
 };
 
+type FarmPlot = {
+  id: number;
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+};
+
+type UnlockRule = {
+  level: number;
+  maxPlots: number;
+};
+
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
 const DEFAULT_XP_TO_NEXT_LEVEL = 100;
 const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
+
+const FARM_PLOTS: FarmPlot[] = [
+  { id: 1, left: "51%", top: "53%", width: "8.5%", height: "10%" },
+  { id: 2, left: "61%", top: "52%", width: "8.5%", height: "10%" },
+  { id: 3, left: "71%", top: "51%", width: "8.5%", height: "10%" },
+  { id: 4, left: "81%", top: "50%", width: "8.5%", height: "10%" },
+
+  { id: 5, left: "50%", top: "65%", width: "8.5%", height: "10%" },
+  { id: 6, left: "60%", top: "64%", width: "8.5%", height: "10%" },
+  { id: 7, left: "70%", top: "63%", width: "8.5%", height: "10%" },
+  { id: 8, left: "80%", top: "62%", width: "8.5%", height: "10%" },
+
+  { id: 9, left: "49%", top: "76%", width: "8.5%", height: "10%" },
+  { id: 10, left: "59%", top: "75%", width: "8.5%", height: "10%" },
+  { id: 11, left: "69%", top: "74%", width: "8.5%", height: "10%" },
+  { id: 12, left: "79%", top: "73%", width: "8.5%", height: "10%" },
+
+  { id: 13, left: "48%", top: "87%", width: "8.5%", height: "10%" },
+  { id: 14, left: "58%", top: "86%", width: "8.5%", height: "10%" },
+  { id: 15, left: "68%", top: "85%", width: "8.5%", height: "10%" },
+  { id: 16, left: "78%", top: "84%", width: "8.5%", height: "10%" },
+
+  { id: 17, left: "46%", top: "98%", width: "8.5%", height: "10%" },
+  { id: 18, left: "56%", top: "97%", width: "8.5%", height: "10%" },
+  { id: 19, left: "66%", top: "96%", width: "8.5%", height: "10%" },
+  { id: 20, left: "76%", top: "95%", width: "8.5%", height: "10%" },
+
+  { id: 21, left: "44%", top: "109%", width: "8.5%", height: "10%" },
+  { id: 22, left: "54%", top: "108%", width: "8.5%", height: "10%" },
+  { id: 23, left: "64%", top: "107%", width: "8.5%", height: "10%" },
+  { id: 24, left: "74%", top: "106%", width: "8.5%", height: "10%" },
+
+  { id: 25, left: "42%", top: "120%", width: "8.5%", height: "10%" },
+  { id: 26, left: "52%", top: "119%", width: "8.5%", height: "10%" },
+  { id: 27, left: "62%", top: "118%", width: "8.5%", height: "10%" },
+  { id: 28, left: "72%", top: "117%", width: "8.5%", height: "10%" },
+
+  { id: 29, left: "40%", top: "131%", width: "8.5%", height: "10%" },
+  { id: 30, left: "50%", top: "130%", width: "8.5%", height: "10%" },
+  { id: 31, left: "60%", top: "129%", width: "8.5%", height: "10%" },
+  { id: 32, left: "70%", top: "128%", width: "8.5%", height: "10%" },
+
+  { id: 33, left: "38%", top: "142%", width: "8.5%", height: "10%" },
+  { id: 34, left: "48%", top: "141%", width: "8.5%", height: "10%" },
+  { id: 35, left: "58%", top: "140%", width: "8.5%", height: "10%" },
+  { id: 36, left: "68%", top: "139%", width: "8.5%", height: "10%" },
+
+  { id: 37, left: "36%", top: "153%", width: "8.5%", height: "10%" },
+  { id: 38, left: "46%", top: "152%", width: "8.5%", height: "10%" },
+  { id: 39, left: "56%", top: "151%", width: "8.5%", height: "10%" },
+  { id: 40, left: "66%", top: "150%", width: "8.5%", height: "10%" },
+
+  { id: 41, left: "34%", top: "164%", width: "8.5%", height: "10%" },
+  { id: 42, left: "44%", top: "163%", width: "8.5%", height: "10%" },
+  { id: 43, left: "54%", top: "162%", width: "8.5%", height: "10%" },
+  { id: 44, left: "64%", top: "161%", width: "8.5%", height: "10%" },
+  { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
+];
+
+const PLOT_UNLOCK_COSTS: Record<number, number> = {
+  4: 120,
+  5: 140,
+  6: 160,
+  7: 180,
+  8: 210,
+  9: 240,
+  10: 280,
+  11: 320,
+  12: 370,
+  13: 420,
+  14: 490,
+  15: 560,
+  16: 640,
+  17: 740,
+  18: 850,
+  19: 980,
+  20: 1130,
+  21: 1290,
+  22: 1490,
+  23: 1710,
+  24: 1970,
+  25: 2260,
+  26: 2600,
+  27: 2990,
+  28: 3440,
+  29: 3960,
+  30: 4550,
+  31: 5230,
+  32: 6020,
+  33: 6920,
+  34: 7960,
+  35: 9150,
+  36: 10530,
+  37: 12110,
+  38: 13920,
+  39: 16010,
+  40: 18410,
+  41: 21170,
+  42: 24350,
+  43: 28000,
+  44: 32200,
+  45: 37030,
+};
+
+const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
+  { level: 1, maxPlots: 3 },
+  { level: 2, maxPlots: 4 },
+  { level: 3, maxPlots: 5 },
+  { level: 4, maxPlots: 6 },
+  { level: 5, maxPlots: 7 },
+  { level: 6, maxPlots: 8 },
+  { level: 7, maxPlots: 9 },
+  { level: 8, maxPlots: 10 },
+  { level: 9, maxPlots: 11 },
+  { level: 10, maxPlots: 12 },
+  { level: 11, maxPlots: 14 },
+  { level: 12, maxPlots: 16 },
+  { level: 13, maxPlots: 18 },
+  { level: 14, maxPlots: 20 },
+  { level: 15, maxPlots: 22 },
+  { level: 16, maxPlots: 24 },
+  { level: 17, maxPlots: 26 },
+  { level: 18, maxPlots: 28 },
+  { level: 19, maxPlots: 30 },
+  { level: 20, maxPlots: 32 },
+  { level: 21, maxPlots: 34 },
+  { level: 22, maxPlots: 36 },
+  { level: 23, maxPlots: 38 },
+  { level: 24, maxPlots: 40 },
+  { level: 25, maxPlots: 45 },
+];
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -47,6 +191,9 @@ export default function Page() {
     identifier: "",
     password: "",
   });
+
+  const [selectedPlotId, setSelectedPlotId] = useState<number | null>(null);
+  const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -67,6 +214,27 @@ export default function Page() {
       maximumFractionDigits: 0,
     }).format(displayMoney);
   }, [displayMoney]);
+
+  const selectedPlot = selectedPlotId
+    ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
+    : null;
+
+  function getMaxPlotsForLevel(level: number) {
+    let maxPlots = 3;
+
+    for (const rule of PLOT_LIMITS_BY_LEVEL) {
+      if (level >= rule.level) {
+        maxPlots = rule.maxPlots;
+      }
+    }
+
+    return maxPlots;
+  }
+
+  const maxPlotsForLevel = getMaxPlotsForLevel(displayLevel);
+  const nextPlotNumber = unlockedPlots + 1;
+  const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < FARM_PLOTS.length;
+  const nextPlotCost = PLOT_UNLOCK_COSTS[nextPlotNumber] ?? null;
 
   useEffect(() => {
     let mounted = true;
@@ -136,7 +304,14 @@ export default function Page() {
       return;
     }
 
-    setProfile(data as Profile);
+    const nextProfile = data as Profile;
+    setProfile(nextProfile);
+
+    const maxForCurrentLevel = getMaxPlotsForLevel(nextProfile.level ?? DEFAULT_LEVEL);
+    setUnlockedPlots((prev) => {
+      const safePrev = prev < 3 ? 3 : prev;
+      return Math.min(safePrev, maxForCurrentLevel);
+    });
   }
 
   function isEmailValid(email: string) {
@@ -273,6 +448,7 @@ export default function Page() {
       return;
     }
 
+    setUnlockedPlots(3);
     await loadProfile(userId);
 
     setRegisterForm({
@@ -286,7 +462,7 @@ export default function Page() {
     setMessage({
       type: "success",
       title: "Konto utworzone",
-      text: "Nowy gracz startuje na mapie początkowej.",
+      text: "Nowy gracz startuje z 3 darmowymi polami.",
     });
   }
 
@@ -306,8 +482,6 @@ export default function Page() {
       return;
     }
 
-    const emailToUse = identifier;
-
     if (!isEmailValid(identifier)) {
       setMessage({
         type: "error",
@@ -318,7 +492,7 @@ export default function Page() {
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: emailToUse,
+      email: identifier,
       password,
     });
 
@@ -350,6 +524,8 @@ export default function Page() {
   async function handleLogout() {
     await supabase.auth.signOut();
     setProfile(null);
+    setSelectedPlotId(null);
+    setUnlockedPlots(3);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -404,9 +580,60 @@ export default function Page() {
     });
   }
 
+  async function handleUnlockNextPlot() {
+    if (!profile) return;
+
+    if (!canUnlockMore || !nextPlotCost) {
+      setMessage({
+        type: "info",
+        title: "Brak odblokowania",
+        text: "Na tym poziomie nie możesz jeszcze odblokować kolejnego pola.",
+      });
+      return;
+    }
+
+    if (displayMoney < nextPlotCost) {
+      setMessage({
+        type: "error",
+        title: "Za mało pieniędzy",
+        text: `Potrzebujesz ${nextPlotCost} PLN, aby odblokować pole #${nextPlotNumber}.`,
+      });
+      return;
+    }
+
+    const newUnlockedPlots = unlockedPlots + 1;
+    const newMoney = displayMoney - nextPlotCost;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        money: newMoney,
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
+
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd odblokowania",
+        text: error.message,
+      });
+      return;
+    }
+
+    setUnlockedPlots(newUnlockedPlots);
+    await loadProfile(profile.id);
+
+    setMessage({
+      type: "success",
+      title: "Pole odblokowane",
+      text: `Odblokowano pole #${newUnlockedPlots}.`,
+    });
+  }
+
   if (!ready) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#1a130d] text-[#f3e6c8]">
+      <main className="flex h-screen items-center justify-center bg-[#1a130d] text-[#f3e6c8]">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-wide">Plonopolis</h1>
           <p className="mt-3 text-sm opacity-80">Ładowanie bramy do gospodarstwa...</p>
@@ -435,7 +662,7 @@ export default function Page() {
             </button>
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
-  <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                 <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
                   <div>
                     <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
@@ -613,49 +840,110 @@ export default function Page() {
 
                 <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
                 <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                  Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz na mapie startowej
-                  z poziomem 1, 0 EXP i początkową ilością pieniędzy.
+                  Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi polami,
+                  poziomem 1 i 10 PLN.
                 </p>
 
                 <div className="mt-6 space-y-4">
                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                     <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
                     <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 10 PLN</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
                     <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
                   </div>
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                    <p className="font-bold text-[#f9e7b2]">W grze</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Wyloguj w prawym górnym rogu</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Na górze: poziom, EXP i pieniądze</p>
+                    <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Kliknij podświetlone pole na mapie, aby otworzyć menu pola.</p>
                   </div>
                 </div>
               </aside>
             </div>
           ) : (
-            <div className="w-full px-4 pt-12 md:px-8">
-  <div className="mx-auto max-w-6xl">
-    <div className="absolute left-4 top-16 z-20">
-                  <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-5 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
-                    <h2 className="mt-2 text-3xl font-black text-[#f9e7b2]">{profile.login}</h2>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <button
-                        onClick={handleSaveProgress}
-                        className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                      >
-                        Zapisz postęp
-                      </button>
-                      <button
-                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-4 py-3 font-bold text-[#f3e6c8] transition hover:bg-[rgba(40,25,14,0.85)]"
-                      >
-                        Graj dalej
-                      </button>
-                    </div>
+            <div className="relative h-full w-full px-4 pt-8 md:px-8">
+              <div className="absolute left-4 top-16 z-20">
+                <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
+                  <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
+                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">
+                    Pola: {unlockedPlots} / {maxPlotsForLevel}
+                  </p>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={handleSaveProgress}
+                      className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
+                    >
+                      Zapisz
+                    </button>
+
+                    <button
+                      className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]"
+                    >
+                      Graj
+                    </button>
+                  </div>
+
+                  <div className="mt-3">
+                    <button
+                      onClick={handleUnlockNextPlot}
+                      disabled={!canUnlockMore || !nextPlotCost}
+                      className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {canUnlockMore && nextPlotCost
+                        ? `Odblokuj pole #${nextPlotNumber} za ${nextPlotCost} PLN`
+                        : "Osiągnięto limit pól na tym poziomie"}
+                    </button>
                   </div>
                 </div>
+              </div>
+
+              {selectedPlot && (
+                <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                  <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
+                  <p className="mt-2 text-sm text-[#dfcfab]">
+                    Tutaj później dodamy sadzenie, podlewanie i zbiór.
+                  </p>
+
+                  <div className="mt-4 grid gap-2">
+                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
+                      Posiej
+                    </button>
+                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
+                      Podlej
+                    </button>
+                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
+                      Zbierz
+                    </button>
+                    <button
+                      onClick={() => setSelectedPlotId(null)}
+                      className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100"
+                    >
+                      Zamknij
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pointer-events-none absolute inset-0 z-10">
+                {FARM_PLOTS.slice(0, unlockedPlots).map((plot) => (
+                  <button
+                    key={plot.id}
+                    type="button"
+                    onClick={() => setSelectedPlotId(plot.id)}
+                    className="pointer-events-auto absolute rounded-xl border-2 border-yellow-300/70 bg-yellow-200/10 transition hover:bg-yellow-200/20"
+                    style={{
+                      left: plot.left,
+                      top: plot.top,
+                      width: plot.width,
+                      height: plot.height,
+                    }}
+                    title={`Pole ${plot.id}`}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -664,7 +952,7 @@ export default function Page() {
         {message && (
           <div className="fixed bottom-4 left-4 z-50">
             <div
-              className={`rounded-2xl px-4 py-3 text-sm shadow-2xl backdrop-blur-sm border ${
+              className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
                 message.type === "error"
                   ? "border-red-400/40 bg-red-950/80 text-red-100"
                   : message.type === "success"
