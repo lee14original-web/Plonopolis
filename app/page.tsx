@@ -424,7 +424,7 @@ export default function Page() {
           : "url('/assetsmain-lobby.png')",
       }}
     >
-      <div className="min-h-screen bg-black/40">
+      <div className="min-h-screen">
         {profile && (
           <>
             <button
