@@ -102,15 +102,16 @@ export default function Page() {
       mounted = false;
     };
   }, []);
+
   useEffect(() => {
-  if (!message) return;
+    if (!message) return;
 
-  const timer = setTimeout(() => {
-    setMessage(null);
-  }, 3000);
+    const timer = setTimeout(() => {
+      setMessage(null);
+    }, 3000);
 
-  return () => clearTimeout(timer);
-}, [message]);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
@@ -300,30 +301,20 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Brak danych",
-        text: "Podaj login lub email oraz hasło.",
+        text: "Podaj email oraz hasło.",
       });
       return;
     }
 
-    let emailToUse = identifier;
+    const emailToUse = identifier;
 
     if (!isEmailValid(identifier)) {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("email")
-        .ilike("login", identifier)
-        .maybeSingle();
-
-      if (error || !data?.email) {
-        setMessage({
-          type: "error",
-          title: "Nie znaleziono konta",
-          text: "Nie istnieje konto z takim loginem. Spróbuj zalogować się emailem.",
-        });
-        return;
-      }
-
-      emailToUse = data.email;
+      setMessage({
+        type: "error",
+        title: "Nieprawidłowy email",
+        text: "Zaloguj się używając adresu email.",
+      });
+      return;
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -487,21 +478,6 @@ export default function Page() {
                 </div>
 
                 <div className="p-6 md:p-8">
-                  {message && (
-                    <div
-  className={`fixed bottom-4 left-4 z-50 max-w-sm rounded-2xl border px-4 py-3 text-sm shadow-2xl ${
-    message.type === "error"
-      ? "border-red-400/40 bg-red-950/90 text-red-100"
-      : message.type === "success"
-      ? "border-emerald-400/40 bg-emerald-950/90 text-emerald-100"
-      : "border-sky-400/40 bg-sky-950/90 text-sky-100"
-  }`}
-                    >
-                      <p className="font-semibold">{message.title}</p>
-                      <p className="mt-1 opacity-90">{message.text}</p>
-                    </div>
-                  )}
-
                   <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                     <button
                       onClick={() => setTab("login")}
@@ -657,27 +633,8 @@ export default function Page() {
               </aside>
             </div>
           ) : (
-      {message && (
             <div className="w-full px-4 pt-20 md:px-8">
               <div className="mx-auto max-w-6xl">
-                {message && (
-                  <div
-                    <div className="fixed bottom-4 left-4 z-50">
-                      <div
-      className={`rounded-2xl px-4 py-3 text-sm shadow-2xl backdrop-blur-sm border ${
-        message.type === "error"
-          ? "border-red-400/40 bg-red-950/80 text-red-100"
-          : message.type === "success"
-          ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-          : "border-sky-400/40 bg-sky-950/80 text-sky-100"
-      }`}
-    >
-      <p className="font-semibold">{message.title}</p>
-      {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
-    </div>
-  </div>
-)}
-
                 <div className="flex min-h-[70vh] items-end justify-center md:justify-start">
                   <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-5 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
@@ -703,6 +660,23 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {message && (
+          <div className="fixed bottom-4 left-4 z-50">
+            <div
+              className={`rounded-2xl px-4 py-3 text-sm shadow-2xl backdrop-blur-sm border ${
+                message.type === "error"
+                  ? "border-red-400/40 bg-red-950/80 text-red-100"
+                  : message.type === "success"
+                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+                  : "border-sky-400/40 bg-sky-950/80 text-sky-100"
+              }`}
+            >
+              <p className="font-semibold">{message.title}</p>
+              {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
