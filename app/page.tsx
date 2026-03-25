@@ -434,8 +434,8 @@ export default function Page() {
               Wyloguj
             </button>
 
-            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-4">
-              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-3 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+  <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                 <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
                   <div>
                     <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
