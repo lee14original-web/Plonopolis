@@ -657,22 +657,26 @@ export default function Page() {
               </aside>
             </div>
           ) : (
+      {message && (
             <div className="w-full px-4 pt-20 md:px-8">
               <div className="mx-auto max-w-6xl">
                 {message && (
                   <div
-                    className={`mb-6 rounded-2xl border px-4 py-3 text-sm ${
-                      message.type === "error"
-                        ? "border-red-400/40 bg-red-950/40 text-red-100"
-                        : message.type === "success"
-                        ? "border-emerald-400/40 bg-emerald-950/40 text-emerald-100"
-                        : "border-sky-400/40 bg-sky-950/40 text-sky-100"
-                    }`}
-                  >
-                    <p className="font-semibold">{message.title}</p>
-                    <p className="mt-1 opacity-90">{message.text}</p>
-                  </div>
-                )}
+                    <div className="fixed bottom-4 left-4 z-50">
+                      <div
+      className={`rounded-2xl px-4 py-3 text-sm shadow-2xl backdrop-blur-sm border ${
+        message.type === "error"
+          ? "border-red-400/40 bg-red-950/80 text-red-100"
+          : message.type === "success"
+          ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+          : "border-sky-400/40 bg-sky-950/80 text-sky-100"
+      }`}
+    >
+      <p className="font-semibold">{message.title}</p>
+      {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+    </div>
+  </div>
+)}
 
                 <div className="flex min-h-[70vh] items-end justify-center md:justify-start">
                   <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-5 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
