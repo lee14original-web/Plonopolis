@@ -1014,14 +1014,15 @@ export default function Page() {
               </div>
 
               <button
+  <button
   type="button"
   onClick={() => setIsFieldViewOpen(true)}
   className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
   style={{
-    left: "50%",
-    bottom: "12px",
-    width: "30%",
-    height: "95px",
+    left: "55%",
+    bottom: "105px",
+    width: "24%",
+    height: "64px",
   }}
 >
   <div className="relative flex h-full w-full items-center justify-center rounded-xl">
