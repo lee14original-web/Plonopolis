@@ -444,7 +444,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Hasło jest za krótkie",
-        text: "Hasło powinno mieć minimum 6 znaków.",
+        text: "Hasło powinien mieć minimum 6 znaków.",
       });
       return;
     }
@@ -1016,15 +1016,25 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => setIsFieldViewOpen(true)}
-                className="absolute z-10 rounded-2xl border-2 border-yellow-300/60 bg-yellow-200/10 transition hover:bg-yellow-200/20"
+                className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                 style={{
-                  left: "35%",
-                  top: "68%",
-                  width: "58%",
-                  height: "26%",
+                  left: "48%",
+                  top: "63%",
+                  width: "40%",
+                  height: "18%",
                 }}
-                title="Wejdź na pole"
-              />
+                title="Pola uprawne"
+              >
+                <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                  <div className="absolute inset-0 rounded-xl border-4 border-red-600 bg-red-500/20" />
+                  <div className="absolute inset-0 rounded-xl bg-yellow-400/20 opacity-70 blur-xl animate-pulse" />
+                  <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                  <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                  <span className="relative text-[clamp(1.5rem,2vw,3rem)] drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                    Pola uprawne
+                  </span>
+                </div>
+              </button>
 
               {selectedPlot && (
                 <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
@@ -1076,8 +1086,8 @@ export default function Page() {
         </div>
 
         {isFieldViewOpen && (
-  <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-3 py-3">
-    <div className="relative w-full max-w-7xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
+            <div className="relative w-full max-w-[1500px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
                 onClick={() => setIsFieldViewOpen(false)}
                 className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
@@ -1098,7 +1108,7 @@ export default function Page() {
                 <img
                   src="/farm-field-view.png"
                   alt="Widok pola 25 slotów"
-                  className="max-h-[82vh] w-full object-contain"
+                  className="max-h-[88vh] w-full object-contain"
                 />
               </div>
 
