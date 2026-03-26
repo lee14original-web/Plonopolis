@@ -1019,8 +1019,8 @@ export default function Page() {
                   onClick={() => setIsFieldViewOpen(true)}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
-                    left: "55%",
-                    bottom: "150px",
+                    left: "25%",
+                    bottom: "250px",
                     width: "24%",
                     height: "64px",
                   }}
