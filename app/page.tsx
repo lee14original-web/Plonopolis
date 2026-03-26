@@ -218,6 +218,41 @@ function getMapForLevel(level: number | null | undefined) {
 
   return "farm1";
 }
+function getFarmUpgradeMessage(level: number): Message | null {
+  if (level === 5) {
+    return {
+      type: "success",
+      title: "Farma ulepszona!",
+      text: "Twoje gospodarstwo rozrosło się! Odblokowano nowy wygląd farmy.",
+    };
+  }
+
+  if (level === 10) {
+    return {
+      type: "success",
+      title: "Nowy poziom farmy!",
+      text: "Twoja farma wygląda teraz jeszcze lepiej. Kolejne ulepszenia przed Tobą!",
+    };
+  }
+
+  if (level === 15) {
+    return {
+      type: "success",
+      title: "Rozbudowa farmy!",
+      text: "Twoje gospodarstwo staje się coraz większe i bardziej zaawansowane.",
+    };
+  }
+
+  if (level === 20) {
+    return {
+      type: "success",
+      title: "Zaawansowana farma!",
+      text: "Twoja farma osiągnęła nowy poziom rozwoju!",
+    };
+  }
+
+  return null;
+}
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
