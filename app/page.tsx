@@ -444,7 +444,7 @@ export default function Page() {
       xp_to_next_level: DEFAULT_XP_TO_NEXT_LEVEL,
       money: DEFAULT_MONEY,
       location: DEFAULT_LOCATION,
-      current_map: DEFAULT_MAP,
+      current_map: getMapForLevel(DEFAULT_LEVEL),
       last_played_at: new Date().toISOString(),
     });
 
