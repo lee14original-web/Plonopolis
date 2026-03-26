@@ -1019,9 +1019,9 @@ export default function Page() {
                 className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                 style={{
                   left: "48%",
-                  top: "63%",
-                  width: "40%",
-                  height: "18%",
+                  top: "74%",
+                  width: "31%",
+                  height: "12%",
                 }}
                 title="Pola uprawne"
               >
