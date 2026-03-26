@@ -655,10 +655,10 @@ export default function Page() {
     <main
       className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: profile
-          ? "url('/farm1.png')"
-          : "url('/assetsmain-lobby.png')",
-      }}
+  backgroundImage: profile
+    ? `url('/${currentMap}.png')`
+    : "url('/assetsmain-lobby.png')",
+}}
     >
       <div className="min-h-screen">
         {profile && (
