@@ -444,7 +444,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Hasło jest za krótkie",
-        text: "Hasło powinien mieć minimum 6 znaków.",
+        text: "Hasło powinno mieć minimum 6 znaków.",
       });
       return;
     }
@@ -1013,27 +1013,29 @@ export default function Page() {
                 </div>
               </div>
 
-              <button
-  <button
-  type="button"
-  onClick={() => setIsFieldViewOpen(true)}
-  className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-  style={{
-    left: "55%",
-    bottom: "90px",
-    width: "24%",
-    height: "64px",
-  }}
->
-  <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-    <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
-    <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
-    <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-      Pola uprawne
-    </span>
-  </div>
-</button>
+              <div className="absolute inset-0 z-20 pointer-events-none">
+                <button
+                  type="button"
+                  onClick={() => setIsFieldViewOpen(true)}
+                  className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                  style={{
+                    left: "55%",
+                    bottom: "105px",
+                    width: "24%",
+                    height: "64px",
+                  }}
+                >
+                  <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                    <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
+                    <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                    <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                      Pola uprawne
+                    </span>
+                  </div>
+                </button>
+              </div>
+
               {selectedPlot && (
                 <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
