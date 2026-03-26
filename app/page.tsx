@@ -558,18 +558,20 @@ export default function Page() {
       nextMoney += 100;
     }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        level: nextLevel,
-        xp: nextXpStored,
-        xp_to_next_level: nextXpToNextLevel,
-        money: nextMoney,
-        location: displayLocation,
-        current_map: currentMap,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+    const nextMap = getMapForLevel(nextLevel);
+
+const { error } = await supabase
+  .from("profiles")
+  .update({
+    level: nextLevel,
+    xp: nextXpStored,
+    xp_to_next_level: nextXpToNextLevel,
+    money: nextMoney,
+    location: displayLocation,
+    current_map: nextMap,
+    last_played_at: new Date().toISOString(),
+  })
+  .eq("id", profile.id);
 
     if (error) {
       setMessage({
