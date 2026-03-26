@@ -619,12 +619,21 @@ const { error } = await supabase
 
     await loadProfile(profile.id);
 
-    setMessage({
-      type: "success",
-      title: "Postęp zapisany",
-      text: "",
-    });
+// 🔥 SPRAWDZAMY LEVEL UP
+if (nextLevel > displayLevel) {
+  const upgradeMessage = getFarmUpgradeMessage(nextLevel);
+
+  if (upgradeMessage) {
+    setMessage(upgradeMessage);
+    return;
   }
+}
+
+setMessage({
+  type: "success",
+  title: "Postęp zapisany",
+  text: "",
+});
 
   async function handleUnlockNextPlot() {
     if (!profile) return;
