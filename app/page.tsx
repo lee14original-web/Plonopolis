@@ -1098,7 +1098,7 @@ export default function Page() {
                 <img
                   src="/farm-field-view.png"
                   alt="Widok pola 25 slotów"
-                  className="h-auto w-full object-contain"
+                  className="max-h-[82vh] w-full object-contain"
                 />
               </div>
 
