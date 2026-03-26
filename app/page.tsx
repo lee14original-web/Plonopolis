@@ -692,7 +692,7 @@ export default function Page() {
           </>
         )}
 
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-center px-4 py-4">
+        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
           {!profile ? (
             <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
