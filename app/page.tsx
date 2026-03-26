@@ -254,6 +254,7 @@ export default function Page() {
 
   const [selectedPlotId, setSelectedPlotId] = useState<number | null>(null);
   const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
+  const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -630,6 +631,7 @@ export default function Page() {
     setSelectedPlotId(null);
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
+    setIsFieldViewOpen(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1011,6 +1013,19 @@ export default function Page() {
                 </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setIsFieldViewOpen(true)}
+                className="absolute z-10 rounded-2xl border-2 border-yellow-300/60 bg-yellow-200/10 transition hover:bg-yellow-200/20"
+                style={{
+                  left: "35%",
+                  top: "68%",
+                  width: "58%",
+                  height: "26%",
+                }}
+                title="Wejdź na pole"
+              />
+
               {selectedPlot && (
                 <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
@@ -1059,6 +1074,45 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {isFieldViewOpen && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6">
+            <div className="relative w-full max-w-5xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-4 shadow-2xl backdrop-blur-sm">
+              <button
+                onClick={() => setIsFieldViewOpen(false)}
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                aria-label="Zamknij widok pola"
+              >
+                ×
+              </button>
+
+              <div className="mb-4 pr-14">
+                <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
+                <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
+                <p className="mt-2 text-sm text-[#dfcfab]">
+                  Tutaj później dodamy sadzenie, podlewanie i zbiór na siatce 25 pól.
+                </p>
+              </div>
+
+              <div className="overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                <img
+                  src="/farm-field-view.png"
+                  alt="Widok pola 25 slotów"
+                  className="h-auto w-full object-contain"
+                />
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setIsFieldViewOpen(false)}
+                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                >
+                  Powrót do farmy
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {farmUpgradeModal && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
