@@ -109,9 +109,6 @@ const FARM_PLOTS: FarmPlot[] = [
   { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
 ];
 
-
-const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
-
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
   4: 120,
   5: 140,
@@ -236,6 +233,16 @@ function getMapForLevel(level: number | null | undefined) {
   return DEFAULT_MAP;
 }
 
+function getRequiredLevelForPlot(plotNumber: number) {
+  for (const rule of PLOT_LIMITS_BY_LEVEL) {
+    if (plotNumber <= rule.maxPlots) {
+      return rule.level;
+    }
+  }
+
+  return PLOT_LIMITS_BY_LEVEL[PLOT_LIMITS_BY_LEVEL.length - 1]?.level ?? DEFAULT_LEVEL;
+}
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -279,10 +286,6 @@ export default function Page() {
     }).format(displayMoney);
   }, [displayMoney]);
 
-  const selectedPlot = selectedPlotId
-    ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
-    : null;
-
   function getMaxPlotsForLevel(level: number) {
     let maxPlots = 3;
 
@@ -324,6 +327,9 @@ export default function Page() {
   const nextPlotNumber = unlockedPlots + 1;
   const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < FARM_PLOTS.length;
   const nextPlotCost = PLOT_UNLOCK_COSTS[nextPlotNumber] ?? null;
+  const selectedFieldPlotNumber = selectedPlotId ?? Math.min(unlockedPlots, 1);
+  const selectedFieldPlotRequiredLevel = getRequiredLevelForPlot(selectedFieldPlotNumber);
+  const selectedFieldPlotUnlocked = selectedFieldPlotNumber <= unlockedPlots;
 
   useEffect(() => {
     let mounted = true;
@@ -447,7 +453,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Hasło jest za krótkie",
-        text: "Hasło powinno mieć minimum 6 znaków.",
+        text: "Hasło powinien mieć minimum 6 znaków.",
       });
       return;
     }
@@ -978,7 +984,7 @@ export default function Page() {
               </aside>
             </div>
           ) : (
-            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
+            <div className="relative h-full w-full px-4 pt-8 md:px-8">
               <div className="absolute left-4 top-16 z-20">
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
@@ -1002,44 +1008,49 @@ export default function Page() {
                     </button>
                   </div>
 
-                  <div className="mt-3">
-                    <button
-                      onClick={handleUnlockNextPlot}
-                      disabled={!canUnlockMore || !nextPlotCost}
-                      className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {canUnlockMore && nextPlotCost
-                        ? `Odblokuj pole #${nextPlotNumber} za ${nextPlotCost} PLN`
-                        : "Osiągnięto limit pól na tym poziomie"}
-                    </button>
-                  </div>
                 </div>
               </div>
 
-              <div className="absolute inset-0 z-20 pointer-events-none">
-                <button
-                  type="button"
-                  onClick={() => setIsFieldViewOpen(true)}
-                  className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                  style={{
-                    left: "55%",
-                    bottom: "240px",
-                    width: "45%",
-                    height: "150px",
-                  }}
-                >
-                  <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                    <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
-                    <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
-                    <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-                      Pola uprawne
-                    </span>
-                  </div>
-                </button>
+              <button
+                type="button"
+                onClick={() => setIsFieldViewOpen(true)}
+                className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                style={{
+                  left: "48%",
+                  top: "63%",
+                  width: "40%",
+                  height: "18%",
+                }}
+                title="Pola uprawne"
+              >
+                <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                  <div className="absolute inset-0 rounded-xl border-4 border-red-600 bg-red-500/20" />
+                  <div className="absolute inset-0 rounded-xl bg-yellow-400/20 opacity-70 blur-xl animate-pulse" />
+                  <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                  <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                  <span className="relative text-[clamp(1.5rem,2vw,3rem)] drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                    Pola uprawne
+                  </span>
+                </div>
+              </button>
+
+              <div className="pointer-events-none absolute inset-0 z-10">
+                {FARM_PLOTS.slice(0, unlockedPlots).map((plot) => (
+                  <button
+                    key={plot.id}
+                    type="button"
+                    onClick={() => setSelectedPlotId(plot.id)}
+                    className="pointer-events-auto absolute rounded-xl border-2 border-yellow-300/70 bg-yellow-200/10 transition hover:bg-yellow-200/20"
+                    style={{
+                      left: plot.left,
+                      top: plot.top,
+                      width: plot.width,
+                      height: plot.height,
+                    }}
+                    title={`Pole ${plot.id}`}
+                  />
+                ))}
               </div>
-
-
             </div>
           )}
         </div>
@@ -1048,11 +1059,8 @@ export default function Page() {
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
             <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
-                onClick={() => {
-                  setIsFieldViewOpen(false);
-                  setSelectedPlotId(null);
-                }}
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                onClick={() => setIsFieldViewOpen(false)}
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                 aria-label="Zamknij widok pola"
               >
                 ×
@@ -1062,76 +1070,68 @@ export default function Page() {
                 <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                 <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                 <p className="mt-2 text-sm text-[#dfcfab]">
-                  Kliknij pole w siatce 5 × 5, aby otworzyć menu pola.
+                  Kliknij wybrane pole na siatce. Zablokowane pola pokazują wymagany poziom.
                 </p>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
-                  <div className="relative mx-auto aspect-[1536/1092] w-full">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative">
                     <img
                       src="/farm-field-view.png"
                       alt="Widok pola 25 slotów"
-                      className="h-full w-full object-contain"
+                      className="max-h-[88vh] w-full object-contain"
                     />
 
-                    <div
-                      className="absolute"
-                      style={{
-                        left: "9.2%",
-                        top: "7.8%",
-                        width: "81.6%",
-                        height: "82.2%",
-                        display: "grid",
-                        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-                        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
-                        columnGap: "3.1%",
-                        rowGap: "4.2%",
-                      }}
-                    >
-                      {FIELD_VIEW_PLOTS.map((plotId) => {
-                        const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
-                        const isSelected = selectedPlotId === plotId;
+                    <div className="absolute left-[9%] top-[8.5%] grid h-[80%] w-[82%] grid-cols-5 gap-x-[3%] gap-y-[4%]">
+                      {FIELD_VIEW_PLOTS.map((plotNumber) => {
+                        const isUnlocked = plotNumber <= unlockedPlots;
+                        const requiredLevel = getRequiredLevelForPlot(plotNumber);
+                        const isSelected = selectedPlotId === plotNumber;
 
                         return (
                           <button
-                            key={plotId}
+                            key={plotNumber}
                             type="button"
+                            onClick={() => {
+                              if (isUnlocked) {
+                                setSelectedPlotId(plotNumber);
+                              }
+                            }}
                             disabled={!isUnlocked}
-                            onClick={() => setSelectedPlotId(plotId)}
-                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
-                            className={`relative rounded-xl transition-all duration-300 ${
+                            className={`relative rounded-xl border-2 transition-all duration-200 ${
                               isUnlocked
-                                ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
-                                : "cursor-not-allowed opacity-65"
-                            }`}
+                                ? isSelected
+                                  ? "border-[#f4cf78] bg-yellow-200/20 shadow-[0_0_25px_rgba(245,222,139,0.35)]"
+                                  : "border-yellow-300/55 bg-yellow-200/10 hover:scale-[1.03] hover:bg-yellow-200/18 hover:shadow-[0_0_18px_rgba(245,222,139,0.25)]"
+                                : "border-red-300/35 bg-black/20 opacity-95"
+                            } ${!isUnlocked ? "cursor-not-allowed" : ""}`}
+                            title={
+                              isUnlocked
+                                ? `Pole ${plotNumber}`
+                                : `Pole ${plotNumber} wymaga poziomu ${requiredLevel}`
+                            }
                           >
-                            {isUnlocked ? (
-                              <>
-                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                                  isSelected
-                                    ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
-                                    : "bg-yellow-300/8"
-                                }`} />
-                                <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
-                                  isSelected
-                                    ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
-                                    : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
-                                }`} />
-                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
-                                <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
-                                  {plotId}
+                            <div className="absolute inset-0 rounded-xl bg-black/10" />
+                            <div className="relative flex h-full w-full flex-col items-center justify-center px-2 text-center">
+                              <span className="text-lg font-black text-white drop-shadow">
+                                {plotNumber}
+                              </span>
+                              {isUnlocked ? (
+                                <span className="mt-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#f5dfb0]">
+                                  {isSelected ? "Wybrane" : "Aktywne"}
                                 </span>
-                              </>
-                            ) : (
-                              <>
-                                <div className="absolute inset-0 rounded-xl bg-black/35" />
-                                <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
-                                  Locked
-                                </span>
-                              </>
-                            )}
+                              ) : (
+                                <>
+                                  <span className="mt-1 text-[11px] font-black uppercase tracking-[0.15em] text-red-100">
+                                    Locked
+                                  </span>
+                                  <span className="mt-1 text-[10px] font-semibold text-[#f5dfb0]">
+                                    Wymaga: poziom {requiredLevel}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </button>
                         );
                       })}
@@ -1139,63 +1139,55 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
-                  {selectedPlot ? (
-                    <>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
-                      <p className="mt-2 text-sm text-[#dfcfab]">
-                        Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola.
-                      </p>
+                <aside className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(20,12,8,0.72)] p-4 text-[#f3e6c8] shadow-2xl">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                  <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">
+                    Pole #{selectedFieldPlotNumber}
+                  </h3>
+                  <p className="mt-2 text-sm text-[#dfcfab]">
+                    {selectedFieldPlotUnlocked
+                      ? "Tutaj później dodamy sadzenie, podlewanie i zbiór."
+                      : `To pole jest jeszcze zablokowane. Wymagany poziom: ${selectedFieldPlotRequiredLevel}.`}
+                  </p>
 
-                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Status: gotowe na dalszy system upraw.
-                      </div>
-
-                      <div className="mt-4 grid gap-2">
-                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
-                          Posiej
-                        </button>
-                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
-                          Podlej
-                        </button>
-                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
-                          Zbierz
-                        </button>
-                        <button
-                          onClick={() => setSelectedPlotId(null)}
-                          className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
-                        >
-                          Zamknij menu pola
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Wybierz pole</h3>
-                      <p className="mt-2 text-sm text-[#dfcfab]">
-                        Kliknij jedno z odblokowanych pól w siatce 5 × 5, aby otworzyć jego menu.
-                      </p>
-
-                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Odblokowane pola: {Math.min(unlockedPlots, 25)} / 25
-                      </div>
-                    </>
-                  )}
-
-                  <div className="mt-6 flex justify-end">
+                  <div className="mt-4 grid gap-2">
                     <button
-                      onClick={() => {
-                        setIsFieldViewOpen(false);
-                        setSelectedPlotId(null);
-                      }}
-                      className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      disabled={!selectedFieldPlotUnlocked}
+                      className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Posiej
+                    </button>
+                    <button
+                      disabled={!selectedFieldPlotUnlocked}
+                      className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Podlej
+                    </button>
+                    <button
+                      disabled={!selectedFieldPlotUnlocked}
+                      className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Zbierz
+                    </button>
+
+                    <button
+                      onClick={handleUnlockNextPlot}
+                      disabled={!canUnlockMore || !nextPlotCost}
+                      className="mt-2 w-full rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {canUnlockMore && nextPlotCost
+                        ? `Odblokuj pole #${nextPlotNumber} za ${nextPlotCost} PLN`
+                        : "Osiągnięto limit pól na tym poziomie"}
+                    </button>
+
+                    <button
+                      onClick={() => setIsFieldViewOpen(false)}
+                      className="mt-2 rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100"
                     >
                       Powrót do farmy
                     </button>
                   </div>
-                </div>
+                </aside>
               </div>
             </div>
           </div>
