@@ -23,6 +23,12 @@ type Message = {
   text: string;
 };
 
+type FarmUpgradeModal = {
+  level: number;
+  title: string;
+  text: string;
+};
+
 type FarmPlot = {
   id: number;
   left: string;
@@ -42,6 +48,8 @@ const DEFAULT_XP_TO_NEXT_LEVEL = 100;
 const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
+
+const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
 const FARM_PLOTS: FarmPlot[] = [
   { id: 1, left: "51%", top: "53%", width: "8.5%", height: "10%" },
@@ -174,10 +182,14 @@ const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
   { level: 25, maxPlots: 45 },
 ];
 
-function getFarmUpgradeMessage(level: number): Message | null {
+function getFarmUpgradeStorageKey(userId: string, level: number) {
+  return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
+}
+
+function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   if (level === 5) {
     return {
-      type: "success",
+      level,
       title: "Farma ulepszona!",
       text: "Twoje gospodarstwo rozrosło się! Odblokowano nowy wygląd farmy.",
     };
@@ -185,7 +197,7 @@ function getFarmUpgradeMessage(level: number): Message | null {
 
   if (level === 10) {
     return {
-      type: "success",
+      level,
       title: "Nowy poziom farmy!",
       text: "Twoja farma wygląda teraz jeszcze lepiej. Kolejne ulepszenia przed Tobą!",
     };
@@ -193,7 +205,7 @@ function getFarmUpgradeMessage(level: number): Message | null {
 
   if (level === 15) {
     return {
-      type: "success",
+      level,
       title: "Rozbudowa farmy!",
       text: "Twoje gospodarstwo staje się coraz większe i bardziej zaawansowane.",
     };
@@ -201,7 +213,7 @@ function getFarmUpgradeMessage(level: number): Message | null {
 
   if (level === 20) {
     return {
-      type: "success",
+      level,
       title: "Zaawansowana farma!",
       text: "Twoja farma osiągnęła nowy poziom rozwoju!",
     };
@@ -218,13 +230,14 @@ function getMapForLevel(level: number | null | undefined) {
   if (safeLevel >= 10) return "farm10";
   if (safeLevel >= 5) return "farm5";
 
-  return "farm1";
+  return DEFAULT_MAP;
 }
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  const [farmUpgradeModal, setFarmUpgradeModal] = useState<FarmUpgradeModal | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
@@ -276,6 +289,31 @@ export default function Page() {
     }
 
     return maxPlots;
+  }
+
+  function showFarmUpgradeModalOnce(userId: string, level: number) {
+    if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
+
+    const modalData = getFarmUpgradeMessage(level);
+    if (!modalData) return;
+
+    if (typeof window === "undefined") return;
+
+    const storageKey = getFarmUpgradeStorageKey(userId, level);
+    const alreadySeen = window.localStorage.getItem(storageKey);
+
+    if (alreadySeen === "1") return;
+
+    setFarmUpgradeModal(modalData);
+  }
+
+  function closeFarmUpgradeModal() {
+    if (typeof window !== "undefined" && profile && farmUpgradeModal) {
+      const storageKey = getFarmUpgradeStorageKey(profile.id, farmUpgradeModal.level);
+      window.localStorage.setItem(storageKey, "1");
+    }
+
+    setFarmUpgradeModal(null);
   }
 
   const maxPlotsForLevel = getMaxPlotsForLevel(displayLevel);
@@ -591,6 +629,7 @@ export default function Page() {
     setProfile(null);
     setSelectedPlotId(null);
     setUnlockedPlots(3);
+    setFarmUpgradeModal(null);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -642,12 +681,7 @@ export default function Page() {
     await loadProfile(profile.id);
 
     if (nextLevel > oldLevel) {
-      const upgradeMessage = getFarmUpgradeMessage(nextLevel);
-
-      if (upgradeMessage) {
-        setMessage(upgradeMessage);
-        return;
-      }
+      showFarmUpgradeModalOnce(profile.id, nextLevel);
     }
 
     setMessage({
@@ -1025,6 +1059,44 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {farmUpgradeModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
+            <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+              <button
+                onClick={closeFarmUpgradeModal}
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
+                aria-label="Zamknij komunikat ulepszenia farmy"
+              >
+                ×
+              </button>
+
+              <div className="pr-12">
+                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">
+                  Ulepszenie farmy
+                </p>
+                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">
+                  {farmUpgradeModal.title}
+                </h2>
+                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                  {farmUpgradeModal.text}
+                </p>
+                <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
+                  Osiągnięto poziom {farmUpgradeModal.level}.
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={closeFarmUpgradeModal}
+                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                >
+                  Super
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {message && (
           <div className="fixed bottom-4 left-4 z-50">
