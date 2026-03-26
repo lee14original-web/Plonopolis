@@ -173,6 +173,7 @@ const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
   { level: 24, maxPlots: 40 },
   { level: 25, maxPlots: 45 },
 ];
+
 function getFarmUpgradeMessage(level: number): Message | null {
   if (level === 5) {
     return {
@@ -208,6 +209,7 @@ function getFarmUpgradeMessage(level: number): Message | null {
 
   return null;
 }
+
 function getMapForLevel(level: number | null | undefined) {
   const safeLevel = level ?? DEFAULT_LEVEL;
 
@@ -218,41 +220,7 @@ function getMapForLevel(level: number | null | undefined) {
 
   return "farm1";
 }
-function getFarmUpgradeMessage(level: number): Message | null {
-  if (level === 5) {
-    return {
-      type: "success",
-      title: "Farma ulepszona!",
-      text: "Twoje gospodarstwo rozrosło się! Odblokowano nowy wygląd farmy.",
-    };
-  }
 
-  if (level === 10) {
-    return {
-      type: "success",
-      title: "Nowy poziom farmy!",
-      text: "Twoja farma wygląda teraz jeszcze lepiej. Kolejne ulepszenia przed Tobą!",
-    };
-  }
-
-  if (level === 15) {
-    return {
-      type: "success",
-      title: "Rozbudowa farmy!",
-      text: "Twoje gospodarstwo staje się coraz większe i bardziej zaawansowane.",
-    };
-  }
-
-  if (level === 20) {
-    return {
-      type: "success",
-      title: "Zaawansowana farma!",
-      text: "Twoja farma osiągnęła nowy poziom rozwoju!",
-    };
-  }
-
-  return null;
-}
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -451,11 +419,20 @@ export default function Page() {
       return;
     }
 
-    const { data: existingLogin } = await supabase
+    const { data: existingLogin, error: existingLoginError } = await supabase
       .from("profiles")
       .select("id")
       .ilike("login", login)
       .limit(1);
+
+    if (existingLoginError) {
+      setMessage({
+        type: "error",
+        title: "Błąd sprawdzania loginu",
+        text: existingLoginError.message,
+      });
+      return;
+    }
 
     if (existingLogin && existingLogin.length > 0) {
       setMessage({
@@ -466,11 +443,20 @@ export default function Page() {
       return;
     }
 
-    const { data: existingEmail } = await supabase
+    const { data: existingEmail, error: existingEmailError } = await supabase
       .from("profiles")
       .select("id")
       .ilike("email", email)
       .limit(1);
+
+    if (existingEmailError) {
+      setMessage({
+        type: "error",
+        title: "Błąd sprawdzania emaila",
+        text: existingEmailError.message,
+      });
+      return;
+    }
 
     if (existingEmail && existingEmail.length > 0) {
       setMessage({
@@ -615,6 +601,7 @@ export default function Page() {
   async function handleSaveProgress() {
     if (!profile) return;
 
+    const oldLevel = displayLevel;
     const nextXp = displayXp + 15;
     let nextLevel = displayLevel;
     let nextXpStored = nextXp;
@@ -630,18 +617,18 @@ export default function Page() {
 
     const nextMap = getMapForLevel(nextLevel);
 
-const { error } = await supabase
-  .from("profiles")
-  .update({
-    level: nextLevel,
-    xp: nextXpStored,
-    xp_to_next_level: nextXpToNextLevel,
-    money: nextMoney,
-    location: displayLocation,
-    current_map: nextMap,
-    last_played_at: new Date().toISOString(),
-  })
-  .eq("id", profile.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        level: nextLevel,
+        xp: nextXpStored,
+        xp_to_next_level: nextXpToNextLevel,
+        money: nextMoney,
+        location: displayLocation,
+        current_map: nextMap,
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
 
     if (error) {
       setMessage({
@@ -654,21 +641,21 @@ const { error } = await supabase
 
     await loadProfile(profile.id);
 
-// 🔥 SPRAWDZAMY LEVEL UP
-if (nextLevel > displayLevel) {
-  const upgradeMessage = getFarmUpgradeMessage(nextLevel);
+    if (nextLevel > oldLevel) {
+      const upgradeMessage = getFarmUpgradeMessage(nextLevel);
 
-  if (upgradeMessage) {
-    setMessage(upgradeMessage);
-    return;
+      if (upgradeMessage) {
+        setMessage(upgradeMessage);
+        return;
+      }
+    }
+
+    setMessage({
+      type: "success",
+      title: "Postęp zapisany",
+      text: "",
+    });
   }
-}
-
-setMessage({
-  type: "success",
-  title: "Postęp zapisany",
-  text: "",
-});
 
   async function handleUnlockNextPlot() {
     if (!profile) return;
@@ -736,10 +723,10 @@ setMessage({
     <main
       className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
-  backgroundImage: profile
-    ? `url('/${currentMap}.png')`
-    : "url('/assetsmain-lobby.png')",
-}}
+        backgroundImage: profile
+          ? `url('/${currentMap}.png')`
+          : "url('/assetsmain-lobby.png')",
+      }}
     >
       <div className="min-h-screen">
         {profile && (
@@ -784,7 +771,7 @@ setMessage({
 
         <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
           {!profile ? (
-            <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
                 <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
                   <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
@@ -944,7 +931,9 @@ setMessage({
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                     <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Kliknij podświetlone pole na mapie, aby otworzyć menu pola.</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">
+                      Kliknij podświetlone pole na mapie, aby otworzyć menu pola.
+                    </p>
                   </div>
                 </div>
               </aside>
@@ -969,9 +958,7 @@ setMessage({
                       Zapisz
                     </button>
 
-                    <button
-                      className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]"
-                    >
+                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
                       Graj
                     </button>
                   </div>
