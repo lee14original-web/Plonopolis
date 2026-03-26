@@ -1024,8 +1024,8 @@ export default function Page() {
                   style={{
                     left: "65%",
                     bottom: "300px",
-                    width: "30%",
-                    height: "80px",
+                    width: "45%",
+                    height: "150px",
                   }}
                 >
                   <div className="relative flex h-full w-full items-center justify-center rounded-xl">
