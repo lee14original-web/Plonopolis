@@ -1076,8 +1076,8 @@ export default function Page() {
         </div>
 
         {isFieldViewOpen && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 py-6">
-            <div className="relative w-full max-w-5xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-4 shadow-2xl backdrop-blur-sm">
+  <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-3 py-3">
+    <div className="relative w-full max-w-7xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
                 onClick={() => setIsFieldViewOpen(false)}
                 className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
