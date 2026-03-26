@@ -1019,7 +1019,7 @@ export default function Page() {
                 className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                 style={{
                   left: "48%",
-                  top: "90%",
+                  top: "calc(100% - 180px)",
                   width: "31%",
                   height: "12%",
                 }}
