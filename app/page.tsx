@@ -1018,10 +1018,10 @@ export default function Page() {
   onClick={() => setIsFieldViewOpen(true)}
   className="absolute z-20 flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
   style={{
-    left: "46%",
-    bottom: "50px",
-    width: "34%",
-    height: "120px",
+    left: "50%",
+    bottom: "12px",
+    width: "30%",
+    height: "95px",
   }}
 >
   <div className="relative flex h-full w-full items-center justify-center rounded-xl">
@@ -1033,7 +1033,6 @@ export default function Page() {
     </span>
   </div>
 </button>
-
               {selectedPlot && (
                 <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
