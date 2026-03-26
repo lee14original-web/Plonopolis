@@ -109,6 +109,9 @@ const FARM_PLOTS: FarmPlot[] = [
   { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
 ];
 
+
+const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
+
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
   4: 120,
   5: 140,
@@ -1019,7 +1022,7 @@ export default function Page() {
                   onClick={() => setIsFieldViewOpen(true)}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
-                    left: "25%",
+                    left: "62%",
                     bottom: "250px",
                     width: "24%",
                     height: "64px",
@@ -1036,61 +1039,20 @@ export default function Page() {
                 </button>
               </div>
 
-              {selectedPlot && (
-                <div className="absolute left-4 top-[300px] z-20 w-[280px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                  <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Tutaj później dodamy sadzenie, podlewanie i zbiór.
-                  </p>
 
-                  <div className="mt-4 grid gap-2">
-                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                      Posiej
-                    </button>
-                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                      Podlej
-                    </button>
-                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                      Zbierz
-                    </button>
-                    <button
-                      onClick={() => setSelectedPlotId(null)}
-                      className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100"
-                    >
-                      Zamknij
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="pointer-events-none absolute inset-0 z-10">
-                {FARM_PLOTS.slice(0, unlockedPlots).map((plot) => (
-                  <button
-                    key={plot.id}
-                    type="button"
-                    onClick={() => setSelectedPlotId(plot.id)}
-                    className="pointer-events-auto absolute rounded-xl border-2 border-yellow-300/70 bg-yellow-200/10 transition hover:bg-yellow-200/20"
-                    style={{
-                      left: plot.left,
-                      top: plot.top,
-                      width: plot.width,
-                      height: plot.height,
-                    }}
-                    title={`Pole ${plot.id}`}
-                  />
-                ))}
-              </div>
             </div>
           )}
         </div>
 
         {isFieldViewOpen && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
-            <div className="relative w-full max-w-[1500px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
+            <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
-                onClick={() => setIsFieldViewOpen(false)}
-                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                onClick={() => {
+                  setIsFieldViewOpen(false);
+                  setSelectedPlotId(null);
+                }}
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                 aria-label="Zamknij widok pola"
               >
                 ×
@@ -1100,25 +1062,140 @@ export default function Page() {
                 <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                 <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                 <p className="mt-2 text-sm text-[#dfcfab]">
-                  Tutaj później dodamy sadzenie, podlewanie i zbiór na siatce 25 pól.
+                  Kliknij pole w siatce 5 × 5, aby otworzyć menu pola.
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
-                <img
-                  src="/farm-field-view.png"
-                  alt="Widok pola 25 slotów"
-                  className="max-h-[88vh] w-full object-contain"
-                />
-              </div>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative mx-auto aspect-[1536/1092] w-full">
+                    <img
+                      src="/farm-field-view.png"
+                      alt="Widok pola 25 slotów"
+                      className="h-full w-full object-contain"
+                    />
 
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setIsFieldViewOpen(false)}
-                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                >
-                  Powrót do farmy
-                </button>
+                    <div
+                      className="absolute"
+                      style={{
+                        left: "9.2%",
+                        top: "7.8%",
+                        width: "81.6%",
+                        height: "82.2%",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
+                        columnGap: "3.1%",
+                        rowGap: "4.2%",
+                      }}
+                    >
+                      {FIELD_VIEW_PLOTS.map((plotId) => {
+                        const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
+                        const isSelected = selectedPlotId === plotId;
+
+                        return (
+                          <button
+                            key={plotId}
+                            type="button"
+                            disabled={!isUnlocked}
+                            onClick={() => setSelectedPlotId(plotId)}
+                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            className={`relative rounded-xl transition-all duration-300 ${
+                              isUnlocked
+                                ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
+                                : "cursor-not-allowed opacity-65"
+                            }`}
+                          >
+                            {isUnlocked ? (
+                              <>
+                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                                  isSelected
+                                    ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
+                                    : "bg-yellow-300/8"
+                                }`} />
+                                <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
+                                  isSelected
+                                    ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
+                                    : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
+                                }`} />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+                                <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
+                                  {plotId}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="absolute inset-0 rounded-xl bg-black/35" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
+                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
+                                  Locked
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
+                  {selectedPlot ? (
+                    <>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola.
+                      </p>
+
+                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                        Status: gotowe na dalszy system upraw.
+                      </div>
+
+                      <div className="mt-4 grid gap-2">
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Posiej
+                        </button>
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Podlej
+                        </button>
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Zbierz
+                        </button>
+                        <button
+                          onClick={() => setSelectedPlotId(null)}
+                          className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
+                        >
+                          Zamknij menu pola
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Wybierz pole</h3>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Kliknij jedno z odblokowanych pól w siatce 5 × 5, aby otworzyć jego menu.
+                      </p>
+
+                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                        Odblokowane pola: {Math.min(unlockedPlots, 25)} / 25
+                      </div>
+                    </>
+                  )}
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setIsFieldViewOpen(false);
+                        setSelectedPlotId(null);
+                      }}
+                      className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                    >
+                      Powrót do farmy
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
