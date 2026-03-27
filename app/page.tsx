@@ -278,17 +278,7 @@ export default function Page() {
   const selectedPlot = selectedPlotId
     ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
     : null;
-
-  function getMaxPlotsForLevel(level: number) {
-    let maxPlots = 3;
-
-    for (const rule of PLOT_LIMITS_BY_LEVEL) {
-      if (level >= rule.level) {
-        maxPlots = rule.maxPlots;
-      }
-    }
-
-    return maxPlots;
+  
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
