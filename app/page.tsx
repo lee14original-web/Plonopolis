@@ -112,6 +112,8 @@ const FARM_PLOTS: FarmPlot[] = [
 
 const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
 
+function getRequiredLevel(plotId:number){ return Math.ceil(plotId/2); }
+
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
   4: 120,
   5: 140,
@@ -1128,7 +1130,7 @@ export default function Page() {
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
                                 <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
-                                  Locked
+                                  Locked\nWymaga poziomu
                                 </span>
                               </>
                             )}
