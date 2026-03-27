@@ -789,19 +789,25 @@ export default function Page() {
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
               <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
-                <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-                      <span>EXP do następnego poziomu</span>
-                      <span>{xpPercent}%</span>
+                <div
+                  className={`grid items-center gap-3 ${
+                    displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
+                  }`}
+                >
+                  {displayLevel < MAX_LEVEL && (
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                        <span>EXP do następnego poziomu</span>
+                        <span>{xpPercent}%</span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                        <div
+                          className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                          style={{ width: `${xpPercent}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-3 overflow-hidden rounded-full bg-black/40">
-                      <div
-                        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-                        style={{ width: `${xpPercent}%` }}
-                      />
-                    </div>
-                  </div>
+                  )}
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
