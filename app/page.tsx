@@ -119,35 +119,35 @@ const FARM_PLOTS: FarmPlot[] = [
 
 
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
-  { id: 1, left: "9.8%", top: "9.8%", width: "12.9%", height: "11.8%" },
-  { id: 2, left: "26.8%", top: "9.8%", width: "12.9%", height: "11.8%" },
-  { id: 3, left: "43.9%", top: "9.8%", width: "12.9%", height: "11.8%" },
-  { id: 4, left: "61.0%", top: "9.8%", width: "12.9%", height: "11.8%" },
-  { id: 5, left: "78.1%", top: "9.8%", width: "12.9%", height: "11.8%" },
+  { id: 1, left: "10.2%", top: "10.3%", width: "11.6%", height: "10.6%" },
+  { id: 2, left: "27.0%", top: "10.3%", width: "11.6%", height: "10.6%" },
+  { id: 3, left: "43.8%", top: "10.3%", width: "11.6%", height: "10.6%" },
+  { id: 4, left: "60.6%", top: "10.3%", width: "11.6%", height: "10.6%" },
+  { id: 5, left: "77.4%", top: "10.3%", width: "11.6%", height: "10.6%" },
 
-  { id: 6, left: "9.8%", top: "27.3%", width: "12.9%", height: "11.8%" },
-  { id: 7, left: "26.8%", top: "27.3%", width: "12.9%", height: "11.8%" },
-  { id: 8, left: "43.9%", top: "27.3%", width: "12.9%", height: "11.8%" },
-  { id: 9, left: "61.0%", top: "27.3%", width: "12.9%", height: "11.8%" },
-  { id: 10, left: "78.1%", top: "27.3%", width: "12.9%", height: "11.8%" },
+  { id: 6, left: "10.2%", top: "27.8%", width: "11.6%", height: "10.6%" },
+  { id: 7, left: "27.0%", top: "27.8%", width: "11.6%", height: "10.6%" },
+  { id: 8, left: "43.8%", top: "27.8%", width: "11.6%", height: "10.6%" },
+  { id: 9, left: "60.6%", top: "27.8%", width: "11.6%", height: "10.6%" },
+  { id: 10, left: "77.4%", top: "27.8%", width: "11.6%", height: "10.6%" },
 
-  { id: 11, left: "9.8%", top: "45.0%", width: "12.9%", height: "11.8%" },
-  { id: 12, left: "26.8%", top: "45.0%", width: "12.9%", height: "11.8%" },
-  { id: 13, left: "43.9%", top: "45.0%", width: "12.9%", height: "11.8%" },
-  { id: 14, left: "61.0%", top: "45.0%", width: "12.9%", height: "11.8%" },
-  { id: 15, left: "78.1%", top: "45.0%", width: "12.9%", height: "11.8%" },
+  { id: 11, left: "10.2%", top: "45.5%", width: "11.6%", height: "10.6%" },
+  { id: 12, left: "27.0%", top: "45.5%", width: "11.6%", height: "10.6%" },
+  { id: 13, left: "43.8%", top: "45.5%", width: "11.6%", height: "10.6%" },
+  { id: 14, left: "60.6%", top: "45.5%", width: "11.6%", height: "10.6%" },
+  { id: 15, left: "77.4%", top: "45.5%", width: "11.6%", height: "10.6%" },
 
-  { id: 16, left: "9.8%", top: "62.6%", width: "12.9%", height: "11.8%" },
-  { id: 17, left: "26.8%", top: "62.6%", width: "12.9%", height: "11.8%" },
-  { id: 18, left: "43.9%", top: "62.6%", width: "12.9%", height: "11.8%" },
-  { id: 19, left: "61.0%", top: "62.6%", width: "12.9%", height: "11.8%" },
-  { id: 20, left: "78.1%", top: "62.6%", width: "12.9%", height: "11.8%" },
+  { id: 16, left: "10.2%", top: "63.1%", width: "11.6%", height: "10.6%" },
+  { id: 17, left: "27.0%", top: "63.1%", width: "11.6%", height: "10.6%" },
+  { id: 18, left: "43.8%", top: "63.1%", width: "11.6%", height: "10.6%" },
+  { id: 19, left: "60.6%", top: "63.1%", width: "11.6%", height: "10.6%" },
+  { id: 20, left: "77.4%", top: "63.1%", width: "11.6%", height: "10.6%" },
 
-  { id: 21, left: "9.8%", top: "80.3%", width: "12.9%", height: "11.8%" },
-  { id: 22, left: "26.8%", top: "80.3%", width: "12.9%", height: "11.8%" },
-  { id: 23, left: "43.9%", top: "80.3%", width: "12.9%", height: "11.8%" },
-  { id: 24, left: "61.0%", top: "80.3%", width: "12.9%", height: "11.8%" },
-  { id: 25, left: "78.1%", top: "80.3%", width: "12.9%", height: "11.8%" },
+  { id: 21, left: "10.2%", top: "80.8%", width: "11.6%", height: "10.6%" },
+  { id: 22, left: "27.0%", top: "80.8%", width: "11.6%", height: "10.6%" },
+  { id: 23, left: "43.8%", top: "80.8%", width: "11.6%", height: "10.6%" },
+  { id: 24, left: "60.6%", top: "80.8%", width: "11.6%", height: "10.6%" },
+  { id: 25, left: "77.4%", top: "80.8%", width: "11.6%", height: "10.6%" },
 ];
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
@@ -1124,7 +1124,7 @@ export default function Page() {
                                 <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
                                   isSelected
                                     ? "border-yellow-200 shadow-[0_0_20px_rgba(255,220,120,0.65)]"
-                                    : "border-yellow-300/45 hover:border-yellow-200 hover:shadow-[0_0_18px_rgba(255,220,120,0.45)]"
+                                    : "border-yellow-300/35 hover:border-yellow-200 hover:shadow-[0_0_14px_rgba(255,220,120,0.35)]"
                                 }`} />
                                 <div className="absolute inset-0 rounded-xl bg-yellow-400/8 opacity-70 blur-md" />
                                 <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
@@ -1134,7 +1134,7 @@ export default function Page() {
                             ) : (
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/30" />
-                                <div className="absolute inset-0 rounded-xl border-2 border-white/12" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-white/10" />
                                 <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
                                   {displayLevel >= getRequiredLevelForPlot(plotId) ? (
                                     <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
