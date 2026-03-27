@@ -113,48 +113,28 @@ const FARM_PLOTS: FarmPlot[] = [
 const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
-  4: 120,
-  5: 140,
-  6: 160,
-  7: 180,
-  8: 210,
-  9: 240,
-  10: 280,
-  11: 320,
-  12: 370,
-  13: 420,
-  14: 490,
-  15: 560,
-  16: 640,
-  17: 740,
-  18: 850,
-  19: 980,
-  20: 1130,
-  21: 1290,
-  22: 1490,
-  23: 1710,
-  24: 1970,
-  25: 2260,
-  26: 2600,
-  27: 2990,
-  28: 3440,
-  29: 3960,
-  30: 4550,
-  31: 5230,
-  32: 6020,
-  33: 6920,
-  34: 7960,
-  35: 9150,
-  36: 10530,
-  37: 12110,
-  38: 13920,
-  39: 16010,
-  40: 18410,
-  41: 21170,
-  42: 24350,
-  43: 28000,
-  44: 32200,
-  45: 37030,
+  4: 100,
+  5: 150,
+  6: 200,
+  7: 250,
+  8: 300,
+  9: 350,
+  10: 400,
+  11: 500,
+  12: 600,
+  13: 700,
+  14: 800,
+  15: 1000,
+  16: 1200,
+  17: 1400,
+  18: 1600,
+  19: 1800,
+  20: 2000,
+  21: 2300,
+  22: 2600,
+  23: 3000,
+  24: 3500,
+  25: 4000,
 };
 
 const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
@@ -1117,11 +1097,11 @@ export default function Page() {
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <div className="absolute inset-0 z-10 flex items-center justify-center px-2 text-center">
-                                  <span className="text-[11px] font-bold text-white/75 md:text-sm leading-tight">
-                                    Wymaga lv: {plotId}
-                                  </span>
-                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center text-center">
+  <span className="text-xs font-bold text-white/80 md:text-sm">
+    Wymaga lv: {plotId}
+  </span>
+</div>
                               </>
                             )}
                           </button>
@@ -1257,3 +1237,34 @@ export default function Page() {
     </main>
   );
 }
+
+// === DODANE: konfiguracja pól ===
+const MAX_FIELDS = 25;
+
+const FIELD_PRICES = {
+  4: 100,
+  5: 150,
+  6: 200,
+  7: 250,
+  8: 300,
+  9: 350,
+  10: 400,
+  11: 500,
+  12: 600,
+  13: 700,
+  14: 800,
+  15: 1000,
+  16: 1200,
+  17: 1400,
+  18: 1600,
+  19: 1800,
+  20: 2000,
+  21: 2300,
+  22: 2600,
+  23: 3000,
+  24: 3500,
+  25: 4000,
+};
+
+// użycie przykładowe:
+// const price = FIELD_PRICES[fieldId] || 0;
