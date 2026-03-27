@@ -29,18 +29,7 @@ type FarmUpgradeModal = {
   text: string;
 };
 
-type FarmPlot = {
-  id: number;
-  left: string;
-  top: string;
-  width: string;
-  height: string;
-};
 
-type UnlockRule = {
-  level: number;
-  maxPlots: number;
-};
 
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
@@ -50,69 +39,13 @@ const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
+const MAX_FIELDS = 25;
 
-const FARM_PLOTS: FarmPlot[] = [
-  { id: 1, left: "51%", top: "53%", width: "8.5%", height: "10%" },
-  { id: 2, left: "61%", top: "52%", width: "8.5%", height: "10%" },
-  { id: 3, left: "71%", top: "51%", width: "8.5%", height: "10%" },
-  { id: 4, left: "81%", top: "50%", width: "8.5%", height: "10%" },
+const FARM_PLOTS = Array.from({ length: MAX_FIELDS }, (_, index) => ({ id: index + 1 }));
 
-  { id: 5, left: "50%", top: "65%", width: "8.5%", height: "10%" },
-  { id: 6, left: "60%", top: "64%", width: "8.5%", height: "10%" },
-  { id: 7, left: "70%", top: "63%", width: "8.5%", height: "10%" },
-  { id: 8, left: "80%", top: "62%", width: "8.5%", height: "10%" },
+const FIELD_VIEW_PLOTS = Array.from({ length: MAX_FIELDS }, (_, index) => index + 1);
 
-  { id: 9, left: "49%", top: "76%", width: "8.5%", height: "10%" },
-  { id: 10, left: "59%", top: "75%", width: "8.5%", height: "10%" },
-  { id: 11, left: "69%", top: "74%", width: "8.5%", height: "10%" },
-  { id: 12, left: "79%", top: "73%", width: "8.5%", height: "10%" },
-
-  { id: 13, left: "48%", top: "87%", width: "8.5%", height: "10%" },
-  { id: 14, left: "58%", top: "86%", width: "8.5%", height: "10%" },
-  { id: 15, left: "68%", top: "85%", width: "8.5%", height: "10%" },
-  { id: 16, left: "78%", top: "84%", width: "8.5%", height: "10%" },
-
-  { id: 17, left: "46%", top: "98%", width: "8.5%", height: "10%" },
-  { id: 18, left: "56%", top: "97%", width: "8.5%", height: "10%" },
-  { id: 19, left: "66%", top: "96%", width: "8.5%", height: "10%" },
-  { id: 20, left: "76%", top: "95%", width: "8.5%", height: "10%" },
-
-  { id: 21, left: "44%", top: "109%", width: "8.5%", height: "10%" },
-  { id: 22, left: "54%", top: "108%", width: "8.5%", height: "10%" },
-  { id: 23, left: "64%", top: "107%", width: "8.5%", height: "10%" },
-  { id: 24, left: "74%", top: "106%", width: "8.5%", height: "10%" },
-
-  { id: 25, left: "42%", top: "120%", width: "8.5%", height: "10%" },
-  { id: 26, left: "52%", top: "119%", width: "8.5%", height: "10%" },
-  { id: 27, left: "62%", top: "118%", width: "8.5%", height: "10%" },
-  { id: 28, left: "72%", top: "117%", width: "8.5%", height: "10%" },
-
-  { id: 29, left: "40%", top: "131%", width: "8.5%", height: "10%" },
-  { id: 30, left: "50%", top: "130%", width: "8.5%", height: "10%" },
-  { id: 31, left: "60%", top: "129%", width: "8.5%", height: "10%" },
-  { id: 32, left: "70%", top: "128%", width: "8.5%", height: "10%" },
-
-  { id: 33, left: "38%", top: "142%", width: "8.5%", height: "10%" },
-  { id: 34, left: "48%", top: "141%", width: "8.5%", height: "10%" },
-  { id: 35, left: "58%", top: "140%", width: "8.5%", height: "10%" },
-  { id: 36, left: "68%", top: "139%", width: "8.5%", height: "10%" },
-
-  { id: 37, left: "36%", top: "153%", width: "8.5%", height: "10%" },
-  { id: 38, left: "46%", top: "152%", width: "8.5%", height: "10%" },
-  { id: 39, left: "56%", top: "151%", width: "8.5%", height: "10%" },
-  { id: 40, left: "66%", top: "150%", width: "8.5%", height: "10%" },
-
-  { id: 41, left: "34%", top: "164%", width: "8.5%", height: "10%" },
-  { id: 42, left: "44%", top: "163%", width: "8.5%", height: "10%" },
-  { id: 43, left: "54%", top: "162%", width: "8.5%", height: "10%" },
-  { id: 44, left: "64%", top: "161%", width: "8.5%", height: "10%" },
-  { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
-];
-
-
-const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
-
-const PLOT_UNLOCK_COSTS: Record<number, number> = {
+const FIELD_PRICES: Record<number, number> = {
   4: 100,
   5: 150,
   6: 200,
@@ -137,33 +70,6 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
   25: 4000,
 };
 
-const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
-  { level: 1, maxPlots: 3 },
-  { level: 2, maxPlots: 4 },
-  { level: 3, maxPlots: 5 },
-  { level: 4, maxPlots: 6 },
-  { level: 5, maxPlots: 7 },
-  { level: 6, maxPlots: 8 },
-  { level: 7, maxPlots: 9 },
-  { level: 8, maxPlots: 10 },
-  { level: 9, maxPlots: 11 },
-  { level: 10, maxPlots: 12 },
-  { level: 11, maxPlots: 14 },
-  { level: 12, maxPlots: 16 },
-  { level: 13, maxPlots: 18 },
-  { level: 14, maxPlots: 20 },
-  { level: 15, maxPlots: 22 },
-  { level: 16, maxPlots: 24 },
-  { level: 17, maxPlots: 26 },
-  { level: 18, maxPlots: 28 },
-  { level: 19, maxPlots: 30 },
-  { level: 20, maxPlots: 32 },
-  { level: 21, maxPlots: 34 },
-  { level: 22, maxPlots: 36 },
-  { level: 23, maxPlots: 38 },
-  { level: 24, maxPlots: 40 },
-  { level: 25, maxPlots: 45 },
-];
 
 function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
@@ -259,20 +165,9 @@ export default function Page() {
     }).format(displayMoney);
   }, [displayMoney]);
 
-  const selectedPlot = selectedPlotId
-    ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
-    : null;
 
   function getMaxPlotsForLevel(level: number) {
-    let maxPlots = 3;
-
-    for (const rule of PLOT_LIMITS_BY_LEVEL) {
-      if (level >= rule.level) {
-        maxPlots = rule.maxPlots;
-      }
-    }
-
-    return maxPlots;
+    return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
@@ -302,8 +197,8 @@ export default function Page() {
 
   const maxPlotsForLevel = getMaxPlotsForLevel(displayLevel);
   const nextPlotNumber = unlockedPlots + 1;
-  const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < FARM_PLOTS.length;
-  const nextPlotCost = PLOT_UNLOCK_COSTS[nextPlotNumber] ?? null;
+  const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < MAX_FIELDS;
+  const nextPlotCost = FIELD_PRICES[nextPlotNumber] ?? null;
 
   useEffect(() => {
     let mounted = true;
@@ -966,7 +861,7 @@ export default function Page() {
                   <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">
-                    Pola: {unlockedPlots} / {maxPlotsForLevel}
+                    Pola: {Math.min(unlockedPlots, MAX_FIELDS)} / {maxPlotsForLevel}
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -1060,7 +955,7 @@ export default function Page() {
                       }}
                     >
                       {FIELD_VIEW_PLOTS.map((plotId) => {
-                        const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
+                        const isUnlocked = plotId <= Math.min(unlockedPlots, MAX_FIELDS);
                         const isSelected = selectedPlotId === plotId;
 
                         return (
@@ -1097,11 +992,11 @@ export default function Page() {
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <div className="absolute inset-0 flex items-center justify-center text-center">
-  <span className="text-xs font-bold text-white/80 md:text-sm">
-    Wymaga lv: {plotId}
-  </span>
-</div>
+                                <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
+                                  <span className="text-xs font-bold text-white/80 leading-tight md:text-sm">
+                                    Wymaga lv: {plotId}
+                                  </span>
+                                </div>
                               </>
                             )}
                           </button>
@@ -1112,10 +1007,10 @@ export default function Page() {
                 </div>
 
                 <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
-                  {selectedPlot ? (
+                  {selectedPlotId ? (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola.
                       </p>
@@ -1157,7 +1052,7 @@ export default function Page() {
                       </p>
 
                       <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Odblokowane pola: {Math.min(unlockedPlots, 25)} / 25
+                        Odblokowane pola: {Math.min(unlockedPlots, MAX_FIELDS)} / 25
                       </div>
                     </>
                   )}
@@ -1238,33 +1133,3 @@ export default function Page() {
   );
 }
 
-// === DODANE: konfiguracja pól ===
-const MAX_FIELDS = 25;
-
-const FIELD_PRICES = {
-  4: 100,
-  5: 150,
-  6: 200,
-  7: 250,
-  8: 300,
-  9: 350,
-  10: 400,
-  11: 500,
-  12: 600,
-  13: 700,
-  14: 800,
-  15: 1000,
-  16: 1200,
-  17: 1400,
-  18: 1600,
-  19: 1800,
-  20: 2000,
-  21: 2300,
-  22: 2600,
-  23: 3000,
-  24: 3500,
-  25: 4000,
-};
-
-// użycie przykładowe:
-// const price = FIELD_PRICES[fieldId] || 0;
