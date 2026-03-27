@@ -1117,9 +1117,11 @@ export default function Page() {
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
-                                  Locked
-                                </span>
+                                <div className="absolute inset-0 z-10 flex items-center justify-center px-2 text-center">
+                                  <span className="text-[11px] font-bold text-white/75 md:text-sm leading-tight">
+                                    Wymaga lv: {plotId}
+                                  </span>
+                                </div>
                               </>
                             )}
                           </button>
