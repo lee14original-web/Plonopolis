@@ -295,11 +295,6 @@ export default function Page() {
     return maxPlots;
   }
 
-  function getRequiredLevelForPlot(plotId: number) {
-    const matchingRule = PLOT_LIMITS_BY_LEVEL.find((rule) => rule.maxPlots >= plotId);
-    return matchingRule?.level ?? PLOT_LIMITS_BY_LEVEL[PLOT_LIMITS_BY_LEVEL.length - 1].level;
-  }
-
   function showFarmUpgradeModalOnce(userId: string, level: number) {
     if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
 
@@ -1087,7 +1082,6 @@ export default function Page() {
                       {FIELD_VIEW_PLOTS.map((plotId) => {
                         const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
                         const isSelected = selectedPlotId === plotId;
-                        const requiredLevel = getRequiredLevelForPlot(plotId);
 
                         return (
                           <button
@@ -1095,8 +1089,8 @@ export default function Page() {
                             type="button"
                             disabled={!isUnlocked}
                             onClick={() => setSelectedPlotId(plotId)}
-                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane do poziomu ${requiredLevel}`}
-                            className={`relative flex items-center justify-center rounded-xl transition-all duration-300 ${
+                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            className={`relative rounded-xl transition-all duration-300 ${
                               isUnlocked
                                 ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
                                 : "cursor-not-allowed opacity-65"
@@ -1123,16 +1117,9 @@ export default function Page() {
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <div className="relative z-10 flex h-full w-full items-center justify-center px-2 text-center">
-                                  <div className="flex flex-col items-center justify-center leading-tight">
-                                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
-                                      Locked
-                                    </span>
-                                    <span className="mt-1 text-[10px] font-semibold text-white/70 md:text-xs">
-                                      Wymaga: lvl {requiredLevel}
-                                    </span>
-                                  </div>
-                                </div>
+                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
+                                  Locked
+                                </span>
                               </>
                             )}
                           </button>
