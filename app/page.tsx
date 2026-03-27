@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Profile = {
@@ -108,7 +108,6 @@ const FARM_PLOTS: FarmPlot[] = [
   { id: 44, left: "64%", top: "161%", width: "8.5%", height: "10%" },
   { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
 ];
-
 
 const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
 
@@ -236,6 +235,10 @@ function getMapForLevel(level: number | null | undefined) {
   return DEFAULT_MAP;
 }
 
+function getRequiredLevelForLockedField(plotId: number) {
+  return plotId + 2;
+}
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -258,6 +261,10 @@ export default function Page() {
   const [selectedPlotId, setSelectedPlotId] = useState<number | null>(null);
   const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
+
+  const [unlocking, setUnlocking] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
+  const unlockSoundRef = useRef<HTMLAudioElement | null>(null);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -357,6 +364,20 @@ export default function Page() {
 
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const audio = new Audio("/sounds/unlock.mp3");
+    audio.preload = "auto";
+    unlockSoundRef.current = audio;
+
+    return () => {
+      if (unlockSoundRef.current) {
+        unlockSoundRef.current.pause();
+        unlockSoundRef.current = null;
+      }
     };
   }, []);
 
@@ -635,6 +656,8 @@ export default function Page() {
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
+    setUnlocking(false);
+    setShowParticles(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -717,34 +740,51 @@ export default function Page() {
       return;
     }
 
-    const newUnlockedPlots = unlockedPlots + 1;
-    const newMoney = displayMoney - nextPlotCost;
+    try {
+      if (unlockSoundRef.current) {
+        unlockSoundRef.current.currentTime = 0;
+        void unlockSoundRef.current.play().catch(() => {});
+      }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        money: newMoney,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+      setUnlocking(true);
+      setShowParticles(false);
 
-    if (error) {
+      await new Promise((res) => setTimeout(res, 450));
+      setShowParticles(true);
+      await new Promise((res) => setTimeout(res, 700));
+
+      const newUnlockedPlots = unlockedPlots + 1;
+      const newMoney = displayMoney - nextPlotCost;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          money: newMoney,
+          last_played_at: new Date().toISOString(),
+        })
+        .eq("id", profile.id);
+
+      if (error) {
+        setMessage({
+          type: "error",
+          title: "Błąd odblokowania",
+          text: error.message,
+        });
+        return;
+      }
+
+      setUnlockedPlots(newUnlockedPlots);
+      await loadProfile(profile.id);
+
       setMessage({
-        type: "error",
-        title: "Błąd odblokowania",
-        text: error.message,
+        type: "success",
+        title: "Pole odblokowane 🔓",
+        text: `Odblokowano pole #${newUnlockedPlots}.`,
       });
-      return;
+    } finally {
+      setUnlocking(false);
+      setShowParticles(false);
     }
-
-    setUnlockedPlots(newUnlockedPlots);
-    await loadProfile(profile.id);
-
-    setMessage({
-      type: "success",
-      title: "Pole odblokowane",
-      text: `Odblokowano pole #${newUnlockedPlots}.`,
-    });
   }
 
   if (!ready) {
@@ -1001,8 +1041,6 @@ export default function Page() {
                       Graj
                     </button>
                   </div>
-
-                  
                 </div>
               </div>
 
@@ -1028,8 +1066,6 @@ export default function Page() {
                   </div>
                 </button>
               </div>
-
-
             </div>
           )}
         </div>
@@ -1082,14 +1118,15 @@ export default function Page() {
                       {FIELD_VIEW_PLOTS.map((plotId) => {
                         const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
                         const isSelected = selectedPlotId === plotId;
+                        const requiredLevel = getRequiredLevelForLockedField(plotId);
 
                         return (
                           <button
                             key={plotId}
                             type="button"
-                            disabled={!isUnlocked}
+                            disabled={!isUnlocked || unlocking}
                             onClick={() => setSelectedPlotId(plotId)}
-                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} wymaga poziomu ${requiredLevel}`}
                             className={`relative rounded-xl transition-all duration-300 ${
                               isUnlocked
                                 ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
@@ -1117,9 +1154,14 @@ export default function Page() {
                               <>
                                 <div className="absolute inset-0 rounded-xl bg-black/35" />
                                 <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
-                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
-                                  Locked
-                                </span>
+                                <div className="relative z-10 flex h-full flex-col items-center justify-center px-1 text-center">
+                                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
+                                    Locked
+                                  </span>
+                                  <span className="mt-1 text-[10px] font-semibold text-white/65 md:text-xs">
+                                    Wymaga: lvl {requiredLevel}
+                                  </span>
+                                </div>
                               </>
                             )}
                           </button>
@@ -1152,12 +1194,17 @@ export default function Page() {
                         <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
                           Zbierz
                         </button>
-                        <button
-                          onClick={handleUnlockNextPlot}
-                          className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50"
-                        >
-                          Odblokuj pole
-                        </button>
+                        {selectedPlot.id === nextPlotNumber && canUnlockMore && nextPlotCost && (
+                          <button
+                            onClick={handleUnlockNextPlot}
+                            disabled={unlocking}
+                            className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {unlocking
+                              ? "Odblokowywanie..."
+                              : `Odblokuj pole za ${nextPlotCost} PLN`}
+                          </button>
+                        )}
                         <button
                           onClick={() => setSelectedPlotId(null)}
                           className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
@@ -1194,6 +1241,60 @@ export default function Page() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {unlocking && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-hidden bg-black/70">
+            {showParticles &&
+              Array.from({ length: 14 }).map((_, i) => {
+                const angle = (i / 14) * Math.PI * 2;
+                const x = Math.cos(angle) * 110;
+                const y = Math.sin(angle) * 110;
+                return (
+                  <div
+                    key={i}
+                    className="absolute h-3 w-3 rounded-full bg-yellow-300"
+                    style={{
+                      left: "50%",
+                      top: "50%",
+                      transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+                      boxShadow: "0 0 18px rgba(255,220,120,0.8)",
+                      animation: "particle-burst 0.7s ease-out forwards",
+                      animationDelay: `${i * 0.02}s`,
+                    }}
+                  />
+                );
+              })}
+
+            <div className="relative flex flex-col items-center gap-4">
+              <div className="absolute h-40 w-40 rounded-full bg-yellow-300/30 blur-3xl animate-pulse" />
+
+              <div
+                className={`relative text-7xl transition-all duration-500 ${
+                  showParticles ? "scale-150 rotate-12 opacity-0" : "scale-100 opacity-100"
+                }`}
+              >
+                🔒
+              </div>
+
+              <p className="text-xl font-bold tracking-wide text-yellow-200">
+                Odblokowywanie...
+              </p>
+            </div>
+
+            <style jsx>{`
+              @keyframes particle-burst {
+                0% {
+                  opacity: 1;
+                  transform: translate(-50%, -50%) scale(1);
+                }
+                100% {
+                  opacity: 0;
+                  transform: translate(-50%, -50%) scale(0.35);
+                }
+              }
+            `}</style>
           </div>
         )}
 
