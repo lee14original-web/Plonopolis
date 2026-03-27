@@ -119,35 +119,35 @@ const FARM_PLOTS: FarmPlot[] = [
 
 
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
-  { id: 1, left: "10.5%", top: "9.5%", width: "12.5%", height: "7.7%" },
-  { id: 2, left: "27.2%", top: "9.5%", width: "12.5%", height: "7.7%" },
-  { id: 3, left: "43.9%", top: "9.5%", width: "12.5%", height: "7.7%" },
-  { id: 4, left: "60.6%", top: "9.5%", width: "12.5%", height: "7.7%" },
-  { id: 5, left: "77.3%", top: "9.5%", width: "12.5%", height: "7.7%" },
+  { id: 1, left: "10.5%", top: "12.0%", width: "13.5%", height: "7.7%" },
+  { id: 2, left: "27.2%", top: "12.0%", width: "13.5%", height: "7.7%" },
+  { id: 3, left: "43.9%", top: "12.0%", width: "13.5%", height: "7.7%" },
+  { id: 4, left: "60.6%", top: "12.0%", width: "13.5%", height: "7.7%" },
+  { id: 5, left: "77.3%", top: "12.0%", width: "13.5%", height: "7.7%" },
 
-  { id: 6, left: "10.5%", top: "28.2%", width: "12.5%", height: "7.7%" }, // +3%
-  { id: 7, left: "27.2%", top: "28.2%", width: "12.5%", height: "7.7%" },
-  { id: 8, left: "43.9%", top: "28.2%", width: "12.5%", height: "7.7%" },
-  { id: 9, left: "60.6%", top: "28.2%", width: "12.5%", height: "7.7%" },
-  { id: 10, left: "77.3%", top: "28.2%", width: "12.5%", height: "7.7%" },
+  { id: 6, left: "10.5%", top: "25.7%", width: "13.5%", height: "7.7%" },
+  { id: 7, left: "27.2%", top: "25.7%", width: "13.5%", height: "7.7%" },
+  { id: 8, left: "43.9%", top: "25.7%", width: "13.5%", height: "7.7%" },
+  { id: 9, left: "60.6%", top: "25.7%", width: "13.5%", height: "7.7%" },
+  { id: 10, left: "77.3%", top: "25.7%", width: "13.5%", height: "7.7%" },
 
-  { id: 11, left: "10.5%", top: "40.9%", width: "12.5%", height: "7.7%" },
-  { id: 12, left: "27.2%", top: "40.9%", width: "12.5%", height: "7.7%" },
-  { id: 13, left: "43.9%", top: "40.9%", width: "12.5%", height: "7.7%" },
-  { id: 14, left: "60.6%", top: "40.9%", width: "12.5%", height: "7.7%" },
-  { id: 15, left: "77.3%", top: "40.9%", width: "12.5%", height: "7.7%" },
+  { id: 11, left: "10.5%", top: "44.4%", width: "13.5%", height: "7.7%" },
+  { id: 12, left: "27.2%", top: "44.4%", width: "13.5%", height: "7.7%" },
+  { id: 13, left: "43.9%", top: "44.4%", width: "13.5%", height: "7.7%" },
+  { id: 14, left: "60.6%", top: "44.4%", width: "13.5%", height: "7.7%" },
+  { id: 15, left: "77.3%", top: "44.4%", width: "13.5%", height: "7.7%" },
 
-  { id: 16, left: "10.5%", top: "60.6%", width: "12.5%", height: "7.7%" }, // +4%
-  { id: 17, left: "27.2%", top: "60.6%", width: "12.5%", height: "7.7%" },
-  { id: 18, left: "43.9%", top: "60.6%", width: "12.5%", height: "7.7%" },
-  { id: 19, left: "60.6%", top: "60.6%", width: "12.5%", height: "7.7%" },
-  { id: 20, left: "77.3%", top: "60.6%", width: "12.5%", height: "7.7%" },
+  { id: 16, left: "10.5%", top: "58.1%", width: "13.5%", height: "7.7%" },
+  { id: 17, left: "27.2%", top: "58.1%", width: "13.5%", height: "7.7%" },
+  { id: 18, left: "43.9%", top: "58.1%", width: "13.5%", height: "7.7%" },
+  { id: 19, left: "60.6%", top: "58.1%", width: "13.5%", height: "7.7%" },
+  { id: 20, left: "77.3%", top: "58.1%", width: "13.5%", height: "7.7%" },
 
-  { id: 21, left: "10.5%", top: "77.3%", width: "12.5%", height: "7.7%" }, // +5%
-  { id: 22, left: "27.2%", top: "77.3%", width: "12.5%", height: "7.7%" },
-  { id: 23, left: "43.9%", top: "77.3%", width: "12.5%", height: "7.7%" },
-  { id: 24, left: "60.6%", top: "77.3%", width: "12.5%", height: "7.7%" },
-  { id: 25, left: "77.3%", top: "77.3%", width: "12.5%", height: "7.7%" },
+  { id: 21, left: "10.5%", top: "74.8%", width: "13.5%", height: "7.7%" },
+  { id: 22, left: "27.2%", top: "74.8%", width: "13.5%", height: "7.7%" },
+  { id: 23, left: "43.9%", top: "74.8%", width: "13.5%", height: "7.7%" },
+  { id: 24, left: "60.6%", top: "74.8%", width: "13.5%", height: "7.7%" },
+  { id: 25, left: "77.3%", top: "74.8%", width: "13.5%", height: "7.7%" },
 ];
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
