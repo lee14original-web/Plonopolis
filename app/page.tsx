@@ -1002,17 +1002,7 @@ export default function Page() {
                     </button>
                   </div>
 
-                  <div className="mt-3">
-                    <button
-                      onClick={handleUnlockNextPlot}
-                      disabled={!canUnlockMore || !nextPlotCost}
-                      className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {canUnlockMore && nextPlotCost
-                        ? `Odblokuj pole #${nextPlotNumber} za ${nextPlotCost} PLN`
-                        : "Osiągnięto limit pól na tym poziomie"}
-                    </button>
-                  </div>
+                  
                 </div>
               </div>
 
@@ -1161,6 +1151,12 @@ export default function Page() {
                         </button>
                         <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
                           Zbierz
+                        </button>
+                        <button
+                          onClick={handleUnlockNextPlot}
+                          className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50"
+                        >
+                          Odblokuj pole
                         </button>
                         <button
                           onClick={() => setSelectedPlotId(null)}
