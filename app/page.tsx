@@ -29,14 +29,6 @@ type FarmUpgradeModal = {
   text: string;
 };
 
-type FieldViewPlotLayout = {
-  id: number;
-  left: string;
-  top: string;
-  width: string;
-  height: string;
-};
-
 type FarmPlot = {
   id: number;
   left: string;
@@ -119,61 +111,51 @@ const FARM_PLOTS: FarmPlot[] = [
 ];
 
 
-const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
-  { id: 1, left: "10.5%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 2, left: "27.2%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 3, left: "43.9%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 4, left: "60.6%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 5, left: "77.3%", top: "10.0%", width: "12.5%", height: "10.0%" },
-
-  { id: 6, left: "10.5%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 7, left: "27.2%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 8, left: "43.9%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 9, left: "60.6%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 10, left: "77.3%", top: "26.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 11, left: "10.5%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 12, left: "27.2%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 13, left: "43.9%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 14, left: "60.6%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 15, left: "77.3%", top: "41.9%", width: "12.5%", height: "10.0%" },
-
-  { id: 16, left: "10.5%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 17, left: "27.2%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 18, left: "43.9%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 19, left: "60.6%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 20, left: "77.3%", top: "58.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 21, left: "10.5%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 22, left: "27.2%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 23, left: "43.9%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 24, left: "60.6%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 25, left: "77.3%", top: "75.0%", width: "12.5%", height: "10.0%" },
-];
+const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
-  4: 100,
-  5: 150,
-  6: 200,
-  7: 250,
-  8: 300,
-  9: 350,
-  10: 400,
-  11: 500,
-  12: 600,
-  13: 700,
-  14: 800,
-  15: 1000,
-  16: 1200,
-  17: 1400,
-  18: 1600,
-  19: 1800,
-  20: 2000,
-  21: 2300,
-  22: 2600,
-  23: 3000,
-  24: 3500,
-  25: 4000,
+  4: 120,
+  5: 140,
+  6: 160,
+  7: 180,
+  8: 210,
+  9: 240,
+  10: 280,
+  11: 320,
+  12: 370,
+  13: 420,
+  14: 490,
+  15: 560,
+  16: 640,
+  17: 740,
+  18: 850,
+  19: 980,
+  20: 1130,
+  21: 1290,
+  22: 1490,
+  23: 1710,
+  24: 1970,
+  25: 2260,
+  26: 2600,
+  27: 2990,
+  28: 3440,
+  29: 3960,
+  30: 4550,
+  31: 5230,
+  32: 6020,
+  33: 6920,
+  34: 7960,
+  35: 9150,
+  36: 10530,
+  37: 12110,
+  38: 13920,
+  39: 16010,
+  40: 18410,
+  41: 21170,
+  42: 24350,
+  43: 28000,
+  44: 32200,
+  45: 37030,
 };
 
 const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
@@ -242,11 +224,6 @@ function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   }
 
   return null;
-}
-
-function getRequiredLevelForPlot(plotId: number) {
-  if (plotId <= 3) return 1;
-  return plotId - 2;
 }
 
 function getMapForLevel(level: number | null | undefined) {
@@ -349,52 +326,6 @@ export default function Page() {
   const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < FARM_PLOTS.length;
   const nextPlotCost = PLOT_UNLOCK_COSTS[nextPlotNumber] ?? null;
 
-  function moveSelection(direction: "up" | "down" | "left" | "right") {
-    const current = selectedPlotId ?? 1;
-
-    let row = Math.floor((current - 1) / 5);
-    let col = (current - 1) % 5;
-
-    if (direction === "up" && row > 0) row -= 1;
-    if (direction === "down" && row < 4) row += 1;
-    if (direction === "left" && col > 0) col -= 1;
-    if (direction === "right" && col < 4) col += 1;
-
-    const nextPlotId = row * 5 + col + 1;
-    setSelectedPlotId(nextPlotId);
-  }
-
-  function handleSelectedPlotAction() {
-    if (!selectedPlotId) return;
-
-    const isUnlocked = selectedPlotId <= Math.min(unlockedPlots, 25);
-    if (isUnlocked) {
-      setMessage({
-        type: "info",
-        title: `Wybrano pole #${selectedPlotId}`,
-        text: "Możesz użyć akcji z menu pola.",
-      });
-      return;
-    }
-
-    const requiredLevel = getRequiredLevelForPlot(selectedPlotId);
-    const plotCost = PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0;
-
-    if (displayLevel >= requiredLevel) {
-      setMessage({
-        type: "info",
-        title: `Pole #${selectedPlotId}`,
-        text: `Koszt odblokowania: ${plotCost} PLN.`,
-      });
-    } else {
-      setMessage({
-        type: "info",
-        title: `Pole #${selectedPlotId}`,
-        text: `Wymagany poziom: ${requiredLevel}.`,
-      });
-    }
-  }
-
   useEffect(() => {
     let mounted = true;
 
@@ -439,37 +370,6 @@ export default function Page() {
 
     return () => clearTimeout(timer);
   }, [message]);
-
-  useEffect(() => {
-    if (!isFieldViewOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", " ", "escape"].includes(key)) {
-        e.preventDefault();
-      }
-
-      if (key === "w" || key === "arrowup") {
-        moveSelection("up");
-      } else if (key === "s" || key === "arrowdown") {
-        moveSelection("down");
-      } else if (key === "a" || key === "arrowleft") {
-        moveSelection("left");
-      } else if (key === "d" || key === "arrowright") {
-        moveSelection("right");
-      } else if (key === "enter" || key === " ") {
-        handleSelectedPlotAction();
-      } else if (key === "escape") {
-        setIsFieldViewOpen(false);
-        setSelectedPlotId(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel]);
-
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
@@ -889,25 +789,19 @@ export default function Page() {
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
               <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
-                <div
-                  className={`grid items-center gap-3 ${
-                    displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
-                  }`}
-                >
-                  {displayLevel < MAX_LEVEL && (
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-                        <span>EXP do następnego poziomu</span>
-                        <span>{xpPercent}%</span>
-                      </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-black/40">
-                        <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-                          style={{ width: `${xpPercent}%` }}
-                        />
-                      </div>
+                <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                      <span>EXP do następnego poziomu</span>
+                      <span>{xpPercent}%</span>
                     </div>
-                  )}
+                    <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                      <div
+                        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                        style={{ width: `${xpPercent}%` }}
+                      />
+                    </div>
+                  </div>
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
@@ -1130,10 +1024,7 @@ export default function Page() {
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <button
                   type="button"
-                  onClick={() => {
-                  setIsFieldViewOpen(true);
-                  setSelectedPlotId((prev) => prev ?? 1);
-                }}
+                  onClick={() => setIsFieldViewOpen(true)}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
                     left: "55%",
@@ -1189,9 +1080,21 @@ export default function Page() {
                       className="h-full w-full object-contain"
                     />
 
-                    <div className="absolute inset-0">
-                      {FIELD_VIEW_PLOTS.map((plot) => {
-                        const plotId = plot.id;
+                    <div
+                      className="absolute"
+                      style={{
+                        left: "9.2%",
+                        top: "7.8%",
+                        width: "81.6%",
+                        height: "82.2%",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
+                        columnGap: "3.1%",
+                        rowGap: "4.2%",
+                      }}
+                    >
+                      {FIELD_VIEW_PLOTS.map((plotId) => {
                         const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
                         const isSelected = selectedPlotId === plotId;
 
@@ -1199,103 +1102,76 @@ export default function Page() {
                           <button
                             key={plotId}
                             type="button"
+                            disabled={!isUnlocked}
                             onClick={() => setSelectedPlotId(plotId)}
                             title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
-                            className={`absolute rounded-xl transition-all duration-300 ${
+                            className={`relative rounded-xl transition-all duration-300 ${
                               isUnlocked
-                                ? "cursor-pointer hover:scale-[1.02]"
-                                : "cursor-pointer opacity-90"
+                                ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
+                                : "cursor-not-allowed opacity-65"
                             }`}
-                            style={{
-                              left: plot.left,
-                              top: plot.top,
-                              width: plot.width,
-                              height: plot.height,
-                            }}
                           >
                             {isUnlocked ? (
                               <>
                                 <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
                                   isSelected
-                                    ? "bg-yellow-300/18 shadow-[0_0_28px_rgba(255,220,120,0.75)]"
-                                    : "bg-yellow-300/6"
+                                    ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
+                                    : "bg-yellow-300/8"
                                 }`} />
                                 <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
                                   isSelected
-                                    ? "border-yellow-200 shadow-[0_0_20px_rgba(255,220,120,0.65)]"
-                                    : "border-yellow-300/45 hover:border-yellow-200 hover:shadow-[0_0_18px_rgba(255,220,120,0.45)]"
+                                    ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
+                                    : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
                                 }`} />
-                                <div className="absolute inset-0 rounded-xl bg-yellow-400/8 opacity-70 blur-md" />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
                                 <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
                                   {plotId}
                                 </span>
                               </>
                             ) : (
                               <>
-                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                                  isSelected ? "bg-black/45" : "bg-black/30"
-                                }`} />
-                                <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
-                                  isSelected ? "border-yellow-200/60" : "border-white/12"
-                                }`} />
-                                <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                                  {displayLevel >= getRequiredLevelForPlot(plotId) ? (
-                                    <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
-                                      KOSZT: {PLOT_UNLOCK_COSTS[plotId] ?? 0} PLN
-                                    </span>
-                                  ) : (
-                                    <span className="text-[11px] font-bold text-white/80 leading-tight md:text-sm">
-                                      Wymaga lv: {getRequiredLevelForPlot(plotId)}
-                                    </span>
-                                  )}
-                                </div>
+                                <div className="absolute inset-0 rounded-xl bg-black/35" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
+                                <span className="relative z-10 text-xs font-bold uppercase tracking-[0.15em] text-white/75 md:text-sm">
+                                  Locked
+                                </span>
                               </>
                             )}
                           </button>
                         );
                       })}
-                    </div>                    </div>
+                    </div>
                   </div>
                 </div>
 
                 <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
-                  {selectedPlotId ? (
+                  {selectedPlot ? (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
-                        {selectedPlotId <= Math.min(unlockedPlots, 25)
-                          ? "Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola."
-                          : displayLevel >= getRequiredLevelForPlot(selectedPlotId)
-                          ? `To pole możesz już kupić za ${PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0} PLN.`
-                          : `To pole odblokujesz od poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`}
+                        Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola.
                       </p>
 
                       <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        {selectedPlotId <= Math.min(unlockedPlots, 25)
-                          ? "Status: gotowe na dalszy system upraw."
-                          : displayLevel >= getRequiredLevelForPlot(selectedPlotId)
-                          ? `Status: gotowe do zakupu za ${PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0} PLN.`
-                          : `Status: zablokowane do poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`}
+                        Status: gotowe na dalszy system upraw.
                       </div>
 
                       <div className="mt-4 grid gap-2">
-                        <button disabled={selectedPlotId > Math.min(unlockedPlots, 25)} className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50">
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
                           Posiej
                         </button>
-                        <button disabled={selectedPlotId > Math.min(unlockedPlots, 25)} className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50">
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
                           Podlej
                         </button>
-                        <button disabled={selectedPlotId > Math.min(unlockedPlots, 25)} className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50">
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
                           Zbierz
                         </button>
                         <button
                           onClick={handleUnlockNextPlot}
                           className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50"
                         >
-                          {selectedPlotId && selectedPlotId > Math.min(unlockedPlots, 25)
-                            ? `Odblokuj następne pole (#${unlockedPlots + 1})`
-                            : "Odblokuj pole"}
+                          Odblokuj pole
                         </button>
                         <button
                           onClick={() => setSelectedPlotId(null)}
