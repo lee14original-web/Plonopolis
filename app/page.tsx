@@ -176,34 +176,6 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
   25: 4000,
 };
 
-const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
-  { level: 1, maxPlots: 3 },
-  { level: 2, maxPlots: 4 },
-  { level: 3, maxPlots: 5 },
-  { level: 4, maxPlots: 6 },
-  { level: 5, maxPlots: 7 },
-  { level: 6, maxPlots: 8 },
-  { level: 7, maxPlots: 9 },
-  { level: 8, maxPlots: 10 },
-  { level: 9, maxPlots: 11 },
-  { level: 10, maxPlots: 12 },
-  { level: 11, maxPlots: 14 },
-  { level: 12, maxPlots: 16 },
-  { level: 13, maxPlots: 18 },
-  { level: 14, maxPlots: 20 },
-  { level: 15, maxPlots: 22 },
-  { level: 16, maxPlots: 24 },
-  { level: 17, maxPlots: 26 },
-  { level: 18, maxPlots: 28 },
-  { level: 19, maxPlots: 30 },
-  { level: 20, maxPlots: 32 },
-  { level: 21, maxPlots: 34 },
-  { level: 22, maxPlots: 36 },
-  { level: 23, maxPlots: 38 },
-  { level: 24, maxPlots: 40 },
-  { level: 25, maxPlots: 45 },
-];
-
 function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
 }
