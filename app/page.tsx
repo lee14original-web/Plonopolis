@@ -29,6 +29,14 @@ type FarmUpgradeModal = {
   text: string;
 };
 
+type FieldViewPlotLayout = {
+  id: number;
+  left: string;
+  top: string;
+  width: string;
+  height: string;
+};
+
 type FarmPlot = {
   id: number;
   left: string;
@@ -110,7 +118,37 @@ const FARM_PLOTS: FarmPlot[] = [
 ];
 
 
-const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
+const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
+  { id: 1, left: "9.1%", top: "8.4%", width: "14.2%", height: "14.1%" },
+  { id: 2, left: "26.4%", top: "8.5%", width: "14.2%", height: "14.1%" },
+  { id: 3, left: "43.7%", top: "8.6%", width: "14.2%", height: "14.1%" },
+  { id: 4, left: "61.0%", top: "8.7%", width: "14.2%", height: "14.1%" },
+  { id: 5, left: "78.2%", top: "8.8%", width: "14.2%", height: "14.1%" },
+
+  { id: 6, left: "9.2%", top: "26.1%", width: "14.2%", height: "14.1%" },
+  { id: 7, left: "26.5%", top: "26.3%", width: "14.2%", height: "14.1%" },
+  { id: 8, left: "43.8%", top: "26.4%", width: "14.2%", height: "14.1%" },
+  { id: 9, left: "61.1%", top: "26.5%", width: "14.2%", height: "14.1%" },
+  { id: 10, left: "78.3%", top: "26.6%", width: "14.2%", height: "14.1%" },
+
+  { id: 11, left: "9.3%", top: "43.9%", width: "14.2%", height: "14.1%" },
+  { id: 12, left: "26.6%", top: "44.0%", width: "14.2%", height: "14.1%" },
+  { id: 13, left: "43.9%", top: "44.1%", width: "14.2%", height: "14.1%" },
+  { id: 14, left: "61.2%", top: "44.2%", width: "14.2%", height: "14.1%" },
+  { id: 15, left: "78.4%", top: "44.3%", width: "14.2%", height: "14.1%" },
+
+  { id: 16, left: "9.4%", top: "61.6%", width: "14.2%", height: "14.1%" },
+  { id: 17, left: "26.7%", top: "61.7%", width: "14.2%", height: "14.1%" },
+  { id: 18, left: "44.0%", top: "61.8%", width: "14.2%", height: "14.1%" },
+  { id: 19, left: "61.3%", top: "61.9%", width: "14.2%", height: "14.1%" },
+  { id: 20, left: "78.5%", top: "62.0%", width: "14.2%", height: "14.1%" },
+
+  { id: 21, left: "9.5%", top: "79.3%", width: "14.2%", height: "14.1%" },
+  { id: 22, left: "26.8%", top: "79.4%", width: "14.2%", height: "14.1%" },
+  { id: 23, left: "44.1%", top: "79.5%", width: "14.2%", height: "14.1%" },
+  { id: 24, left: "61.4%", top: "79.6%", width: "14.2%", height: "14.1%" },
+  { id: 25, left: "78.6%", top: "79.7%", width: "14.2%", height: "14.1%" },
+];
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
   4: 100,
@@ -1051,22 +1089,10 @@ export default function Page() {
                       className="h-full w-full object-contain"
                     />
 
-                    <div
-                      className="absolute"
-                      style={{
-                        left: "9.2%",
-                        top: "7.8%",
-                        width: "81.6%",
-                        height: "82.2%",
-                        display: "grid",
-                        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-                        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
-                        columnGap: "3.1%",
-                        rowGap: "4.2%",
-                      }}
-                    >
-                      {FIELD_VIEW_PLOTS.map((plotId) => {
-                        const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
+                    <div className="absolute inset-0">
+                      {FIELD_VIEW_PLOTS.map((plot) => {
+                        const plotId = plot.id;
+                        const isUnlocked = plotId <= Math.min(unlockedPlots, MAX_FIELDS);
                         const isSelected = selectedPlotId === plotId;
 
                         return (
@@ -1076,33 +1102,39 @@ export default function Page() {
                             disabled={!isUnlocked}
                             onClick={() => setSelectedPlotId(plotId)}
                             title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
-                            className={`relative rounded-xl transition-all duration-300 ${
+                            className={`absolute rounded-xl transition-all duration-300 ${
                               isUnlocked
-                                ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
+                                ? "cursor-pointer hover:scale-[1.02]"
                                 : "cursor-not-allowed opacity-65"
                             }`}
+                            style={{
+                              left: plot.left,
+                              top: plot.top,
+                              width: plot.width,
+                              height: plot.height,
+                            }}
                           >
                             {isUnlocked ? (
                               <>
                                 <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
                                   isSelected
-                                    ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
-                                    : "bg-yellow-300/8"
+                                    ? "bg-yellow-300/18 shadow-[0_0_28px_rgba(255,220,120,0.75)]"
+                                    : "bg-yellow-300/6"
                                 }`} />
                                 <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
                                   isSelected
-                                    ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
-                                    : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
+                                    ? "border-yellow-200 shadow-[0_0_20px_rgba(255,220,120,0.65)]"
+                                    : "border-yellow-300/45 hover:border-yellow-200 hover:shadow-[0_0_18px_rgba(255,220,120,0.45)]"
                                 }`} />
-                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/8 opacity-70 blur-md" />
                                 <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
                                   {plotId}
                                 </span>
                               </>
                             ) : (
                               <>
-                                <div className="absolute inset-0 rounded-xl bg-black/35" />
-                                <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
+                                <div className="absolute inset-0 rounded-xl bg-black/30" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-white/12" />
                                 <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
                                   {displayLevel >= getRequiredLevelForPlot(plotId) ? (
                                     <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
@@ -1169,7 +1201,7 @@ export default function Page() {
                       </p>
 
                       <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Odblokowane pola: {Math.min(unlockedPlots, 25)} / 25
+                        Odblokowane pola: {Math.min(unlockedPlots, MAX_FIELDS)} / 25
                       </div>
                     </>
                   )}
