@@ -46,7 +46,7 @@ const DEFAULT_MAP = "farm1";
 
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 const MAX_FIELDS = 25;
-
+const MAX_LEVEL = 50;
 const FARM_PLOTS = Array.from({ length: MAX_FIELDS }, (_, index) => ({ id: index + 1 }));
 
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
