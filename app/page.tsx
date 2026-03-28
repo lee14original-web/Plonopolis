@@ -1012,7 +1012,7 @@ export default function Page() {
             Wersja mobilna pojawi się w przyszłości jako aplikacja.
           </p>
 
-          <div className="mt-6 text-4xl animate-pulse">🌾</div>
+          <div className="mt-6 text-4xl animate-bounce">🌾</div>
         </div>
       </main>
     );
