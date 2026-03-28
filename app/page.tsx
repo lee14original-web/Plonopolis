@@ -1907,7 +1907,7 @@ export default function Page() {
                               )}
 
                               {getPlotCrop(plotId).watered && (
-                                <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[10px]">
+                                <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[25px]">
                                   💧
                                 </div>
                               )}
