@@ -552,29 +552,25 @@ export default function Page() {
 
     if (selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)) {
       const cropOnPlot = getPlotCrop(selectedPlotId);
-      if (cropOnPlot.cropId && isCropReady(selectedPlotId)) {
-        void handleHarvestPlot(selectedPlotId);
-        return;
-      }
       if (!cropOnPlot.cropId) {
         setIsCropMenuOpen(true);
         return;
       }
-    }
 
-    if (
-      selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) &&
-      selectedPlotId === unlockedPlots + 1 &&
-      displayLevel >= getRequiredLevelForPlot(selectedPlotId)
-    ) {
-      void handleUnlockNextPlot();
+      setMessage({
+        type: "info",
+        title: `Pole #${selectedPlotId}`,
+        text: "Otworzono akcje pola.",
+      });
       return;
     }
 
     setMessage({
       type: "info",
       title: `Pole #${selectedPlotId}`,
-      text: "Wybrano pole klawiaturą.",
+      text: displayLevel >= getRequiredLevelForPlot(selectedPlotId)
+        ? `To pole będzie można odblokować później.`
+        : `To pole odblokujesz od poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`,
     });
   }
 
@@ -1648,7 +1644,10 @@ export default function Page() {
                           <button
                             key={plotId}
                             type="button"
-                            onClick={() => setSelectedPlotId(plotId)}
+                            onClick={() => {
+                              setSelectedPlotId(plotId);
+                              setIsCropMenuOpen(false);
+                            }}
                             title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
                             className={`absolute rounded-xl transition-all duration-300 ${
                               isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
@@ -1730,6 +1729,59 @@ export default function Page() {
                           </button>
                         );
                       })}
+
+                    {selectedPlotId && (
+                      <div className="pointer-events-none absolute inset-0">
+                        {(() => {
+                          const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
+                          if (!activePlot) return null;
+
+                          const isUnlocked = selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS);
+
+                          return (
+                            <div
+                              className="pointer-events-auto absolute z-20 w-[160px] rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.96)] p-2 shadow-2xl"
+                              style={{
+                                left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
+                                top: activePlot.top,
+                              }}
+                            >
+                              <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8ba7a]">
+                                Pole #{selectedPlotId}
+                              </p>
+
+                              <div className="grid gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsCropMenuOpen(true)}
+                                  disabled={!isUnlocked || !!getPlotCrop(selectedPlotId).cropId}
+                                  className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  Zasiej
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] opacity-50"
+                                >
+                                  Podlej
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleHarvestPlot(selectedPlotId)}
+                                  disabled={!isUnlocked || !getPlotCrop(selectedPlotId).cropId}
+                                  className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  Zbierz
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                     </div>
                   </div>
                 </div>
@@ -1779,14 +1831,6 @@ export default function Page() {
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Zbierz
-                        </button>
-                        <button
-                          onClick={handleUnlockNextPlot}
-                          className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50"
-                        >
-                          {selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS)
-                            ? `Odblokuj następne pole (#${unlockedPlots + 1})`
-                            : "Odblokuj pole"}
                         </button>
                         <button
                           onClick={() => {
@@ -1839,7 +1883,7 @@ export default function Page() {
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Wybór rośliny</p>
                   <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                   <p className="mt-2 text-sm text-[#dfcfab]">
-                    Wybierz roślinę do zasiania na tym polu.
+                    Wybierz roślinę po kliknięciu opcji „Zasiej”.
                   </p>
                 </div>
 
