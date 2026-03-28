@@ -1667,7 +1667,7 @@ export default function Page() {
               </div>
 
 
-              <div className="fixed left-2 top-1/2 -translate-y-1/2 z-30">
+              <div className="fixed left-2 top-1/2 -translate-y-1/2 z-[95]">
                 <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
