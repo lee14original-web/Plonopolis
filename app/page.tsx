@@ -889,22 +889,22 @@ export default function Page() {
 
   return (
     <main
-      className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
+      className="h-screen overflow-x-hidden overflow-y-auto bg-cover bg-center bg-no-repeat touch-pan-y"
       style={{
         backgroundImage: profile ? `url('/${currentMap}.png')` : "url('/assetsmain-lobby.png')",
       }}
     >
-      <div className="min-h-screen">
+      <div className="min-h-screen min-w-[1200px] md:min-w-0">
         {profile && (
           <>
             <button
               onClick={handleLogout}
-              className="absolute right-4 top-4 z-20 rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
+              className="absolute right-2 top-2 z-20 rounded-xl border border-red-400/40 bg-red-950/40 px-3 py-2 text-sm font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60 sm:right-4 sm:top-4 sm:rounded-2xl sm:px-4 sm:text-base"
             >
               Wyloguj
             </button>
 
-            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+            <div className="mx-auto flex max-w-5xl justify-center px-2 pt-2 sm:px-4">
               <div className="z-10 w-full max-w-3xl rounded-[20px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-3 py-2 md:px-4 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                 <div
                   className={`grid items-center gap-3 ${
@@ -946,7 +946,7 @@ export default function Page() {
           </>
         )}
 
-        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
+        <div className="mx-auto flex min-h-screen max-w-6xl items-start justify-center px-4 py-4 md:items-center">
           {!profile ? (
             <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
@@ -1099,9 +1099,9 @@ export default function Page() {
               </aside>
             </div>
           ) : (
-            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-              <div className="absolute left-2 top-14 z-20 sm:left-4 sm:top-16">
-                <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+            <div className="relative min-h-screen w-full px-4 pt-6 md:px-8 md:pt-8">
+              <div className="absolute left-2 top-3 z-20 sm:left-4 sm:top-16">
+                <div className="w-[260px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-3 text-[#f3e6c8] shadow-2xl backdrop-blur-sm sm:w-auto sm:rounded-[28px] sm:p-4">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
                   <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
@@ -1132,19 +1132,19 @@ export default function Page() {
                     setIsFieldViewOpen(true);
                     setSelectedPlotId((prev) => prev ?? 1);
                   }}
-                  className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                  className="pointer-events-auto absolute flex items-center justify-center text-lg font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1 sm:text-2xl"
                   style={{
-                    left: "55%",
-                    bottom: "240px",
-                    width: "45%",
-                    height: "150px",
+                    left: "68%",
+                    bottom: "14%",
+                    width: "28%",
+                    height: "92px",
                   }}
                 >
                   <div className="relative flex h-full w-full items-center justify-center rounded-xl">
                     <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
                     <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
                     <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                    <span className="relative text-center drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
                       Pola uprawne
                     </span>
                   </div>
