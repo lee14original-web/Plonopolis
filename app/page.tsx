@@ -60,6 +60,8 @@ type PlotCropState = {
   plantedAt: number | null;
 };
 
+type SeedInventory = Record<string, number>;
+
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
 const DEFAULT_XP_TO_NEXT_LEVEL = 100;
@@ -503,6 +505,13 @@ export default function Page() {
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [isCropMenuOpen, setIsCropMenuOpen] = useState(false);
+  const [seedInventory, setSeedInventory] = useState<SeedInventory>({
+    carrot: 10,
+    potato: 8,
+    tomato: 6,
+    cucumber: 5,
+    onion: 4,
+  });
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -531,6 +540,7 @@ export default function Page() {
     : null;
 
   const availableCrops = CROPS.filter((crop) => displayLevel >= crop.unlockLevel);
+  const cropsInInventory = availableCrops.filter((crop) => (seedInventory[crop.id] ?? 0) > 0);
 
   function moveSelection(direction: "up" | "down" | "left" | "right") {
     const current = selectedPlotId ?? 1;
@@ -1184,12 +1194,26 @@ export default function Page() {
       return;
     }
 
+    if ((seedInventory[cropToPlant.id] ?? 0) <= 0) {
+      setMessage({
+        type: "error",
+        title: "Brak nasion",
+        text: `Nie masz nasion: ${cropToPlant.name}.`,
+      });
+      return;
+    }
+
     setPlotCrops((prev) => ({
       ...prev,
       [plotId]: {
         cropId: cropToPlant.id,
         plantedAt: Date.now(),
       },
+    }));
+
+    setSeedInventory((prev) => ({
+      ...prev,
+      [cropToPlant.id]: Math.max((prev[cropToPlant.id] ?? 0) - 1, 0),
     }));
 
     setIsCropMenuOpen(false);
@@ -1793,7 +1817,7 @@ export default function Page() {
                       <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         {selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)
-                          ? `Dostępne uprawy: ${availableCrops.map((crop) => crop.name).join(", ")}.`
+                          ? `Nasiona w ekwipunku: ${cropsInInventory.length > 0 ? cropsInInventory.map((crop) => `${crop.name} x${seedInventory[crop.id] ?? 0}`).join(", ") : "brak"}.`
                           : displayLevel >= getRequiredLevelForPlot(selectedPlotId)
                           ? `To pole możesz już kupić za ${PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0} PLN.`
                           : `To pole odblokujesz od poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`}
@@ -1883,7 +1907,7 @@ export default function Page() {
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Wybór rośliny</p>
                   <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                   <p className="mt-2 text-sm text-[#dfcfab]">
-                    Wybierz roślinę po kliknięciu opcji „Zasiej”.
+                    Wybierz roślinę z nasion, które masz w ekwipunku.
                   </p>
                 </div>
 
@@ -1897,9 +1921,14 @@ export default function Page() {
               </div>
 
               <div className="mt-4 grid max-h-[60vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-                {CROPS.map((crop) => {
+                {cropsInInventory.length === 0 ? (
+                  <div className="col-span-full rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] p-4 text-center text-sm text-[#dfcfab]">
+                    Nie masz żadnych nasion w ekwipunku.
+                  </div>
+                ) : cropsInInventory.map((crop) => {
                   const isAvailable = displayLevel >= crop.unlockLevel;
                   const growthMinutes = Math.round(crop.growthTimeMs / 60000);
+                  const seedCount = seedInventory[crop.id] ?? 0;
 
                   return (
                     <button
@@ -1920,14 +1949,11 @@ export default function Page() {
                             Poziom {crop.unlockLevel}
                           </p>
                         </div>
-                        {!isAvailable && (
-                          <span className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-bold uppercase text-white/70">
-                            Zablokowane
-                          </span>
-                        )}
+
                       </div>
 
                       <div className="mt-3 space-y-1 text-sm text-[#dfcfab]">
+                        <p>Nasiona: {seedCount}</p>
                         <p>Czas: {growthMinutes} min</p>
                         <p>Zbiór: {crop.yieldAmount} szt.</p>
                         <p>EXP: {crop.expReward}</p>
