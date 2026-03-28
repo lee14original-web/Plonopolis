@@ -64,6 +64,7 @@ const DEFAULT_XP_TO_NEXT_LEVEL = 100;
 const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
+const MAX_LEVEL = 50;
 
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
