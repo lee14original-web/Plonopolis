@@ -228,6 +228,7 @@ export default function Page() {
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [, setGrowthTick] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(true);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -414,6 +415,18 @@ export default function Page() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const checkScreen = () => {
+      const isSmall = window.innerWidth < 1024;
+      setIsDesktop(!isSmall);
+    };
+
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+
+    return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
   useEffect(() => {
@@ -979,6 +992,30 @@ export default function Page() {
       title: "Zbiory zakończone",
       text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
     });
+  }
+
+  if (!isDesktop) {
+    return (
+      <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
+        <div className="max-w-md rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-8 shadow-2xl">
+          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">
+            Plonopolis
+          </p>
+
+          <h1 className="mt-4 text-3xl font-black text-[#f9e7b2]">
+            Tylko komputer 🖥️
+          </h1>
+
+          <p className="mt-4 text-sm leading-6 text-[#dfcfab]">
+            Gra jest obecnie dostępna tylko na komputerze.
+            <br /><br />
+            Wersja mobilna pojawi się w przyszłości jako aplikacja.
+          </p>
+
+          <div className="mt-6 text-4xl">🌾</div>
+        </div>
+      </main>
+    );
   }
 
   if (!ready) {
