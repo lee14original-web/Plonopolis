@@ -82,7 +82,7 @@ const CROPS: Crop[] = [
     growthTimeMs: 3 * 60_000,
     yieldAmount: 2,
     expReward: 2,
-    spritePath: "/carrot.png",
+    spritePath: "/carrot_icon_transparent.png",
   },
   {
     id: "potato",
@@ -819,7 +819,7 @@ export default function Page() {
     };
   }, [isDraggingBackpack, dragOffset]);
 
-  function startBackpackDrag(event: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) {
+  function startBackpackDrag(event: React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     setIsDraggingBackpack(true);
     setDragOffset({
@@ -1709,24 +1709,9 @@ export default function Page() {
               </div>
 
 
-              <div
-                className="fixed z-[95]"
-                style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}
-              >
+              <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
                 <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <div
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      startBackpackDrag(event);
-                    }}
-                    className={`mb-3 flex select-none items-center justify-between rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] px-3 py-2 ${
-                      isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"
-                    }`}
-                    title="Przeciągnij plecak"
-                  >
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
-                    <span className="text-sm text-[#dfcfab]">↕</span>
-                  </div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
                   <button
                     type="button"
@@ -1767,19 +1752,23 @@ export default function Page() {
                                 setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                 setSelectedTool(null);
                               }}
-                              className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition ${
+                              className={`flex w-full items-center justify-center rounded-2xl border px-3 py-3 text-left transition ${
                                 selectedSeedId === seedId
                                   ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_24px_rgba(255,220,120,0.2)]"
                                   : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
                               }`}
                             >
-                              <div>
-                                <p className="text-sm font-black text-[#f9e7b2]">{crop.name}</p>
-                                <p className="text-xs text-[#dfcfab]">Nasiona</p>
+                              <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)]">
+                                <img
+                                  src={crop.spritePath}
+                                  alt={crop.name}
+                                  className="h-10 w-10 object-contain"
+                                  style={{ imageRendering: "pixelated" }}
+                                />
+                                <span className="absolute bottom-0.5 right-0.5 rounded-md bg-black/75 px-1.5 py-0.5 text-[10px] font-black leading-none text-[#f9e7b2]">
+                                  {amount}
+                                </span>
                               </div>
-                              <span className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8]">
-                                x{amount}
-                              </span>
                             </button>
                           );
                         })
