@@ -1328,7 +1328,6 @@ export default function Page() {
       },
     }));
 
-    setSelectedTool(null);
     setMessage({
       type: "success",
       title: "Podlano pole",
