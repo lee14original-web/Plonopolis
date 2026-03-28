@@ -58,6 +58,7 @@ type Crop = {
 type PlotCropState = {
   cropId: string | null;
   plantedAt: number | null;
+  watered?: boolean;
 };
 
 type SeedInventory = Record<string, number>;
@@ -504,14 +505,11 @@ export default function Page() {
   const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
-  const [isCropMenuOpen, setIsCropMenuOpen] = useState(false);
   const [seedInventory, setSeedInventory] = useState<SeedInventory>({
-    carrot: 10,
-    potato: 8,
-    tomato: 6,
-    cucumber: 5,
-    onion: 4,
+    carrot: 3,
   });
+  const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -560,32 +558,50 @@ export default function Page() {
   function confirmSelectedPlot() {
     if (!selectedPlotId) return;
 
-    if (selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)) {
-      const cropOnPlot = getPlotCrop(selectedPlotId);
-      if (!cropOnPlot.cropId) {
-        setIsCropMenuOpen(true);
-        return;
-      }
+    if (selectedTool === "watering_can") {
+      handleWaterPlot(selectedPlotId);
+      return;
+    }
 
-      setMessage({
-        type: "info",
-        title: `Pole #${selectedPlotId}`,
-        text: "Otworzono akcje pola.",
-      });
+    if (selectedSeedId) {
+      handlePlantFromSelectedSeed(selectedPlotId);
+      return;
+    }
+
+    const plot = getPlotCrop(selectedPlotId);
+    if (plot.cropId && isCropReady(selectedPlotId)) {
+      void handleHarvestPlot(selectedPlotId);
       return;
     }
 
     setMessage({
       type: "info",
       title: `Pole #${selectedPlotId}`,
-      text: displayLevel >= getRequiredLevelForPlot(selectedPlotId)
-        ? `To pole będzie można odblokować później.`
-        : `To pole odblokujesz od poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`,
+      text: "Wybierz nasiono z plecaka albo kliknij konewkę.",
     });
   }
 
   function getPlotCrop(plotId: number) {
-    return plotCrops[plotId] ?? { cropId: null, plantedAt: null };
+    return plotCrops[plotId] ?? { cropId: null, plantedAt: null, watered: false };
+  }
+
+
+  function getPlantedCrop(plotId: number) {
+    const plot = getPlotCrop(plotId);
+    if (!plot.cropId) return null;
+    return CROPS.find((item) => item.id == plot.cropId) ?? null;
+  }
+
+  function getEffectiveGrowthTimeMs(plotId: number) {
+    const plot = getPlotCrop(plotId);
+    const crop = getPlantedCrop(plotId);
+    if (!crop) return 0;
+
+    if (plot.watered) {
+      return Math.round(crop.growthTimeMs * 0.85);
+    }
+
+    return crop.growthTimeMs;
   }
 
   function getGrowthProgress(plotId: number) {
@@ -596,7 +612,7 @@ export default function Page() {
     if (!crop) return 0;
 
     const elapsed = Date.now() - plot.plantedAt;
-    return Math.max(0, Math.min(1, elapsed / crop.growthTimeMs));
+    return Math.max(0, Math.min(1, elapsed / getEffectiveGrowthTimeMs(plotId)));
   }
 
   function getGrowthStage(plotId: number) {
@@ -616,7 +632,7 @@ export default function Page() {
     const crop = CROPS.find((item) => item.id === plot.cropId);
     if (!crop) return false;
 
-    return Date.now() - plot.plantedAt >= crop.growthTimeMs;
+    return Date.now() - plot.plantedAt >= getEffectiveGrowthTimeMs(plotId);
   }
 
   function getRemainingGrowthSeconds(plotId: number) {
@@ -626,7 +642,7 @@ export default function Page() {
     const crop = CROPS.find((item) => item.id === plot.cropId);
     if (!crop) return 0;
 
-    const remaining = crop.growthTimeMs - (Date.now() - plot.plantedAt);
+    const remaining = getEffectiveGrowthTimeMs(plotId) - (Date.now() - plot.plantedAt);
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
@@ -768,7 +784,6 @@ export default function Page() {
       } else if (key === "escape") {
         setIsFieldViewOpen(false);
         setSelectedPlotId(null);
-        setIsCropMenuOpen(false);
       }
     };
 
@@ -1044,6 +1059,8 @@ export default function Page() {
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
+    setSelectedSeedId(null);
+    setSelectedTool(null);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1162,7 +1179,16 @@ export default function Page() {
     });
   }
 
-  function handlePlantCrop(plotId: number, cropId: string) {
+  function handlePlantFromSelectedSeed(plotId: number) {
+    if (!selectedSeedId) {
+      setMessage({
+        type: "info",
+        title: "Wybierz nasiono",
+        text: "Najpierw kliknij nasiono w plecaku.",
+      });
+      return;
+    }
+
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
@@ -1174,13 +1200,13 @@ export default function Page() {
       return;
     }
 
-    const cropToPlant = CROPS.find((crop) => crop.id === cropId);
+    const cropToPlant = CROPS.find((crop) => crop.id === selectedSeedId);
 
     if (!cropToPlant) {
       setMessage({
         type: "error",
         title: "Brak uprawy",
-        text: "Nie udało się znaleźć wybranej rośliny.",
+        text: "Nie udało się znaleźć wybranego nasiona.",
       });
       return;
     }
@@ -1208,6 +1234,7 @@ export default function Page() {
       [plotId]: {
         cropId: cropToPlant.id,
         plantedAt: Date.now(),
+        watered: false,
       },
     }));
 
@@ -1216,12 +1243,57 @@ export default function Page() {
       [cropToPlant.id]: Math.max((prev[cropToPlant.id] ?? 0) - 1, 0),
     }));
 
-    setIsCropMenuOpen(false);
-
     setMessage({
       type: "success",
       title: `Posadzono ${cropToPlant.name.toLowerCase()}`,
       text: `Pole #${plotId} zaczęło rosnąć.`,
+    });
+  }
+
+  function handleWaterPlot(plotId: number) {
+    const plot = getPlotCrop(plotId);
+    const crop = getPlantedCrop(plotId);
+
+    if (!crop || !plot.cropId) {
+      setMessage({
+        type: "info",
+        title: "Brak uprawy",
+        text: "Najpierw posadź roślinę na tym polu.",
+      });
+      return;
+    }
+
+    if (plot.watered) {
+      setMessage({
+        type: "info",
+        title: "Pole już podlane",
+        text: "To pole zostało już podlane.",
+      });
+      return;
+    }
+
+    if (isCropReady(plotId)) {
+      setMessage({
+        type: "info",
+        title: "Uprawa gotowa",
+        text: "Ta uprawa jest już gotowa do zbioru.",
+      });
+      return;
+    }
+
+    setPlotCrops((prev) => ({
+      ...prev,
+      [plotId]: {
+        ...prev[plotId],
+        watered: true,
+      },
+    }));
+
+    setSelectedTool(null);
+    setMessage({
+      type: "success",
+      title: "Podlano pole",
+      text: `${crop.name} będzie rosła o 15% szybciej.`,
     });
   }
 
@@ -1292,6 +1364,7 @@ export default function Page() {
       [plotId]: {
         cropId: null,
         plantedAt: null,
+        watered: false,
       },
     }));
 
@@ -1596,13 +1669,77 @@ export default function Page() {
                 </div>
               </div>
 
+
+              <div className="absolute left-4 top-52 z-20">
+                <div className="w-[210px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                      setSelectedSeedId(null);
+                    }}
+                    className={`mt-3 flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                      selectedTool === "watering_can"
+                        ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                    }`}
+                  >
+                    <span className="text-3xl">🚿</span>
+                    <div>
+                      <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                      <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
+                    </div>
+                  </button>
+
+                  <div className="mt-4 space-y-2">
+                    {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
+                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                        Plecak jest pusty.
+                      </div>
+                    ) : (
+                      Object.entries(seedInventory)
+                        .filter(([, amount]) => amount > 0)
+                        .map(([seedId, amount]) => {
+                          const crop = CROPS.find((item) => item.id === seedId);
+                          if (!crop) return null;
+
+                          return (
+                            <button
+                              key={seedId}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
+                                setSelectedTool(null);
+                              }}
+                              className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left transition ${
+                                selectedSeedId === seedId
+                                  ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_24px_rgba(255,220,120,0.2)]"
+                                  : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                              }`}
+                            >
+                              <div>
+                                <p className="text-sm font-black text-[#f9e7b2]">{crop.name}</p>
+                                <p className="text-xs text-[#dfcfab]">Nasiona</p>
+                              </div>
+                              <span className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8]">
+                                x{amount}
+                              </span>
+                            </button>
+                          );
+                        })
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <button
                   type="button"
                   onClick={() => {
                     setIsFieldViewOpen(true);
                     setSelectedPlotId((prev) => prev ?? 1);
-                    setIsCropMenuOpen(false);
                   }}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
@@ -1633,7 +1770,6 @@ export default function Page() {
                 onClick={() => {
                   setIsFieldViewOpen(false);
                   setSelectedPlotId(null);
-                  setIsCropMenuOpen(false);
                 }}
                 className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                 aria-label="Zamknij widok pola"
@@ -1670,7 +1806,14 @@ export default function Page() {
                             type="button"
                             onClick={() => {
                               setSelectedPlotId(plotId);
-                              setIsCropMenuOpen(false);
+                                        if (selectedTool === "watering_can") {
+                                handleWaterPlot(plotId);
+                                return;
+                              }
+                              if (selectedSeedId) {
+                                handlePlantFromSelectedSeed(plotId);
+                                return;
+                              }
                             }}
                             title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
                             className={`absolute rounded-xl transition-all duration-300 ${
@@ -1754,31 +1897,33 @@ export default function Page() {
                         );
                       })}
 
-                    {selectedPlotId && (
+                                        {selectedPlotId && (
                       <div className="pointer-events-none absolute inset-0">
                         {(() => {
                           const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
                           if (!activePlot) return null;
 
-                          const isUnlocked = selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS);
-
                           return (
                             <div
-                              className="pointer-events-auto absolute z-20 w-[160px] rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.96)] p-2 shadow-2xl"
+                              className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
                               style={{
                                 left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
                                 top: activePlot.top,
                               }}
                             >
-                              <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8ba7a]">
-                                Pole #{selectedPlotId}
-                              </p>
-
-                              <div className="grid gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setIsCropMenuOpen(true)}
-                                  disabled={!isUnlocked || !!getPlotCrop(selectedPlotId).cropId}
+                              {selectedTool === "watering_can"
+                                ? "Kliknij pole, aby podlać"
+                                : selectedSeedId
+                                ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
+                                : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
+                                ? "Enter lub kliknij pole, aby zebrać"
+                                : "Wybierz nasiono z plecaka albo konewkę"}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+disabled={!isUnlocked || !!getPlotCrop(selectedPlotId).cropId}
                                   className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   Zasiej
@@ -1859,8 +2004,7 @@ export default function Page() {
                         <button
                           onClick={() => {
                             setSelectedPlotId(null);
-                            setIsCropMenuOpen(false);
-                          }}
+                                  }}
                           className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
                         >
                           Zamknij menu pola
@@ -1886,81 +2030,13 @@ export default function Page() {
                       onClick={() => {
                         setIsFieldViewOpen(false);
                         setSelectedPlotId(null);
-                        setIsCropMenuOpen(false);
-                      }}
+                          }}
                       className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
                     >
                       Powrót do farmy
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isCropMenuOpen && selectedPlotId && (
-          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4">
-            <div className="w-full max-w-2xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.96)] p-4 text-[#f3e6c8] shadow-2xl">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Wybór rośliny</p>
-                  <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Wybierz roślinę z nasion, które masz w ekwipunku.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setIsCropMenuOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
-                  aria-label="Zamknij wybór rośliny"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="mt-4 grid max-h-[60vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
-                {cropsInInventory.length === 0 ? (
-                  <div className="col-span-full rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] p-4 text-center text-sm text-[#dfcfab]">
-                    Nie masz żadnych nasion w ekwipunku.
-                  </div>
-                ) : cropsInInventory.map((crop) => {
-                  const isAvailable = displayLevel >= crop.unlockLevel;
-                  const growthMinutes = Math.round(crop.growthTimeMs / 60000);
-                  const seedCount = seedInventory[crop.id] ?? 0;
-
-                  return (
-                    <button
-                      key={crop.id}
-                      type="button"
-                      disabled={!isAvailable}
-                      onClick={() => handlePlantCrop(selectedPlotId, crop.id)}
-                      className={`rounded-2xl border p-4 text-left transition ${
-                        isAvailable
-                          ? "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                          : "border-white/10 bg-black/20 opacity-60 cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-lg font-black text-[#f9e7b2]">{crop.name}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-                            Poziom {crop.unlockLevel}
-                          </p>
-                        </div>
-
-                      </div>
-
-                      <div className="mt-3 space-y-1 text-sm text-[#dfcfab]">
-                        <p>Nasiona: {seedCount}</p>
-                        <p>Czas: {growthMinutes} min</p>
-                        <p>Zbiór: {crop.yieldAmount} szt.</p>
-                        <p>EXP: {crop.expReward}</p>
-                      </div>
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </div>
