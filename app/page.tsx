@@ -228,7 +228,6 @@ export default function Page() {
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [, setGrowthTick] = useState(0);
-  const [isLandscapeMobile, setIsLandscapeMobile] = useState(true);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -258,6 +257,7 @@ export default function Page() {
 
   function moveSelection(direction: "up" | "down" | "left" | "right") {
     const current = selectedPlotId ?? 1;
+
     let row = Math.floor((current - 1) / 5);
     let col = (current - 1) % 5;
 
@@ -353,12 +353,15 @@ export default function Page() {
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
     if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
+
     const modalData = getFarmUpgradeMessage(level);
     if (!modalData) return;
+
     if (typeof window === "undefined") return;
 
     const storageKey = getFarmUpgradeStorageKey(userId, level);
     const alreadySeen = window.localStorage.getItem(storageKey);
+
     if (alreadySeen === "1") return;
 
     setFarmUpgradeModal(modalData);
@@ -369,6 +372,7 @@ export default function Page() {
       const storageKey = getFarmUpgradeStorageKey(profile.id, farmUpgradeModal.level);
       window.localStorage.setItem(storageKey, "1");
     }
+
     setFarmUpgradeModal(null);
   }
 
@@ -379,6 +383,7 @@ export default function Page() {
 
   useEffect(() => {
     let mounted = true;
+
     const bootstrap = async () => {
       try {
         const {
@@ -386,6 +391,7 @@ export default function Page() {
         } = await supabase.auth.getSession();
 
         if (!mounted) return;
+
         if (session?.user) {
           await loadProfile(session.user.id);
         }
@@ -404,37 +410,29 @@ export default function Page() {
     };
 
     void bootstrap();
+
     return () => {
       mounted = false;
     };
   }, []);
 
   useEffect(() => {
-    const checkOrientation = () => {
-      const isMobile = window.innerWidth < 1024;
-      const isLandscape = window.innerWidth > window.innerHeight;
-      setIsLandscapeMobile(!isMobile || isLandscape);
-    };
-
-    checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-    window.addEventListener("orientationchange", checkOrientation);
-
-    return () => {
-      window.removeEventListener("resize", checkOrientation);
-      window.removeEventListener("orientationchange", checkOrientation);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!message) return;
-    const timer = setTimeout(() => setMessage(null), 3000);
+
+    const timer = setTimeout(() => {
+      setMessage(null);
+    }, 3000);
+
     return () => clearTimeout(timer);
   }, [message]);
 
   useEffect(() => {
     if (!isFieldViewOpen) return;
-    const interval = setInterval(() => setGrowthTick((prev) => prev + 1), 500);
+
+    const interval = setInterval(() => {
+      setGrowthTick((prev) => prev + 1);
+    }, 500);
+
     return () => clearInterval(interval);
   }, [isFieldViewOpen]);
 
@@ -443,6 +441,7 @@ export default function Page() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+
       if (
         [
           "w",
@@ -461,12 +460,17 @@ export default function Page() {
         e.preventDefault();
       }
 
-      if (key === "w" || key === "arrowup") moveSelection("up");
-      else if (key === "s" || key === "arrowdown") moveSelection("down");
-      else if (key === "a" || key === "arrowleft") moveSelection("left");
-      else if (key === "d" || key === "arrowright") moveSelection("right");
-      else if (key === "enter" || key === " ") confirmSelectedPlot();
-      else if (key === "escape") {
+      if (key === "w" || key === "arrowup") {
+        moveSelection("up");
+      } else if (key === "s" || key === "arrowdown") {
+        moveSelection("down");
+      } else if (key === "a" || key === "arrowleft") {
+        moveSelection("left");
+      } else if (key === "d" || key === "arrowright") {
+        moveSelection("right");
+      } else if (key === "enter" || key === " ") {
+        confirmSelectedPlot();
+      } else if (key === "escape") {
         setIsFieldViewOpen(false);
         setSelectedPlotId(null);
       }
@@ -486,7 +490,11 @@ export default function Page() {
       .maybeSingle();
 
     if (error) {
-      setMessage({ type: "error", title: "Błąd profilu", text: error.message });
+      setMessage({
+        type: "error",
+        title: "Błąd profilu",
+        text: error.message,
+      });
       return;
     }
 
@@ -499,7 +507,6 @@ export default function Page() {
       ...data,
       level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
     } as Profile;
-
     setProfile(nextProfile);
 
     const maxForCurrentLevel = getMaxPlotsForLevel(nextProfile.level ?? DEFAULT_LEVEL);
@@ -523,21 +530,41 @@ export default function Page() {
     const confirmPassword = registerForm.confirmPassword;
 
     if (!login || !email || !password || !confirmPassword) {
-      setMessage({ type: "error", title: "Brak danych", text: "Uzupełnij wszystkie pola rejestracji." });
+      setMessage({
+        type: "error",
+        title: "Brak danych",
+        text: "Uzupełnij wszystkie pola rejestracji.",
+      });
       return;
     }
+
     if (login.length < 3) {
-      setMessage({ type: "error", title: "Login jest za krótki", text: "Login powinien mieć minimum 3 znaki." });
+      setMessage({
+        type: "error",
+        title: "Login jest za krótki",
+        text: "Login powinien mieć minimum 3 znaki.",
+      });
       return;
     }
+
     if (!isEmailValid(email)) {
-      setMessage({ type: "error", title: "Nieprawidłowy email", text: "Podaj poprawny adres email." });
+      setMessage({
+        type: "error",
+        title: "Nieprawidłowy email",
+        text: "Podaj poprawny adres email.",
+      });
       return;
     }
+
     if (password.length < 6) {
-      setMessage({ type: "error", title: "Hasło jest za krótkie", text: "Hasło powinno mieć minimum 6 znaków." });
+      setMessage({
+        type: "error",
+        title: "Hasło jest za krótkie",
+        text: "Hasło powinno mieć minimum 6 znaków.",
+      });
       return;
     }
+
     if (password !== confirmPassword) {
       setMessage({
         type: "error",
@@ -554,11 +581,20 @@ export default function Page() {
       .limit(1);
 
     if (existingLoginError) {
-      setMessage({ type: "error", title: "Błąd sprawdzania loginu", text: existingLoginError.message });
+      setMessage({
+        type: "error",
+        title: "Błąd sprawdzania loginu",
+        text: existingLoginError.message,
+      });
       return;
     }
+
     if (existingLogin && existingLogin.length > 0) {
-      setMessage({ type: "error", title: "Login zajęty", text: "Ten login już istnieje. Wybierz inny." });
+      setMessage({
+        type: "error",
+        title: "Login zajęty",
+        text: "Ten login już istnieje. Wybierz inny.",
+      });
       return;
     }
 
@@ -569,17 +605,34 @@ export default function Page() {
       .limit(1);
 
     if (existingEmailError) {
-      setMessage({ type: "error", title: "Błąd sprawdzania emaila", text: existingEmailError.message });
-      return;
-    }
-    if (existingEmail && existingEmail.length > 0) {
-      setMessage({ type: "error", title: "Email zajęty", text: "Na ten adres email konto już zostało utworzone." });
+      setMessage({
+        type: "error",
+        title: "Błąd sprawdzania emaila",
+        text: existingEmailError.message,
+      });
       return;
     }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (existingEmail && existingEmail.length > 0) {
+      setMessage({
+        type: "error",
+        title: "Email zajęty",
+        text: "Na ten adres email konto już zostało utworzone.",
+      });
+      return;
+    }
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
     if (signUpError) {
-      setMessage({ type: "error", title: "Błąd rejestracji", text: signUpError.message });
+      setMessage({
+        type: "error",
+        title: "Błąd rejestracji",
+        text: signUpError.message,
+      });
       return;
     }
 
@@ -607,15 +660,30 @@ export default function Page() {
     });
 
     if (profileError) {
-      setMessage({ type: "error", title: "Błąd zapisu profilu", text: profileError.message });
+      setMessage({
+        type: "error",
+        title: "Błąd zapisu profilu",
+        text: profileError.message,
+      });
       return;
     }
 
     setUnlockedPlots(3);
     await loadProfile(userId);
-    setRegisterForm({ login: "", email: "", password: "", confirmPassword: "" });
+
+    setRegisterForm({
+      login: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+
     setTab("login");
-    setMessage({ type: "success", title: "Konto utworzone", text: "Nowy gracz startuje z 3 darmowymi polami." });
+    setMessage({
+      type: "success",
+      title: "Konto utworzone",
+      text: "Nowy gracz startuje z 3 darmowymi polami.",
+    });
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -626,17 +694,34 @@ export default function Page() {
     const password = loginForm.password;
 
     if (!identifier || !password) {
-      setMessage({ type: "error", title: "Brak danych", text: "Podaj email oraz hasło." });
-      return;
-    }
-    if (!isEmailValid(identifier)) {
-      setMessage({ type: "error", title: "Nieprawidłowy email", text: "Zaloguj się używając adresu email." });
+      setMessage({
+        type: "error",
+        title: "Brak danych",
+        text: "Podaj email oraz hasło.",
+      });
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email: identifier, password });
+    if (!isEmailValid(identifier)) {
+      setMessage({
+        type: "error",
+        title: "Nieprawidłowy email",
+        text: "Zaloguj się używając adresu email.",
+      });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: identifier,
+      password,
+    });
+
     if (error) {
-      setMessage({ type: "error", title: "Błędne logowanie", text: error.message });
+      setMessage({
+        type: "error",
+        title: "Błędne logowanie",
+        text: error.message,
+      });
       return;
     }
 
@@ -649,7 +734,11 @@ export default function Page() {
     }
 
     setLoginForm({ identifier: "", password: "" });
-    setMessage({ type: "success", title: "Witaj ponownie", text: "Sesja gracza została wczytana." });
+    setMessage({
+      type: "success",
+      title: "Witaj ponownie",
+      text: "Sesja gracza została wczytana.",
+    });
   }
 
   async function handleLogout() {
@@ -659,7 +748,11 @@ export default function Page() {
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
-    setMessage({ type: "info", title: "Wylogowano", text: "Sesja została zakończona." });
+    setMessage({
+      type: "info",
+      title: "Wylogowano",
+      text: "Sesja została zakończona.",
+    });
   }
 
   async function handleSaveProgress() {
@@ -701,14 +794,25 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({ type: "error", title: "Błąd zapisu", text: error.message });
+      setMessage({
+        type: "error",
+        title: "Błąd zapisu",
+        text: error.message,
+      });
       return;
     }
 
     await loadProfile(profile.id);
-    if (nextLevel > oldLevel) showFarmUpgradeModalOnce(profile.id, nextLevel);
 
-    setMessage({ type: "success", title: "Postęp zapisany", text: "" });
+    if (nextLevel > oldLevel) {
+      showFarmUpgradeModalOnce(profile.id, nextLevel);
+    }
+
+    setMessage({
+      type: "success",
+      title: "Postęp zapisany",
+      text: "",
+    });
   }
 
   async function handleUnlockNextPlot() {
@@ -744,7 +848,11 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({ type: "error", title: "Błąd odblokowania", text: error.message });
+      setMessage({
+        type: "error",
+        title: "Błąd odblokowania",
+        text: error.message,
+      });
       return;
     }
 
@@ -762,7 +870,11 @@ export default function Page() {
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
-      setMessage({ type: "info", title: "Pole zajęte", text: "Na tym polu już coś rośnie." });
+      setMessage({
+        type: "info",
+        title: "Pole zajęte",
+        text: "Na tym polu już coś rośnie.",
+      });
       return;
     }
 
@@ -783,7 +895,11 @@ export default function Page() {
       },
     }));
 
-    setMessage({ type: "success", title: "Posadzono marchew", text: `Pole #${plotId} zaczęło rosnąć.` });
+    setMessage({
+      type: "success",
+      title: "Posadzono marchew",
+      text: `Pole #${plotId} zaczęło rosnąć.`,
+    });
   }
 
   async function handleHarvestPlot(plotId: number) {
@@ -791,7 +907,11 @@ export default function Page() {
 
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) {
-      setMessage({ type: "info", title: "Puste pole", text: "Najpierw coś posadź na tym polu." });
+      setMessage({
+        type: "info",
+        title: "Puste pole",
+        text: "Najpierw coś posadź na tym polu.",
+      });
       return;
     }
 
@@ -836,7 +956,11 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
+      setMessage({
+        type: "error",
+        title: "Błąd zbioru",
+        text: error.message,
+      });
       return;
     }
 
@@ -857,25 +981,6 @@ export default function Page() {
     });
   }
 
-  if (!isLandscapeMobile) {
-    return (
-      <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
-        <div className="max-w-sm rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.92)] p-6 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#d8ba7a]">
-            Plonopolis
-          </p>
-          <h1 className="mt-3 text-2xl font-black text-[#f9e7b2]">
-            Obróć telefon
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-            Ta gra działa najlepiej w poziomie. Obróć telefon, aby wygodnie grać.
-          </p>
-          <div className="mt-5 text-5xl">📱↻</div>
-        </div>
-      </main>
-    );
-  }
-
   if (!ready) {
     return (
       <main className="flex h-screen items-center justify-center bg-[#1a130d] text-[#f3e6c8]">
@@ -889,23 +994,25 @@ export default function Page() {
 
   return (
     <main
-      className="h-screen overflow-x-hidden overflow-y-auto bg-cover bg-center bg-no-repeat touch-pan-y"
+      className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: profile ? `url('/${currentMap}.png')` : "url('/assetsmain-lobby.png')",
+        backgroundImage: profile
+          ? `url('/${currentMap}.png')`
+          : "url('/assetsmain-lobby.png')",
       }}
     >
-      <div className="min-h-screen min-w-[1200px] md:min-w-0">
+      <div className="min-h-screen">
         {profile && (
           <>
             <button
               onClick={handleLogout}
-              className="absolute right-2 top-2 z-20 rounded-xl border border-red-400/40 bg-red-950/40 px-3 py-2 text-sm font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60 sm:right-4 sm:top-4 sm:rounded-2xl sm:px-4 sm:text-base"
+              className="absolute right-4 top-4 z-20 rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
             >
               Wyloguj
             </button>
 
-            <div className="mx-auto flex max-w-5xl justify-center px-2 pt-2 sm:px-4">
-              <div className="z-10 w-full max-w-3xl rounded-[20px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-3 py-2 md:px-4 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                 <div
                   className={`grid items-center gap-3 ${
                     displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
@@ -946,7 +1053,7 @@ export default function Page() {
           </>
         )}
 
-        <div className="mx-auto flex min-h-screen max-w-6xl items-start justify-center px-4 py-4 md:items-center">
+        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
           {!profile ? (
             <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
@@ -963,7 +1070,9 @@ export default function Page() {
                     <button
                       onClick={() => setTab("login")}
                       className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
+                        tab === "login"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
                       }`}
                     >
                       Logowanie
@@ -971,7 +1080,9 @@ export default function Page() {
                     <button
                       onClick={() => setTab("register")}
                       className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
+                        tab === "register"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
                       }`}
                     >
                       Rejestracja
@@ -986,7 +1097,9 @@ export default function Page() {
                           type="text"
                           placeholder="twoj@email.pl"
                           value={loginForm.identifier}
-                          onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
+                          }
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -997,7 +1110,9 @@ export default function Page() {
                           type="password"
                           placeholder="Wpisz hasło"
                           value={loginForm.password}
-                          onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, password: e.target.value }))
+                          }
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1017,7 +1132,9 @@ export default function Page() {
                           type="text"
                           placeholder="Unikalny login"
                           value={registerForm.login}
-                          onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
+                          }
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1028,7 +1145,9 @@ export default function Page() {
                           type="email"
                           placeholder="twoj@email.pl"
                           value={registerForm.email}
-                          onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
+                          }
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1040,7 +1159,9 @@ export default function Page() {
                             type="password"
                             placeholder="Minimum 6 znaków"
                             value={registerForm.password}
-                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
+                            onChange={(e) =>
+                              setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
+                            }
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1052,7 +1173,10 @@ export default function Page() {
                             placeholder="Powtórz hasło"
                             value={registerForm.confirmPassword}
                             onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                              setRegisterForm((prev) => ({
+                                ...prev,
+                                confirmPassword: e.target.value,
+                              }))
                             }
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
@@ -1099,9 +1223,9 @@ export default function Page() {
               </aside>
             </div>
           ) : (
-            <div className="relative min-h-screen w-full px-4 pt-6 md:px-8 md:pt-8">
-              <div className="absolute left-2 top-3 z-20 sm:left-4 sm:top-16">
-                <div className="w-[260px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-3 text-[#f3e6c8] shadow-2xl backdrop-blur-sm sm:w-auto sm:rounded-[28px] sm:p-4">
+            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
+              <div className="absolute left-4 top-16 z-20">
+                <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
                   <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
@@ -1132,19 +1256,19 @@ export default function Page() {
                     setIsFieldViewOpen(true);
                     setSelectedPlotId((prev) => prev ?? 1);
                   }}
-                  className="pointer-events-auto absolute flex items-center justify-center text-lg font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1 sm:text-2xl"
+                  className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
-                    left: "68%",
-                    bottom: "14%",
-                    width: "28%",
-                    height: "92px",
+                    left: "55%",
+                    bottom: "240px",
+                    width: "45%",
+                    height: "150px",
                   }}
                 >
                   <div className="relative flex h-full w-full items-center justify-center rounded-xl">
                     <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
                     <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
                     <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                    <span className="relative text-center drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
                       Pola uprawne
                     </span>
                   </div>
@@ -1155,30 +1279,30 @@ export default function Page() {
         </div>
 
         {isFieldViewOpen && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-1 sm:px-2 sm:py-2">
-            <div className="relative h-[95vh] w-full max-w-[1600px] overflow-y-auto rounded-[20px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-3 md:p-5 shadow-2xl backdrop-blur-sm">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
+            <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
                 onClick={() => {
                   setIsFieldViewOpen(false);
                   setSelectedPlotId(null);
                 }}
-                className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60 md:right-4 md:top-4"
+                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                 aria-label="Zamknij widok pola"
               >
                 ×
               </button>
 
-              <div className="mb-3 pr-12 md:mb-4 md:pr-14">
+              <div className="mb-4 pr-14">
                 <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                <h2 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Twoje pole uprawne</h2>
+                <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                 <p className="mt-2 text-sm text-[#dfcfab]">
-                  Kliknij pole w siatce 5 × 5 albo użyj WASD / strzałek. Na telefonie widok skaluje się do pełnej wysokości ekranu.
+                  Kliknij pole w siatce 5 × 5 albo użyj WASD / strzałek, aby otworzyć menu pola.
                 </p>
               </div>
 
-              <div className="grid gap-3 md:gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="relative overflow-hidden rounded-[18px] border border-[#8b6a3e] bg-black/20">
-                  <div className="relative mx-auto w-full max-w-[1100px] min-h-[260px] aspect-[1536/1092]">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
                       src="/farm-field-view.png"
                       alt="Widok pola 25 slotów"
@@ -1239,11 +1363,11 @@ export default function Page() {
                                 )}
                                 <div className="absolute inset-x-1 bottom-1 z-10 text-center">
                                   {getPlotCrop(plotId).cropId ? (
-                                    <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
+                                    <span className="rounded-md bg-black/45 px-1.5 py-0.5 text-[10px] font-bold text-white/90">
                                       {isCropReady(plotId) ? "Gotowe!" : `${getRemainingGrowthSeconds(plotId)} s`}
                                     </span>
                                   ) : (
-                                    <span className="text-xs font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] sm:text-sm md:text-base">
+                                    <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
                                       {plotId}
                                     </span>
                                   )}
@@ -1263,11 +1387,11 @@ export default function Page() {
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
                                   {displayLevel >= getRequiredLevelForPlot(plotId) ? (
-                                    <span className="text-[9px] font-bold uppercase leading-tight text-[#f5dfb0] sm:text-[10px] md:text-sm">
+                                    <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
                                       KOSZT: {PLOT_UNLOCK_COSTS[plotId] ?? 0} PLN
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] font-bold leading-tight text-white/80 sm:text-[10px] md:text-sm">
+                                    <span className="text-[11px] font-bold text-white/80 leading-tight md:text-sm">
                                       Wymaga lv: {getRequiredLevelForPlot(plotId)}
                                     </span>
                                   )}
@@ -1281,11 +1405,11 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-3 text-[#f3e6c8] shadow-2xl md:p-4">
+                <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
                   {selectedPlotId ? (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Pole #{selectedPlotId}</h3>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         {selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)
                           ? "Marchew od poziomu 1. Czas wzrostu: 30 sekund. Plon: 3 sztuki. Nagroda: 2 EXP za zbiór z jednego pola."
@@ -1309,10 +1433,7 @@ export default function Page() {
                       <div className="mt-4 grid gap-2">
                         <button
                           onClick={() => handlePlantCarrot(selectedPlotId)}
-                          disabled={
-                            selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) ||
-                            !!getPlotCrop(selectedPlotId).cropId
-                          }
+                          disabled={selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) || !!getPlotCrop(selectedPlotId).cropId}
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Zasiej marchew
@@ -1325,10 +1446,7 @@ export default function Page() {
                         </button>
                         <button
                           onClick={() => handleHarvestPlot(selectedPlotId)}
-                          disabled={
-                            selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) ||
-                            !getPlotCrop(selectedPlotId).cropId
-                          }
+                          disabled={selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) || !getPlotCrop(selectedPlotId).cropId}
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Zbierz
@@ -1352,7 +1470,7 @@ export default function Page() {
                   ) : (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Wybierz pole</h3>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Wybierz pole</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         Kliknij jedno z odblokowanych pól w siatce 5 × 5, aby otworzyć jego menu.
                       </p>
