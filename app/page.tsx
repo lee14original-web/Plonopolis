@@ -37,31 +37,10 @@ type FarmPlot = {
   height: string;
 };
 
-type FieldViewPlotLayout = {
-  id: number;
-  left: string;
-  top: string;
-  width: string;
-  height: string;
+type UnlockRule = {
+  level: number;
+  maxPlots: number;
 };
-
-type Crop = {
-  id: string;
-  name: string;
-  unlockLevel: number;
-  growthTimeMs: number;
-  yieldAmount: number;
-  expReward: number;
-  spritePath: string;
-};
-
-type PlotCropState = {
-  cropId: string | null;
-  plantedAt: number | null;
-  watered?: boolean;
-};
-
-type SeedInventory = Record<string, number>;
 
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
@@ -69,279 +48,69 @@ const DEFAULT_XP_TO_NEXT_LEVEL = 100;
 const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
-const MAX_LEVEL = 50;
-const MAX_FIELDS = 25;
 
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
-const CROPS: Crop[] = [
-  {
-    id: "carrot",
-    name: "Marchew",
-    unlockLevel: 1,
-    growthTimeMs: 3 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/carrot_icon_transparent.png",
-  },
-  {
-    id: "potato",
-    name: "Ziemniak",
-    unlockLevel: 2,
-    growthTimeMs: 4 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/potato.png",
-  },
-  {
-    id: "tomato",
-    name: "Pomidor",
-    unlockLevel: 3,
-    growthTimeMs: 5 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/tomato.png",
-  },
-  {
-    id: "cucumber",
-    name: "Ogórek",
-    unlockLevel: 4,
-    growthTimeMs: 7 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/cucumber.png",
-  },
-  {
-    id: "onion",
-    name: "Cebula",
-    unlockLevel: 5,
-    growthTimeMs: 10 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/onion.png",
-  },
-  {
-    id: "garlic",
-    name: "Czosnek",
-    unlockLevel: 6,
-    growthTimeMs: 14 * 60_000,
-    yieldAmount: 2,
-    expReward: 2,
-    spritePath: "/garlic.png",
-  },
-  {
-    id: "lettuce",
-    name: "Sałata",
-    unlockLevel: 7,
-    growthTimeMs: 18 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/lettuce.png",
-  },
-  {
-    id: "radish",
-    name: "Rzodkiewka",
-    unlockLevel: 8,
-    growthTimeMs: 24 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/radish.png",
-  },
-  {
-    id: "beet",
-    name: "Burak",
-    unlockLevel: 9,
-    growthTimeMs: 32 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/beet.png",
-  },
-  {
-    id: "pepper",
-    name: "Papryka",
-    unlockLevel: 10,
-    growthTimeMs: 42 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/pepper.png",
-  },
-  {
-    id: "cabbage",
-    name: "Kapusta",
-    unlockLevel: 11,
-    growthTimeMs: 55 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/cabbage.png",
-  },
-  {
-    id: "broccoli",
-    name: "Brokuł",
-    unlockLevel: 12,
-    growthTimeMs: 72 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/broccoli.png",
-  },
-  {
-    id: "cauliflower",
-    name: "Kalafior",
-    unlockLevel: 13,
-    growthTimeMs: 95 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/cauliflower.png",
-  },
-  {
-    id: "strawberry",
-    name: "Truskawka",
-    unlockLevel: 14,
-    growthTimeMs: 125 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/strawberry.png",
-  },
-  {
-    id: "raspberry",
-    name: "Malina",
-    unlockLevel: 15,
-    growthTimeMs: 165 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/raspberry.png",
-  },
-  {
-    id: "blueberry",
-    name: "Borówka",
-    unlockLevel: 16,
-    growthTimeMs: 215 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/blueberry.png",
-  },
-  {
-    id: "eggplant",
-    name: "Bakłażan",
-    unlockLevel: 17,
-    growthTimeMs: 280 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/eggplant.png",
-  },
-  {
-    id: "zucchini",
-    name: "Cukinia",
-    unlockLevel: 18,
-    growthTimeMs: 360 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/zucchini.png",
-  },
-  {
-    id: "watermelon",
-    name: "Arbuz",
-    unlockLevel: 19,
-    growthTimeMs: 435 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/watermelon.png",
-  },
-  {
-    id: "grape",
-    name: "Winogrono",
-    unlockLevel: 20,
-    growthTimeMs: 500 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/grape.png",
-  },
-  {
-    id: "pumpkin",
-    name: "Dynia",
-    unlockLevel: 21,
-    growthTimeMs: 540 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/pumpkin.png",
-  },
-  {
-    id: "rapeseed",
-    name: "Rzepak",
-    unlockLevel: 22,
-    growthTimeMs: 580 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/rapeseed.png",
-  },
-  {
-    id: "sunflower",
-    name: "Słonecznik",
-    unlockLevel: 23,
-    growthTimeMs: 620 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/sunflower.png",
-  },
-  {
-    id: "chili",
-    name: "Papryczka chili",
-    unlockLevel: 24,
-    growthTimeMs: 660 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/chili.png",
-  },
-  {
-    id: "asparagus",
-    name: "Szparagi",
-    unlockLevel: 25,
-    growthTimeMs: 720 * 60_000,
-    yieldAmount: 3,
-    expReward: 2,
-    spritePath: "/asparagus.png",
-  },
+const FARM_PLOTS: FarmPlot[] = [
+  { id: 1, left: "51%", top: "53%", width: "8.5%", height: "10%" },
+  { id: 2, left: "61%", top: "52%", width: "8.5%", height: "10%" },
+  { id: 3, left: "71%", top: "51%", width: "8.5%", height: "10%" },
+  { id: 4, left: "81%", top: "50%", width: "8.5%", height: "10%" },
+
+  { id: 5, left: "50%", top: "65%", width: "8.5%", height: "10%" },
+  { id: 6, left: "60%", top: "64%", width: "8.5%", height: "10%" },
+  { id: 7, left: "70%", top: "63%", width: "8.5%", height: "10%" },
+  { id: 8, left: "80%", top: "62%", width: "8.5%", height: "10%" },
+
+  { id: 9, left: "49%", top: "76%", width: "8.5%", height: "10%" },
+  { id: 10, left: "59%", top: "75%", width: "8.5%", height: "10%" },
+  { id: 11, left: "69%", top: "74%", width: "8.5%", height: "10%" },
+  { id: 12, left: "79%", top: "73%", width: "8.5%", height: "10%" },
+
+  { id: 13, left: "48%", top: "87%", width: "8.5%", height: "10%" },
+  { id: 14, left: "58%", top: "86%", width: "8.5%", height: "10%" },
+  { id: 15, left: "68%", top: "85%", width: "8.5%", height: "10%" },
+  { id: 16, left: "78%", top: "84%", width: "8.5%", height: "10%" },
+
+  { id: 17, left: "46%", top: "98%", width: "8.5%", height: "10%" },
+  { id: 18, left: "56%", top: "97%", width: "8.5%", height: "10%" },
+  { id: 19, left: "66%", top: "96%", width: "8.5%", height: "10%" },
+  { id: 20, left: "76%", top: "95%", width: "8.5%", height: "10%" },
+
+  { id: 21, left: "44%", top: "109%", width: "8.5%", height: "10%" },
+  { id: 22, left: "54%", top: "108%", width: "8.5%", height: "10%" },
+  { id: 23, left: "64%", top: "107%", width: "8.5%", height: "10%" },
+  { id: 24, left: "74%", top: "106%", width: "8.5%", height: "10%" },
+
+  { id: 25, left: "42%", top: "120%", width: "8.5%", height: "10%" },
+  { id: 26, left: "52%", top: "119%", width: "8.5%", height: "10%" },
+  { id: 27, left: "62%", top: "118%", width: "8.5%", height: "10%" },
+  { id: 28, left: "72%", top: "117%", width: "8.5%", height: "10%" },
+
+  { id: 29, left: "40%", top: "131%", width: "8.5%", height: "10%" },
+  { id: 30, left: "50%", top: "130%", width: "8.5%", height: "10%" },
+  { id: 31, left: "60%", top: "129%", width: "8.5%", height: "10%" },
+  { id: 32, left: "70%", top: "128%", width: "8.5%", height: "10%" },
+
+  { id: 33, left: "38%", top: "142%", width: "8.5%", height: "10%" },
+  { id: 34, left: "48%", top: "141%", width: "8.5%", height: "10%" },
+  { id: 35, left: "58%", top: "140%", width: "8.5%", height: "10%" },
+  { id: 36, left: "68%", top: "139%", width: "8.5%", height: "10%" },
+
+  { id: 37, left: "36%", top: "153%", width: "8.5%", height: "10%" },
+  { id: 38, left: "46%", top: "152%", width: "8.5%", height: "10%" },
+  { id: 39, left: "56%", top: "151%", width: "8.5%", height: "10%" },
+  { id: 40, left: "66%", top: "150%", width: "8.5%", height: "10%" },
+
+  { id: 41, left: "34%", top: "164%", width: "8.5%", height: "10%" },
+  { id: 42, left: "44%", top: "163%", width: "8.5%", height: "10%" },
+  { id: 43, left: "54%", top: "162%", width: "8.5%", height: "10%" },
+  { id: 44, left: "64%", top: "161%", width: "8.5%", height: "10%" },
+  { id: 45, left: "74%", top: "160%", width: "8.5%", height: "10%" },
 ];
 
 
-const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => ({
-  id: index + 1,
-  left: "0%",
-  top: "0%",
-  width: "0%",
-  height: "0%",
-}));
-
-const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
-  { id: 1, left: "10.5%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 2, left: "27.2%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 3, left: "43.9%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 4, left: "60.6%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 5, left: "77.3%", top: "10.0%", width: "12.5%", height: "10.0%" },
-
-  { id: 6, left: "10.5%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 7, left: "27.2%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 8, left: "43.9%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 9, left: "60.6%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 10, left: "77.3%", top: "26.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 11, left: "10.5%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 12, left: "27.2%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 13, left: "43.9%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 14, left: "60.6%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 15, left: "77.3%", top: "41.9%", width: "12.5%", height: "10.0%" },
-
-  { id: 16, left: "10.5%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 17, left: "27.2%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 18, left: "43.9%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 19, left: "60.6%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 20, left: "77.3%", top: "58.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 21, left: "10.5%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 22, left: "27.2%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 23, left: "43.9%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 24, left: "60.6%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 25, left: "77.3%", top: "75.0%", width: "12.5%", height: "10.0%" },
-];
+const FIELD_VIEW_PLOTS = Array.from({ length: 25 }, (_, index) => index + 1);
 
 const PLOT_UNLOCK_COSTS: Record<number, number> = {
   4: 100,
@@ -368,63 +137,33 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
   25: 4000,
 };
 
-
-const XP_TABLE: Record<number, number> = {
-  1: 100,
-  2: 140,
-  3: 180,
-  4: 250,
-  5: 330,
-  6: 450,
-  7: 600,
-  8: 800,
-  9: 1100,
-  10: 1500,
-  11: 2000,
-  12: 2700,
-  13: 3600,
-  14: 5000,
-  15: 7000,
-  16: 9000,
-  17: 12000,
-  18: 16000,
-  19: 22000,
-  20: 30000,
-  21: 40000,
-  22: 55000,
-  23: 75000,
-  24: 100000,
-  25: 135000,
-  26: 180000,
-  27: 240000,
-  28: 320000,
-  29: 420000,
-  30: 550000,
-  31: 720000,
-  32: 950000,
-  33: 1250000,
-  34: 1650000,
-  35: 2200000,
-  36: 2900000,
-  37: 3800000,
-  38: 5000000,
-  39: 6500000,
-  40: 8500000,
-  41: 11000000,
-  42: 14500000,
-  43: 19000000,
-  44: 25000000,
-  45: 33000000,
-  46: 43000000,
-  47: 56000000,
-  48: 73000000,
-  49: 95000000,
-  50: 120000000,
-};
-
-function getXpForLevel(level: number) {
-  return XP_TABLE[level] ?? 999999999;
-}
+const PLOT_LIMITS_BY_LEVEL: UnlockRule[] = [
+  { level: 1, maxPlots: 3 },
+  { level: 2, maxPlots: 4 },
+  { level: 3, maxPlots: 5 },
+  { level: 4, maxPlots: 6 },
+  { level: 5, maxPlots: 7 },
+  { level: 6, maxPlots: 8 },
+  { level: 7, maxPlots: 9 },
+  { level: 8, maxPlots: 10 },
+  { level: 9, maxPlots: 11 },
+  { level: 10, maxPlots: 12 },
+  { level: 11, maxPlots: 14 },
+  { level: 12, maxPlots: 16 },
+  { level: 13, maxPlots: 18 },
+  { level: 14, maxPlots: 20 },
+  { level: 15, maxPlots: 22 },
+  { level: 16, maxPlots: 24 },
+  { level: 17, maxPlots: 26 },
+  { level: 18, maxPlots: 28 },
+  { level: 19, maxPlots: 30 },
+  { level: 20, maxPlots: 32 },
+  { level: 21, maxPlots: 34 },
+  { level: 22, maxPlots: 36 },
+  { level: 23, maxPlots: 38 },
+  { level: 24, maxPlots: 40 },
+  { level: 25, maxPlots: 45 },
+];
 
 function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
@@ -466,11 +205,6 @@ function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   return null;
 }
 
-function getRequiredLevelForPlot(plotId: number) {
-  if (plotId <= 3) return 1;
-  return plotId - 2;
-}
-
 function getMapForLevel(level: number | null | undefined) {
   const safeLevel = level ?? DEFAULT_LEVEL;
 
@@ -501,20 +235,9 @@ export default function Page() {
     password: "",
   });
 
-  const [selectedPlotId, setSelectedPlotId] = useState<number | null>(1);
+  const [selectedPlotId, setSelectedPlotId] = useState<number | null>(null);
   const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
-  const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
-  const [seedInventory, setSeedInventory] = useState<SeedInventory>({
-    carrot: 3,
-  });
-  const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
-  const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
-  const [, setGrowthTick] = useState(0);
-  const [isDesktop, setIsDesktop] = useState(true);
-  const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
-  const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -536,118 +259,20 @@ export default function Page() {
     }).format(displayMoney);
   }, [displayMoney]);
 
-
-  const availableCrops = CROPS.filter((crop) => displayLevel >= crop.unlockLevel);
-  const cropsInInventory = availableCrops.filter((crop) => (seedInventory[crop.id] ?? 0) > 0);
-
-  function moveSelection(direction: "up" | "down" | "left" | "right") {
-    const current = selectedPlotId ?? 1;
-
-    let row = Math.floor((current - 1) / 5);
-    let col = (current - 1) % 5;
-
-    if (direction === "up" && row > 0) row -= 1;
-    if (direction === "down" && row < 4) row += 1;
-    if (direction === "left" && col > 0) col -= 1;
-    if (direction === "right" && col < 4) col += 1;
-
-    const nextPlotId = row * 5 + col + 1;
-    setSelectedPlotId(nextPlotId);
-  }
-
-  function confirmSelectedPlot() {
-    if (!selectedPlotId) return;
-
-    if (selectedTool === "watering_can") {
-      handleWaterPlot(selectedPlotId);
-      return;
-    }
-
-    if (selectedSeedId) {
-      handlePlantFromSelectedSeed(selectedPlotId);
-      return;
-    }
-
-    const plot = getPlotCrop(selectedPlotId);
-    if (plot.cropId && isCropReady(selectedPlotId)) {
-      void handleHarvestPlot(selectedPlotId);
-      return;
-    }
-
-    setMessage({
-      type: "info",
-      title: `Pole #${selectedPlotId}`,
-      text: "Wybierz nasiono z plecaka albo kliknij konewkę.",
-    });
-  }
-
-  function getPlotCrop(plotId: number) {
-    return plotCrops[plotId] ?? { cropId: null, plantedAt: null, watered: false };
-  }
-
-
-  function getPlantedCrop(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    if (!plot.cropId) return null;
-    return CROPS.find((item) => item.id == plot.cropId) ?? null;
-  }
-
-  function getEffectiveGrowthTimeMs(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    const crop = getPlantedCrop(plotId);
-    if (!crop) return 0;
-
-    if (plot.watered) {
-      return Math.round(crop.growthTimeMs * 0.85);
-    }
-
-    return crop.growthTimeMs;
-  }
-
-  function getGrowthProgress(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    if (!plot.cropId || !plot.plantedAt) return 0;
-
-    const crop = CROPS.find((item) => item.id === plot.cropId);
-    if (!crop) return 0;
-
-    const elapsed = Date.now() - plot.plantedAt;
-    return Math.max(0, Math.min(1, elapsed / getEffectiveGrowthTimeMs(plotId)));
-  }
-
-  function getGrowthStage(plotId: number) {
-    const progress = getGrowthProgress(plotId);
-
-    if (progress < 0.2) return 1;
-    if (progress < 0.4) return 2;
-    if (progress < 0.6) return 3;
-    if (progress < 0.8) return 4;
-    return 5;
-  }
-
-  function isCropReady(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    if (!plot.cropId || !plot.plantedAt) return false;
-
-    const crop = CROPS.find((item) => item.id === plot.cropId);
-    if (!crop) return false;
-
-    return Date.now() - plot.plantedAt >= getEffectiveGrowthTimeMs(plotId);
-  }
-
-  function getRemainingGrowthSeconds(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    if (!plot.cropId || !plot.plantedAt) return 0;
-
-    const crop = CROPS.find((item) => item.id === plot.cropId);
-    if (!crop) return 0;
-
-    const remaining = getEffectiveGrowthTimeMs(plotId) - (Date.now() - plot.plantedAt);
-    return Math.max(0, Math.ceil(remaining / 1000));
-  }
+  const selectedPlot = selectedPlotId
+    ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
+    : null;
 
   function getMaxPlotsForLevel(level: number) {
-    return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
+    let maxPlots = 3;
+
+    for (const rule of PLOT_LIMITS_BY_LEVEL) {
+      if (level >= rule.level) {
+        maxPlots = rule.maxPlots;
+      }
+    }
+
+    return maxPlots;
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
@@ -677,7 +302,7 @@ export default function Page() {
 
   const maxPlotsForLevel = getMaxPlotsForLevel(displayLevel);
   const nextPlotNumber = unlockedPlots + 1;
-  const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < MAX_FIELDS;
+  const canUnlockMore = unlockedPlots < maxPlotsForLevel && unlockedPlots < FARM_PLOTS.length;
   const nextPlotCost = PLOT_UNLOCK_COSTS[nextPlotNumber] ?? null;
 
   useEffect(() => {
@@ -708,23 +333,11 @@ export default function Page() {
       }
     };
 
-    void bootstrap();
+    bootstrap();
 
     return () => {
       mounted = false;
     };
-  }, []);
-
-  useEffect(() => {
-    const checkScreen = () => {
-      const isSmall = window.innerWidth < 1024;
-      setIsDesktop(!isSmall);
-    };
-
-    checkScreen();
-    window.addEventListener("resize", checkScreen);
-
-    return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
   useEffect(() => {
@@ -736,97 +349,6 @@ export default function Page() {
 
     return () => clearTimeout(timer);
   }, [message]);
-
-  useEffect(() => {
-    if (!isFieldViewOpen) return;
-
-    const interval = setInterval(() => {
-      setGrowthTick((prev) => prev + 1);
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [isFieldViewOpen]);
-
-  useEffect(() => {
-    if (!isFieldViewOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-
-      if (
-        [
-          "w",
-          "a",
-          "s",
-          "d",
-          "arrowup",
-          "arrowdown",
-          "arrowleft",
-          "arrowright",
-          "enter",
-          " ",
-          "escape",
-        ].includes(key)
-      ) {
-        e.preventDefault();
-      }
-
-      if (key === "w" || key === "arrowup") {
-        moveSelection("up");
-      } else if (key === "s" || key === "arrowdown") {
-        moveSelection("down");
-      } else if (key === "a" || key === "arrowleft") {
-        moveSelection("left");
-      } else if (key === "d" || key === "arrowright") {
-        moveSelection("right");
-      } else if (key === "enter" || key === " ") {
-        confirmSelectedPlot();
-      } else if (key === "escape") {
-        setIsFieldViewOpen(false);
-        setSelectedPlotId(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId]);
-
-
-  useEffect(() => {
-    const defaultY = Math.max(24, Math.round((window.innerHeight - 420) / 2));
-    setBackpackPosition((prev) => ({ ...prev, y: prev.y || defaultY }));
-  }, []);
-
-  useEffect(() => {
-    if (!isDraggingBackpack) return;
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const nextX = Math.max(8, Math.min(window.innerWidth - 230, event.clientX - dragOffset.x));
-      const nextY = Math.max(8, Math.min(window.innerHeight - 520, event.clientY - dragOffset.y));
-      setBackpackPosition({ x: nextX, y: nextY });
-    };
-
-    const handlePointerUp = () => {
-      setIsDraggingBackpack(false);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, [isDraggingBackpack, dragOffset]);
-
-  function startBackpackDrag(event: React.PointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setIsDraggingBackpack(true);
-    setDragOffset({
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    });
-  }
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
@@ -851,10 +373,7 @@ export default function Page() {
       return;
     }
 
-    const nextProfile = {
-      ...data,
-      level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
-    } as Profile;
+    const nextProfile = data as Profile;
     setProfile(nextProfile);
 
     const maxForCurrentLevel = getMaxPlotsForLevel(nextProfile.level ?? DEFAULT_LEVEL);
@@ -1000,7 +519,7 @@ export default function Page() {
       email,
       level: DEFAULT_LEVEL,
       xp: DEFAULT_XP,
-      xp_to_next_level: getXpForLevel(DEFAULT_LEVEL),
+      xp_to_next_level: DEFAULT_XP_TO_NEXT_LEVEL,
       money: DEFAULT_MONEY,
       location: DEFAULT_LOCATION,
       current_map: getMapForLevel(DEFAULT_LEVEL),
@@ -1096,10 +615,6 @@ export default function Page() {
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
-    setSelectedSeedId(null);
-    setSelectedTool(null);
-    setIsDraggingBackpack(false);
-    setIsDraggingBackpack(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1117,17 +632,11 @@ export default function Page() {
     let nextXpToNextLevel = displayXpToNextLevel;
     let nextMoney = displayMoney + 25;
 
-    if (nextXp >= displayXpToNextLevel && nextLevel < MAX_LEVEL) {
-      nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
+    if (nextXp >= displayXpToNextLevel) {
+      nextLevel += 1;
       nextXpStored = nextXp - displayXpToNextLevel;
-      nextXpToNextLevel = getXpForLevel(nextLevel);
+      nextXpToNextLevel = displayXpToNextLevel + 50;
       nextMoney += 100;
-    }
-
-    if (nextLevel >= MAX_LEVEL) {
-      nextLevel = MAX_LEVEL;
-      nextXpStored = 0;
-      nextXpToNextLevel = 0;
     }
 
     const nextMap = getMapForLevel(nextLevel);
@@ -1218,227 +727,6 @@ export default function Page() {
     });
   }
 
-  function handlePlantFromSelectedSeed(plotId: number) {
-    if (!selectedSeedId) {
-      setMessage({
-        type: "info",
-        title: "Wybierz nasiono",
-        text: "Najpierw kliknij nasiono w plecaku.",
-      });
-      return;
-    }
-
-    const plot = getPlotCrop(plotId);
-
-    if (plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Pole zajęte",
-        text: "Na tym polu już coś rośnie.",
-      });
-      return;
-    }
-
-    const cropToPlant = CROPS.find((crop) => crop.id === selectedSeedId);
-
-    if (!cropToPlant) {
-      setMessage({
-        type: "error",
-        title: "Brak uprawy",
-        text: "Nie udało się znaleźć wybranego nasiona.",
-      });
-      return;
-    }
-
-    if (displayLevel < cropToPlant.unlockLevel) {
-      setMessage({
-        type: "error",
-        title: "Za niski poziom",
-        text: `${cropToPlant.name} odblokowuje się od poziomu ${cropToPlant.unlockLevel}.`,
-      });
-      return;
-    }
-
-    if ((seedInventory[cropToPlant.id] ?? 0) <= 0) {
-      setMessage({
-        type: "error",
-        title: "Brak nasion",
-        text: `Nie masz nasion: ${cropToPlant.name}.`,
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        cropId: cropToPlant.id,
-        plantedAt: Date.now(),
-        watered: false,
-      },
-    }));
-
-    setSeedInventory((prev) => ({
-      ...prev,
-      [cropToPlant.id]: Math.max((prev[cropToPlant.id] ?? 0) - 1, 0),
-    }));
-
-    setMessage({
-      type: "success",
-      title: `Posadzono ${cropToPlant.name.toLowerCase()}`,
-      text: `Pole #${plotId} zaczęło rosnąć.`,
-    });
-  }
-
-  function handleWaterPlot(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    const crop = getPlantedCrop(plotId);
-
-    if (!crop || !plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Brak uprawy",
-        text: "Najpierw posadź roślinę na tym polu.",
-      });
-      return;
-    }
-
-    if (plot.watered) {
-      setMessage({
-        type: "info",
-        title: "Pole już podlane",
-        text: "To pole zostało już podlane.",
-      });
-      return;
-    }
-
-    if (isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa gotowa",
-        text: "Ta uprawa jest już gotowa do zbioru.",
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        ...prev[plotId],
-        watered: true,
-      },
-    }));
-
-    setMessage({
-      type: "success",
-      title: "Podlano pole",
-      text: `${crop.name} będzie rosła o 15% szybciej.`,
-    });
-  }
-
-  async function handleHarvestPlot(plotId: number) {
-    if (!profile) return;
-
-    const plot = getPlotCrop(plotId);
-    if (!plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Puste pole",
-        text: "Najpierw coś posadź na tym polu.",
-      });
-      return;
-    }
-
-    const crop = CROPS.find((item) => item.id === plot.cropId);
-    if (!crop) return;
-
-    if (!isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa jeszcze rośnie",
-        text: `${crop.name} będzie gotowa za około ${getRemainingGrowthSeconds(plotId)} s.`,
-      });
-      return;
-    }
-
-    const gainedXp = crop.expReward;
-    let nextLevel = displayLevel;
-    let nextXp = displayXp + gainedXp;
-    let nextXpToNextLevel = displayXpToNextLevel;
-
-    while (nextLevel < MAX_LEVEL && nextXpToNextLevel > 0 && nextXp >= nextXpToNextLevel) {
-      nextXp -= nextXpToNextLevel;
-      nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpToNextLevel = getXpForLevel(nextLevel);
-    }
-
-    if (nextLevel >= MAX_LEVEL) {
-      nextLevel = MAX_LEVEL;
-      nextXp = 0;
-      nextXpToNextLevel = 0;
-    }
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        level: nextLevel,
-        xp: nextXp,
-        xp_to_next_level: nextXpToNextLevel,
-        current_map: getMapForLevel(nextLevel),
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
-
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zbioru",
-        text: error.message,
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        cropId: null,
-        plantedAt: null,
-        watered: false,
-      },
-    }));
-
-    await loadProfile(profile.id);
-
-    setMessage({
-      type: "success",
-      title: "Zbiory zakończone",
-      text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
-    });
-  }
-
-  if (!isDesktop) {
-    return (
-      <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
-        <div className="max-w-md rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-8 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">
-            Plonopolis
-          </p>
-
-          <h1 className="mt-4 text-3xl font-black text-[#f9e7b2]">
-            Tylko komputer 🖥️
-          </h1>
-
-          <p className="mt-4 text-sm leading-6 text-[#dfcfab]">
-            Gra jest obecnie dostępna tylko na komputerze.
-            <br /><br />
-            Wersja mobilna pojawi się w przyszłości jako aplikacja.
-          </p>
-
-          <div className="mt-6 text-4xl animate-bounce">🌾</div>
-        </div>
-      </main>
-    );
-  }
-
   if (!ready) {
     return (
       <main className="flex h-screen items-center justify-center bg-[#1a130d] text-[#f3e6c8]">
@@ -1471,34 +759,23 @@ export default function Page() {
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
               <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
-                <div
-                  className={`grid items-center gap-3 ${
-                    displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
-                  }`}
-                >
-                  {displayLevel < MAX_LEVEL && (
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-                        <span>EXP do następnego poziomu</span>
-                        <span>{xpPercent}%</span>
-                      </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-black/40">
-                        <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-                          style={{ width: `${xpPercent}%` }}
-                        />
-                      </div>
+                <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                      <span>EXP do następnego poziomu</span>
+                      <span>{xpPercent}%</span>
                     </div>
-                  )}
+                    <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                      <div
+                        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                        style={{ width: `${xpPercent}%` }}
+                      />
+                    </div>
+                  </div>
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
                     <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
                     <p className="text-2xl font-black text-white">{displayLevel}</p>
-                    {displayLevel >= MAX_LEVEL && (
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
-                        MAX LEVEL
-                      </p>
-                    )}
                   </div>
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
@@ -1682,14 +959,14 @@ export default function Page() {
             </div>
           ) : (
             <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-              <div className="absolute left-56 top-16 z-20">
+              <div className="absolute left-4 top-16 z-20">
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
                   <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">
-                    Pola: {Math.min(unlockedPlots, MAX_FIELDS)} / {maxPlotsForLevel}
+                    Pola: {unlockedPlots} / {maxPlotsForLevel}
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -1704,85 +981,15 @@ export default function Page() {
                       Graj
                     </button>
                   </div>
-                </div>
-              </div>
 
-
-              <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
-                <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                      setSelectedSeedId(null);
-                    }}
-                    className={`mt-3 flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                      selectedTool === "watering_can"
-                        ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                    }`}
-                  >
-                    <span className="text-3xl">🚿</span>
-                    <div>
-                      <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                      <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
-                    </div>
-                  </button>
-
-                  <div className="mt-4 space-y-2">
-                    {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
-                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Plecak jest pusty.
-                      </div>
-                    ) : (
-                      Object.entries(seedInventory)
-                        .filter(([, amount]) => amount > 0)
-                        .map(([seedId, amount]) => {
-                          const crop = CROPS.find((item) => item.id === seedId);
-                          if (!crop) return null;
-
-                          return (
-                            <button
-                              key={seedId}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
-                                setSelectedTool(null);
-                              }}
-                              className={`flex w-full items-center justify-center rounded-2xl border px-3 py-3 text-left transition ${
-                                selectedSeedId === seedId
-                                  ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_24px_rgba(255,220,120,0.2)]"
-                                  : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                              }`}
-                            >
-                              <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)]">
-                                <img
-                                  src={crop.spritePath}
-                                  alt={crop.name}
-                                  className="h-10 w-10 object-contain"
-                                  style={{ imageRendering: "pixelated" }}
-                                />
-                                <span className="absolute bottom-0.5 right-0.5 rounded-md bg-black/75 px-1.5 py-0.5 text-[10px] font-black leading-none text-[#f9e7b2]">
-                                  {amount}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })
-                    )}
-                  </div>
+                  
                 </div>
               </div>
 
               <div className="absolute inset-0 z-20 pointer-events-none">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsFieldViewOpen(true);
-                    setSelectedPlotId((prev) => prev ?? 1);
-                  }}
+                  onClick={() => setIsFieldViewOpen(true)}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
                     left: "55%",
@@ -1801,10 +1008,11 @@ export default function Page() {
                   </div>
                 </button>
               </div>
+
+
             </div>
           )}
         </div>
-
 
         {isFieldViewOpen && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
@@ -1824,163 +1032,146 @@ export default function Page() {
                 <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                 <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                 <p className="mt-2 text-sm text-[#dfcfab]">
-                  Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                  Kliknij pole w siatce 5 × 5, aby otworzyć menu pola.
                 </p>
               </div>
 
-              <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
-                <div className="relative mx-auto aspect-[1536/1092] w-full">
-                  <img
-                    src="/farm-field-view.png"
-                    alt="Widok pola 25 slotów"
-                    className="h-full w-full object-contain"
-                  />
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative mx-auto aspect-[1536/1092] w-full">
+                    <img
+                      src="/farm-field-view.png"
+                      alt="Widok pola 25 slotów"
+                      className="h-full w-full object-contain"
+                    />
 
-                  <div className="absolute inset-0">
-                    {FIELD_VIEW_PLOTS.map((plot) => {
-                      const plotId = plot.id;
-                      const isUnlocked = plotId <= Math.min(unlockedPlots, MAX_FIELDS);
-                      const isSelected = selectedPlotId === plotId;
+                    <div
+                      className="absolute"
+                      style={{
+                        left: "9.2%",
+                        top: "7.8%",
+                        width: "81.6%",
+                        height: "82.2%",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
+                        columnGap: "3.1%",
+                        rowGap: "4.2%",
+                      }}
+                    >
+                      {FIELD_VIEW_PLOTS.map((plotId) => {
+                        const isUnlocked = plotId <= Math.min(unlockedPlots, 25);
+                        const isSelected = selectedPlotId === plotId;
 
-                      return (
-                        <button
-                          key={plotId}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPlotId(plotId);
-
-                            if (selectedTool === "watering_can") {
-                              handleWaterPlot(plotId);
-                              return;
-                            }
-
-                            if (selectedSeedId) {
-                              handlePlantFromSelectedSeed(plotId);
-                              return;
-                            }
-
-                            if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
-                              void handleHarvestPlot(plotId);
-                            }
-                          }}
-                          title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
-                          className={`absolute rounded-xl transition-all duration-300 ${
-                            isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
-                          }`}
-                          style={{
-                            left: plot.left,
-                            top: plot.top,
-                            width: plot.width,
-                            height: plot.height,
-                          }}
-                        >
-                          {isUnlocked ? (
-                            <>
-                              <div
-                                className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                        return (
+                          <button
+                            key={plotId}
+                            type="button"
+                            disabled={!isUnlocked}
+                            onClick={() => setSelectedPlotId(plotId)}
+                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            className={`relative rounded-xl transition-all duration-300 ${
+                              isUnlocked
+                                ? "cursor-pointer hover:scale-[1.03] hover:-translate-y-0.5"
+                                : "cursor-not-allowed opacity-65"
+                            }`}
+                          >
+                            {isUnlocked ? (
+                              <>
+                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${
                                   isSelected
                                     ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
                                     : "bg-yellow-300/8"
-                                }`}
-                              />
-                              <div
-                                className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
+                                }`} />
+                                <div className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
                                   isSelected
                                     ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
                                     : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
-                                }`}
-                              />
-                              <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+                                }`} />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+                                <span className="relative z-10 text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
+                                  {plotId}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <div className="absolute inset-0 rounded-xl bg-black/35" />
+                                <div className="absolute inset-0 rounded-xl border-2 border-white/15" />
+                                <div className="absolute inset-0 flex items-center justify-center text-center">
+  <span className="text-xs font-bold text-white/80 md:text-sm">
+    Wymaga lv: {plotId}
+  </span>
+</div>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
 
-                              {getPlotCrop(plotId).cropId && (
-                                <div
-                                  className="absolute inset-[8%] pointer-events-none"
-                                  style={{
-                                    backgroundImage: "url('/carrot.png')",
-                                    backgroundSize: "500% 100%",
-                                    backgroundPosition: `${(getGrowthStage(plotId) - 1) * -100}% 0%`,
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundPositionY: "0%",
-                                    imageRendering: "pixelated",
-                                  }}
-                                />
-                              )}
+                <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
+                  {selectedPlot ? (
+                    <>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlot.id}</h3>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Tutaj później dodamy sadzenie, podlewanie i zbiór dla wybranego pola.
+                      </p>
 
-                              {getPlotCrop(plotId).watered && (
-                                <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[10px]">
-                                  💧
-                                </div>
-                              )}
-
-                              <div className="absolute inset-x-1 bottom-1 z-10 text-center">
-                                {getPlotCrop(plotId).cropId ? (
-                                  <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
-                                    {isCropReady(plotId)
-                                      ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
-                                      : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(plotId)} s`}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
-                                    {plotId}
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div
-                                className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                                  isSelected ? "bg-black/45" : "bg-black/30"
-                                }`}
-                              />
-                              <div
-                                className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
-                                  isSelected ? "border-yellow-200/60" : "border-white/12"
-                                }`}
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                                {displayLevel >= getRequiredLevelForPlot(plotId) ? (
-                                  <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
-                                    KOSZT: {PLOT_UNLOCK_COSTS[plotId] ?? 0} PLN
-                                  </span>
-                                ) : (
-                                  <span className="text-[11px] font-bold text-white/80 leading-tight md:text-sm">
-                                    Wymaga lv: {getRequiredLevelForPlot(plotId)}
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </button>
-                      );
-                    })}
-
-                    {selectedPlotId && (
-                      <div className="pointer-events-none absolute inset-0">
-                        {(() => {
-                          const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
-                          if (!activePlot) return null;
-
-                          return (
-                            <div
-                              className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
-                              style={{
-                                left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
-                                top: activePlot.top,
-                              }}
-                            >
-                              {selectedTool === "watering_can"
-                                ? "Kliknij pole, aby podlać"
-                                : selectedSeedId
-                                ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
-                                : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
-                                ? "Enter lub kliknij pole, aby zebrać"
-                                : "Wybierz nasiono z plecaka albo konewkę"}
-                            </div>
-                          );
-                        })()}
+                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                        Status: gotowe na dalszy system upraw.
                       </div>
-                    )}
+
+                      <div className="mt-4 grid gap-2">
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Posiej
+                        </button>
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Podlej
+                        </button>
+                        <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)]">
+                          Zbierz
+                        </button>
+                        <button
+                          onClick={handleUnlockNextPlot}
+                          className="rounded-xl border border-yellow-400/50 bg-yellow-900/30 px-3 py-2 text-sm font-bold text-yellow-100 transition hover:bg-yellow-900/50"
+                        >
+                          Odblokuj pole
+                        </button>
+                        <button
+                          onClick={() => setSelectedPlotId(null)}
+                          className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
+                        >
+                          Zamknij menu pola
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
+                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Wybierz pole</h3>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Kliknij jedno z odblokowanych pól w siatce 5 × 5, aby otworzyć jego menu.
+                      </p>
+
+                      <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                        Odblokowane pola: {Math.min(unlockedPlots, 25)} / 25
+                      </div>
+                    </>
+                  )}
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setIsFieldViewOpen(false);
+                        setSelectedPlotId(null);
+                      }}
+                      className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                    >
+                      Powrót do farmy
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2000,9 +1191,15 @@ export default function Page() {
               </button>
 
               <div className="pr-12">
-                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
-                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
-                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
+                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">
+                  Ulepszenie farmy
+                </p>
+                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">
+                  {farmUpgradeModal.title}
+                </h2>
+                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                  {farmUpgradeModal.text}
+                </p>
                 <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
                   Osiągnięto poziom {farmUpgradeModal.level}.
                 </p>
@@ -2040,3 +1237,34 @@ export default function Page() {
     </main>
   );
 }
+
+// === DODANE: konfiguracja pól ===
+const MAX_FIELDS = 25;
+
+const FIELD_PRICES = {
+  4: 100,
+  5: 150,
+  6: 200,
+  7: 250,
+  8: 300,
+  9: 350,
+  10: 400,
+  11: 500,
+  12: 600,
+  13: 700,
+  14: 800,
+  15: 1000,
+  16: 1200,
+  17: 1400,
+  18: 1600,
+  19: 1800,
+  20: 2000,
+  21: 2300,
+  22: 2600,
+  23: 3000,
+  24: 3500,
+  25: 4000,
+};
+
+// użycie przykładowe:
+// const price = FIELD_PRICES[fieldId] || 0;
