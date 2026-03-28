@@ -1099,6 +1099,7 @@ export default function Page() {
     setSelectedSeedId(null);
     setSelectedTool(null);
     setIsDraggingBackpack(false);
+    setIsDraggingBackpack(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
