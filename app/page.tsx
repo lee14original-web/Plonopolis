@@ -76,12 +76,229 @@ const CROPS: Crop[] = [
     id: "carrot",
     name: "Marchew",
     unlockLevel: 1,
-    growthTimeMs: 30_000,
-    yieldAmount: 3,
+    growthTimeMs: 3 * 60_000,
+    yieldAmount: 2,
     expReward: 2,
     spritePath: "/carrot.png",
   },
+  {
+    id: "potato",
+    name: "Ziemniak",
+    unlockLevel: 2,
+    growthTimeMs: 4 * 60_000,
+    yieldAmount: 2,
+    expReward: 2,
+    spritePath: "/potato.png",
+  },
+  {
+    id: "tomato",
+    name: "Pomidor",
+    unlockLevel: 3,
+    growthTimeMs: 5 * 60_000,
+    yieldAmount: 2,
+    expReward: 2,
+    spritePath: "/tomato.png",
+  },
+  {
+    id: "cucumber",
+    name: "Ogórek",
+    unlockLevel: 4,
+    growthTimeMs: 7 * 60_000,
+    yieldAmount: 2,
+    expReward: 2,
+    spritePath: "/cucumber.png",
+  },
+  {
+    id: "onion",
+    name: "Cebula",
+    unlockLevel: 5,
+    growthTimeMs: 10 * 60_000,
+    yieldAmount: 2,
+    expReward: 2,
+    spritePath: "/onion.png",
+  },
+  {
+    id: "garlic",
+    name: "Czosnek",
+    unlockLevel: 6,
+    growthTimeMs: 14 * 60_000,
+    yieldAmount: 2,
+    expReward: 2,
+    spritePath: "/garlic.png",
+  },
+  {
+    id: "lettuce",
+    name: "Sałata",
+    unlockLevel: 7,
+    growthTimeMs: 18 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/lettuce.png",
+  },
+  {
+    id: "radish",
+    name: "Rzodkiewka",
+    unlockLevel: 8,
+    growthTimeMs: 24 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/radish.png",
+  },
+  {
+    id: "beet",
+    name: "Burak",
+    unlockLevel: 9,
+    growthTimeMs: 32 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/beet.png",
+  },
+  {
+    id: "pepper",
+    name: "Papryka",
+    unlockLevel: 10,
+    growthTimeMs: 42 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/pepper.png",
+  },
+  {
+    id: "cabbage",
+    name: "Kapusta",
+    unlockLevel: 11,
+    growthTimeMs: 55 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/cabbage.png",
+  },
+  {
+    id: "broccoli",
+    name: "Brokuł",
+    unlockLevel: 12,
+    growthTimeMs: 72 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/broccoli.png",
+  },
+  {
+    id: "cauliflower",
+    name: "Kalafior",
+    unlockLevel: 13,
+    growthTimeMs: 95 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/cauliflower.png",
+  },
+  {
+    id: "strawberry",
+    name: "Truskawka",
+    unlockLevel: 14,
+    growthTimeMs: 125 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/strawberry.png",
+  },
+  {
+    id: "raspberry",
+    name: "Malina",
+    unlockLevel: 15,
+    growthTimeMs: 165 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/raspberry.png",
+  },
+  {
+    id: "blueberry",
+    name: "Borówka",
+    unlockLevel: 16,
+    growthTimeMs: 215 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/blueberry.png",
+  },
+  {
+    id: "eggplant",
+    name: "Bakłażan",
+    unlockLevel: 17,
+    growthTimeMs: 280 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/eggplant.png",
+  },
+  {
+    id: "zucchini",
+    name: "Cukinia",
+    unlockLevel: 18,
+    growthTimeMs: 360 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/zucchini.png",
+  },
+  {
+    id: "watermelon",
+    name: "Arbuz",
+    unlockLevel: 19,
+    growthTimeMs: 435 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/watermelon.png",
+  },
+  {
+    id: "grape",
+    name: "Winogrono",
+    unlockLevel: 20,
+    growthTimeMs: 500 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/grape.png",
+  },
+  {
+    id: "pumpkin",
+    name: "Dynia",
+    unlockLevel: 21,
+    growthTimeMs: 540 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/pumpkin.png",
+  },
+  {
+    id: "rapeseed",
+    name: "Rzepak",
+    unlockLevel: 22,
+    growthTimeMs: 580 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/rapeseed.png",
+  },
+  {
+    id: "sunflower",
+    name: "Słonecznik",
+    unlockLevel: 23,
+    growthTimeMs: 620 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/sunflower.png",
+  },
+  {
+    id: "chili",
+    name: "Papryczka chili",
+    unlockLevel: 24,
+    growthTimeMs: 660 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/chili.png",
+  },
+  {
+    id: "asparagus",
+    name: "Szparagi",
+    unlockLevel: 25,
+    growthTimeMs: 720 * 60_000,
+    yieldAmount: 3,
+    expReward: 2,
+    spritePath: "/asparagus.png",
+  },
 ];
+
 
 const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => ({
   id: index + 1,
@@ -150,56 +367,56 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
 
 
 const XP_TABLE: Record<number, number> = {
-  1: 50,
-  2: 70,
-  3: 90,
-  4: 125,
-  5: 165,
-  6: 225,
-  7: 300,
-  8: 400,
-  9: 550,
-  10: 750,
-  11: 1000,
-  12: 1350,
-  13: 1800,
-  14: 2500,
-  15: 3500,
-  16: 4500,
-  17: 6000,
-  18: 8000,
-  19: 11000,
-  20: 15000,
-  21: 20000,
-  22: 27500,
-  23: 37500,
-  24: 50000,
-  25: 67500,
-  26: 90000,
-  27: 120000,
-  28: 160000,
-  29: 210000,
-  30: 275000,
-  31: 360000,
-  32: 475000,
-  33: 625000,
-  34: 825000,
-  35: 1100000,
-  36: 1450000,
-  37: 1900000,
-  38: 2500000,
-  39: 3250000,
-  40: 4250000,
-  41: 5500000,
-  42: 7250000,
-  43: 9500000,
-  44: 12500000,
-  45: 16500000,
-  46: 21500000,
-  47: 28000000,
-  48: 36500000,
-  49: 47500000,
-  50: 60000000,
+  1: 100,
+  2: 140,
+  3: 180,
+  4: 250,
+  5: 330,
+  6: 450,
+  7: 600,
+  8: 800,
+  9: 1100,
+  10: 1500,
+  11: 2000,
+  12: 2700,
+  13: 3600,
+  14: 5000,
+  15: 7000,
+  16: 9000,
+  17: 12000,
+  18: 16000,
+  19: 22000,
+  20: 30000,
+  21: 40000,
+  22: 55000,
+  23: 75000,
+  24: 100000,
+  25: 135000,
+  26: 180000,
+  27: 240000,
+  28: 320000,
+  29: 420000,
+  30: 550000,
+  31: 720000,
+  32: 950000,
+  33: 1250000,
+  34: 1650000,
+  35: 2200000,
+  36: 2900000,
+  37: 3800000,
+  38: 5000000,
+  39: 6500000,
+  40: 8500000,
+  41: 11000000,
+  42: 14500000,
+  43: 19000000,
+  44: 25000000,
+  45: 33000000,
+  46: 43000000,
+  47: 56000000,
+  48: 73000000,
+  49: 95000000,
+  50: 120000000,
 };
 
 function getXpForLevel(level: number) {
@@ -285,6 +502,7 @@ export default function Page() {
   const [unlockedPlots, setUnlockedPlots] = useState<number>(3);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
+  const [isCropMenuOpen, setIsCropMenuOpen] = useState(false);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
 
@@ -312,7 +530,7 @@ export default function Page() {
     ? FARM_PLOTS.find((plot) => plot.id === selectedPlotId) ?? null
     : null;
 
-  const carrotCrop = CROPS.find((crop) => crop.id === "carrot")!;
+  const availableCrops = CROPS.filter((crop) => displayLevel >= crop.unlockLevel);
 
   function moveSelection(direction: "up" | "down" | "left" | "right") {
     const current = selectedPlotId ?? 1;
@@ -339,7 +557,7 @@ export default function Page() {
         return;
       }
       if (!cropOnPlot.cropId) {
-        handlePlantCarrot(selectedPlotId);
+        setIsCropMenuOpen(true);
         return;
       }
     }
@@ -544,6 +762,7 @@ export default function Page() {
       } else if (key === "escape") {
         setIsFieldViewOpen(false);
         setSelectedPlotId(null);
+        setIsCropMenuOpen(false);
       }
     };
 
@@ -937,7 +1156,7 @@ export default function Page() {
     });
   }
 
-  function handlePlantCarrot(plotId: number) {
+  function handlePlantCrop(plotId: number, cropId: string) {
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
@@ -949,11 +1168,22 @@ export default function Page() {
       return;
     }
 
-    if (displayLevel < carrotCrop.unlockLevel) {
+    const cropToPlant = CROPS.find((crop) => crop.id === cropId);
+
+    if (!cropToPlant) {
+      setMessage({
+        type: "error",
+        title: "Brak uprawy",
+        text: "Nie udało się znaleźć wybranej rośliny.",
+      });
+      return;
+    }
+
+    if (displayLevel < cropToPlant.unlockLevel) {
       setMessage({
         type: "error",
         title: "Za niski poziom",
-        text: `Marchew odblokowuje się od poziomu ${carrotCrop.unlockLevel}.`,
+        text: `${cropToPlant.name} odblokowuje się od poziomu ${cropToPlant.unlockLevel}.`,
       });
       return;
     }
@@ -961,14 +1191,16 @@ export default function Page() {
     setPlotCrops((prev) => ({
       ...prev,
       [plotId]: {
-        cropId: carrotCrop.id,
+        cropId: cropToPlant.id,
         plantedAt: Date.now(),
       },
     }));
 
+    setIsCropMenuOpen(false);
+
     setMessage({
       type: "success",
-      title: "Posadzono marchew",
+      title: `Posadzono ${cropToPlant.name.toLowerCase()}`,
       text: `Pole #${plotId} zaczęło rosnąć.`,
     });
   }
@@ -993,7 +1225,7 @@ export default function Page() {
       setMessage({
         type: "info",
         title: "Uprawa jeszcze rośnie",
-        text: `Marchew będzie gotowa za około ${getRemainingGrowthSeconds(plotId)} s.`,
+        text: `${crop.name} będzie gotowa za około ${getRemainingGrowthSeconds(plotId)} s.`,
       });
       return;
     }
@@ -1350,6 +1582,7 @@ export default function Page() {
                   onClick={() => {
                     setIsFieldViewOpen(true);
                     setSelectedPlotId((prev) => prev ?? 1);
+                    setIsCropMenuOpen(false);
                   }}
                   className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                   style={{
@@ -1380,6 +1613,7 @@ export default function Page() {
                 onClick={() => {
                   setIsFieldViewOpen(false);
                   setSelectedPlotId(null);
+                  setIsCropMenuOpen(false);
                 }}
                 className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                 aria-label="Zamknij widok pola"
@@ -1507,7 +1741,7 @@ export default function Page() {
                       <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         {selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)
-                          ? "Marchew od poziomu 1. Czas wzrostu: 30 sekund. Plon: 3 sztuki. Nagroda: 2 EXP za zbiór z jednego pola."
+                          ? `Dostępne uprawy: ${availableCrops.map((crop) => crop.name).join(", ")}.`
                           : displayLevel >= getRequiredLevelForPlot(selectedPlotId)
                           ? `To pole możesz już kupić za ${PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0} PLN.`
                           : `To pole odblokujesz od poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`}
@@ -1517,9 +1751,9 @@ export default function Page() {
                         {selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)
                           ? getPlotCrop(selectedPlotId).cropId
                             ? isCropReady(selectedPlotId)
-                              ? "Status: marchew gotowa do zebrania."
-                              : `Status: marchew rośnie, zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`
-                            : "Status: pole puste, gotowe do zasiania marchwi."
+                              ? `Status: ${CROPS.find((crop) => crop.id === getPlotCrop(selectedPlotId).cropId)?.name ?? "Uprawa"} gotowa do zebrania.`
+                              : `Status: ${CROPS.find((crop) => crop.id === getPlotCrop(selectedPlotId).cropId)?.name ?? "Uprawa"} rośnie, zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`
+                            : "Status: pole puste, gotowe do zasiania wybranej rośliny."
                           : displayLevel >= getRequiredLevelForPlot(selectedPlotId)
                           ? `Status: gotowe do zakupu za ${PLOT_UNLOCK_COSTS[selectedPlotId] ?? 0} PLN.`
                           : `Status: zablokowane do poziomu ${getRequiredLevelForPlot(selectedPlotId)}.`}
@@ -1527,7 +1761,7 @@ export default function Page() {
 
                       <div className="mt-4 grid gap-2">
                         <button
-                          onClick={() => handlePlantCarrot(selectedPlotId)}
+                          onClick={() => setIsCropMenuOpen(true)}
                           disabled={selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) || !!getPlotCrop(selectedPlotId).cropId}
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -1555,7 +1789,10 @@ export default function Page() {
                             : "Odblokuj pole"}
                         </button>
                         <button
-                          onClick={() => setSelectedPlotId(null)}
+                          onClick={() => {
+                            setSelectedPlotId(null);
+                            setIsCropMenuOpen(false);
+                          }}
                           className="rounded-xl border border-red-400/40 bg-red-950/30 px-3 py-2 text-sm font-bold text-red-100 transition hover:bg-red-950/45"
                         >
                           Zamknij menu pola
@@ -1581,6 +1818,7 @@ export default function Page() {
                       onClick={() => {
                         setIsFieldViewOpen(false);
                         setSelectedPlotId(null);
+                        setIsCropMenuOpen(false);
                       }}
                       className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
                     >
@@ -1588,6 +1826,71 @@ export default function Page() {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isCropMenuOpen && selectedPlotId && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4">
+            <div className="w-full max-w-2xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.96)] p-4 text-[#f3e6c8] shadow-2xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Wybór rośliny</p>
+                  <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
+                  <p className="mt-2 text-sm text-[#dfcfab]">
+                    Wybierz roślinę do zasiania na tym polu.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setIsCropMenuOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                  aria-label="Zamknij wybór rośliny"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mt-4 grid max-h-[60vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                {CROPS.map((crop) => {
+                  const isAvailable = displayLevel >= crop.unlockLevel;
+                  const growthMinutes = Math.round(crop.growthTimeMs / 60000);
+
+                  return (
+                    <button
+                      key={crop.id}
+                      type="button"
+                      disabled={!isAvailable}
+                      onClick={() => handlePlantCrop(selectedPlotId, crop.id)}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        isAvailable
+                          ? "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                          : "border-white/10 bg-black/20 opacity-60 cursor-not-allowed"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-lg font-black text-[#f9e7b2]">{crop.name}</p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                            Poziom {crop.unlockLevel}
+                          </p>
+                        </div>
+                        {!isAvailable && (
+                          <span className="rounded-full border border-white/15 px-2 py-1 text-[10px] font-bold uppercase text-white/70">
+                            Zablokowane
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-3 space-y-1 text-sm text-[#dfcfab]">
+                        <p>Czas: {growthMinutes} min</p>
+                        <p>Zbiór: {crop.yieldAmount} szt.</p>
+                        <p>EXP: {crop.expReward}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
