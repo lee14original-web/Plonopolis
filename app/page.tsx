@@ -819,7 +819,7 @@ export default function Page() {
     };
   }, [isDraggingBackpack, dragOffset]);
 
-  function startBackpackDrag(event: React.PointerEvent<HTMLDivElement>) {
+  function startBackpackDrag(event: React.MouseEvent<HTMLDivElement> | React.PointerEvent<HTMLDivElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     setIsDraggingBackpack(true);
     setDragOffset({
@@ -1709,9 +1709,24 @@ export default function Page() {
               </div>
 
 
-              <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
+              <div
+                className="fixed z-[95]"
+                style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}
+              >
                 <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+                  <div
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      startBackpackDrag(event);
+                    }}
+                    className={`mb-3 flex select-none items-center justify-between rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] px-3 py-2 ${
+                      isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"
+                    }`}
+                    title="Przeciągnij plecak"
+                  >
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+                    <span className="text-sm text-[#dfcfab]">↕</span>
+                  </div>
 
                   <button
                     type="button"
