@@ -148,6 +148,64 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
   25: 4000,
 };
 
+
+const XP_TABLE: Record<number, number> = {
+  1: 100,
+  2: 140,
+  3: 180,
+  4: 250,
+  5: 330,
+  6: 450,
+  7: 600,
+  8: 800,
+  9: 1100,
+  10: 1500,
+  11: 2000,
+  12: 2700,
+  13: 3600,
+  14: 5000,
+  15: 7000,
+  16: 9000,
+  17: 12000,
+  18: 16000,
+  19: 22000,
+  20: 30000,
+  21: 40000,
+  22: 55000,
+  23: 75000,
+  24: 100000,
+  25: 135000,
+  26: 180000,
+  27: 240000,
+  28: 320000,
+  29: 420000,
+  30: 550000,
+  31: 720000,
+  32: 950000,
+  33: 1250000,
+  34: 1650000,
+  35: 2200000,
+  36: 2900000,
+  37: 3800000,
+  38: 5000000,
+  39: 6500000,
+  40: 8500000,
+  41: 11000000,
+  42: 14500000,
+  43: 19000000,
+  44: 25000000,
+  45: 33000000,
+  46: 43000000,
+  47: 56000000,
+  48: 73000000,
+  49: 95000000,
+  50: 120000000,
+};
+
+function getXpForLevel(level: number) {
+  return XP_TABLE[level] ?? 999999999;
+}
+
 function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
 }
@@ -665,7 +723,7 @@ export default function Page() {
       email,
       level: DEFAULT_LEVEL,
       xp: DEFAULT_XP,
-      xp_to_next_level: DEFAULT_XP_TO_NEXT_LEVEL,
+      xp_to_next_level: getXpForLevel(DEFAULT_LEVEL),
       money: DEFAULT_MONEY,
       location: DEFAULT_LOCATION,
       current_map: getMapForLevel(DEFAULT_LEVEL),
@@ -781,7 +839,7 @@ export default function Page() {
     if (nextXp >= displayXpToNextLevel && nextLevel < MAX_LEVEL) {
       nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
       nextXpStored = nextXp - displayXpToNextLevel;
-      nextXpToNextLevel = displayXpToNextLevel + 50;
+      nextXpToNextLevel = getXpForLevel(nextLevel);
       nextMoney += 100;
     }
 
@@ -948,7 +1006,7 @@ export default function Page() {
     while (nextLevel < MAX_LEVEL && nextXpToNextLevel > 0 && nextXp >= nextXpToNextLevel) {
       nextXp -= nextXpToNextLevel;
       nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpToNextLevel += 50;
+      nextXpToNextLevel = getXpForLevel(nextLevel);
     }
 
     if (nextLevel >= MAX_LEVEL) {
