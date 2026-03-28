@@ -512,6 +512,9 @@ export default function Page() {
   const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
+  const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -788,6 +791,43 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId]);
 
+
+  useEffect(() => {
+    const defaultY = Math.max(24, Math.round((window.innerHeight - 420) / 2));
+    setBackpackPosition((prev) => ({ ...prev, y: prev.y || defaultY }));
+  }, []);
+
+  useEffect(() => {
+    if (!isDraggingBackpack) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const nextX = Math.max(8, Math.min(window.innerWidth - 230, event.clientX - dragOffset.x));
+      const nextY = Math.max(8, Math.min(window.innerHeight - 520, event.clientY - dragOffset.y));
+      setBackpackPosition({ x: nextX, y: nextY });
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingBackpack(false);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [isDraggingBackpack, dragOffset]);
+
+  function startBackpackDrag(event: React.PointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setIsDraggingBackpack(true);
+    setDragOffset({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+  }
+
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
       .from("profiles")
@@ -1058,6 +1098,7 @@ export default function Page() {
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
     setSelectedTool(null);
+    setIsDraggingBackpack(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1667,7 +1708,7 @@ export default function Page() {
               </div>
 
 
-              <div className="fixed left-2 top-1/2 -translate-y-1/2 z-[95]">
+              <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
                 <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
