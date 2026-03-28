@@ -257,7 +257,6 @@ export default function Page() {
 
   function moveSelection(direction: "up" | "down" | "left" | "right") {
     const current = selectedPlotId ?? 1;
-
     let row = Math.floor((current - 1) / 5);
     let col = (current - 1) % 5;
 
@@ -353,15 +352,12 @@ export default function Page() {
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
     if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
-
     const modalData = getFarmUpgradeMessage(level);
     if (!modalData) return;
-
     if (typeof window === "undefined") return;
 
     const storageKey = getFarmUpgradeStorageKey(userId, level);
     const alreadySeen = window.localStorage.getItem(storageKey);
-
     if (alreadySeen === "1") return;
 
     setFarmUpgradeModal(modalData);
@@ -372,7 +368,6 @@ export default function Page() {
       const storageKey = getFarmUpgradeStorageKey(profile.id, farmUpgradeModal.level);
       window.localStorage.setItem(storageKey, "1");
     }
-
     setFarmUpgradeModal(null);
   }
 
@@ -383,7 +378,6 @@ export default function Page() {
 
   useEffect(() => {
     let mounted = true;
-
     const bootstrap = async () => {
       try {
         const {
@@ -391,7 +385,6 @@ export default function Page() {
         } = await supabase.auth.getSession();
 
         if (!mounted) return;
-
         if (session?.user) {
           await loadProfile(session.user.id);
         }
@@ -410,7 +403,6 @@ export default function Page() {
     };
 
     void bootstrap();
-
     return () => {
       mounted = false;
     };
@@ -418,21 +410,13 @@ export default function Page() {
 
   useEffect(() => {
     if (!message) return;
-
-    const timer = setTimeout(() => {
-      setMessage(null);
-    }, 3000);
-
+    const timer = setTimeout(() => setMessage(null), 3000);
     return () => clearTimeout(timer);
   }, [message]);
 
   useEffect(() => {
     if (!isFieldViewOpen) return;
-
-    const interval = setInterval(() => {
-      setGrowthTick((prev) => prev + 1);
-    }, 500);
-
+    const interval = setInterval(() => setGrowthTick((prev) => prev + 1), 500);
     return () => clearInterval(interval);
   }, [isFieldViewOpen]);
 
@@ -441,7 +425,6 @@ export default function Page() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-
       if (
         [
           "w",
@@ -460,17 +443,12 @@ export default function Page() {
         e.preventDefault();
       }
 
-      if (key === "w" || key === "arrowup") {
-        moveSelection("up");
-      } else if (key === "s" || key === "arrowdown") {
-        moveSelection("down");
-      } else if (key === "a" || key === "arrowleft") {
-        moveSelection("left");
-      } else if (key === "d" || key === "arrowright") {
-        moveSelection("right");
-      } else if (key === "enter" || key === " ") {
-        confirmSelectedPlot();
-      } else if (key === "escape") {
+      if (key === "w" || key === "arrowup") moveSelection("up");
+      else if (key === "s" || key === "arrowdown") moveSelection("down");
+      else if (key === "a" || key === "arrowleft") moveSelection("left");
+      else if (key === "d" || key === "arrowright") moveSelection("right");
+      else if (key === "enter" || key === " ") confirmSelectedPlot();
+      else if (key === "escape") {
         setIsFieldViewOpen(false);
         setSelectedPlotId(null);
       }
@@ -490,11 +468,7 @@ export default function Page() {
       .maybeSingle();
 
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd profilu",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błąd profilu", text: error.message });
       return;
     }
 
@@ -507,6 +481,7 @@ export default function Page() {
       ...data,
       level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
     } as Profile;
+
     setProfile(nextProfile);
 
     const maxForCurrentLevel = getMaxPlotsForLevel(nextProfile.level ?? DEFAULT_LEVEL);
@@ -530,41 +505,21 @@ export default function Page() {
     const confirmPassword = registerForm.confirmPassword;
 
     if (!login || !email || !password || !confirmPassword) {
-      setMessage({
-        type: "error",
-        title: "Brak danych",
-        text: "Uzupełnij wszystkie pola rejestracji.",
-      });
+      setMessage({ type: "error", title: "Brak danych", text: "Uzupełnij wszystkie pola rejestracji." });
       return;
     }
-
     if (login.length < 3) {
-      setMessage({
-        type: "error",
-        title: "Login jest za krótki",
-        text: "Login powinien mieć minimum 3 znaki.",
-      });
+      setMessage({ type: "error", title: "Login jest za krótki", text: "Login powinien mieć minimum 3 znaki." });
       return;
     }
-
     if (!isEmailValid(email)) {
-      setMessage({
-        type: "error",
-        title: "Nieprawidłowy email",
-        text: "Podaj poprawny adres email.",
-      });
+      setMessage({ type: "error", title: "Nieprawidłowy email", text: "Podaj poprawny adres email." });
       return;
     }
-
     if (password.length < 6) {
-      setMessage({
-        type: "error",
-        title: "Hasło jest za krótkie",
-        text: "Hasło powinno mieć minimum 6 znaków.",
-      });
+      setMessage({ type: "error", title: "Hasło jest za krótkie", text: "Hasło powinno mieć minimum 6 znaków." });
       return;
     }
-
     if (password !== confirmPassword) {
       setMessage({
         type: "error",
@@ -581,20 +536,11 @@ export default function Page() {
       .limit(1);
 
     if (existingLoginError) {
-      setMessage({
-        type: "error",
-        title: "Błąd sprawdzania loginu",
-        text: existingLoginError.message,
-      });
+      setMessage({ type: "error", title: "Błąd sprawdzania loginu", text: existingLoginError.message });
       return;
     }
-
     if (existingLogin && existingLogin.length > 0) {
-      setMessage({
-        type: "error",
-        title: "Login zajęty",
-        text: "Ten login już istnieje. Wybierz inny.",
-      });
+      setMessage({ type: "error", title: "Login zajęty", text: "Ten login już istnieje. Wybierz inny." });
       return;
     }
 
@@ -605,34 +551,17 @@ export default function Page() {
       .limit(1);
 
     if (existingEmailError) {
-      setMessage({
-        type: "error",
-        title: "Błąd sprawdzania emaila",
-        text: existingEmailError.message,
-      });
+      setMessage({ type: "error", title: "Błąd sprawdzania emaila", text: existingEmailError.message });
       return;
     }
-
     if (existingEmail && existingEmail.length > 0) {
-      setMessage({
-        type: "error",
-        title: "Email zajęty",
-        text: "Na ten adres email konto już zostało utworzone.",
-      });
+      setMessage({ type: "error", title: "Email zajęty", text: "Na ten adres email konto już zostało utworzone." });
       return;
     }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
     if (signUpError) {
-      setMessage({
-        type: "error",
-        title: "Błąd rejestracji",
-        text: signUpError.message,
-      });
+      setMessage({ type: "error", title: "Błąd rejestracji", text: signUpError.message });
       return;
     }
 
@@ -660,30 +589,15 @@ export default function Page() {
     });
 
     if (profileError) {
-      setMessage({
-        type: "error",
-        title: "Błąd zapisu profilu",
-        text: profileError.message,
-      });
+      setMessage({ type: "error", title: "Błąd zapisu profilu", text: profileError.message });
       return;
     }
 
     setUnlockedPlots(3);
     await loadProfile(userId);
-
-    setRegisterForm({
-      login: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
-
+    setRegisterForm({ login: "", email: "", password: "", confirmPassword: "" });
     setTab("login");
-    setMessage({
-      type: "success",
-      title: "Konto utworzone",
-      text: "Nowy gracz startuje z 3 darmowymi polami.",
-    });
+    setMessage({ type: "success", title: "Konto utworzone", text: "Nowy gracz startuje z 3 darmowymi polami." });
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -694,34 +608,17 @@ export default function Page() {
     const password = loginForm.password;
 
     if (!identifier || !password) {
-      setMessage({
-        type: "error",
-        title: "Brak danych",
-        text: "Podaj email oraz hasło.",
-      });
+      setMessage({ type: "error", title: "Brak danych", text: "Podaj email oraz hasło." });
       return;
     }
-
     if (!isEmailValid(identifier)) {
-      setMessage({
-        type: "error",
-        title: "Nieprawidłowy email",
-        text: "Zaloguj się używając adresu email.",
-      });
+      setMessage({ type: "error", title: "Nieprawidłowy email", text: "Zaloguj się używając adresu email." });
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: identifier,
-      password,
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email: identifier, password });
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błędne logowanie",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błędne logowanie", text: error.message });
       return;
     }
 
@@ -734,11 +631,7 @@ export default function Page() {
     }
 
     setLoginForm({ identifier: "", password: "" });
-    setMessage({
-      type: "success",
-      title: "Witaj ponownie",
-      text: "Sesja gracza została wczytana.",
-    });
+    setMessage({ type: "success", title: "Witaj ponownie", text: "Sesja gracza została wczytana." });
   }
 
   async function handleLogout() {
@@ -748,11 +641,7 @@ export default function Page() {
     setUnlockedPlots(3);
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
-    setMessage({
-      type: "info",
-      title: "Wylogowano",
-      text: "Sesja została zakończona.",
-    });
+    setMessage({ type: "info", title: "Wylogowano", text: "Sesja została zakończona." });
   }
 
   async function handleSaveProgress() {
@@ -794,25 +683,14 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zapisu",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błąd zapisu", text: error.message });
       return;
     }
 
     await loadProfile(profile.id);
+    if (nextLevel > oldLevel) showFarmUpgradeModalOnce(profile.id, nextLevel);
 
-    if (nextLevel > oldLevel) {
-      showFarmUpgradeModalOnce(profile.id, nextLevel);
-    }
-
-    setMessage({
-      type: "success",
-      title: "Postęp zapisany",
-      text: "",
-    });
+    setMessage({ type: "success", title: "Postęp zapisany", text: "" });
   }
 
   async function handleUnlockNextPlot() {
@@ -848,11 +726,7 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd odblokowania",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błąd odblokowania", text: error.message });
       return;
     }
 
@@ -870,11 +744,7 @@ export default function Page() {
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Pole zajęte",
-        text: "Na tym polu już coś rośnie.",
-      });
+      setMessage({ type: "info", title: "Pole zajęte", text: "Na tym polu już coś rośnie." });
       return;
     }
 
@@ -895,11 +765,7 @@ export default function Page() {
       },
     }));
 
-    setMessage({
-      type: "success",
-      title: "Posadzono marchew",
-      text: `Pole #${plotId} zaczęło rosnąć.`,
-    });
+    setMessage({ type: "success", title: "Posadzono marchew", text: `Pole #${plotId} zaczęło rosnąć.` });
   }
 
   async function handleHarvestPlot(plotId: number) {
@@ -907,11 +773,7 @@ export default function Page() {
 
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Puste pole",
-        text: "Najpierw coś posadź na tym polu.",
-      });
+      setMessage({ type: "info", title: "Puste pole", text: "Najpierw coś posadź na tym polu." });
       return;
     }
 
@@ -956,11 +818,7 @@ export default function Page() {
       .eq("id", profile.id);
 
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zbioru",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
     }
 
@@ -996,9 +854,7 @@ export default function Page() {
     <main
       className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: profile
-          ? `url('/${currentMap}.png')`
-          : "url('/assetsmain-lobby.png')",
+        backgroundImage: profile ? `url('/${currentMap}.png')` : "url('/assetsmain-lobby.png')",
       }}
     >
       <div className="min-h-screen">
@@ -1012,7 +868,7 @@ export default function Page() {
             </button>
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
-              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+              <div className="z-10 w-full max-w-3xl rounded-[20px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-3 py-2 md:px-4 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                 <div
                   className={`grid items-center gap-3 ${
                     displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
@@ -1070,9 +926,7 @@ export default function Page() {
                     <button
                       onClick={() => setTab("login")}
                       className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "login"
-                          ? "bg-[#d4a64f] text-[#2b180c]"
-                          : "text-[#f1dfb5] hover:bg-white/5"
+                        tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                       }`}
                     >
                       Logowanie
@@ -1080,9 +934,7 @@ export default function Page() {
                     <button
                       onClick={() => setTab("register")}
                       className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "register"
-                          ? "bg-[#d4a64f] text-[#2b180c]"
-                          : "text-[#f1dfb5] hover:bg-white/5"
+                        tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                       }`}
                     >
                       Rejestracja
@@ -1097,9 +949,7 @@ export default function Page() {
                           type="text"
                           placeholder="twoj@email.pl"
                           value={loginForm.identifier}
-                          onChange={(e) =>
-                            setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
-                          }
+                          onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1110,9 +960,7 @@ export default function Page() {
                           type="password"
                           placeholder="Wpisz hasło"
                           value={loginForm.password}
-                          onChange={(e) =>
-                            setLoginForm((prev) => ({ ...prev, password: e.target.value }))
-                          }
+                          onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1132,9 +980,7 @@ export default function Page() {
                           type="text"
                           placeholder="Unikalny login"
                           value={registerForm.login}
-                          onChange={(e) =>
-                            setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
-                          }
+                          onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1145,9 +991,7 @@ export default function Page() {
                           type="email"
                           placeholder="twoj@email.pl"
                           value={registerForm.email}
-                          onChange={(e) =>
-                            setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
-                          }
+                          onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
                           className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                         />
                       </div>
@@ -1159,9 +1003,7 @@ export default function Page() {
                             type="password"
                             placeholder="Minimum 6 znaków"
                             value={registerForm.password}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
-                            }
+                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1173,10 +1015,7 @@ export default function Page() {
                             placeholder="Powtórz hasło"
                             value={registerForm.confirmPassword}
                             onChange={(e) =>
-                              setRegisterForm((prev) => ({
-                                ...prev,
-                                confirmPassword: e.target.value,
-                              }))
+                              setRegisterForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
                             }
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
@@ -1224,7 +1063,7 @@ export default function Page() {
             </div>
           ) : (
             <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-              <div className="absolute left-4 top-16 z-20">
+              <div className="absolute left-2 top-14 z-20 sm:left-4 sm:top-16">
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
@@ -1279,30 +1118,30 @@ export default function Page() {
         </div>
 
         {isFieldViewOpen && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
-            <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-1 sm:px-2 sm:py-2">
+            <div className="relative h-[95vh] w-full max-w-[1600px] overflow-y-auto rounded-[20px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-3 md:p-5 shadow-2xl backdrop-blur-sm">
               <button
                 onClick={() => {
                   setIsFieldViewOpen(false);
                   setSelectedPlotId(null);
                 }}
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60 md:right-4 md:top-4"
                 aria-label="Zamknij widok pola"
               >
                 ×
               </button>
 
-              <div className="mb-4 pr-14">
+              <div className="mb-3 pr-12 md:mb-4 md:pr-14">
                 <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
+                <h2 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Twoje pole uprawne</h2>
                 <p className="mt-2 text-sm text-[#dfcfab]">
-                  Kliknij pole w siatce 5 × 5 albo użyj WASD / strzałek, aby otworzyć menu pola.
+                  Kliknij pole w siatce 5 × 5 albo użyj WASD / strzałek. Na telefonie widok skaluje się do pełnej wysokości ekranu.
                 </p>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
-                  <div className="relative mx-auto aspect-[1536/1092] w-full">
+              <div className="grid gap-3 md:gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="relative overflow-hidden rounded-[18px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative mx-auto w-full max-w-[1100px] min-h-[260px] aspect-[1536/1092]">
                     <img
                       src="/farm-field-view.png"
                       alt="Widok pola 25 slotów"
@@ -1363,11 +1202,11 @@ export default function Page() {
                                 )}
                                 <div className="absolute inset-x-1 bottom-1 z-10 text-center">
                                   {getPlotCrop(plotId).cropId ? (
-                                    <span className="rounded-md bg-black/45 px-1.5 py-0.5 text-[10px] font-bold text-white/90">
+                                    <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
                                       {isCropReady(plotId) ? "Gotowe!" : `${getRemainingGrowthSeconds(plotId)} s`}
                                     </span>
                                   ) : (
-                                    <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
+                                    <span className="text-xs font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] sm:text-sm md:text-base">
                                       {plotId}
                                     </span>
                                   )}
@@ -1387,11 +1226,11 @@ export default function Page() {
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
                                   {displayLevel >= getRequiredLevelForPlot(plotId) ? (
-                                    <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
+                                    <span className="text-[9px] font-bold uppercase leading-tight text-[#f5dfb0] sm:text-[10px] md:text-sm">
                                       KOSZT: {PLOT_UNLOCK_COSTS[plotId] ?? 0} PLN
                                     </span>
                                   ) : (
-                                    <span className="text-[11px] font-bold text-white/80 leading-tight md:text-sm">
+                                    <span className="text-[9px] font-bold leading-tight text-white/80 sm:text-[10px] md:text-sm">
                                       Wymaga lv: {getRequiredLevelForPlot(plotId)}
                                     </span>
                                   )}
@@ -1405,11 +1244,11 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-4 text-[#f3e6c8] shadow-2xl">
+                <div className="rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] p-3 text-[#f3e6c8] shadow-2xl md:p-4">
                   {selectedPlotId ? (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pole #{selectedPlotId}</h3>
+                      <h3 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Pole #{selectedPlotId}</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         {selectedPlotId <= Math.min(unlockedPlots, MAX_FIELDS)
                           ? "Marchew od poziomu 1. Czas wzrostu: 30 sekund. Plon: 3 sztuki. Nagroda: 2 EXP za zbiór z jednego pola."
@@ -1433,7 +1272,10 @@ export default function Page() {
                       <div className="mt-4 grid gap-2">
                         <button
                           onClick={() => handlePlantCarrot(selectedPlotId)}
-                          disabled={selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) || !!getPlotCrop(selectedPlotId).cropId}
+                          disabled={
+                            selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) ||
+                            !!getPlotCrop(selectedPlotId).cropId
+                          }
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Zasiej marchew
@@ -1446,7 +1288,10 @@ export default function Page() {
                         </button>
                         <button
                           onClick={() => handleHarvestPlot(selectedPlotId)}
-                          disabled={selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) || !getPlotCrop(selectedPlotId).cropId}
+                          disabled={
+                            selectedPlotId > Math.min(unlockedPlots, MAX_FIELDS) ||
+                            !getPlotCrop(selectedPlotId).cropId
+                          }
                           className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(30,18,10,0.9)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Zbierz
@@ -1470,7 +1315,7 @@ export default function Page() {
                   ) : (
                     <>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Menu pola</p>
-                      <h3 className="mt-2 text-2xl font-black text-[#f9e7b2]">Wybierz pole</h3>
+                      <h3 className="mt-2 text-xl font-black text-[#f9e7b2] sm:text-2xl">Wybierz pole</h3>
                       <p className="mt-2 text-sm text-[#dfcfab]">
                         Kliknij jedno z odblokowanych pól w siatce 5 × 5, aby otworzyć jego menu.
                       </p>
