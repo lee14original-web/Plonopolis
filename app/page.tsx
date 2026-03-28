@@ -228,6 +228,7 @@ export default function Page() {
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [, setGrowthTick] = useState(0);
+  const [isLandscapeMobile, setIsLandscapeMobile] = useState(true);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -405,6 +406,23 @@ export default function Page() {
     void bootstrap();
     return () => {
       mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkOrientation = () => {
+      const isMobile = window.innerWidth < 1024;
+      const isLandscape = window.innerWidth > window.innerHeight;
+      setIsLandscapeMobile(!isMobile || isLandscape);
+    };
+
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
     };
   }, []);
 
@@ -837,6 +855,25 @@ export default function Page() {
       title: "Zbiory zakończone",
       text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
     });
+  }
+
+  if (!isLandscapeMobile) {
+    return (
+      <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
+        <div className="max-w-sm rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.92)] p-6 shadow-2xl">
+          <p className="text-xs uppercase tracking-[0.3em] text-[#d8ba7a]">
+            Plonopolis
+          </p>
+          <h1 className="mt-3 text-2xl font-black text-[#f9e7b2]">
+            Obróć telefon
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+            Ta gra działa najlepiej w poziomie. Obróć telefon, aby wygodnie grać.
+          </p>
+          <div className="mt-5 text-5xl">📱↻</div>
+        </div>
+      </main>
+    );
   }
 
   if (!ready) {
