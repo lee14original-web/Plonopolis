@@ -267,6 +267,31 @@ function getMapForLevel(level: number | null | undefined) {
 }
 
 export default function Page() {
+
+  function moveSelection(direction: "up" | "down" | "left" | "right") {
+    const current = selectedPlotId ?? 1;
+
+    let row = Math.floor((current - 1) / 5);
+    let col = (current - 1) % 5;
+
+    if (direction === "up" && row > 0) row -= 1;
+    if (direction === "down" && row < 4) row += 1;
+    if (direction === "left" && col > 0) col -= 1;
+    if (direction === "right" && col < 4) col += 1;
+
+    const nextPlotId = row * 5 + col + 1;
+    setSelectedPlotId(nextPlotId);
+  }
+
+  function confirmSelectedPlot() {
+    if (selectedPlotId) {
+      setMessage({
+        type: "info",
+        title: `Pole #${selectedPlotId}`,
+        text: "Wybrane pole zostało zaznaczone.",
+      });
+    }
+  }
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -460,6 +485,34 @@ export default function Page() {
 
     return () => clearInterval(interval);
   }, [isFieldViewOpen]);
+
+  useEffect(() => {
+    if (!isFieldViewOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+
+      if (
+        ["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","enter"," ","escape"].includes(key)
+      ) {
+        e.preventDefault();
+      }
+
+      if (key === "w" || key === "arrowup") moveSelection("up");
+      else if (key === "s" || key === "arrowdown") moveSelection("down");
+      else if (key === "a" || key === "arrowleft") moveSelection("left");
+      else if (key === "d" || key === "arrowright") moveSelection("right");
+      else if (key === "enter" || key === " ") confirmSelectedPlot();
+      else if (key === "escape") {
+        setIsFieldViewOpen(false);
+        setSelectedPlotId(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFieldViewOpen, selectedPlotId]);
+
 
   async function loadProfile(userId: string) {
     const { data, error } = await supabase
