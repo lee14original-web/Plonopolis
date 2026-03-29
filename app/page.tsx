@@ -17,6 +17,7 @@ type Profile = {
   last_played_at?: string | null;
   unlocked_plots?: number[] | null;
   plot_crops?: Record<string, PlotCropState> | null;
+  seed_inventory?: Record<string, number> | null;
 };
 
 type Message = {
@@ -574,6 +575,42 @@ function getMapForLevel(level: number | null | undefined) {
   return DEFAULT_MAP;
 }
 
+function isFarmMap(mapId: string | null | undefined) {
+  return (mapId ?? DEFAULT_MAP).startsWith("farm");
+}
+
+function getDisplayBackgroundMap(mapId: string | null | undefined) {
+  const safeMap = mapId ?? DEFAULT_MAP;
+  if (safeMap === "city" || safeMap.startsWith("city_")) return "city";
+  return safeMap;
+}
+
+function getMapDisplayName(mapId: string | null | undefined) {
+  switch (mapId) {
+    case "city":
+      return "Miasto";
+    case "city_shop":
+      return "Sklep";
+    case "city_market":
+      return "Targ";
+    case "city_bank":
+      return "Bank";
+    case "city_townhall":
+      return "Ratusz";
+    case "farm20":
+      return "Zaawansowana Farma";
+    case "farm15":
+      return "Rozbudowana Farma";
+    case "farm10":
+      return "Duża Farma";
+    case "farm5":
+      return "Lepsza Farma";
+    case "farm1":
+    default:
+      return "Farma";
+  }
+}
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -624,7 +661,9 @@ export default function Page() {
   const displayXp = profile?.xp ?? DEFAULT_XP;
   const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
-  const currentMap = getMapForLevel(profile?.level);
+  const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
+  const backgroundMap = getDisplayBackgroundMap(currentMap);
+  const isOnFarmMap = isFarmMap(currentMap);
 
   const xpPercent = useMemo(() => {
     if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
@@ -697,7 +736,7 @@ export default function Page() {
   function getPlantedCrop(plotId: number) {
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) return null;
-    return CROPS.find((item) => item.id == plot.cropId) ?? null;
+    return CROPS.find((item) => item.id === plot.cropId) ?? null;
   }
 
   function getEffectiveGrowthTimeMs(plotId: number) {
@@ -787,15 +826,9 @@ export default function Page() {
       return;
     }
 
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: {
-        ...plot,
-        watered: true,
-      },
-    };
-
-    const error = await persistPlotCrops(nextPlotCrops, profile.id);
+    const { data, error } = await supabase.rpc("game_water_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -806,7 +839,14 @@ export default function Page() {
       return;
     }
 
-    setPlotCrops(nextPlotCrops);
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setMessage({
       type: "success",
@@ -852,28 +892,10 @@ export default function Page() {
       return;
     }
 
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: {
-        cropId: selectedSeedId,
-        plantedAt: Date.now(),
-        watered: false,
-      },
-    };
-
-    const nextSeedInventory = {
-      ...seedInventory,
-      [selectedSeedId]: Math.max(0, (seedInventory[selectedSeedId] ?? 0) - 1),
-    };
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        plot_crops: serializePlotCrops(nextPlotCrops),
-        seed_inventory: serializeSeedInventory(nextSeedInventory),
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_plant_crop", {
+      p_plot_id: plotId,
+      p_crop_id: selectedSeedId,
+    });
 
     if (error) {
       setMessage({
@@ -884,8 +906,14 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory(nextSeedInventory);
-    setPlotCrops(nextPlotCrops);
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setMessage({
       type: "success",
@@ -893,6 +921,7 @@ export default function Page() {
       text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
     });
   }
+
 
   function getMaxPlotsForLevel(level: number) {
     return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
@@ -1097,13 +1126,7 @@ export default function Page() {
   }
 
   async function loadProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots, plot_crops, seed_inventory"
-      )
-      .eq("id", userId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("game_get_my_profile");
 
     if (error) {
       setMessage({
@@ -1114,19 +1137,21 @@ export default function Page() {
       return;
     }
 
-    if (!data) {
+    const profileData = Array.isArray(data) ? data[0] : data;
+
+    if (!profileData || profileData.id !== userId) {
       setProfile(null);
       return;
     }
 
     const nextProfile = {
-      ...data,
-      level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
+      ...profileData,
+      level: Math.min(profileData.level ?? DEFAULT_LEVEL, MAX_LEVEL),
     } as Profile;
     setProfile(nextProfile);
-    setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
-    setPlotCrops(parsePlotCrops(data.plot_crops));
-    setSeedInventory(parseSeedInventory(data.seed_inventory));
+    setUnlockedPlots(parseUnlockedPlots(profileData.unlocked_plots));
+    setPlotCrops(parsePlotCrops(profileData.plot_crops));
+    setSeedInventory(parseSeedInventory(profileData.seed_inventory));
   }
 
   async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
@@ -1263,6 +1288,11 @@ export default function Page() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          login,
+        },
+      },
     });
 
     if (signUpError) {
@@ -1284,35 +1314,13 @@ export default function Page() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: userId,
-      login,
-      email,
-      level: DEFAULT_LEVEL,
-      xp: DEFAULT_XP,
-      xp_to_next_level: getXpForLevel(DEFAULT_LEVEL),
-      money: DEFAULT_MONEY,
-      location: DEFAULT_LOCATION,
-      current_map: getMapForLevel(DEFAULT_LEVEL),
-      last_played_at: new Date().toISOString(),
-      unlocked_plots: getDefaultUnlockedPlots(),
-      plot_crops: {},
-      seed_inventory: getDefaultSeedInventory(),
-    });
-
-    if (profileError) {
-      setMessage({
-        type: "error",
-        title: "Błąd zapisu profilu",
-        text: profileError.message,
-      });
-      return;
-    }
-
     setUnlockedPlots(getDefaultUnlockedPlots());
     setPlotCrops({});
     setSeedInventory(getDefaultSeedInventory());
-    await loadProfile(userId);
+
+    if (signUpData.session?.user) {
+      await loadProfile(userId);
+    }
 
     setRegisterForm({
       login: "",
@@ -1487,16 +1495,9 @@ export default function Page() {
       return;
     }
 
-    const updatedPlots = normalizeUnlockedPlots([...unlockedPlots, plotId]);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        money: displayMoney - plotCost,
-        seed_inventory: { carrot: 3 },
-      unlocked_plots: updatedPlots,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_unlock_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -1507,9 +1508,16 @@ export default function Page() {
       return;
     }
 
-    setUnlockedPlots(updatedPlots);
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
+
     setPlotToBuy(null);
-    await loadProfile(profile.id);
 
     setMessage({
       type: "success",
@@ -1517,6 +1525,7 @@ export default function Page() {
       text: `Kupiono pole #${plotId} za ${plotCost} PLN.`,
     });
   }
+
 
   async function confirmBuyPlot() {
     if (!plotToBuy) return;
@@ -1549,45 +1558,9 @@ export default function Page() {
       return;
     }
 
-    const gainedXp = crop.expReward;
-    let nextLevel = displayLevel;
-    let nextXp = displayXp + gainedXp;
-    let nextXpToNextLevel = displayXpToNextLevel;
-
-    while (nextLevel < MAX_LEVEL && nextXpToNextLevel > 0 && nextXp >= nextXpToNextLevel) {
-      nextXp -= nextXpToNextLevel;
-      nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpToNextLevel = getXpForLevel(nextLevel);
-    }
-
-    if (nextLevel >= MAX_LEVEL) {
-      nextLevel = MAX_LEVEL;
-      nextXp = 0;
-      nextXpToNextLevel = 0;
-    }
-
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: buildEmptyPlotCrop(),
-    };
-
-    const nextSeedInventory = {
-      ...seedInventory,
-      [crop.id]: (seedInventory[crop.id] ?? 0) + crop.yieldAmount,
-    };
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        level: nextLevel,
-        xp: nextXp,
-        xp_to_next_level: nextXpToNextLevel,
-        current_map: getMapForLevel(nextLevel),
-        last_played_at: new Date().toISOString(),
-        plot_crops: serializePlotCrops(nextPlotCrops),
-        seed_inventory: serializeSeedInventory(nextSeedInventory),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_harvest_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -1598,10 +1571,19 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory(nextSeedInventory);
-    setPlotCrops(nextPlotCrops);
+    const nextProfile = Array.isArray(data) ? data[0] : data;
 
-    await loadProfile(profile.id);
+    if (nextProfile) {
+      const previousLevel = displayLevel;
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+
+      if ((nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
+        showFarmUpgradeModalOnce(profile.id, nextProfile.level ?? DEFAULT_LEVEL);
+      }
+    }
 
     setMessage({
       type: "success",
@@ -1609,6 +1591,37 @@ export default function Page() {
       text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
     });
   }
+
+  async function handleChangeMap(targetMap: string) {
+    if (!profile) return;
+
+    const { data, error } = await supabase.rpc("game_change_map", {
+      p_target_map: targetMap,
+    });
+
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd zmiany mapy",
+        text: error.message,
+      });
+      return;
+    }
+
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
+
+    setIsFieldViewOpen(false);
+    setSelectedPlotId(null);
+    setPlotToBuy(null);
+  }
+
 
   if (!isDesktop) {
     return (
@@ -1650,7 +1663,7 @@ export default function Page() {
       className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: profile
-          ? `url('/${currentMap}.png')`
+          ? `url('/${backgroundMap}.png')`
           : "url('/assetsmain-lobby.png')",
       }}
     >
@@ -1885,7 +1898,7 @@ export default function Page() {
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
-                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
+                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {getMapDisplayName(currentMap)} ({currentMap})</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">
                     Pola: {unlockedPlotsCount} / {MAX_FIELDS}
@@ -2099,36 +2112,143 @@ export default function Page() {
                 </div>
 
               <div className="absolute inset-0 z-20 pointer-events-none">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFieldViewOpen(true);
-                    setSelectedPlotId((prev) => prev ?? 1);
-                  }}
-                  className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                  style={{
-                    left: "55%",
-                    bottom: "240px",
-                    width: "45%",
-                    height: "150px",
-                  }}
-                >
-                  <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                    <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
-                    <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
-                    <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                    <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-                      Pola uprawne
-                    </span>
+                {isOnFarmMap && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFieldViewOpen(true);
+                      setSelectedPlotId((prev) => prev ?? 1);
+                    }}
+                    className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                    style={{
+                      left: "55%",
+                      bottom: "240px",
+                      width: "45%",
+                      height: "150px",
+                    }}
+                  >
+                    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                      <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
+                      <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                      <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                      <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                        Pola uprawne
+                      </span>
+                    </div>
+                  </button>
+                )}
+
+                {currentMap === "farm1" && (
+                  <button
+                    type="button"
+                    onClick={() => handleChangeMap("city")}
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                    style={{
+                      left: "74%",
+                      top: "49%",
+                      width: "15%",
+                      height: "24%",
+                    }}
+                    title="Do miasta"
+                  >
+                    <div className="relative flex h-full w-full items-end justify-center rounded-xl">
+                      <div className="absolute inset-0 rounded-xl border border-sky-200/0 hover:border-sky-200/60" />
+                      <span className="relative mb-[-28px] rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Do miasta
+                      </span>
+                    </div>
+                  </button>
+                )}
+
+                {currentMap === "city" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("farm1")}
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                      style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
+                      title="Na farmę"
+                    >
+                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Na farmę
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city_shop")}
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                      style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
+                      title="Sklep"
+                    >
+                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Sklep
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city_market")}
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                      style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
+                      title="Targ"
+                    >
+                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Targ
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city_bank")}
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                      style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
+                      title="Bank"
+                    >
+                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Bank
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city_townhall")}
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                      style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
+                      title="Ratusz"
+                    >
+                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                        Ratusz
+                      </span>
+                    </button>
+                  </>
+                )}
+
+                {currentMap !== "city" && currentMap.startsWith("city_") && (
+                  <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
+                    <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                      <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
+                      <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
+                      <p className="mt-4 text-base leading-7 text-[#dfcfab]">
+                        Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city")}
+                        className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Wróć do miasta
+                      </button>
+                    </div>
                   </div>
-                </button>
+                )}
               </div>
             </div>
           )}
         </div>
 
 
-        {isFieldViewOpen && (
+        {isFieldViewOpen && isOnFarmMap && (
           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
             <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
               <button
@@ -2310,125 +2430,4 @@ export default function Page() {
                           return (
                             <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
                               <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">Zablokowane pole</p>
-                                    <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
-                                    <p className="mt-1 text-sm text-[#f2ddb0]">Cena odblokowania: {selectedPlotCost} PLN</p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPlotId(null)}
-                                    className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
-                                    aria-label="Zamknij podpowiedź zakupu pola"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-
-                                <div className="mt-4">
-                                  <button
-                                    type="button"
-                                    onClick={() => setPlotToBuy(selectedPlotId)}
-                                    className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={displayMoney < selectedPlotCost}
-                                  >
-                                    Kup: {selectedPlotCost} PLN
-                                  </button>
-                                  {displayMoney < selectedPlotCost && (
-                                    <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </>
-                    )}
-                  </div>
-
-                  {plotToBuy !== null && (
-                    <div className="absolute inset-0 z-[95] flex items-center justify-center bg-black/60 px-4">
-                      <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
-                        <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
-                        <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
-                          Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
-                        </p>
-
-                        <div className="mt-6 flex justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setPlotToBuy(null)}
-                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
-                          >
-                            Anuluj
-                          </button>
-                          <button
-                            type="button"
-                            onClick={confirmBuyPlot}
-                            className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                          >
-                            Kup: {getPlotUnlockCost(plotToBuy)} PLN
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {farmUpgradeModal && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
-            <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-              <button
-                onClick={closeFarmUpgradeModal}
-                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
-                aria-label="Zamknij komunikat ulepszenia farmy"
-              >
-                ×
-              </button>
-
-              <div className="pr-12">
-                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
-                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
-                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
-                <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
-                  Osiągnięto poziom {farmUpgradeModal.level}.
-                </p>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={closeFarmUpgradeModal}
-                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                >
-                  Super
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {message && (
-          <div className="fixed bottom-4 left-4 z-50">
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
-                message.type === "error"
-                  ? "border-red-400/40 bg-red-950/80 text-red-100"
-                  : message.type === "success"
-                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-                  : "border-sky-400/40 bg-sky-950/80 text-sky-100"
-              }`}
-            >
-              <p className="font-semibold">{message.title}</p>
-              {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
+                      
