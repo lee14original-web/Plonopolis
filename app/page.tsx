@@ -1674,27 +1674,22 @@ export default function Page() {
                   }`}
                 >
                   {displayLevel < MAX_LEVEL && (
-  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
-    <div className="flex items-center justify-between gap-3">
-      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-        EXP
-      </p>
-      <p className="text-xs font-bold text-[#dfcfab]">
-        {displayXp} / {displayXpToNextLevel} ({xpPercent}%)
-      </p>
-    </div>
-
-    <div className="mt-2 h-3 overflow-hidden rounded-full bg-black/40">
-      <div
-        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-        style={{ width: `${xpPercent}%` }}
-      />
-    </div>
-  </div>
-)}
+                    <div>
+                      <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+                        <span>EXP do następnego poziomu</span>
+                        <span>{xpPercent}%</span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                        <div
+                          className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                          style={{ width: `${xpPercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
                     <p className="text-2xl font-black text-white">{displayLevel}</p>
                     {displayLevel >= MAX_LEVEL && (
                       <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
@@ -1959,75 +1954,30 @@ export default function Page() {
                           </button>
                         </div>
 
-                        <div className="mt-3 grid w-full grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                              setSelectedSeedId(null);
-                            }}
-                            className={`flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-                              selectedTool === "watering_can"
-                                ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                            }`}
-                          >
-                            <img
-                              src="/watering_can_transparent.png"
-                              alt="Podlanie"
-                              className="h-16 w-16 object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                            />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                            setSelectedSeedId(null);
+                          }}
+                          className={`mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                            selectedTool === "watering_can"
+                              ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                              : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                          }`}
+                        >
+                          <img
+                            src="/watering_can_transparent.png"
+                            alt="Konewka"
+                            className="h-16 w-16 object-contain"
+                            style={{ imageRendering: "pixelated" }}
+                          />
 
-                            <div className="text-center">
-                              <p className="text-sm font-black text-[#f9e7b2]">Podlanie</p>
-                              <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!selectedPlotId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak wybranego pola",
-                                  text: "Najpierw wybierz pole do zbioru.",
-                                });
-                                return;
-                              }
-
-                              const plot = getPlotCrop(selectedPlotId);
-                              if (!plot.cropId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak uprawy",
-                                  text: "Na wybranym polu nic jeszcze nie rośnie.",
-                                });
-                                return;
-                              }
-
-                              if (!isCropReady(selectedPlotId)) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Uprawa jeszcze rośnie",
-                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
-                                });
-                                return;
-                              }
-
-                              await handleHarvestPlot(selectedPlotId);
-                            }}
-                            className="flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
-                          >
-                            <span className="text-[56px] leading-none">🌾</span>
-
-                            <div className="text-center">
-                              <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
-                              <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
-                            </div>
-                          </button>
-                        </div>
+                          <div className="text-center">
+                            <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                            <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
+                          </div>
+                        </button>
 
                         <div className="mt-4">
                           {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
@@ -2411,18 +2361,40 @@ export default function Page() {
         )}
 
         {message && (
-          <div className="fixed bottom-4 left-4 z-50">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/45 px-4">
             <div
-              className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
+              className={`relative w-full max-w-lg rounded-[28px] border px-6 py-5 text-center shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-sm ${
                 message.type === "error"
-                  ? "border-red-400/40 bg-red-950/80 text-red-100"
+                  ? "border-red-400/40 bg-[linear-gradient(180deg,rgba(82,16,16,0.96),rgba(42,8,8,0.96))] text-red-100"
                   : message.type === "success"
-                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-                  : "border-sky-400/40 bg-sky-950/80 text-sky-100"
+                  ? "border-emerald-400/40 bg-[linear-gradient(180deg,rgba(8,58,38,0.96),rgba(6,28,18,0.96))] text-emerald-100"
+                  : "border-sky-400/40 bg-[linear-gradient(180deg,rgba(16,48,82,0.96),rgba(8,20,42,0.96))] text-sky-100"
               }`}
             >
-              <p className="font-semibold">{message.title}</p>
-              {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+              <button
+                type="button"
+                onClick={() => setMessage(null)}
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/20 text-xl font-bold text-white/90 transition hover:bg-black/35"
+                aria-label="Zamknij powiadomienie"
+              >
+                ×
+              </button>
+
+              <p className="text-xs uppercase tracking-[0.35em] opacity-80">
+                Powiadomienie
+              </p>
+              <h2 className="mt-3 text-2xl font-black">{message.title}</h2>
+              {message.text && <p className="mt-4 text-base leading-7 opacity-90">{message.text}</p>}
+
+              <div className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setMessage(null)}
+                  className="rounded-2xl border border-white/15 bg-white/10 px-5 py-2 text-sm font-black text-white transition hover:bg-white/15"
+                >
+                  OK
+                </button>
+              </div>
             </div>
           </div>
         )}
