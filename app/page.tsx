@@ -2131,9 +2131,9 @@ return (
   className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
   style={{
   left: "-23%",
-  top: "60%",
-  width: "18%",
-  height: "18%",
+  top: "52%",
+  width: "20%",
+  height: "20%",
   zIndex: 5,
   background: "transparent",
   border: "none",
