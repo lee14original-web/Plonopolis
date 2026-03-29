@@ -493,7 +493,10 @@ function serializePlotCrops(value: Record<number, PlotCropState>) {
   );
 }
 
-function getDefaultSeedInventory(): setSeedInventory(data.seed_inventory ?? {});
+function getDefaultSeedInventory(): SeedInventory {
+  return {
+    carrot: 3,
+  };
 }
 
 function parseSeedInventory(value: unknown): SeedInventory {
