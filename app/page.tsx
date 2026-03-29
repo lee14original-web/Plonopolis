@@ -1880,7 +1880,7 @@ export default function Page() {
 
 
               <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
-                <div className="w-[210px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                <div className="w-[470px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
                   <button
@@ -1902,17 +1902,36 @@ export default function Page() {
                     </div>
                   </button>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4">
                     {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
                       <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                         Plecak jest pusty.
                       </div>
                     ) : (
-                      Object.entries(seedInventory)
-                        .filter(([, amount]) => amount > 0)
-                        .map(([seedId, amount]) => {
+                      <div className="grid grid-cols-10 gap-1">
+                        {Array.from({ length: 50 }).map((_, index) => {
+                          const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => amount > 0);
+                          const entry = inventoryItems[index];
+
+                          if (!entry) {
+                            return (
+                              <div
+                                key={`empty-slot-${index}`}
+                                className="h-10 w-10 rounded-lg border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                              />
+                            );
+                          }
+
+                          const [seedId, amount] = entry;
                           const crop = CROPS.find((item) => item.id === seedId);
-                          if (!crop) return null;
+                          if (!crop) {
+                            return (
+                              <div
+                                key={`missing-slot-${index}`}
+                                className="h-10 w-10 rounded-lg border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                              />
+                            );
+                          }
 
                           return (
                             <button
@@ -1922,26 +1941,27 @@ export default function Page() {
                                 setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                 setSelectedTool(null);
                               }}
-                              className={`flex w-full items-center justify-center rounded-2xl border px-3 py-3 text-left transition ${
+                              title={`${crop.name} (${amount})`}
+                              className={`relative flex h-10 w-10 items-center justify-center rounded-lg border transition ${
                                 selectedSeedId === seedId
-                                  ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_24px_rgba(255,220,120,0.2)]"
+                                  ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
                                   : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
                               }`}
                             >
-                              <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)]">
-                                <img
-                                  src={crop.spritePath}
-                                  alt={crop.name}
-                                  className="h-10 w-10 object-contain"
-                                  style={{ imageRendering: "pixelated" }}
-                                />
-                                <span className="absolute bottom-0.5 right-0.5 rounded-md bg-black/75 px-1.5 py-0.5 text-[10px] font-black leading-none text-[#f9e7b2]">
-                                  {amount}
-                                </span>
-                              </div>
+                              <img
+                                src={crop.spritePath}
+                                alt={crop.name}
+                                className="h-5 w-5 object-contain"
+                                style={{ imageRendering: "pixelated" }}
+                              />
+
+                              <span className="absolute bottom-0 right-0 min-w-[14px] rounded-sm bg-black/80 px-1 text-[9px] font-black leading-[14px] text-[#f9e7b2]">
+                                {amount}
+                              </span>
                             </button>
                           );
-                        })
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
