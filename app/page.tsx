@@ -2130,16 +2130,16 @@ return (
   title="Do miasta"
   className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
   style={{
-    left: "4%",
-    top: "55%",
-    width: "14%",
-    height: "18%",
-    zIndex: 5,
-    background: "transparent",
-    border: "none",
-    padding: 0,
-    cursor: "pointer",
-  }}
+  left: "15.5%",
+  top: "61.5%",
+  width: "11%",
+  height: "11%",
+  zIndex: 5,
+  background: "transparent",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+}}
 >
   <div className="relative flex h-full w-full items-end justify-center rounded-xl">
     <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
