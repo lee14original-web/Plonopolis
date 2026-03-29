@@ -1911,7 +1911,7 @@ export default function Page() {
                         ←
                       </button>
 
-                      <div className="w-[700px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                      <div className="w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                         <div
                           className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
                           onMouseDown={(event) => startDraggingBackpack(event)}
@@ -1964,7 +1964,7 @@ export default function Page() {
                                   return (
                                     <div
                                       key={`empty-slot-${index}`}
-                                      className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                      className="h-16 w-16 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                                     />
                                   );
                                 }
@@ -1975,7 +1975,7 @@ export default function Page() {
                                   return (
                                     <div
                                       key={`missing-slot-${index}`}
-                                      className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                      className="h-16 w-16 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                                     />
                                   );
                                 }
@@ -1989,7 +1989,7 @@ export default function Page() {
                                       setSelectedTool(null);
                                     }}
                                     title={`${crop.name} (${amount})`}
-                                    className={`relative flex h-32 w-32 items-center justify-center rounded-xl border transition ${
+                                    className={`relative flex h-16 w-16 items-center justify-center rounded-xl border transition ${
                                       selectedSeedId === seedId
                                         ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
                                         : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
@@ -1998,11 +1998,11 @@ export default function Page() {
                                     <img
                                       src={crop.spritePath}
                                       alt={crop.name}
-                                      className="h-20 w-20 object-contain"
+                                      className="h-10 w-10 object-contain"
                                       style={{ imageRendering: "pixelated" }}
                                     />
 
-                                    <span className="absolute bottom-2 right-2 min-w-[32px] rounded-md bg-black/80 px-2 py-1 text-sm font-black leading-none text-[#f9e7b2]">
+                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                       {amount}
                                     </span>
                                   </button>
