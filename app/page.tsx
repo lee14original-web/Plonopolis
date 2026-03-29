@@ -2003,40 +2003,56 @@ export default function Page() {
                     })}
 
                     {selectedPlotId && (
-                      <div className="absolute inset-0">
+                      <>
                         {(() => {
-                          const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
-                          if (!activePlot) return null;
-
                           const selectedPlotUnlocked = isPlotUnlocked(selectedPlotId);
                           const selectedPlotCost = getPlotUnlockCost(selectedPlotId);
 
+                          if (selectedPlotUnlocked) {
+                            const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
+                            if (!activePlot) return null;
+
+                            return (
+                              <div className="pointer-events-none absolute inset-0">
+                                <div
+                                  className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
+                                  style={{
+                                    left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
+                                    top: activePlot.top,
+                                  }}
+                                >
+                                  {selectedTool === "watering_can"
+                                    ? "Kliknij pole, aby podlać"
+                                    : selectedSeedId
+                                    ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
+                                    : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
+                                    ? "Enter lub kliknij pole, aby zebrać"
+                                    : "Wybierz nasiono z plecaka albo konewkę"}
+                                </div>
+                              </div>
+                            );
+                          }
+
                           return (
-                            <div
-                              className={`absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-3 text-xs font-bold text-[#f3e6c8] shadow-2xl ${
-                                selectedPlotUnlocked ? "pointer-events-none" : "pointer-events-auto"
-                              }`}
-                              style={{
-                                left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
-                                top: activePlot.top,
-                              }}
-                            >
-                              {selectedPlotUnlocked ? (
-                                selectedTool === "watering_can" ? (
-                                  "Kliknij pole, aby podlać"
-                                ) : selectedSeedId ? (
-                                  `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
-                                ) : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId) ? (
-                                  "Enter lub kliknij pole, aby zebrać"
-                                ) : (
-                                  "Wybierz nasiono z plecaka albo konewkę"
-                                )
-                              ) : (
-                                <div className="min-w-[180px] space-y-3">
+                            <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
+                              <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                                <div className="flex items-start justify-between gap-3">
                                   <div>
-                                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#d8ba7a]">Pole #{selectedPlotId}</p>
-                                    <p className="mt-1 text-sm font-black text-[#fff1c7]">Cena: {selectedPlotCost} PLN</p>
+                                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">Zablokowane pole</p>
+                                    <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
+                                    <p className="mt-1 text-sm text-[#f2ddb0]">Cena odblokowania: {selectedPlotCost} PLN</p>
                                   </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPlotId(null)}
+                                    className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
+                                    aria-label="Zamknij podpowiedź zakupu pola"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+
+                                <div className="mt-4">
                                   <button
                                     type="button"
                                     onClick={() => setPlotToBuy(selectedPlotId)}
@@ -2046,14 +2062,14 @@ export default function Page() {
                                     Kup: {selectedPlotCost} PLN
                                   </button>
                                   {displayMoney < selectedPlotCost && (
-                                    <p className="text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
+                                    <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
                                   )}
                                 </div>
-                              )}
+                              </div>
                             </div>
                           );
                         })()}
-                      </div>
+                      </>
                     )}
                   </div>
                 </div>
