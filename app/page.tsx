@@ -142,7 +142,7 @@ const MAPS: Record<MapId, GameMapConfig> = {
     background: "/farm1.png",
     showFarmButton: true,
     entrances: [
-      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "84%", top: "38%", width: "11%", height: "22%", description: "Brama prowadząca do miasta" },
+      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "68%", top: "33%", width: "18%", height: "26%", description: "Brama prowadząca do miasta" },
     ],
   },
   farm5: {
@@ -152,7 +152,7 @@ const MAPS: Record<MapId, GameMapConfig> = {
     background: "/farm5.png",
     showFarmButton: true,
     entrances: [
-      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "84%", top: "38%", width: "11%", height: "22%", description: "Brama prowadząca do miasta" },
+      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "68%", top: "33%", width: "18%", height: "26%", description: "Brama prowadząca do miasta" },
     ],
   },
   farm10: {
@@ -162,7 +162,7 @@ const MAPS: Record<MapId, GameMapConfig> = {
     background: "/farm10.png",
     showFarmButton: true,
     entrances: [
-      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "84%", top: "38%", width: "11%", height: "22%", description: "Brama prowadząca do miasta" },
+      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "68%", top: "33%", width: "18%", height: "26%", description: "Brama prowadząca do miasta" },
     ],
   },
   farm15: {
@@ -172,7 +172,7 @@ const MAPS: Record<MapId, GameMapConfig> = {
     background: "/farm15.png",
     showFarmButton: true,
     entrances: [
-      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "84%", top: "38%", width: "11%", height: "22%", description: "Brama prowadząca do miasta" },
+      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "68%", top: "33%", width: "18%", height: "26%", description: "Brama prowadząca do miasta" },
     ],
   },
   farm20: {
@@ -182,7 +182,7 @@ const MAPS: Record<MapId, GameMapConfig> = {
     background: "/farm20.png",
     showFarmButton: true,
     entrances: [
-      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "84%", top: "38%", width: "11%", height: "22%", description: "Brama prowadząca do miasta" },
+      { id: "road-to-city", label: "Do miasta", targetMap: "city", left: "68%", top: "33%", width: "18%", height: "26%", description: "Brama prowadząca do miasta" },
     ],
   },
   city: {
@@ -754,25 +754,43 @@ export default function Page() {
       <div className="relative min-h-screen bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url('${activeMap.background}')` }}>
         <div className="absolute inset-0 bg-black/20" />
 
-        <div className="relative z-10 flex items-start justify-between gap-4 px-4 pt-4">
-          <div className="max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] p-5 shadow-2xl backdrop-blur-sm">
-            <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Plonopolis</p>
-            <h1 className="mt-2 text-3xl font-black text-[#f8e4b1]">{activeMap.name}</h1>
-            <p className="mt-1 text-sm text-[#ddc79d]">{activeMap.subtitle}</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-4">
-              <div className="rounded-2xl bg-[rgba(67,43,26,0.8)] p-3"><p className="text-xs uppercase tracking-[0.2em] text-[#d6b26f]">Gracz</p><p className="mt-1 font-bold">{profile.login}</p></div>
-              <div className="rounded-2xl bg-[rgba(67,43,26,0.8)] p-3"><p className="text-xs uppercase tracking-[0.2em] text-[#d6b26f]">Poziom</p><p className="mt-1 font-bold">{displayLevel}</p></div>
-              <div className="rounded-2xl bg-[rgba(67,43,26,0.8)] p-3"><p className="text-xs uppercase tracking-[0.2em] text-[#d6b26f]">EXP</p><p className="mt-1 font-bold">{displayXp}/{displayXpToNextLevel}</p></div>
-              <div className="rounded-2xl bg-[rgba(67,43,26,0.8)] p-3"><p className="text-xs uppercase tracking-[0.2em] text-[#d6b26f]">Gotówka</p><p className="mt-1 font-bold">{moneyFormatted}</p></div>
-            </div>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-black/30">
-              <div className="h-full rounded-full bg-[#d8ba7a] transition-all" style={{ width: `${xpPercent}%` }} />
-            </div>
-          </div>
+        <div className="absolute right-4 top-4 z-20 flex gap-2">
+          <button onClick={() => void loadProfile()} className="rounded-2xl border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 font-bold backdrop-blur-sm">Odśwież profil</button>
+          <button onClick={handleLogout} className="rounded-2xl border border-red-400/40 bg-red-950/50 px-4 py-2 font-bold text-red-100 backdrop-blur-sm">Wyloguj</button>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <button onClick={() => void loadProfile()} className="rounded-2xl border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 font-bold backdrop-blur-sm">Odśwież profil</button>
-            <button onClick={handleLogout} className="rounded-2xl border border-red-400/40 bg-red-950/50 px-4 py-2 font-bold text-red-100 backdrop-blur-sm">Wyloguj</button>
+        <div className="relative z-10 mx-auto flex max-w-5xl justify-center px-4 pt-2">
+          <div className="w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+            <div className="grid items-center gap-3 md:grid-cols-[1fr_auto_auto]">
+              <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="text-center">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
+                    <p className="text-2xl font-black text-white">{displayLevel}</p>
+                  </div>
+
+                  <div className="min-w-[210px] flex-1">
+                    <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.15em] text-[#d8ba7a]">
+                      <span>EXP {displayXp} / {displayXpToNextLevel}</span>
+                      <span>{xpPercent}%</span>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                      <div className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]" style={{ width: `${xpPercent}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
+                <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+              </div>
+
+              <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Mapa</p>
+                <p className="text-lg font-black text-white">{activeMap.name}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -801,15 +819,35 @@ export default function Page() {
             ))}
 
             {activeMap.showFarmButton ? (
-              <div className="absolute bottom-5 left-5 max-w-sm rounded-[28px] border border-[#8b6a3e] bg-[rgba(32,20,12,0.9)] p-5 shadow-2xl backdrop-blur-sm">
-                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Panel farmy</p>
-                <h2 className="mt-2 text-2xl font-black text-[#f8e4b1]">Twoje pola</h2>
-                <p className="mt-2 text-sm leading-6 text-[#ddc79d]">Wejdź na pola, aby sadzić, podlewać, zbierać i odblokowywać kolejne miejsca pod uprawę.</p>
-                <div className="mt-4 flex gap-3">
-                  <button onClick={() => setIsFieldViewOpen(true)} className="rounded-2xl bg-[#e6c987] px-4 py-3 font-black text-[#2f1d11]">Wejdź na pola</button>
-                  <button onClick={() => void handleChangeMap("city")} className="rounded-2xl border border-[#8b6a3e] bg-[rgba(60,39,24,0.82)] px-4 py-3 font-bold">Jedź do miasta</button>
+              <>
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFieldViewOpen(true);
+                      setSelectedPlotId((prev) => prev ?? 1);
+                    }}
+                    className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                    style={{ left: "55%", bottom: "18%", width: "32%", height: "18%" }}
+                  >
+                    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                      <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
+                      <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                      <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                      <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
+                    </div>
+                  </button>
                 </div>
-              </div>
+
+                <div className="absolute bottom-5 left-5 max-w-sm rounded-[28px] border border-[#8b6a3e] bg-[rgba(32,20,12,0.9)] p-5 shadow-2xl backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Panel farmy</p>
+                  <h2 className="mt-2 text-2xl font-black text-[#f8e4b1]">Twoje pola</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#ddc79d]">Stare położenia paneli zostały zachowane. Przejście do miasta przeniosłem na rower w tle.</p>
+                  <div className="mt-4 flex gap-3">
+                    <button onClick={() => setIsFieldViewOpen(true)} className="rounded-2xl bg-[#e6c987] px-4 py-3 font-black text-[#2f1d11]">Wejdź na pola</button>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="absolute bottom-5 left-5 max-w-sm rounded-[28px] border border-[#8b6a3e] bg-[rgba(32,20,12,0.9)] p-5 shadow-2xl backdrop-blur-sm">
                 <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Lokacja</p>
@@ -821,7 +859,7 @@ export default function Page() {
           </div>
         </div>
 
-        <aside className="fixed right-4 top-36 z-20 w-[340px] rounded-[30px] border border-[#8b6a3e] bg-[rgba(30,18,10,0.93)] p-5 shadow-2xl backdrop-blur-sm">
+        <aside className="fixed left-4 top-24 z-20 w-[380px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 shadow-2xl backdrop-blur-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Plecak</p>
@@ -863,7 +901,7 @@ export default function Page() {
               <div className="flex items-center justify-between border-b border-[#8b6a3e] px-6 py-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Widok pól</p>
-                  <h2 className="mt-1 text-2xl font-black text-[#f8e4b1]">Gospodarstwo</h2>
+                  <h2 className="mt-1 text-2xl font-black text-[#f8e4b1]">Twoje pole uprawne</h2>
                 </div>
                 <button onClick={() => setIsFieldViewOpen(false)} className="rounded-2xl border border-[#8b6a3e] bg-[rgba(59,38,23,0.9)] px-4 py-2 font-bold">Zamknij</button>
               </div>
