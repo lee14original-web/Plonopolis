@@ -2078,35 +2078,34 @@ export default function Page() {
           </div>
         )}
 
-        {plotToBuy !== null && (
-          <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/60 px-4">
-            <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-              <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
-              <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
-              <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
-                Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
-              </p>
+                    {plotToBuy !== null && (
+                      <div className="absolute inset-0 z-[75] flex items-center justify-center bg-black/60 px-4">
+                        <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
+                          <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
+                          <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                            Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
+                          </p>
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPlotToBuy(null)}
-                  className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
-                >
-                  Anuluj
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmBuyPlot}
-                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                >
-                  Kup: {getPlotUnlockCost(plotToBuy)} PLN
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+                          <div className="mt-6 flex justify-end gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setPlotToBuy(null)}
+                              className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                            >
+                              Anuluj
+                            </button>
+                            <button
+                              type="button"
+                              onClick={confirmBuyPlot}
+                              className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                            >
+                              Kup: {getPlotUnlockCost(plotToBuy)} PLN
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
         {farmUpgradeModal && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
             <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
