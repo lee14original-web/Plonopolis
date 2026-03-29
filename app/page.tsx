@@ -1674,22 +1674,27 @@ export default function Page() {
                   }`}
                 >
                   {displayLevel < MAX_LEVEL && (
-                    <div>
-                      <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
-                        <span>EXP do następnego poziomu</span>
-                        <span>{xpPercent}%</span>
-                      </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-black/40">
-                        <div
-                          className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-                          style={{ width: `${xpPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">
+        EXP
+      </p>
+      <p className="text-xs font-bold text-[#dfcfab]">
+        {displayXp} / {displayXpToNextLevel} ({xpPercent}%)
+      </p>
+    </div>
+
+    <div className="mt-2 h-3 overflow-hidden rounded-full bg-black/40">
+      <div
+        className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+        style={{ width: `${xpPercent}%` }}
+      />
+    </div>
+  </div>
+)}
 
                   <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
                     <p className="text-2xl font-black text-white">{displayLevel}</p>
                     {displayLevel >= MAX_LEVEL && (
                       <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
