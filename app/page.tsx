@@ -60,7 +60,7 @@ type Crop = {
 type PlotCropState = {
   cropId: string | null;
   plantedAt: number | null;
-  watered?: boolean;
+  watered: boolean;
 };
 
 type SeedInventory = Record<string, number>;
@@ -458,22 +458,22 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 
   const entries = Object.entries(value as Record<string, unknown>);
-  const parsedEntries = entries
-    .map(([key, rawValue]) => {
-      const plotId = Number(key);
-      if (!Number.isInteger(plotId) || plotId < 1 || plotId > MAX_FIELDS) return null;
+  const parsedEntries: Array<readonly [number, PlotCropState]> = [];
 
-      const item = rawValue as Partial<PlotCropState> | null;
-      return [
-        plotId,
-        {
-          cropId: typeof item?.cropId === "string" ? item.cropId : null,
-          plantedAt: typeof item?.plantedAt === "number" ? item.plantedAt : null,
-          watered: Boolean(item?.watered),
-        } satisfies PlotCropState,
-      ] as const;
-    })
-    .filter((entry): entry is readonly [number, PlotCropState] => entry !== null);
+  for (const [key, rawValue] of entries) {
+    const plotId = Number(key);
+    if (!Number.isInteger(plotId) || plotId < 1 || plotId > MAX_FIELDS) continue;
+
+    const item = rawValue as Partial<PlotCropState> | null;
+    parsedEntries.push([
+      plotId,
+      {
+        cropId: typeof item?.cropId === "string" ? item.cropId : null,
+        plantedAt: typeof item?.plantedAt === "number" ? item.plantedAt : null,
+        watered: Boolean(item?.watered),
+      },
+    ] as const);
+  }
 
   return Object.fromEntries(parsedEntries);
 }
