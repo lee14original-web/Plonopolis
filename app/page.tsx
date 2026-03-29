@@ -1955,36 +1955,25 @@ export default function Page() {
                         </div>
 
                         <button
-  type="button"
-  onClick={() => {
-    setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-    setSelectedSeedId(null);
-  }}
-  className={`mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-    selectedTool === "watering_can"
-      ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-      : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-  }`}
->
-  <img
-    src="/watering_can_transparent.png"
-    alt="Konewka"
-    className="h-16 w-16 object-contain"
-    style={{ imageRendering: "pixelated" }}
-  />
-
-  <div className="text-center">
-    <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-    <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
-  </div>
-</button>
+                          type="button"
+                          onClick={() => {
+                            setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                            setSelectedSeedId(null);
+                          }}
+                          className={`mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                             selectedTool === "watering_can"
                               ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
                               : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
                           }`}
                         >
-                          <img src="/watering_can_transparent.png" alt="Konewka" className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
-                          <div>
+                          <img
+                            src="/watering_can_transparent.png"
+                            alt="Konewka"
+                            className="h-16 w-16 object-contain"
+                            style={{ imageRendering: "pixelated" }}
+                          />
+
+                          <div className="text-center">
                             <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
                             <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
                           </div>
