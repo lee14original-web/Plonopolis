@@ -1064,7 +1064,7 @@ export default function Page() {
       return;
     }
 
-    setUnlockedPlots(3);
+    setUnlockedPlots(getDefaultUnlockedPlots());
     await loadProfile(userId);
 
     setRegisterForm({
@@ -1141,7 +1141,7 @@ export default function Page() {
     await supabase.auth.signOut();
     setProfile(null);
     setSelectedPlotId(null);
-    setUnlockedPlots(3);
+    setUnlockedPlots(getDefaultUnlockedPlots());
     setFarmUpgradeModal(null);
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
