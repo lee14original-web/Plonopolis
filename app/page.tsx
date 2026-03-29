@@ -1397,6 +1397,11 @@ export default function Page() {
       return;
     }
 
+    setSeedInventory((prev) => ({
+      ...prev,
+      [crop.id]: (prev[crop.id] ?? 0) + crop.yieldAmount,
+    }));
+
     setPlotCrops((prev) => ({
       ...prev,
       [plotId]: {
