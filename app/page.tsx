@@ -493,6 +493,42 @@ function serializePlotCrops(value: Record<number, PlotCropState>) {
   );
 }
 
+function getDefaultSeedInventory(): SeedInventory {
+  return {
+    carrot: 3,
+  };
+}
+
+function parseSeedInventory(value: unknown): SeedInventory {
+  const defaults = getDefaultSeedInventory();
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return defaults;
+  }
+
+  const parsedEntries = Object.entries(value as Record<string, unknown>)
+    .map(([seedId, amount]) => {
+      if (!CROPS.some((crop) => crop.id === seedId)) return null;
+      const safeAmount = Number(amount);
+      if (!Number.isFinite(safeAmount) || safeAmount <= 0) return null;
+      return [seedId, Math.floor(safeAmount)] as const;
+    })
+    .filter((entry): entry is readonly [string, number] => entry !== null);
+
+  return {
+    ...defaults,
+    ...Object.fromEntries(parsedEntries),
+  };
+}
+
+function serializeSeedInventory(value: SeedInventory) {
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([seedId, amount]) => [seedId, Math.max(0, Math.floor(Number(amount) || 0))] as const)
+      .filter(([, amount]) => amount > 0)
+  );
+}
+
 function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   if (level === 5) {
     return {
@@ -564,9 +600,7 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
-  const [seedInventory, setSeedInventory] = useState<SeedInventory>({
-    carrot: 3,
-  });
+  const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
   const [, setGrowthTick] = useState(0);
@@ -826,7 +860,19 @@ export default function Page() {
       },
     };
 
-    const error = await persistPlotCrops(nextPlotCrops, profile.id);
+    const nextSeedInventory = {
+      ...seedInventory,
+      [selectedSeedId]: Math.max(0, (seedInventory[selectedSeedId] ?? 0) - 1),
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        plot_crops: serializePlotCrops(nextPlotCrops),
+        seed_inventory: serializeSeedInventory(nextSeedInventory),
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
 
     if (error) {
       setMessage({
@@ -837,10 +883,7 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory((prev) => ({
-      ...prev,
-      [selectedSeedId]: Math.max(0, (prev[selectedSeedId] ?? 0) - 1),
-    }));
+    setSeedInventory(nextSeedInventory);
     setPlotCrops(nextPlotCrops);
 
     setMessage({
@@ -1033,7 +1076,7 @@ export default function Page() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots, plot_crops"
+        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots, plot_crops, seed_inventory"
       )
       .eq("id", userId)
       .maybeSingle();
@@ -1059,6 +1102,7 @@ export default function Page() {
     setProfile(nextProfile);
     setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
     setPlotCrops(parsePlotCrops(data.plot_crops));
+    setSeedInventory(parseSeedInventory(data.seed_inventory));
   }
 
   async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
@@ -1066,6 +1110,18 @@ export default function Page() {
       .from("profiles")
       .update({
         plot_crops: serializePlotCrops(nextPlotCrops),
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    return error;
+  }
+
+  async function persistSeedInventory(nextSeedInventory: SeedInventory, userId: string) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        seed_inventory: serializeSeedInventory(nextSeedInventory),
         last_played_at: new Date().toISOString(),
       })
       .eq("id", userId);
@@ -1217,6 +1273,7 @@ export default function Page() {
       last_played_at: new Date().toISOString(),
       unlocked_plots: getDefaultUnlockedPlots(),
       plot_crops: {},
+      seed_inventory: getDefaultSeedInventory(),
     });
 
     if (profileError) {
@@ -1230,6 +1287,7 @@ export default function Page() {
 
     setUnlockedPlots(getDefaultUnlockedPlots());
     setPlotCrops({});
+    setSeedInventory(getDefaultSeedInventory());
     await loadProfile(userId);
 
     setRegisterForm({
@@ -1308,6 +1366,7 @@ export default function Page() {
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
     setPlotCrops({});
+    setSeedInventory(getDefaultSeedInventory());
     setFarmUpgradeModal(null);
     setPlotToBuy(null);
     setIsFieldViewOpen(false);
@@ -1487,6 +1546,11 @@ export default function Page() {
       [plotId]: buildEmptyPlotCrop(),
     };
 
+    const nextSeedInventory = {
+      ...seedInventory,
+      [crop.id]: (seedInventory[crop.id] ?? 0) + crop.yieldAmount,
+    };
+
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -1496,6 +1560,7 @@ export default function Page() {
         current_map: getMapForLevel(nextLevel),
         last_played_at: new Date().toISOString(),
         plot_crops: serializePlotCrops(nextPlotCrops),
+        seed_inventory: serializeSeedInventory(nextSeedInventory),
       })
       .eq("id", profile.id);
 
@@ -1508,11 +1573,7 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory((prev) => ({
-      ...prev,
-      [crop.id]: (prev[crop.id] ?? 0) + crop.yieldAmount,
-    }));
-
+    setSeedInventory(nextSeedInventory);
     setPlotCrops(nextPlotCrops);
 
     await loadProfile(profile.id);
