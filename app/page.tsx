@@ -72,11 +72,6 @@ const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((item) => item.trim().toLowerCase())
-  .filter(Boolean);
-
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
 const CROPS: Crop[] = [
@@ -540,14 +535,6 @@ export default function Page() {
     return PLOT_UNLOCK_COSTS[plotId] ?? 0;
   }
 
-  const isAdmin = useMemo(() => {
-    if (!profile) return false;
-
-    const normalizedEmail = profile.email.trim().toLowerCase();
-    const normalizedLogin = profile.login.trim().toLowerCase();
-
-    return normalizedLogin === "admin" || ADMIN_EMAILS.includes(normalizedEmail);
-  }, [profile]);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -1131,7 +1118,6 @@ export default function Page() {
     setSelectedSeedId(null);
     setSelectedTool(null);
     setIsDraggingBackpack(false);
-    setIsDraggingBackpack(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1257,165 +1243,6 @@ export default function Page() {
     await handleUnlockPlot(plotToBuy);
   }
 
-  async function handleAdminResetFarm() {
-    if (!profile || !isAdmin) return;
-
-    const confirmed = window.confirm(
-      "Czy na pewno chcesz zresetować farmę tego gracza? Pola wrócą do 1-3, a aktualne uprawy na planszy zostaną wyczyszczone."
-    );
-
-    if (!confirmed) return;
-
-    const defaultPlots = getDefaultUnlockedPlots();
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        unlocked_plots: defaultPlots,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
-
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd resetu farmy",
-        text: error.message,
-      });
-      return;
-    }
-
-    setUnlockedPlots(defaultPlots);
-    setPlotCrops({});
-    setSelectedPlotId(1);
-    setPlotToBuy(null);
-    setSelectedSeedId(null);
-    setSelectedTool(null);
-    await loadProfile(profile.id);
-
-    setMessage({
-      type: "success",
-      title: "Farma zresetowana",
-      text: "Przywrócono startowe pola 1-3 i wyczyszczono aktualny widok pól.",
-    });
-  }
-
-  function handlePlantFromSelectedSeed(plotId: number) {
-    if (!selectedSeedId) {
-      setMessage({
-        type: "info",
-        title: "Wybierz nasiono",
-        text: "Najpierw kliknij nasiono w plecaku.",
-      });
-      return;
-    }
-
-    const plot = getPlotCrop(plotId);
-
-    if (plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Pole zajęte",
-        text: "Na tym polu już coś rośnie.",
-      });
-      return;
-    }
-
-    const cropToPlant = CROPS.find((crop) => crop.id === selectedSeedId);
-
-    if (!cropToPlant) {
-      setMessage({
-        type: "error",
-        title: "Brak uprawy",
-        text: "Nie udało się znaleźć wybranego nasiona.",
-      });
-      return;
-    }
-
-    if (displayLevel < cropToPlant.unlockLevel) {
-      setMessage({
-        type: "error",
-        title: "Za niski poziom",
-        text: `${cropToPlant.name} odblokowuje się od poziomu ${cropToPlant.unlockLevel}.`,
-      });
-      return;
-    }
-
-    if ((seedInventory[cropToPlant.id] ?? 0) <= 0) {
-      setMessage({
-        type: "error",
-        title: "Brak nasion",
-        text: `Nie masz nasion: ${cropToPlant.name}.`,
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        cropId: cropToPlant.id,
-        plantedAt: Date.now(),
-        watered: false,
-      },
-    }));
-
-    setSeedInventory((prev) => ({
-      ...prev,
-      [cropToPlant.id]: Math.max((prev[cropToPlant.id] ?? 0) - 1, 0),
-    }));
-
-    setMessage({
-      type: "success",
-      title: `Posadzono ${cropToPlant.name.toLowerCase()}`,
-      text: `Pole #${plotId} zaczęło rosnąć.`,
-    });
-  }
-
-  function handleWaterPlot(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    const crop = getPlantedCrop(plotId);
-
-    if (!crop || !plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Brak uprawy",
-        text: "Najpierw posadź roślinę na tym polu.",
-      });
-      return;
-    }
-
-    if (plot.watered) {
-      setMessage({
-        type: "info",
-        title: "Pole już podlane",
-        text: "To pole zostało już podlane.",
-      });
-      return;
-    }
-
-    if (isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa gotowa",
-        text: "Ta uprawa jest już gotowa do zbioru.",
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        ...prev[plotId],
-        watered: true,
-      },
-    }));
-
-    setMessage({
-      type: "success",
-      title: "Podlano pole",
-      text: `${crop.name} będzie rosła o 15% szybciej.`,
-    });
-  }
 
   async function handleHarvestPlot(plotId: number) {
     if (!profile) return;
@@ -1550,15 +1377,6 @@ export default function Page() {
         {profile && (
           <>
             <div className="absolute right-4 top-4 z-20 flex gap-2">
-              {isAdmin && (
-                <button
-                  onClick={handleAdminResetFarm}
-                  className="rounded-2xl border border-amber-300/40 bg-amber-900/50 px-4 py-2 font-bold text-amber-100 backdrop-blur-sm transition hover:bg-amber-900/70"
-                >
-                  Reset farmy
-                </button>
-              )}
-
               <button
                 onClick={handleLogout}
                 className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
