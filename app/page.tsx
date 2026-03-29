@@ -16,6 +16,7 @@ type Profile = {
   current_map?: string | null;
   last_played_at?: string | null;
   unlocked_plots?: number[] | null;
+  plot_crops?: Record<string, PlotCropState> | null;
 };
 
 type Message = {
@@ -445,6 +446,53 @@ function parseUnlockedPlots(value: unknown) {
   return normalizeUnlockedPlots(value.map((item) => Number(item)));
 }
 
+function buildEmptyPlotCrop(): PlotCropState {
+  return {
+    cropId: null,
+    plantedAt: null,
+    watered: false,
+  };
+}
+
+function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const parsedEntries = entries
+    .map(([key, rawValue]) => {
+      const plotId = Number(key);
+      if (!Number.isInteger(plotId) || plotId < 1 || plotId > MAX_FIELDS) return null;
+
+      const item = rawValue as Partial<PlotCropState> | null;
+      return [
+        plotId,
+        {
+          cropId: typeof item?.cropId === "string" ? item.cropId : null,
+          plantedAt: typeof item?.plantedAt === "number" ? item.plantedAt : null,
+          watered: Boolean(item?.watered),
+        } satisfies PlotCropState,
+      ] as const;
+    })
+    .filter((entry): entry is readonly [number, PlotCropState] => entry !== null);
+
+  return Object.fromEntries(parsedEntries);
+}
+
+function serializePlotCrops(value: Record<number, PlotCropState>) {
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, plot]) => Boolean(plot?.cropId))
+      .map(([plotId, plot]) => [
+        plotId,
+        {
+          cropId: plot.cropId,
+          plantedAt: plot.plantedAt,
+          watered: Boolean(plot.watered),
+        },
+      ])
+  );
+}
+
 function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   if (level === 5) {
     return {
@@ -607,7 +655,7 @@ export default function Page() {
   }
 
   function getPlotCrop(plotId: number) {
-    return plotCrops[plotId] ?? { cropId: null, plantedAt: null, watered: false };
+    return plotCrops[plotId] ?? buildEmptyPlotCrop();
   }
 
 
@@ -671,7 +719,71 @@ export default function Page() {
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
-  function handlePlantFromSelectedSeed(plotId: number) {
+  async function handleWaterPlot(plotId: number) {
+    if (!profile) return;
+
+    const plot = getPlotCrop(plotId);
+    const crop = getPlantedCrop(plotId);
+
+    if (!crop || !plot.cropId) {
+      setMessage({
+        type: "info",
+        title: "Brak uprawy",
+        text: "Najpierw posadź roślinę na tym polu.",
+      });
+      return;
+    }
+
+    if (plot.watered) {
+      setMessage({
+        type: "info",
+        title: "Pole już podlane",
+        text: "To pole zostało już podlane.",
+      });
+      return;
+    }
+
+    if (isCropReady(plotId)) {
+      setMessage({
+        type: "info",
+        title: "Uprawa gotowa",
+        text: "Ta uprawa jest już gotowa do zbioru.",
+      });
+      return;
+    }
+
+    const nextPlotCrops = {
+      ...plotCrops,
+      [plotId]: {
+        ...plot,
+        watered: true,
+      },
+    };
+
+    const error = await persistPlotCrops(nextPlotCrops, profile.id);
+
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd podlewania",
+        text: error.message,
+      });
+      return;
+    }
+
+    setPlotCrops(nextPlotCrops);
+
+    setMessage({
+      type: "success",
+      title: "Podlano pole",
+      text: `${crop.name} będzie rosła o 15% szybciej.`,
+    });
+  }
+
+
+  async function handlePlantFromSelectedSeed(plotId: number) {
+    if (!profile) return;
+
     if (!selectedSeedId) {
       setMessage({
         type: "info",
@@ -705,70 +817,36 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory((prev) => ({
-      ...prev,
-      [selectedSeedId]: Math.max(0, (prev[selectedSeedId] ?? 0) - 1),
-    }));
-
-    setPlotCrops((prev) => ({
-      ...prev,
+    const nextPlotCrops = {
+      ...plotCrops,
       [plotId]: {
         cropId: selectedSeedId,
         plantedAt: Date.now(),
         watered: false,
       },
+    };
+
+    const error = await persistPlotCrops(nextPlotCrops, profile.id);
+
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd sadzenia",
+        text: error.message,
+      });
+      return;
+    }
+
+    setSeedInventory((prev) => ({
+      ...prev,
+      [selectedSeedId]: Math.max(0, (prev[selectedSeedId] ?? 0) - 1),
     }));
+    setPlotCrops(nextPlotCrops);
 
     setMessage({
       type: "success",
       title: "Posadzono uprawę",
       text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
-    });
-  }
-
-  function handleWaterPlot(plotId: number) {
-    const plot = getPlotCrop(plotId);
-    const crop = getPlantedCrop(plotId);
-
-    if (!crop || !plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Brak uprawy",
-        text: "Najpierw posadź roślinę na tym polu.",
-      });
-      return;
-    }
-
-    if (plot.watered) {
-      setMessage({
-        type: "info",
-        title: "Pole już podlane",
-        text: "To pole zostało już podlane.",
-      });
-      return;
-    }
-
-    if (isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa gotowa",
-        text: "Ta uprawa jest już gotowa do zbioru.",
-      });
-      return;
-    }
-
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        ...prev[plotId],
-        watered: true,
-      },
-    }));
-
-    setMessage({
-      type: "success",
-      title: "Podlano pole",
-      text: `${crop.name} będzie rosła o 15% szybciej.`,
     });
   }
 
@@ -955,7 +1033,7 @@ export default function Page() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots"
+        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots, plot_crops"
       )
       .eq("id", userId)
       .maybeSingle();
@@ -980,7 +1058,21 @@ export default function Page() {
     } as Profile;
     setProfile(nextProfile);
     setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
+    setPlotCrops(parsePlotCrops(data.plot_crops));
   }
+
+  async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        plot_crops: serializePlotCrops(nextPlotCrops),
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    return error;
+  }
+
 
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -1124,6 +1216,7 @@ export default function Page() {
       current_map: getMapForLevel(DEFAULT_LEVEL),
       last_played_at: new Date().toISOString(),
       unlocked_plots: getDefaultUnlockedPlots(),
+      plot_crops: {},
     });
 
     if (profileError) {
@@ -1136,6 +1229,7 @@ export default function Page() {
     }
 
     setUnlockedPlots(getDefaultUnlockedPlots());
+    setPlotCrops({});
     await loadProfile(userId);
 
     setRegisterForm({
@@ -1213,6 +1307,7 @@ export default function Page() {
     setProfile(null);
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
+    setPlotCrops({});
     setFarmUpgradeModal(null);
     setPlotToBuy(null);
     setIsFieldViewOpen(false);
@@ -1387,6 +1482,11 @@ export default function Page() {
       nextXpToNextLevel = 0;
     }
 
+    const nextPlotCrops = {
+      ...plotCrops,
+      [plotId]: buildEmptyPlotCrop(),
+    };
+
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -1395,6 +1495,7 @@ export default function Page() {
         xp_to_next_level: nextXpToNextLevel,
         current_map: getMapForLevel(nextLevel),
         last_played_at: new Date().toISOString(),
+        plot_crops: serializePlotCrops(nextPlotCrops),
       })
       .eq("id", profile.id);
 
@@ -1412,14 +1513,7 @@ export default function Page() {
       [crop.id]: (prev[crop.id] ?? 0) + crop.yieldAmount,
     }));
 
-    setPlotCrops((prev) => ({
-      ...prev,
-      [plotId]: {
-        cropId: null,
-        plantedAt: null,
-        watered: false,
-      },
-    }));
+    setPlotCrops(nextPlotCrops);
 
     await loadProfile(profile.id);
 
