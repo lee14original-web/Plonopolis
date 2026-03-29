@@ -494,9 +494,7 @@ function serializePlotCrops(value: Record<number, PlotCropState>) {
 }
 
 function getDefaultSeedInventory(): SeedInventory {
-  return {
-    carrot: 0,
-  };
+  return {};
 }
 
 function parseSeedInventory(value: unknown): SeedInventory {
