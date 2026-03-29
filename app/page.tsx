@@ -430,6 +430,20 @@ function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
 }
 
+function getPlotUnlockStorageKey(userId: string) {
+  return `plonopolis_unlocked_plots_${userId}`;
+}
+
+function getDefaultUnlockedPlots() {
+  return [1, 2, 3];
+}
+
+function normalizeUnlockedPlots(plots: number[]) {
+  return Array.from(new Set([...getDefaultUnlockedPlots(), ...plots]))
+    .filter((plotId) => plotId >= 1 && plotId <= MAX_FIELDS)
+    .sort((a, b) => a - b);
+}
+
 function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   if (level === 5) {
     return {
@@ -466,28 +480,6 @@ function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
   return null;
 }
 
-function getUnlockedPlotsStorageKey(userId: string) {
-  return `plonopolis_unlocked_plots_${userId}`;
-}
-
-function getDefaultUnlockedPlots() {
-  return [1, 2, 3];
-}
-
-function normalizeUnlockedPlots(plots: number[]) {
-  return Array.from(
-    new Set(
-      plots
-        .filter((plotId) => Number.isInteger(plotId) && plotId >= 1 && plotId <= MAX_FIELDS)
-        .concat(getDefaultUnlockedPlots())
-    )
-  ).sort((a, b) => a - b);
-}
-
-function getPlotUnlockCost(plotId: number) {
-  return PLOT_UNLOCK_COSTS[plotId] ?? 0;
-}
-
 function getMapForLevel(level: number | null | undefined) {
   const safeLevel = level ?? DEFAULT_LEVEL;
 
@@ -520,6 +512,7 @@ export default function Page() {
 
   const [selectedPlotId, setSelectedPlotId] = useState<number | null>(1);
   const [unlockedPlots, setUnlockedPlots] = useState<number[]>(getDefaultUnlockedPlots());
+  const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>({
@@ -532,6 +525,34 @@ export default function Page() {
   const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  function isPlotUnlocked(plotId: number) {
+    return unlockedPlots.includes(plotId);
+  }
+
+  function getPlotUnlockCost(plotId: number) {
+    return PLOT_UNLOCK_COSTS[plotId] ?? 0;
+  }
+
+  function readUnlockedPlots(userId: string) {
+    if (typeof window === "undefined") return getDefaultUnlockedPlots();
+
+    const rawValue = window.localStorage.getItem(getPlotUnlockStorageKey(userId));
+    if (!rawValue) return getDefaultUnlockedPlots();
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (!Array.isArray(parsed)) return getDefaultUnlockedPlots();
+      return normalizeUnlockedPlots(parsed.map((value) => Number(value)));
+    } catch {
+      return getDefaultUnlockedPlots();
+    }
+  }
+
+  function saveUnlockedPlots(userId: string, plots: number[]) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(getPlotUnlockStorageKey(userId), JSON.stringify(normalizeUnlockedPlots(plots)));
+  }
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -576,7 +597,7 @@ export default function Page() {
     if (!selectedPlotId) return;
 
     if (!isPlotUnlocked(selectedPlotId)) {
-      void handleUnlockPlot(selectedPlotId);
+      setPlotToBuy(selectedPlotId);
       return;
     }
 
@@ -607,13 +628,6 @@ export default function Page() {
     return plotCrops[plotId] ?? { cropId: null, plantedAt: null, watered: false };
   }
 
-  function isPlotUnlocked(plotId: number) {
-    return unlockedPlots.includes(plotId);
-  }
-
-  function getUnlockedPlotsCount() {
-    return unlockedPlots.length;
-  }
 
   function getPlantedCrop(plotId: number) {
     const plot = getPlotCrop(plotId);
@@ -675,8 +689,8 @@ export default function Page() {
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
-  function getMaxPlotsForLevel(_level: number) {
-    return MAX_FIELDS;
+  function getMaxPlotsForLevel(level: number) {
+    return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
@@ -704,9 +718,7 @@ export default function Page() {
     setFarmUpgradeModal(null);
   }
 
-  const maxPlotsForLevel = getMaxPlotsForLevel(displayLevel);
-  const unlockedPlotsCount = getUnlockedPlotsCount();
-  const canUnlockMore = unlockedPlotsCount < maxPlotsForLevel && unlockedPlotsCount < MAX_FIELDS;
+  const unlockedPlotsCount = unlockedPlots.length;
 
   useEffect(() => {
     let mounted = true;
@@ -876,7 +888,6 @@ export default function Page() {
 
     if (!data) {
       setProfile(null);
-      setUnlockedPlots(getDefaultUnlockedPlots());
       return;
     }
 
@@ -885,31 +896,7 @@ export default function Page() {
       level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
     } as Profile;
     setProfile(nextProfile);
-
-    if (typeof window === "undefined") {
-      setUnlockedPlots(getDefaultUnlockedPlots());
-      return;
-    }
-
-    const storageKey = getUnlockedPlotsStorageKey(userId);
-    const storedValue = window.localStorage.getItem(storageKey);
-
-    if (!storedValue) {
-      setUnlockedPlots(getDefaultUnlockedPlots());
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(storedValue);
-      if (!Array.isArray(parsed)) {
-        setUnlockedPlots(getDefaultUnlockedPlots());
-        return;
-      }
-
-      setUnlockedPlots(normalizeUnlockedPlots(parsed));
-    } catch {
-      setUnlockedPlots(getDefaultUnlockedPlots());
-    }
+    setUnlockedPlots(readUnlockedPlots(userId));
   }
 
   function isEmailValid(email: string) {
@@ -1143,6 +1130,7 @@ export default function Page() {
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
     setFarmUpgradeModal(null);
+    setPlotToBuy(null);
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
     setSelectedTool(null);
@@ -1227,33 +1215,22 @@ export default function Page() {
       return;
     }
 
-    if (!canUnlockMore) {
-      setMessage({
-        type: "info",
-        title: "Wszystkie pola odblokowane",
-        text: "Masz już odblokowane wszystkie dostępne pola.",
-      });
-      return;
-    }
-
     const plotCost = getPlotUnlockCost(plotId);
 
     if (displayMoney < plotCost) {
       setMessage({
         type: "error",
         title: "Za mało pieniędzy",
-        text: `Potrzebujesz ${plotCost} PLN, aby odblokować pole #${plotId}.`,
+        text: `Potrzebujesz ${plotCost} PLN, aby kupić pole #${plotId}.`,
       });
       return;
     }
 
-    const newMoney = displayMoney - plotCost;
-    const updatedUnlockedPlots = normalizeUnlockedPlots([...unlockedPlots, plotId]);
-
+    const updatedPlots = normalizeUnlockedPlots([...unlockedPlots, plotId]);
     const { error } = await supabase
       .from("profiles")
       .update({
-        money: newMoney,
+        money: displayMoney - plotCost,
         last_played_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
@@ -1261,25 +1238,27 @@ export default function Page() {
     if (error) {
       setMessage({
         type: "error",
-        title: "Błąd odblokowania",
+        title: "Błąd zakupu pola",
         text: error.message,
       });
       return;
     }
 
-    if (typeof window !== "undefined") {
-      const storageKey = getUnlockedPlotsStorageKey(profile.id);
-      window.localStorage.setItem(storageKey, JSON.stringify(updatedUnlockedPlots));
-    }
-
-    setUnlockedPlots(updatedUnlockedPlots);
+    saveUnlockedPlots(profile.id, updatedPlots);
+    setUnlockedPlots(updatedPlots);
+    setPlotToBuy(null);
     await loadProfile(profile.id);
 
     setMessage({
       type: "success",
       title: "Pole odblokowane",
-      text: `Odblokowano pole #${plotId}.`,
+      text: `Kupiono pole #${plotId} za ${plotCost} PLN.`,
     });
+  }
+
+  async function confirmBuyPlot() {
+    if (!plotToBuy) return;
+    await handleUnlockPlot(plotToBuy);
   }
 
   function handlePlantFromSelectedSeed(plotId: number) {
@@ -1758,7 +1737,7 @@ export default function Page() {
                   <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">
-                    Pola: {unlockedPlotsCount} / {maxPlotsForLevel}
+                    Pola: {unlockedPlotsCount} / {MAX_FIELDS}
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -1910,6 +1889,7 @@ export default function Page() {
                       const plotId = plot.id;
                       const isUnlocked = isPlotUnlocked(plotId);
                       const isSelected = selectedPlotId === plotId;
+                      const plotCost = getPlotUnlockCost(plotId);
 
                       return (
                         <button
@@ -1919,7 +1899,6 @@ export default function Page() {
                             setSelectedPlotId(plotId);
 
                             if (!isUnlocked) {
-                              void handleUnlockPlot(plotId);
                               return;
                             }
 
@@ -1937,7 +1916,7 @@ export default function Page() {
                               void handleHarvestPlot(plotId);
                             }
                           }}
-                          title={isUnlocked ? `Pole ${plotId}` : `Kliknij, aby kupić pole ${plotId}`}
+                          title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
                           className={`absolute rounded-xl transition-all duration-300 ${
                             isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
                           }`}
@@ -2014,7 +1993,7 @@ export default function Page() {
                               />
                               <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
                                 <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
-                                  KOSZT: {getPlotUnlockCost(plotId)} PLN
+                                  KOSZT: {plotCost} PLN
                                 </span>
                               </div>
                             </>
@@ -2024,26 +2003,53 @@ export default function Page() {
                     })}
 
                     {selectedPlotId && (
-                      <div className="pointer-events-none absolute inset-0">
+                      <div className="absolute inset-0">
                         {(() => {
                           const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
                           if (!activePlot) return null;
 
+                          const selectedPlotUnlocked = isPlotUnlocked(selectedPlotId);
+                          const selectedPlotCost = getPlotUnlockCost(selectedPlotId);
+
                           return (
                             <div
-                              className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
+                              className={`absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-3 text-xs font-bold text-[#f3e6c8] shadow-2xl ${
+                                selectedPlotUnlocked ? "pointer-events-none" : "pointer-events-auto"
+                              }`}
                               style={{
                                 left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
                                 top: activePlot.top,
                               }}
                             >
-                              {selectedTool === "watering_can"
-                                ? "Kliknij pole, aby podlać"
-                                : selectedSeedId
-                                ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
-                                : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
-                                ? "Enter lub kliknij pole, aby zebrać"
-                                : "Wybierz nasiono z plecaka albo konewkę"}
+                              {selectedPlotUnlocked ? (
+                                selectedTool === "watering_can" ? (
+                                  "Kliknij pole, aby podlać"
+                                ) : selectedSeedId ? (
+                                  `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
+                                ) : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId) ? (
+                                  "Enter lub kliknij pole, aby zebrać"
+                                ) : (
+                                  "Wybierz nasiono z plecaka albo konewkę"
+                                )
+                              ) : (
+                                <div className="min-w-[180px] space-y-3">
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#d8ba7a]">Pole #{selectedPlotId}</p>
+                                    <p className="mt-1 text-sm font-black text-[#fff1c7]">Cena: {selectedPlotCost} PLN</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPlotToBuy(selectedPlotId)}
+                                    className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                                    disabled={displayMoney < selectedPlotCost}
+                                  >
+                                    Kup: {selectedPlotCost} PLN
+                                  </button>
+                                  {displayMoney < selectedPlotCost && (
+                                    <p className="text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           );
                         })()}
@@ -2051,6 +2057,35 @@ export default function Page() {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {plotToBuy !== null && (
+          <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/60 px-4">
+            <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+              <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
+              <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
+              <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
+              </p>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPlotToBuy(null)}
+                  className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                >
+                  Anuluj
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmBuyPlot}
+                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                >
+                  Kup: {getPlotUnlockCost(plotToBuy)} PLN
+                </button>
               </div>
             </div>
           </div>
