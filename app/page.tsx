@@ -671,6 +671,52 @@ export default function Page() {
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
+  function handleWaterPlot(plotId: number) {
+    const plot = getPlotCrop(plotId);
+    const crop = getPlantedCrop(plotId);
+
+    if (!crop || !plot.cropId) {
+      setMessage({
+        type: "info",
+        title: "Brak uprawy",
+        text: "Najpierw posadź roślinę na tym polu.",
+      });
+      return;
+    }
+
+    if (plot.watered) {
+      setMessage({
+        type: "info",
+        title: "Pole już podlane",
+        text: "To pole zostało już podlane.",
+      });
+      return;
+    }
+
+    if (isCropReady(plotId)) {
+      setMessage({
+        type: "info",
+        title: "Uprawa gotowa",
+        text: "Ta uprawa jest już gotowa do zbioru.",
+      });
+      return;
+    }
+
+    setPlotCrops((prev) => ({
+      ...prev,
+      [plotId]: {
+        ...prev[plotId],
+        watered: true,
+      },
+    }));
+
+    setMessage({
+      type: "success",
+      title: "Podlano pole",
+      text: `${crop.name} będzie rosła o 15% szybciej.`,
+    });
+  }
+
   function getMaxPlotsForLevel(level: number) {
     return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
   }
