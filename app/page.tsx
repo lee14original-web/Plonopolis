@@ -1959,30 +1959,75 @@ export default function Page() {
                           </button>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                            setSelectedSeedId(null);
-                          }}
-                          className={`mt-3 flex w-full flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-                            selectedTool === "watering_can"
-                              ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                              : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                          }`}
-                        >
-                          <img
-                            src="/watering_can_transparent.png"
-                            alt="Konewka"
-                            className="h-16 w-16 object-contain"
-                            style={{ imageRendering: "pixelated" }}
-                          />
+                        <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                              setSelectedSeedId(null);
+                            }}
+                            className={`flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                              selectedTool === "watering_can"
+                                ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                            }`}
+                          >
+                            <img
+                              src="/watering_can_transparent.png"
+                              alt="Podlanie"
+                              className="h-16 w-16 object-contain"
+                              style={{ imageRendering: "pixelated" }}
+                            />
 
-                          <div className="text-center">
-                            <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                            <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
-                          </div>
-                        </button>
+                            <div className="text-center">
+                              <p className="text-sm font-black text-[#f9e7b2]">Podlanie</p>
+                              <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!selectedPlotId) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Brak wybranego pola",
+                                  text: "Najpierw wybierz pole do zbioru.",
+                                });
+                                return;
+                              }
+
+                              const plot = getPlotCrop(selectedPlotId);
+                              if (!plot.cropId) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Brak uprawy",
+                                  text: "Na wybranym polu nic jeszcze nie rośnie.",
+                                });
+                                return;
+                              }
+
+                              if (!isCropReady(selectedPlotId)) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Uprawa jeszcze rośnie",
+                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
+                                });
+                                return;
+                              }
+
+                              await handleHarvestPlot(selectedPlotId);
+                            }}
+                            className="flex min-h-[132px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                          >
+                            <span className="text-[56px] leading-none">🌾</span>
+
+                            <div className="text-center">
+                              <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
+                              <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
+                            </div>
+                          </button>
+                        </div>
 
                         <div className="mt-4">
                           {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
