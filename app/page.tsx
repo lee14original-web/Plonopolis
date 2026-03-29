@@ -605,6 +605,7 @@ export default function Page() {
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
+  const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   function isPlotUnlocked(plotId: number) {
@@ -1880,90 +1881,134 @@ export default function Page() {
 
 
               <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
-                <div className="w-[700px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+                <div className="flex items-start">
+                  {!isBackpackOpen && (
+                    <button
+                      type="button"
+                      onClick={() => setIsBackpackOpen(true)}
+                      className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                      aria-label="Otwórz plecak"
+                      title="Otwórz plecak"
+                    >
+                      →
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                      setSelectedSeedId(null);
-                    }}
-                    className={`mt-3 flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
-                      selectedTool === "watering_can"
-                        ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                    }`}
-                  >
-                    <img src="/watering_can_transparent.png" alt="Konewka" className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
-                    <div>
-                      <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                      <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
-                    </div>
-                  </button>
+                  {isBackpackOpen && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsBackpackOpen(false)}
+                        className="mr-2 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                        aria-label="Zamknij plecak"
+                        title="Zamknij plecak"
+                      >
+                        ←
+                      </button>
 
-                  <div className="mt-4">
-                    {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
-                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                        Plecak jest pusty.
+                      <div className="w-[700px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                        <div
+                          className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
+                          onMouseDown={startDraggingBackpack}
+                        >
+                          <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSeedId(null);
+                              setSelectedTool(null);
+                            }}
+                            className="rounded-full border border-[#8b6a3e] px-3 py-1 text-xs uppercase tracking-[0.2em] text-[#dfcfab] transition hover:bg-[rgba(80,58,28,0.65)]"
+                          >
+                            Wyczyść wybór
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                            setSelectedSeedId(null);
+                          }}
+                          className={`mt-3 flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                            selectedTool === "watering_can"
+                              ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                              : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                          }`}
+                        >
+                          <img src="/watering_can_transparent.png" alt="Konewka" className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
+                          <div>
+                            <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                            <p className="text-xs text-[#dfcfab]">Podlewa 1 raz, -15% czasu</p>
+                          </div>
+                        </button>
+
+                        <div className="mt-4">
+                          {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
+                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                              Plecak jest pusty.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-5 gap-2">
+                              {Array.from({ length: 50 }).map((_, index) => {
+                                const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => amount > 0);
+                                const entry = inventoryItems[index];
+
+                                if (!entry) {
+                                  return (
+                                    <div
+                                      key={`empty-slot-${index}`}
+                                      className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                    />
+                                  );
+                                }
+
+                                const [seedId, amount] = entry;
+                                const crop = CROPS.find((item) => item.id === seedId);
+                                if (!crop) {
+                                  return (
+                                    <div
+                                      key={`missing-slot-${index}`}
+                                      className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                    />
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    key={seedId}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
+                                      setSelectedTool(null);
+                                    }}
+                                    title={`${crop.name} (${amount})`}
+                                    className={`relative flex h-32 w-32 items-center justify-center rounded-xl border transition ${
+                                      selectedSeedId === seedId
+                                        ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
+                                        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                                    }`}
+                                  >
+                                    <img
+                                      src={crop.spritePath}
+                                      alt={crop.name}
+                                      className="h-20 w-20 object-contain"
+                                      style={{ imageRendering: "pixelated" }}
+                                    />
+
+                                    <span className="absolute bottom-2 right-2 min-w-[32px] rounded-md bg-black/80 px-2 py-1 text-sm font-black leading-none text-[#f9e7b2]">
+                                      {amount}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-5 gap-2">
-                        {Array.from({ length: 50 }).map((_, index) => {
-                          const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => amount > 0);
-                          const entry = inventoryItems[index];
-
-                          if (!entry) {
-                            return (
-                              <div
-                                key={`empty-slot-${index}`}
-                                className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                              />
-                            );
-                          }
-
-                          const [seedId, amount] = entry;
-                          const crop = CROPS.find((item) => item.id === seedId);
-                          if (!crop) {
-                            return (
-                              <div
-                                key={`missing-slot-${index}`}
-                                className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                              />
-                            );
-                          }
-
-                          return (
-                            <button
-                              key={seedId}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
-                                setSelectedTool(null);
-                              }}
-                              title={`${crop.name} (${amount})`}
-                              className={`relative flex h-32 w-32 items-center justify-center rounded-xl border transition ${
-                                selectedSeedId === seedId
-                                  ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
-                                  : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                              }`}
-                            >
-                              <img
-                                src={crop.spritePath}
-                                alt={crop.name}
-                                className="h-20 w-20 object-contain"
-                                style={{ imageRendering: "pixelated" }}
-                              />
-
-                              <span className="absolute bottom-2 right-2 min-w-[32px] rounded-md bg-black/80 px-2 py-1 text-sm font-black leading-none text-[#f9e7b2]">
-                                {amount}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
 
