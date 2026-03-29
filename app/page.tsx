@@ -1657,80 +1657,379 @@ export default function Page() {
       <div className="min-h-screen">
         {profile && (
           <>
-            <div className="absolute right-4 top-4 z-20 flex gap-2">                  <div className="mt-3 grid w-full grid-cols-2 gap-2">
+            <div className="absolute right-4 top-4 z-20 flex gap-2">
+              <button
+                onClick={handleLogout}
+                className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
+              >
+                Wyloguj
+              </button>
+            </div>
+
+            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+                <div
+                  className={`grid items-center gap-3 ${
+                    displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
+                  }`}
+                >
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="text-center">
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
+                        <p className="text-2xl font-black text-white">{displayLevel}</p>
+                        {displayLevel >= MAX_LEVEL && (
+                          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
+                            MAX LEVEL
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="min-w-[210px] flex-1">
+                        <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.15em] text-[#d8ba7a]">
+                          <span>EXP {displayXp} / {displayXpToNextLevel}</span>
+                          <span>{xpPercent}%</span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                          <div
+                            className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                            style={{ width: `${xpPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
+                    <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
+          {!profile ? (
+            <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
+                <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
+                  <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
+                  <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
+                  <p className="mt-2 text-sm text-[#f2ddb0]">
+                    Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
+                  </p>
+                </div>
+
+                <div className="p-6 md:p-8">
+                  <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                     <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                        setSelectedSeedId(null);
-                      }}
-                      className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-                        selectedTool === "watering_can"
-                          ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                          : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                      onClick={() => setTab("login")}
+                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        tab === "login"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
                       }`}
                     >
-                      <img
-                        src="/watering_can_transparent.png"
-                        alt="Konewka"
-                        className="h-14 w-14 object-contain"
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      <div className="text-center">
-                        <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                        <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
-                      </div>
+                      Logowanie
                     </button>
-
                     <button
-                      type="button"
-                      onClick={async () => {
-                        if (!selectedPlotId) {
-                          setMessage({
-                            type: "info",
-                            title: "Brak wybranego pola",
-                            text: "Najpierw wybierz pole do zbioru.",
-                          });
-                          return;
-                        }
-
-                        const plot = getPlotCrop(selectedPlotId);
-                        if (!plot.cropId) {
-                          setMessage({
-                            type: "info",
-                            title: "Brak uprawy",
-                            text: "Na wybranym polu nic nie rośnie.",
-                          });
-                          return;
-                        }
-
-                        if (!isCropReady(selectedPlotId)) {
-                          setMessage({
-                            type: "info",
-                            title: "Uprawa jeszcze rośnie",
-                            text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
-                          });
-                          return;
-                        }
-
-                        await handleHarvestPlot(selectedPlotId);
-                      }}
-                      className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                      onClick={() => setTab("register")}
+                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        tab === "register"
+                          ? "bg-[#d4a64f] text-[#2b180c]"
+                          : "text-[#f1dfb5] hover:bg-white/5"
+                      }`}
                     >
-                      <img
-                        src="/sierp.png"
-                        alt="Zbierz"
-                        className="h-14 w-14 object-contain"
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      <div className="text-center">
-                        <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
-                        <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
-                      </div>
+                      Rejestracja
                     </button>
                   </div>
+
+                  {tab === "login" ? (
+                    <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Email</label>
+                        <input
+                          type="text"
+                          placeholder="twoj@email.pl"
+                          value={loginForm.identifier}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                        <input
+                          type="password"
+                          placeholder="Wpisz hasło"
+                          value={loginForm.password}
+                          onChange={(e) =>
+                            setLoginForm((prev) => ({ ...prev, password: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Zaloguj i wczytaj sesję
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Login</label>
+                        <input
+                          type="text"
+                          placeholder="Unikalny login"
+                          value={registerForm.login}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">Email</label>
+                        <input
+                          type="email"
+                          placeholder="twoj@email.pl"
+                          value={registerForm.email}
+                          onChange={(e) =>
+                            setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
+                          }
+                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                        />
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                          <input
+                            type="password"
+                            placeholder="Minimum 6 znaków"
+                            value={registerForm.password}
+                            onChange={(e) =>
+                              setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
+                            }
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
+                          <input
+                            type="password"
+                            placeholder="Powtórz hasło"
+                            value={registerForm.confirmPassword}
+                            onChange={(e) =>
+                              setRegisterForm((prev) => ({
+                                ...prev,
+                                confirmPassword: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                      >
+                        Utwórz konto
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </section>
+
+              <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
+                  Sesja gracza
+                </div>
+
+                <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
+                <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+                  Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi polami,
+                  poziomem 1 i 10 PLN.
+                </p>
+
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                    <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 10 PLN</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                    <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
+                    <p className="mt-2 text-sm text-[#dfcfab]">
+                      Kliknij podświetlone pole na mapie, aby otworzyć menu pola.
+                    </p>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
+              <div className="absolute left-56 top-16 z-20">
+                <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
+                  <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
+                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
+                  <p className="mt-1 text-sm text-[#dfcfab]">
+                    Pola: {unlockedPlotsCount} / {MAX_FIELDS}
+                  </p>
+
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={handleSaveProgress}
+                      className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
+                    >
+                      Zapisz
+                    </button>
+
+                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
+                      Graj
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+
+              <div
+                className="fixed left-4 top-4 z-[95]"
+                style={{
+                  transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
+                }}
+              >
+                <div className="flex items-start">
+                  <button
+                    type="button"
+                    onClick={() => setIsBackpackOpen((prev) => !prev)}
+                    className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                    aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                    title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                  >
+                    {isBackpackOpen ? "←" : "→"}
+                  </button>
+
+                  <div
+                    className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
+                      isBackpackOpen
+                        ? "max-w-[380px] translate-x-0 opacity-100"
+                        : "max-w-0 -translate-x-4 opacity-0"
+                    }`}
+                  >
+                    <div
+                      className={`w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                        isBackpackOpen
+                          ? "pointer-events-auto scale-100"
+                          : "pointer-events-none scale-95"
+                      }`}
+                    >
+                        <div
+                          className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
+                          onPointerDown={startBackpackDrag}
+                        >
+                          <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSeedId(null);
+                              setSelectedTool(null);
+                            }}
+                            className="rounded-full border border-[#8b6a3e] px-3 py-1 text-xs uppercase tracking-[0.2em] text-[#dfcfab] transition hover:bg-[rgba(80,58,28,0.65)]"
+                          >
+                            Wyczyść wybór
+                          </button>
+                        </div>
+
+                        <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                              setSelectedSeedId(null);
+                            }}
+                            className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                              selectedTool === "watering_can"
+                                ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                            }`}
+                          >
+                            <img
+                              src="/watering_can_transparent.png"
+                              alt="Konewka"
+                              className="h-14 w-14 object-contain"
+                              style={{ imageRendering: "pixelated" }}
+                            />
+
+                            <div className="text-center">
+                              <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                              <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
+                            </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!selectedPlotId) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Brak wybranego pola",
+                                  text: "Najpierw wybierz pole do zbioru.",
+                                });
+                                return;
+                              }
+
+                              const plot = getPlotCrop(selectedPlotId);
+                              if (!plot.cropId) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Brak uprawy",
+                                  text: "Na wybranym polu nic nie rośnie.",
+                                });
+                                return;
+                              }
+
+                              if (!isCropReady(selectedPlotId)) {
+                                setMessage({
+                                  type: "info",
+                                  title: "Uprawa jeszcze rośnie",
+                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
+                                });
+                                return;
+                              }
+
+                              await handleHarvestPlot(selectedPlotId);
+                            }}
+                            className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                          >
+                            <img
+                              src="/sierp.png"
+                              alt="Zbierz"
+                              className="h-14 w-14 object-contain"
+                              style={{ imageRendering: "pixelated" }}
+                            />
+
+                            <div className="text-center">
+                              <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
+                              <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
+                            </div>
+                          </button>
+                        </div>
 
                         <div className="mt-4">
                           {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
