@@ -1880,7 +1880,7 @@ export default function Page() {
 
 
               <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
-                <div className="w-[470px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                <div className="w-[700px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
                   <button
@@ -1908,7 +1908,7 @@ export default function Page() {
                         Plecak jest pusty.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-10 gap-1">
+                      <div className="grid grid-cols-5 gap-2">
                         {Array.from({ length: 50 }).map((_, index) => {
                           const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => amount > 0);
                           const entry = inventoryItems[index];
@@ -1917,7 +1917,7 @@ export default function Page() {
                             return (
                               <div
                                 key={`empty-slot-${index}`}
-                                className="h-10 w-10 rounded-lg border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                               />
                             );
                           }
@@ -1928,7 +1928,7 @@ export default function Page() {
                             return (
                               <div
                                 key={`missing-slot-${index}`}
-                                className="h-10 w-10 rounded-lg border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                className="h-32 w-32 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                               />
                             );
                           }
@@ -1942,7 +1942,7 @@ export default function Page() {
                                 setSelectedTool(null);
                               }}
                               title={`${crop.name} (${amount})`}
-                              className={`relative flex h-10 w-10 items-center justify-center rounded-lg border transition ${
+                              className={`relative flex h-32 w-32 items-center justify-center rounded-xl border transition ${
                                 selectedSeedId === seedId
                                   ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
                                   : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
@@ -1951,11 +1951,11 @@ export default function Page() {
                               <img
                                 src={crop.spritePath}
                                 alt={crop.name}
-                                className="h-5 w-5 object-contain"
+                                className="h-20 w-20 object-contain"
                                 style={{ imageRendering: "pixelated" }}
                               />
 
-                              <span className="absolute bottom-0 right-0 min-w-[14px] rounded-sm bg-black/80 px-1 text-[9px] font-black leading-[14px] text-[#f9e7b2]">
+                              <span className="absolute bottom-2 right-2 min-w-[32px] rounded-md bg-black/80 px-2 py-1 text-sm font-black leading-none text-[#f9e7b2]">
                                 {amount}
                               </span>
                             </button>
