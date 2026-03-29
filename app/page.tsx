@@ -1892,28 +1892,28 @@ export default function Page() {
                 }}
               >
                 <div className="flex items-start">
+                  <button
+                    type="button"
+                    onClick={() => setIsBackpackOpen((prev) => !prev)}
+                    className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                    aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                    title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                  >
+                    {isBackpackOpen ? "←" : "→"}
+                  </button>
+
                   <div
-                    className={`flex items-start transition-all duration-500 ease-out ${
+                    className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
                       isBackpackOpen
-                        ? "translate-x-0 opacity-100"
-                        : "-translate-x-[calc(100%-4rem)] opacity-100"
+                        ? "max-w-[380px] translate-x-0 opacity-100"
+                        : "max-w-0 -translate-x-4 opacity-0"
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setIsBackpackOpen((prev) => !prev)}
-                      className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
-                      aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
-                      title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
-                    >
-                      {isBackpackOpen ? "←" : "→"}
-                    </button>
-
                     <div
                       className={`w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
                         isBackpackOpen
-                          ? "pointer-events-auto scale-100 opacity-100"
-                          : "pointer-events-none scale-95 opacity-0"
+                          ? "pointer-events-auto scale-100"
+                          : "pointer-events-none scale-95"
                       }`}
                     >
                         <div
