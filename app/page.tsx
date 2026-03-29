@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Profile = {
@@ -575,14 +575,9 @@ function getMapForLevel(level: number | null | undefined) {
   return DEFAULT_MAP;
 }
 
-function isFarmMap(mapId: string | null | undefined) {
-  return (mapId ?? DEFAULT_MAP).startsWith("farm");
-}
-
 function getDisplayBackgroundMap(mapId: string | null | undefined) {
-  const safeMap = mapId ?? DEFAULT_MAP;
-  if (safeMap === "city" || safeMap.startsWith("city_")) return "city";
-  return safeMap;
+  if (!mapId) return DEFAULT_MAP;
+  return mapId;
 }
 
 function getMapDisplayName(mapId: string | null | undefined) {
@@ -597,17 +592,14 @@ function getMapDisplayName(mapId: string | null | undefined) {
       return "Bank";
     case "city_townhall":
       return "Ratusz";
-    case "farm20":
-      return "Zaawansowana Farma";
-    case "farm15":
-      return "Rozbudowana Farma";
-    case "farm10":
-      return "Duża Farma";
     case "farm5":
-      return "Lepsza Farma";
+    case "farm10":
+    case "farm15":
+    case "farm20":
     case "farm1":
-    default:
       return "Farma";
+    default:
+      return mapId ?? "Mapa";
   }
 }
 
@@ -662,8 +654,8 @@ export default function Page() {
   const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
+  const isOnFarmMap = currentMap.startsWith("farm");
   const backgroundMap = getDisplayBackgroundMap(currentMap);
-  const isOnFarmMap = isFarmMap(currentMap);
 
   const xpPercent = useMemo(() => {
     if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
@@ -854,6 +846,7 @@ export default function Page() {
       text: `${crop.name} będzie rosła o 15% szybciej.`,
     });
   }
+
 
 
   async function handlePlantFromSelectedSeed(plotId: number) {
@@ -1139,7 +1132,7 @@ export default function Page() {
 
     const profileData = Array.isArray(data) ? data[0] : data;
 
-    if (!profileData || profileData.id !== userId) {
+    if (!profileData) {
       setProfile(null);
       return;
     }
@@ -1288,11 +1281,6 @@ export default function Page() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          login,
-        },
-      },
     });
 
     if (signUpError) {
@@ -1317,10 +1305,7 @@ export default function Page() {
     setUnlockedPlots(getDefaultUnlockedPlots());
     setPlotCrops({});
     setSeedInventory(getDefaultSeedInventory());
-
-    if (signUpData.session?.user) {
-      await loadProfile(userId);
-    }
+    await loadProfile(userId);
 
     setRegisterForm({
       login: "",
@@ -1898,7 +1883,7 @@ export default function Page() {
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
-                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {getMapDisplayName(currentMap)} ({currentMap})</p>
+                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
                   <p className="mt-1 text-sm text-[#dfcfab]">
                     Pola: {unlockedPlotsCount} / {MAX_FIELDS}
@@ -2045,14 +2030,14 @@ export default function Page() {
                         </div>
 
                         <div className="mt-4">
-                          {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
+                          {Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0).length === 0 ? (
                             <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                               Plecak jest pusty.
                             </div>
                           ) : (
                             <div className="grid grid-cols-5 gap-2">
                               {Array.from({ length: 50 }).map((_, index) => {
-                                const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => amount > 0);
+                                const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0) as Array<[string, number]>;
                                 const entry = inventoryItems[index];
 
                                 if (!entry) {
@@ -2430,4 +2415,125 @@ export default function Page() {
                           return (
                             <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
                               <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                      
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">Zablokowane pole</p>
+                                    <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
+                                    <p className="mt-1 text-sm text-[#f2ddb0]">Cena odblokowania: {selectedPlotCost} PLN</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPlotId(null)}
+                                    className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
+                                    aria-label="Zamknij podpowiedź zakupu pola"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPlotToBuy(selectedPlotId)}
+                                    className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                                    disabled={displayMoney < selectedPlotCost}
+                                  >
+                                    Kup: {selectedPlotCost} PLN
+                                  </button>
+                                  {displayMoney < selectedPlotCost && (
+                                    <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </div>
+
+                  {plotToBuy !== null && (
+                    <div className="absolute inset-0 z-[95] flex items-center justify-center bg-black/60 px-4">
+                      <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
+                        <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
+                        <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                          Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
+                        </p>
+
+                        <div className="mt-6 flex justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPlotToBuy(null)}
+                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                          >
+                            Anuluj
+                          </button>
+                          <button
+                            type="button"
+                            onClick={confirmBuyPlot}
+                            className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          >
+                            Kup: {getPlotUnlockCost(plotToBuy)} PLN
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {farmUpgradeModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
+            <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+              <button
+                onClick={closeFarmUpgradeModal}
+                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
+                aria-label="Zamknij komunikat ulepszenia farmy"
+              >
+                ×
+              </button>
+
+              <div className="pr-12">
+                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
+                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
+                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
+                <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
+                  Osiągnięto poziom {farmUpgradeModal.level}.
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={closeFarmUpgradeModal}
+                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                >
+                  Super
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {message && (
+          <div className="fixed bottom-4 left-4 z-50">
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
+                message.type === "error"
+                  ? "border-red-400/40 bg-red-950/80 text-red-100"
+                  : message.type === "success"
+                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+                  : "border-sky-400/40 bg-sky-950/80 text-sky-100"
+              }`}
+            >
+              <p className="font-semibold">{message.title}</p>
+              {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
