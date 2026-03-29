@@ -2124,26 +2124,35 @@ export default function Page() {
                 )}
 
                 {currentMap === "farm1" && (
-                  <button
-                    type="button"
-                    onClick={() => handleChangeMap("city")}
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                    style={{
-                      left: "74%",
-                      top: "49%",
-                      width: "15%",
-                      height: "24%",
-                    }}
-                    title="Do miasta"
-                  >
-                    <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                      <div className="absolute inset-0 rounded-xl border border-sky-200/0 hover:border-sky-200/60" />
-                      <span className="relative mb-[-28px] rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Do miasta
-                      </span>
-                    </div>
-                  </button>
-                )}
+  <div
+    onClick={() => handleChangeMap("city")}
+    style={{
+      position: "absolute",
+      left: "18%",
+      top: "58%",
+      width: "14%",
+      height: "18%",
+      cursor: "pointer",
+      zIndex: 5,
+    }}
+  >
+    <div
+      style={{
+        position: "absolute",
+        bottom: "-22px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "rgba(0,0,0,0.7)",
+        color: "white",
+        padding: "4px 8px",
+        borderRadius: "6px",
+        fontSize: "12px",
+      }}
+    >
+      Do miasta
+    </div>
+  </div>
+)}
 
                 {currentMap === "city" && (
                   <>
