@@ -15,6 +15,7 @@ type Profile = {
   location?: string | null;
   current_map?: string | null;
   last_played_at?: string | null;
+  unlocked_plots?: number[] | null;
 };
 
 type Message = {
@@ -71,6 +72,10 @@ const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((item) => item.trim().toLowerCase())
+  .filter(Boolean);
 
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
@@ -430,18 +435,19 @@ function getFarmUpgradeStorageKey(userId: string, level: number) {
   return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
 }
 
-function getPlotUnlockStorageKey(userId: string) {
-  return `plonopolis_unlocked_plots_${userId}`;
-}
-
 function getDefaultUnlockedPlots() {
   return [1, 2, 3];
 }
 
 function normalizeUnlockedPlots(plots: number[]) {
   return Array.from(new Set([...getDefaultUnlockedPlots(), ...plots]))
-    .filter((plotId) => plotId >= 1 && plotId <= MAX_FIELDS)
+    .filter((plotId) => Number.isInteger(plotId) && plotId >= 1 && plotId <= MAX_FIELDS)
     .sort((a, b) => a - b);
+}
+
+function parseUnlockedPlots(value: unknown) {
+  if (!Array.isArray(value)) return getDefaultUnlockedPlots();
+  return normalizeUnlockedPlots(value.map((item) => Number(item)));
 }
 
 function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
@@ -534,25 +540,14 @@ export default function Page() {
     return PLOT_UNLOCK_COSTS[plotId] ?? 0;
   }
 
-  function readUnlockedPlots(userId: string) {
-    if (typeof window === "undefined") return getDefaultUnlockedPlots();
+  const isAdmin = useMemo(() => {
+    if (!profile) return false;
 
-    const rawValue = window.localStorage.getItem(getPlotUnlockStorageKey(userId));
-    if (!rawValue) return getDefaultUnlockedPlots();
+    const normalizedEmail = profile.email.trim().toLowerCase();
+    const normalizedLogin = profile.login.trim().toLowerCase();
 
-    try {
-      const parsed = JSON.parse(rawValue);
-      if (!Array.isArray(parsed)) return getDefaultUnlockedPlots();
-      return normalizeUnlockedPlots(parsed.map((value) => Number(value)));
-    } catch {
-      return getDefaultUnlockedPlots();
-    }
-  }
-
-  function saveUnlockedPlots(userId: string, plots: number[]) {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(getPlotUnlockStorageKey(userId), JSON.stringify(normalizeUnlockedPlots(plots)));
-  }
+    return normalizedLogin === "admin" || ADMIN_EMAILS.includes(normalizedEmail);
+  }, [profile]);
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
@@ -872,7 +867,7 @@ export default function Page() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at"
+        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots"
       )
       .eq("id", userId)
       .maybeSingle();
@@ -896,7 +891,7 @@ export default function Page() {
       level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
     } as Profile;
     setProfile(nextProfile);
-    setUnlockedPlots(readUnlockedPlots(userId));
+    setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
   }
 
   function isEmailValid(email: string) {
@@ -1040,6 +1035,7 @@ export default function Page() {
       location: DEFAULT_LOCATION,
       current_map: getMapForLevel(DEFAULT_LEVEL),
       last_played_at: new Date().toISOString(),
+      unlocked_plots: getDefaultUnlockedPlots(),
     });
 
     if (profileError) {
@@ -1231,6 +1227,7 @@ export default function Page() {
       .from("profiles")
       .update({
         money: displayMoney - plotCost,
+        unlocked_plots: updatedPlots,
         last_played_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
@@ -1244,7 +1241,6 @@ export default function Page() {
       return;
     }
 
-    saveUnlockedPlots(profile.id, updatedPlots);
     setUnlockedPlots(updatedPlots);
     setPlotToBuy(null);
     await loadProfile(profile.id);
@@ -1259,6 +1255,49 @@ export default function Page() {
   async function confirmBuyPlot() {
     if (!plotToBuy) return;
     await handleUnlockPlot(plotToBuy);
+  }
+
+  async function handleAdminResetFarm() {
+    if (!profile || !isAdmin) return;
+
+    const confirmed = window.confirm(
+      "Czy na pewno chcesz zresetować farmę tego gracza? Pola wrócą do 1-3, a aktualne uprawy na planszy zostaną wyczyszczone."
+    );
+
+    if (!confirmed) return;
+
+    const defaultPlots = getDefaultUnlockedPlots();
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        unlocked_plots: defaultPlots,
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", profile.id);
+
+    if (error) {
+      setMessage({
+        type: "error",
+        title: "Błąd resetu farmy",
+        text: error.message,
+      });
+      return;
+    }
+
+    setUnlockedPlots(defaultPlots);
+    setPlotCrops({});
+    setSelectedPlotId(1);
+    setPlotToBuy(null);
+    setSelectedSeedId(null);
+    setSelectedTool(null);
+    await loadProfile(profile.id);
+
+    setMessage({
+      type: "success",
+      title: "Farma zresetowana",
+      text: "Przywrócono startowe pola 1-3 i wyczyszczono aktualny widok pól.",
+    });
   }
 
   function handlePlantFromSelectedSeed(plotId: number) {
@@ -1510,12 +1549,23 @@ export default function Page() {
       <div className="min-h-screen">
         {profile && (
           <>
-            <button
-              onClick={handleLogout}
-              className="absolute right-4 top-4 z-20 rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
-            >
-              Wyloguj
-            </button>
+            <div className="absolute right-4 top-4 z-20 flex gap-2">
+              {isAdmin && (
+                <button
+                  onClick={handleAdminResetFarm}
+                  className="rounded-2xl border border-amber-300/40 bg-amber-900/50 px-4 py-2 font-bold text-amber-100 backdrop-blur-sm transition hover:bg-amber-900/70"
+                >
+                  Reset farmy
+                </button>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
+              >
+                Wyloguj
+              </button>
+            </div>
 
             <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
               <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
