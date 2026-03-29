@@ -2125,34 +2125,46 @@ export default function Page() {
 
                 {currentMap === "farm1" && (
                   <button
-                    type="button"
-                    onClick={() => handleChangeMap("city")}
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                   style={{
-    position: "absolute",
-    bottom: "-24px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-    color: "white",
-    padding: "6px 12px",
-    borderRadius: "10px",
-    fontSize: "13px",
-    fontWeight: "bold",
-    boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-    border: "1px solid rgba(255,255,255,0.3)",
-    textShadow: "0 0 4px rgba(0,0,0,0.7)",
-    whiteSpace: "nowrap",
+  type="button"
+  onClick={() => handleChangeMap("city")}
+  title="Do miasta"
+  className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+  style={{
+    left: "18%",
+    top: "58%",
+    width: "14%",
+    height: "18%",
+    zIndex: 5,
+    background: "transparent",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
   }}
-                    title="Do miasta"
-                  >
-                    <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                      <div className="absolute inset-0 rounded-xl border border-sky-200/0 hover:border-sky-200/60" />
-                      <span className="relative mb-[-28px] rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Do miasta
-                      </span>
-                    </div>
-                  </button>
+>
+  <div className="relative flex h-full w-full items-end justify-center rounded-xl">
+    <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+    <span
+      style={{
+        position: "absolute",
+        bottom: "-24px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+        color: "white",
+        padding: "6px 12px",
+        borderRadius: "10px",
+        fontSize: "13px",
+        fontWeight: "bold",
+        boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+        border: "1px solid rgba(255,255,255,0.3)",
+        textShadow: "0 0 4px rgba(0,0,0,0.7)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Do miasta
+    </span>
+  </div>
+</button>
                 )}
 
                 {currentMap === "city" && (
