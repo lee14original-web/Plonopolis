@@ -808,7 +808,12 @@ export default function Page() {
 
     setPlotCrops(nextPlotCrops);
 
-    }
+    setMessage({
+      type: "success",
+      title: "Podlano pole",
+      text: `${crop.name} będzie rosła o 15% szybciej.`,
+    });
+  }
 
 
   async function handlePlantFromSelectedSeed(plotId: number) {
@@ -882,7 +887,12 @@ export default function Page() {
     setSeedInventory(nextSeedInventory);
     setPlotCrops(nextPlotCrops);
 
-    }
+    setMessage({
+      type: "success",
+      title: "Posadzono uprawę",
+      text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
+    });
+  }
 
   function getMaxPlotsForLevel(level: number) {
     return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
@@ -1312,7 +1322,12 @@ export default function Page() {
     });
 
     setTab("login");
-    }
+    setMessage({
+      type: "success",
+      title: "Konto utworzone",
+      text: "Nowy gracz startuje z 3 darmowymi polami.",
+    });
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -1362,7 +1377,12 @@ export default function Page() {
     }
 
     setLoginForm({ identifier: "", password: "" });
-    }
+    setMessage({
+      type: "success",
+      title: "Witaj ponownie",
+      text: "Sesja gracza została wczytana.",
+    });
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1437,7 +1457,12 @@ export default function Page() {
       showFarmUpgradeModalOnce(profile.id, nextLevel);
     }
 
-    }
+    setMessage({
+      type: "success",
+      title: "Postęp zapisany",
+      text: "",
+    });
+  }
 
   async function handleUnlockPlot(plotId: number) {
     if (!profile) return;
@@ -1486,7 +1511,12 @@ export default function Page() {
     setPlotToBuy(null);
     await loadProfile(profile.id);
 
-    }
+    setMessage({
+      type: "success",
+      title: "Pole odblokowane",
+      text: `Kupiono pole #${plotId} za ${plotCost} PLN.`,
+    });
+  }
 
   async function confirmBuyPlot() {
     if (!plotToBuy) return;
@@ -1573,7 +1603,12 @@ export default function Page() {
 
     await loadProfile(profile.id);
 
-    }
+    setMessage({
+      type: "success",
+      title: "Zbiory zakończone",
+      text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
+    });
+  }
 
   if (!isDesktop) {
     return (
@@ -1622,39 +1657,80 @@ export default function Page() {
       <div className="min-h-screen">
         {profile && (
           <>
-            <div className="absolute right-4 top-4 z-20 flex gap-2">
-              <div className="mt-3 grid w-full grid-cols-2 gap-2">
-  <button
-    type="button"
-    onClick={() => {
-      setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-      setSelectedSeedId(null);
-    }}
-    className={`flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-      selectedTool === "watering_can"
-        ? "border-cyan-300 bg-cyan-900/30"
-        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-    }`}
-  >
-    <img src="/watering_can_transparent.png" className="h-14 w-14" />
-    <p className="text-xs font-bold text-[#f9e7b2]">Podlanie</p>
-  </button>
+            <div className="absolute right-4 top-4 z-20 flex gap-2">                  <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                        setSelectedSeedId(null);
+                      }}
+                      className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                        selectedTool === "watering_can"
+                          ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
+                          : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                      }`}
+                    >
+                      <img
+                        src="/watering_can_transparent.png"
+                        alt="Konewka"
+                        className="h-14 w-14 object-contain"
+                        style={{ imageRendering: "pixelated" }}
+                      />
 
-  <button
-    type="button"
-    onClick={async () => {
-      if (!selectedPlotId) return;
-      const plot = getPlotCrop(selectedPlotId);
-      if (!plot.cropId) return;
-      if (!isCropReady(selectedPlotId)) return;
-      await handleHarvestPlot(selectedPlotId);
-    }}
-    className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center hover:bg-[rgba(30,18,10,0.9)]"
-  >
-    <img src="/sierp.png" className="h-14 w-14" />
-    <p className="text-xs font-bold text-[#f9e7b2]">Zbierz</p>
-  </button>
-</div>
+                      <div className="text-center">
+                        <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                        <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!selectedPlotId) {
+                          setMessage({
+                            type: "info",
+                            title: "Brak wybranego pola",
+                            text: "Najpierw wybierz pole do zbioru.",
+                          });
+                          return;
+                        }
+
+                        const plot = getPlotCrop(selectedPlotId);
+                        if (!plot.cropId) {
+                          setMessage({
+                            type: "info",
+                            title: "Brak uprawy",
+                            text: "Na wybranym polu nic nie rośnie.",
+                          });
+                          return;
+                        }
+
+                        if (!isCropReady(selectedPlotId)) {
+                          setMessage({
+                            type: "info",
+                            title: "Uprawa jeszcze rośnie",
+                            text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
+                          });
+                          return;
+                        }
+
+                        await handleHarvestPlot(selectedPlotId);
+                      }}
+                      className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                    >
+                      <img
+                        src="/sierp.png"
+                        alt="Zbierz"
+                        className="h-14 w-14 object-contain"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+
+                      <div className="text-center">
+                        <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
+                        <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
+                      </div>
+                    </button>
+                  </div>
 
                         <div className="mt-4">
                           {Object.entries(seedInventory).filter(([, amount]) => amount > 0).length === 0 ? (
