@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Profile = {
@@ -17,6 +17,7 @@ type Profile = {
   last_played_at?: string | null;
   unlocked_plots?: number[] | null;
   plot_crops?: Record<string, PlotCropState> | null;
+  seed_inventory?: SeedInventory | null;
 };
 
 type Message = {
@@ -31,13 +32,6 @@ type FarmUpgradeModal = {
   text: string;
 };
 
-type FarmPlot = {
-  id: number;
-  left: string;
-  top: string;
-  width: string;
-  height: string;
-};
 
 type FieldViewPlotLayout = {
   id: number;
@@ -304,13 +298,6 @@ const CROPS: Crop[] = [
 ];
 
 
-const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => ({
-  id: index + 1,
-  left: "0%",
-  top: "0%",
-  width: "0%",
-  height: "0%",
-}));
 
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
   { id: 1, left: "10.5%", top: "10.0%", width: "12.5%", height: "10.0%" },
@@ -574,6 +561,37 @@ function getMapForLevel(level: number | null | undefined) {
   return DEFAULT_MAP;
 }
 
+function applyProfileState(
+  data: Profile | null,
+  setProfile: React.Dispatch<React.SetStateAction<Profile | null>>,
+  setUnlockedPlots: React.Dispatch<React.SetStateAction<number[]>>,
+  setPlotCrops: React.Dispatch<React.SetStateAction<Record<number, PlotCropState>>>,
+  setSeedInventory: React.Dispatch<React.SetStateAction<SeedInventory>>
+) {
+  if (!data) {
+    setProfile(null);
+    setUnlockedPlots(getDefaultUnlockedPlots());
+    setPlotCrops({});
+    setSeedInventory(getDefaultSeedInventory());
+    return;
+  }
+
+  const normalizedLevel = Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL);
+  const nextProfile: Profile = {
+    ...data,
+    level: normalizedLevel,
+    current_map:
+      typeof data.current_map === "string" && data.current_map.trim().length > 0
+        ? data.current_map
+        : getMapForLevel(normalizedLevel),
+  };
+
+  setProfile(nextProfile);
+  setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
+  setPlotCrops(parsePlotCrops(data.plot_crops));
+  setSeedInventory(parseSeedInventory(data.seed_inventory));
+}
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -624,7 +642,7 @@ export default function Page() {
   const displayXp = profile?.xp ?? DEFAULT_XP;
   const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
-  const currentMap = getMapForLevel(profile?.level);
+  const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
 
   const xpPercent = useMemo(() => {
     if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
@@ -697,7 +715,7 @@ export default function Page() {
   function getPlantedCrop(plotId: number) {
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) return null;
-    return CROPS.find((item) => item.id == plot.cropId) ?? null;
+    return CROPS.find((item) => item.id === plot.cropId) ?? null;
   }
 
   function getEffectiveGrowthTimeMs(plotId: number) {
@@ -787,15 +805,9 @@ export default function Page() {
       return;
     }
 
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: {
-        ...plot,
-        watered: true,
-      },
-    };
-
-    const error = await persistPlotCrops(nextPlotCrops, profile.id);
+    const { data, error } = await supabase.rpc("game_water_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -806,7 +818,7 @@ export default function Page() {
       return;
     }
 
-    setPlotCrops(nextPlotCrops);
+    applyProfileState(data as Profile | null, setProfile, setUnlockedPlots, setPlotCrops, setSeedInventory);
 
     setMessage({
       type: "success",
@@ -852,28 +864,10 @@ export default function Page() {
       return;
     }
 
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: {
-        cropId: selectedSeedId,
-        plantedAt: Date.now(),
-        watered: false,
-      },
-    };
-
-    const nextSeedInventory = {
-      ...seedInventory,
-      [selectedSeedId]: Math.max(0, (seedInventory[selectedSeedId] ?? 0) - 1),
-    };
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        plot_crops: serializePlotCrops(nextPlotCrops),
-        seed_inventory: serializeSeedInventory(nextSeedInventory),
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_plant_crop", {
+      p_plot_id: plotId,
+      p_crop_id: selectedSeedId,
+    });
 
     if (error) {
       setMessage({
@@ -884,8 +878,7 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory(nextSeedInventory);
-    setPlotCrops(nextPlotCrops);
+    applyProfileState(data as Profile | null, setProfile, setUnlockedPlots, setPlotCrops, setSeedInventory);
 
     setMessage({
       type: "success",
@@ -894,9 +887,6 @@ export default function Page() {
     });
   }
 
-  function getMaxPlotsForLevel(level: number) {
-    return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
-  }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
     if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
@@ -1096,14 +1086,8 @@ export default function Page() {
     });
   }
 
-  async function loadProfile(userId: string) {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "id, login, email, created_at, level, xp, xp_to_next_level, money, location, current_map, last_played_at, unlocked_plots, plot_crops, seed_inventory"
-      )
-      .eq("id", userId)
-      .maybeSingle();
+  async function loadProfile(userId?: string) {
+    const { data, error } = await supabase.rpc("game_get_my_profile");
 
     if (error) {
       setMessage({
@@ -1111,48 +1095,19 @@ export default function Page() {
         title: "Błąd profilu",
         text: error.message,
       });
-      return;
+      return null;
     }
 
-    if (!data) {
+    const nextProfile = data as Profile | null;
+
+    if (userId && nextProfile?.id && nextProfile.id !== userId) {
       setProfile(null);
-      return;
+      return null;
     }
 
-    const nextProfile = {
-      ...data,
-      level: Math.min(data.level ?? DEFAULT_LEVEL, MAX_LEVEL),
-    } as Profile;
-    setProfile(nextProfile);
-    setUnlockedPlots(parseUnlockedPlots(data.unlocked_plots));
-    setPlotCrops(parsePlotCrops(data.plot_crops));
-    setSeedInventory(parseSeedInventory(data.seed_inventory));
+    applyProfileState(nextProfile, setProfile, setUnlockedPlots, setPlotCrops, setSeedInventory);
+    return nextProfile;
   }
-
-  async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        plot_crops: serializePlotCrops(nextPlotCrops),
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
-
-    return error;
-  }
-
-  async function persistSeedInventory(nextSeedInventory: SeedInventory, userId: string) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        seed_inventory: serializeSeedInventory(nextSeedInventory),
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", userId);
-
-    return error;
-  }
-
 
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -1263,6 +1218,11 @@ export default function Page() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          login,
+        },
+      },
     });
 
     if (signUpError) {
@@ -1284,21 +1244,14 @@ export default function Page() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: userId,
-      login,
-      email,
-      level: DEFAULT_LEVEL,
-      xp: DEFAULT_XP,
-      xp_to_next_level: getXpForLevel(DEFAULT_LEVEL),
-      money: DEFAULT_MONEY,
-      location: DEFAULT_LOCATION,
-      current_map: getMapForLevel(DEFAULT_LEVEL),
-      last_played_at: new Date().toISOString(),
-      unlocked_plots: getDefaultUnlockedPlots(),
-      plot_crops: {},
-      seed_inventory: getDefaultSeedInventory(),
-    });
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        login,
+        email,
+        last_played_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
 
     if (profileError) {
       setMessage({
@@ -1309,9 +1262,6 @@ export default function Page() {
       return;
     }
 
-    setUnlockedPlots(getDefaultUnlockedPlots());
-    setPlotCrops({});
-    setSeedInventory(getDefaultSeedInventory());
     await loadProfile(userId);
 
     setRegisterForm({
@@ -1487,16 +1437,9 @@ export default function Page() {
       return;
     }
 
-    const updatedPlots = normalizeUnlockedPlots([...unlockedPlots, plotId]);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        money: displayMoney - plotCost,
-        seed_inventory: { carrot: 3 },
-      unlocked_plots: updatedPlots,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_unlock_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -1507,9 +1450,8 @@ export default function Page() {
       return;
     }
 
-    setUnlockedPlots(updatedPlots);
+    applyProfileState(data as Profile | null, setProfile, setUnlockedPlots, setPlotCrops, setSeedInventory);
     setPlotToBuy(null);
-    await loadProfile(profile.id);
 
     setMessage({
       type: "success",
@@ -1527,6 +1469,7 @@ export default function Page() {
   async function handleHarvestPlot(plotId: number) {
     if (!profile) return;
 
+    const previousLevel = displayLevel;
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) {
       setMessage({
@@ -1549,45 +1492,9 @@ export default function Page() {
       return;
     }
 
-    const gainedXp = crop.expReward;
-    let nextLevel = displayLevel;
-    let nextXp = displayXp + gainedXp;
-    let nextXpToNextLevel = displayXpToNextLevel;
-
-    while (nextLevel < MAX_LEVEL && nextXpToNextLevel > 0 && nextXp >= nextXpToNextLevel) {
-      nextXp -= nextXpToNextLevel;
-      nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpToNextLevel = getXpForLevel(nextLevel);
-    }
-
-    if (nextLevel >= MAX_LEVEL) {
-      nextLevel = MAX_LEVEL;
-      nextXp = 0;
-      nextXpToNextLevel = 0;
-    }
-
-    const nextPlotCrops = {
-      ...plotCrops,
-      [plotId]: buildEmptyPlotCrop(),
-    };
-
-    const nextSeedInventory = {
-      ...seedInventory,
-      [crop.id]: (seedInventory[crop.id] ?? 0) + crop.yieldAmount,
-    };
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        level: nextLevel,
-        xp: nextXp,
-        xp_to_next_level: nextXpToNextLevel,
-        current_map: getMapForLevel(nextLevel),
-        last_played_at: new Date().toISOString(),
-        plot_crops: serializePlotCrops(nextPlotCrops),
-        seed_inventory: serializeSeedInventory(nextSeedInventory),
-      })
-      .eq("id", profile.id);
+    const { data, error } = await supabase.rpc("game_harvest_plot", {
+      p_plot_id: plotId,
+    });
 
     if (error) {
       setMessage({
@@ -1598,10 +1505,12 @@ export default function Page() {
       return;
     }
 
-    setSeedInventory(nextSeedInventory);
-    setPlotCrops(nextPlotCrops);
+    const nextProfile = data as Profile | null;
+    applyProfileState(nextProfile, setProfile, setUnlockedPlots, setPlotCrops, setSeedInventory);
 
-    await loadProfile(profile.id);
+    if ((nextProfile?.level ?? previousLevel) > previousLevel && nextProfile?.id) {
+      showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? previousLevel);
+    }
 
     setMessage({
       type: "success",
