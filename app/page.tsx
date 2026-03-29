@@ -1885,33 +1885,37 @@ export default function Page() {
               </div>
 
 
-              <div className="fixed z-[95]" style={{ left: `${backpackPosition.x}px`, top: `${backpackPosition.y}px` }}>
+              <div
+                className="fixed left-4 top-4 z-[95]"
+                style={{
+                  transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
+                }}
+              >
                 <div className="flex items-start">
-                  {!isBackpackOpen && (
+                  <div
+                    className={`flex items-start transition-all duration-500 ease-out ${
+                      isBackpackOpen
+                        ? "translate-x-0 opacity-100"
+                        : "-translate-x-[calc(100%-4rem)] opacity-100"
+                    }`}
+                  >
                     <button
                       type="button"
-                      onClick={() => setIsBackpackOpen(true)}
-                      className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
-                      aria-label="Otwórz plecak"
-                      title="Otwórz plecak"
+                      onClick={() => setIsBackpackOpen((prev) => !prev)}
+                      className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                      aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                      title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      →
+                      {isBackpackOpen ? "←" : "→"}
                     </button>
-                  )}
 
-                  {isBackpackOpen && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setIsBackpackOpen(false)}
-                        className="mr-2 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
-                        aria-label="Zamknij plecak"
-                        title="Zamknij plecak"
-                      >
-                        ←
-                      </button>
-
-                      <div className="w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                    <div
+                      className={`w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                        isBackpackOpen
+                          ? "pointer-events-auto scale-100 opacity-100"
+                          : "pointer-events-none scale-95 opacity-0"
+                      }`}
+                    >
                         <div
                           className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
                           onMouseDown={(event) => startDraggingBackpack(event)}
@@ -2012,8 +2016,6 @@ export default function Page() {
                           )}
                         </div>
                       </div>
-                    </>
-                  )}
                 </div>
               </div>
 
