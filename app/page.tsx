@@ -1643,16 +1643,16 @@ export default function Page() {
     );
   }
 
-  return (
-    <main
-      className="h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: profile
-          ? `url('/${backgroundMap}.png')`
-          : "url('/assetsmain-lobby.png')",
-      }}
-    >
-      <div className="min-h-screen">
+return (
+  <main className="relative h-screen overflow-hidden bg-black">
+    <img
+      src={profile ? `/${currentMap}.png` : "/assetsmain-lobby.png"}
+      alt="Mapa gry"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+      draggable={false}
+    />
+
+    <div className="relative min-h-screen z-[1]">
         {profile && (
           <>
             <div className="absolute right-4 top-4 z-20 flex gap-2">
