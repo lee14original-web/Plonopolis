@@ -1271,6 +1271,7 @@ export default function Page() {
       location: DEFAULT_LOCATION,
       current_map: getMapForLevel(DEFAULT_LEVEL),
       last_played_at: new Date().toISOString(),
+      seed_inventory: { carrot: 3 },
       unlocked_plots: getDefaultUnlockedPlots(),
       plot_crops: {},
       seed_inventory: getDefaultSeedInventory(),
@@ -1468,7 +1469,8 @@ export default function Page() {
       .from("profiles")
       .update({
         money: displayMoney - plotCost,
-        unlocked_plots: updatedPlots,
+        seed_inventory: { carrot: 3 },
+      unlocked_plots: updatedPlots,
         last_played_at: new Date().toISOString(),
       })
       .eq("id", profile.id);
