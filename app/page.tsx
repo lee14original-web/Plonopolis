@@ -605,6 +605,11 @@ export default function Page() {
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
+
+  function startDraggingBackpack(event: React.MouseEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDraggingBackpack(true);
+  }
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
@@ -1909,7 +1914,7 @@ export default function Page() {
                       <div className="w-[700px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                         <div
                           className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
-                          onMouseDown={startDraggingBackpack}
+                          onMouseDown={(event) => startDraggingBackpack(event)}
                         >
                           <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
