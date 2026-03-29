@@ -1271,7 +1271,6 @@ export default function Page() {
       location: DEFAULT_LOCATION,
       current_map: getMapForLevel(DEFAULT_LEVEL),
       last_played_at: new Date().toISOString(),
-      seed_inventory: { carrot: 3 },
       unlocked_plots: getDefaultUnlockedPlots(),
       plot_crops: {},
       seed_inventory: getDefaultSeedInventory(),
