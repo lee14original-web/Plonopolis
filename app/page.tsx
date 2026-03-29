@@ -671,6 +671,61 @@ export default function Page() {
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
+  function handlePlantFromSelectedSeed(plotId: number) {
+    if (!selectedSeedId) {
+      setMessage({
+        type: "info",
+        title: "Brak nasiona",
+        text: "Wybierz nasiono z plecaka.",
+      });
+      return;
+    }
+
+    const crop = CROPS.find((item) => item.id === selectedSeedId);
+    if (!crop) return;
+
+    const plot = getPlotCrop(plotId);
+
+    if (plot.cropId) {
+      setMessage({
+        type: "info",
+        title: "Pole zajęte",
+        text: "Na tym polu już coś rośnie.",
+      });
+      return;
+    }
+
+    const amount = seedInventory[selectedSeedId] ?? 0;
+    if (amount <= 0) {
+      setMessage({
+        type: "info",
+        title: "Brak nasion",
+        text: "Nie masz już tych nasion w plecaku.",
+      });
+      return;
+    }
+
+    setSeedInventory((prev) => ({
+      ...prev,
+      [selectedSeedId]: Math.max(0, (prev[selectedSeedId] ?? 0) - 1),
+    }));
+
+    setPlotCrops((prev) => ({
+      ...prev,
+      [plotId]: {
+        cropId: selectedSeedId,
+        plantedAt: Date.now(),
+        watered: false,
+      },
+    }));
+
+    setMessage({
+      type: "success",
+      title: "Posadzono uprawę",
+      text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
+    });
+  }
+
   function handleWaterPlot(plotId: number) {
     const plot = getPlotCrop(plotId);
     const crop = getPlantedCrop(plotId);
