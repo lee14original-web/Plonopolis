@@ -603,15 +603,12 @@ export default function Page() {
   const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [backpackPosition, setBackpackPosition] = useState({ x: 8, y: 0 });
+  const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
 
-  function startDraggingBackpack(event: React.MouseEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setIsDraggingBackpack(true);
-  }
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
     return unlockedPlots.includes(plotId);
@@ -1041,16 +1038,38 @@ export default function Page() {
 
 
   useEffect(() => {
-    const defaultY = Math.max(24, Math.round((window.innerHeight - 420) / 2));
-    setBackpackPosition((prev) => ({ ...prev, y: prev.y || defaultY }));
+    if (typeof window === "undefined") return;
+
+    const savedPosition = window.localStorage.getItem(BACKPACK_POSITION_STORAGE_KEY);
+    if (!savedPosition) {
+      setBackpackPosition({ x: 0, y: 0 });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedPosition) as { x?: number; y?: number };
+      setBackpackPosition({
+        x: typeof parsed?.x === "number" ? parsed.x : 0,
+        y: typeof parsed?.y === "number" ? parsed.y : 0,
+      });
+    } catch {
+      setBackpackPosition({ x: 0, y: 0 });
+    }
   }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(BACKPACK_POSITION_STORAGE_KEY, JSON.stringify(backpackPosition));
+  }, [backpackPosition]);
+
 
   useEffect(() => {
     if (!isDraggingBackpack) return;
 
     const handlePointerMove = (event: PointerEvent) => {
-      const nextX = Math.max(8, Math.min(window.innerWidth - 230, event.clientX - dragOffset.x));
-      const nextY = Math.max(8, Math.min(window.innerHeight - 520, event.clientY - dragOffset.y));
+      const panelWidth = isBackpackOpen ? 460 : 64;
+      const panelHeight = isBackpackOpen ? 760 : 64;
+      const nextX = Math.max(-8, Math.min(window.innerWidth - panelWidth - 16, event.clientX - dragOffset.x));
+      const nextY = Math.max(-8, Math.min(window.innerHeight - panelHeight - 16, event.clientY - dragOffset.y));
       setBackpackPosition({ x: nextX, y: nextY });
     };
 
@@ -1065,9 +1084,10 @@ export default function Page() {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [isDraggingBackpack, dragOffset]);
+  }, [isDraggingBackpack, dragOffset, isBackpackOpen]);
 
   function startBackpackDrag(event: React.PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     setIsDraggingBackpack(true);
     setDragOffset({
@@ -1918,7 +1938,7 @@ export default function Page() {
                     >
                         <div
                           className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
-                          onMouseDown={(event) => startDraggingBackpack(event)}
+                          onPointerDown={startBackpackDrag}
                         >
                           <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
