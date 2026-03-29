@@ -2128,12 +2128,22 @@ export default function Page() {
                     type="button"
                     onClick={() => handleChangeMap("city")}
                     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                    style={{
-                      left: "18%",
-                      top: "58%",
-                      width: "15%",
-                      height: "18%",
-                    }}
+                   style={{
+    position: "absolute",
+    bottom: "-24px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+    color: "white",
+    padding: "6px 12px",
+    borderRadius: "10px",
+    fontSize: "13px",
+    fontWeight: "bold",
+    boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+    border: "1px solid rgba(255,255,255,0.3)",
+    textShadow: "0 0 4px rgba(0,0,0,0.7)",
+    whiteSpace: "nowrap",
+  }}
                     title="Do miasta"
                   >
                     <div className="relative flex h-full w-full items-end justify-center rounded-xl">
