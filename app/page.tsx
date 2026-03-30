@@ -2132,8 +2132,8 @@ return (
   style={{
   left: "-27%",
   top: "49%",
-  width: "22%",
-  height: "22%",
+  width: "18%",
+  height: "18%",
   zIndex: 5,
   background: "transparent",
   border: "none",
