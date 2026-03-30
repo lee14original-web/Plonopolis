@@ -499,10 +499,8 @@ function getDefaultSeedInventory(): SeedInventory {
 }
 
 function parseSeedInventory(value: unknown): SeedInventory {
-  const defaults = getDefaultSeedInventory();
-
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return defaults;
+    return {};
   }
 
   const parsedEntries = Object.entries(value as Record<string, unknown>)
@@ -514,10 +512,7 @@ function parseSeedInventory(value: unknown): SeedInventory {
     })
     .filter((entry): entry is readonly [string, number] => entry !== null);
 
-  return {
-    ...defaults,
-    ...Object.fromEntries(parsedEntries),
-  };
+  return Object.fromEntries(parsedEntries);
 }
 
 function serializeSeedInventory(value: SeedInventory) {
