@@ -304,7 +304,6 @@ const CROPS: Crop[] = [
   },
 ];
 
-
 const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => ({
   id: index + 1,
   left: "0%",
@@ -369,7 +368,6 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
   24: 3500,
   25: 4000,
 };
-
 
 const XP_TABLE: Record<number, number> = {
   1: 100,
@@ -642,7 +640,6 @@ export default function Page() {
     return PLOT_UNLOCK_COSTS[plotId] ?? 0;
   }
 
-
   function resetLocalGameState() {
     setProfile(null);
     setSelectedPlotId(null);
@@ -690,7 +687,6 @@ export default function Page() {
     return Array.isArray(data) ? data[0] : data;
   }
 
-
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
   const displayXp = profile?.xp ?? DEFAULT_XP;
@@ -712,7 +708,6 @@ export default function Page() {
       maximumFractionDigits: 0,
     }).format(displayMoney);
   }, [displayMoney]);
-
 
   const availableCrops = CROPS.filter((crop) => displayLevel >= crop.unlockLevel);
   const cropsInInventory = availableCrops.filter((crop) => (seedInventory[crop.id] ?? 0) > 0);
@@ -766,7 +761,6 @@ export default function Page() {
   function getPlotCrop(plotId: number) {
     return plotCrops[plotId] ?? buildEmptyPlotCrop();
   }
-
 
   function getPlantedCrop(plotId: number) {
     const plot = getPlotCrop(plotId);
@@ -883,8 +877,6 @@ export default function Page() {
     });
   }
 
-
-
   async function handlePlantFromSelectedSeed(plotId: number) {
     if (!profile) return;
 
@@ -943,7 +935,6 @@ export default function Page() {
       text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
     });
   }
-
 
   function getMaxPlotsForLevel(level: number) {
     return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
@@ -1087,7 +1078,6 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId]);
 
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1107,11 +1097,11 @@ export default function Page() {
       setBackpackPosition({ x: 0, y: 0 });
     }
   }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(BACKPACK_POSITION_STORAGE_KEY, JSON.stringify(backpackPosition));
   }, [backpackPosition]);
-
 
   useEffect(() => {
     if (!isDraggingBackpack) return;
@@ -1185,7 +1175,6 @@ export default function Page() {
 
     return error;
   }
-
 
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -1510,12 +1499,10 @@ export default function Page() {
     });
   }
 
-
   async function confirmBuyPlot() {
     if (!plotToBuy) return;
     await handleUnlockPlot(plotToBuy);
   }
-
 
   async function handleHarvestPlot(plotId: number) {
     if (!profile) return;
@@ -1600,26 +1587,22 @@ export default function Page() {
     setPlotToBuy(null);
   }
 
-
   if (!isDesktop) {
     return (
       <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
         <div className="max-w-md rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-8 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">
-            Plonopolis
-          </p>
+          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Plonopolis</p>
 
-          <h1 className="mt-4 text-3xl font-black text-[#f9e7b2]">
-            Tylko komputer 🖥️
-          </h1>
+          <h1 className="mt-4 text-3xl font-black text-[#f9e7b2]">Tylko komputer 🖥️</h1>
 
           <p className="mt-4 text-sm leading-6 text-[#dfcfab]">
             Gra jest obecnie dostępna tylko na komputerze.
-            <br /><br />
+            <br />
+            <br />
             Wersja mobilna pojawi się w przyszłości jako aplikacja.
           </p>
 
-          <div className="mt-6 text-4xl animate-bounce">🌾</div>
+          <div className="mt-6 animate-bounce text-4xl">🌾</div>
         </div>
       </main>
     );
@@ -1636,309 +1619,294 @@ export default function Page() {
     );
   }
 
-return (
-  <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
-    <div
-      className="relative overflow-hidden"
-      style={{
-        aspectRatio: "3 / 2",
-        width: "min(100vw, calc(100vh * 1.5))",
-        height: "min(100vh, calc(100vw / 1.5))",
-      }}
-    >
-      <img
-        src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
-        alt="Mapa gry"
-        className="pointer-events-none absolute inset-0 h-full w-full select-none"
-        draggable={false}
-      />
+  return (
+    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
+      <div
+        className="relative overflow-hidden"
+        style={{
+          aspectRatio: "3 / 2",
+          width: "min(100vw, calc(100vh * 1.5))",
+          height: "min(100vh, calc(100vw / 1.5))",
+        }}
+      >
+        <img
+          src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
+          alt="Mapa gry"
+          className="pointer-events-none absolute inset-0 h-full w-full select-none"
+          draggable={false}
+        />
 
-      <div className="relative h-full w-full z-[1]">
-        {profile && (
-          <>
-            <div className="absolute right-4 top-4 z-20 flex gap-2">
-              <button
-                onClick={handleLogout}
-                className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
-              >
-                Wyloguj
-              </button>
-            </div>
-
-            <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
-              <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
-                <div
-                  className={`grid items-center gap-3 ${
-                    displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
-                  }`}
+        <div className="relative z-[1] h-full w-full">
+          {profile && (
+            <>
+              <div className="absolute right-4 top-4 z-20 flex gap-2">
+                <button
+                  onClick={handleLogout}
+                  className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
                 >
-                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="text-center">
-                        <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
-                        <p className="text-2xl font-black text-white">{displayLevel}</p>
-                        {displayLevel >= MAX_LEVEL && (
-                          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
-                            MAX LEVEL
-                          </p>
-                        )}
-                      </div>
+                  Wyloguj
+                </button>
+              </div>
 
-                      <div className="min-w-[210px] flex-1">
-                        <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.15em] text-[#d8ba7a]">
-                          <span>EXP {displayXp} / {displayXpToNextLevel}</span>
-                          <span>{xpPercent}%</span>
+              <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+                <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+                  <div
+                    className={`grid items-center gap-3 ${
+                      displayLevel >= MAX_LEVEL ? "justify-center md:grid-cols-[auto_auto]" : "md:grid-cols-[1fr_auto_auto]"
+                    }`}
+                  >
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="text-center">
+                          <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Poziom:</p>
+                          <p className="text-2xl font-black text-white">{displayLevel}</p>
+                          {displayLevel >= MAX_LEVEL && (
+                            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.15em] text-yellow-300">
+                              MAX LEVEL
+                            </p>
+                          )}
                         </div>
-                        <div className="h-3 overflow-hidden rounded-full bg-black/40">
-                          <div
-                            className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
-                            style={{ width: `${xpPercent}%` }}
-                          />
+
+                        <div className="min-w-[210px] flex-1">
+                          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.15em] text-[#d8ba7a]">
+                            <span>
+                              EXP {displayXp} / {displayXpToNextLevel}
+                            </span>
+                            <span>{xpPercent}%</span>
+                          </div>
+                          <div className="h-3 overflow-hidden rounded-full bg-black/40">
+                            <div
+                              className="h-full rounded-full bg-[linear-gradient(90deg,#d9b15c,#f5de8b)]"
+                              style={{ width: `${xpPercent}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
-                    <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
+                      <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
-          {!profile ? (
-            <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
-                <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
-                  <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
-                  <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
-                  <p className="mt-2 text-sm text-[#f2ddb0]">
-                    Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
-                  </p>
-                </div>
-
-                <div className="p-6 md:p-8">
-                  <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
-                    <button
-                      onClick={() => setTab("login")}
-                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "login"
-                          ? "bg-[#d4a64f] text-[#2b180c]"
-                          : "text-[#f1dfb5] hover:bg-white/5"
-                      }`}
-                    >
-                      Logowanie
-                    </button>
-                    <button
-                      onClick={() => setTab("register")}
-                      className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                        tab === "register"
-                          ? "bg-[#d4a64f] text-[#2b180c]"
-                          : "text-[#f1dfb5] hover:bg-white/5"
-                      }`}
-                    >
-                      Rejestracja
-                    </button>
+          <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
+            {!profile ? (
+              <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
+                  <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
+                    <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
+                    <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
+                    <p className="mt-2 text-sm text-[#f2ddb0]">
+                      Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
+                    </p>
                   </div>
 
-                  {tab === "login" ? (
-                    <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold">Email</label>
-                        <input
-                          type="text"
-                          placeholder="twoj@email.pl"
-                          value={loginForm.identifier}
-                          onChange={(e) =>
-                            setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold">Hasło</label>
-                        <input
-                          type="password"
-                          placeholder="Wpisz hasło"
-                          value={loginForm.password}
-                          onChange={(e) =>
-                            setLoginForm((prev) => ({ ...prev, password: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                        />
-                      </div>
-
+                  <div className="p-6 md:p-8">
+                    <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                       <button
-                        type="submit"
-                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                        onClick={() => setTab("login")}
+                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                          tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
+                        }`}
                       >
-                        Zaloguj i wczytaj sesję
+                        Logowanie
                       </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold">Login</label>
-                        <input
-                          type="text"
-                          placeholder="Unikalny login"
-                          value={registerForm.login}
-                          onChange={(e) =>
-                            setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                        />
-                      </div>
+                      <button
+                        onClick={() => setTab("register")}
+                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                          tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
+                        }`}
+                      >
+                        Rejestracja
+                      </button>
+                    </div>
 
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold">Email</label>
-                        <input
-                          type="email"
-                          placeholder="twoj@email.pl"
-                          value={registerForm.email}
-                          onChange={(e) =>
-                            setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
-                          }
-                          className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
-                        />
-                      </div>
+                    {tab === "login" ? (
+                      <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Email</label>
+                          <input
+                            type="text"
+                            placeholder="twoj@email.pl"
+                            value={loginForm.identifier}
+                            onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
 
-                      <div className="grid gap-5 md:grid-cols-2">
                         <div>
                           <label className="mb-2 block text-sm font-semibold">Hasło</label>
                           <input
                             type="password"
-                            placeholder="Minimum 6 znaków"
-                            value={registerForm.password}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
-                            }
+                            placeholder="Wpisz hasło"
+                            value={loginForm.password}
+                            onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                        >
+                          Zaloguj i wczytaj sesję
+                        </button>
+                      </form>
+                    ) : (
+                      <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold">Login</label>
+                          <input
+                            type="text"
+                            placeholder="Unikalny login"
+                            value={registerForm.login}
+                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
+                          <label className="mb-2 block text-sm font-semibold">Email</label>
                           <input
-                            type="password"
-                            placeholder="Powtórz hasło"
-                            value={registerForm.confirmPassword}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({
-                                ...prev,
-                                confirmPassword: e.target.value,
-                              }))
-                            }
+                            type="email"
+                            placeholder="twoj@email.pl"
+                            value={registerForm.email}
+                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
-                      </div>
 
-                      <button
-                        type="submit"
-                        className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                      >
-                        Utwórz konto
-                      </button>
-                    </form>
-                  )}
-                </div>
-              </section>
+                        <div className="grid gap-5 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                            <input
+                              type="password"
+                              placeholder="Minimum 6 znaków"
+                              value={registerForm.password}
+                              onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            />
+                          </div>
 
-              <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
-                  Sesja gracza
-                </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
+                            <input
+                              type="password"
+                              placeholder="Powtórz hasło"
+                              value={registerForm.confirmPassword}
+                              onChange={(e) =>
+                                setRegisterForm((prev) => ({
+                                  ...prev,
+                                  confirmPassword: e.target.value,
+                                }))
+                              }
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            />
+                          </div>
+                        </div>
 
-                <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
-                <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                  Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi polami,
-                  poziomem 1 i 10 PLN.
-                </p>
+                        <button
+                          type="submit"
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                        >
+                          Utwórz konto
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </section>
 
-                <div className="mt-6 space-y-4">
-                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                    <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 10 PLN</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
+                <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                  <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
+                    Sesja gracza
                   </div>
 
-                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                    <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
-                    <p className="mt-2 text-sm text-[#dfcfab]">
-                      Kliknij podświetlone pole na mapie, aby otworzyć menu pola.
-                    </p>
-                  </div>
-                </div>
-              </aside>
-            </div>
-          ) : (
-            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-              <div className="absolute left-56 top-16 z-20">
-                <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
-                  <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
-                  <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
-                  <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
-                  <p className="mt-1 text-sm text-[#dfcfab]">
-                    Pola: {unlockedPlotsCount} / {MAX_FIELDS}
+                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
+                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+                    Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi
+                    polami, poziomem 1 i 10 PLN.
                   </p>
 
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={handleSaveProgress}
-                      className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
-                    >
-                      Zapisz
-                    </button>
+                  <div className="mt-6 space-y-4">
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                      <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 10 PLN</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
+                    </div>
 
-                    <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                      Graj
-                    </button>
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                      <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Kliknij podświetlone pole na mapie, aby otworzyć menu pola.
+                      </p>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            ) : (
+              <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
+                <div className="absolute left-56 top-16 z-20">
+                  <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
+                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
+                    <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
+                    <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
+                    <p className="mt-1 text-sm text-[#dfcfab]">
+                      Pola: {unlockedPlotsCount} / {MAX_FIELDS}
+                    </p>
+
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={handleSaveProgress}
+                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
+                      >
+                        Zapisz
+                      </button>
+
+                      <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
+                        Graj
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
+                <div
+                  className="fixed left-4 top-4 z-[95]"
+                  style={{
+                    transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
+                  }}
+                >
+                  <div className="flex items-start">
+                    <button
+                      type="button"
+                      onClick={() => setIsBackpackOpen((prev) => !prev)}
+                      className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                      aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                      title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                    >
+                      {isBackpackOpen ? "←" : "→"}
+                    </button>
 
-              <div
-                className="fixed left-4 top-4 z-[95]"
-                style={{
-                  transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
-                }}
-              >
-                <div className="flex items-start">
-                  <button
-                    type="button"
-                    onClick={() => setIsBackpackOpen((prev) => !prev)}
-                    className="mr-2 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
-                    aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
-                    title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
-                  >
-                    {isBackpackOpen ? "←" : "→"}
-                  </button>
-
-                  <div
-                    className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
-                      isBackpackOpen
-                        ? "max-w-[380px] translate-x-0 opacity-100"
-                        : "max-w-0 -translate-x-4 opacity-0"
-                    }`}
-                  >
                     <div
-                      className={`w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
-                        isBackpackOpen
-                          ? "pointer-events-auto scale-100"
-                          : "pointer-events-none scale-95"
+                      className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
+                        isBackpackOpen ? "max-w-[380px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
+                      <div
+                        className={`max-h-[80vh] w-[380px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                          isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
+                        }`}
+                      >
                         <div
-                          className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
+                          className={`mb-3 flex items-center justify-between ${
+                            isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"
+                          }`}
                           onPointerDown={startBackpackDrag}
                         >
                           <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
@@ -2007,7 +1975,9 @@ return (
                                 setMessage({
                                   type: "info",
                                   title: "Uprawa jeszcze rośnie",
-                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
+                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(
+                                    selectedPlotId
+                                  )} s.`,
                                 });
                                 return;
                               }
@@ -2038,7 +2008,9 @@ return (
                           ) : (
                             <div className="grid grid-cols-5 gap-2">
                               {Array.from({ length: 50 }).map((_, index) => {
-                                const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0) as Array<[string, number]>;
+                                const inventoryItems = Object.entries(seedInventory).filter(
+                                  ([, amount]) => Number(amount) > 0
+                                ) as Array<[string, number]>;
                                 const entry = inventoryItems[index];
 
                                 if (!entry) {
@@ -2097,461 +2069,468 @@ return (
                   </div>
                 </div>
 
-              <div className="absolute inset-0 z-20 pointer-events-none">
-                {isOnFarmMap && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFieldViewOpen(true);
-                      setSelectedPlotId((prev) => prev ?? 1);
-                    }}
-                    className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                    style={{
-                      left: "55%",
-                      bottom: "240px",
-                      width: "45%",
-                      height: "150px",
-                    }}
-                  >
-                    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                      <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
-                      <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
-                      <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                      <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-                        Pola uprawne
-                      </span>
-                    </div>
-                  </button>
-                )}
-
-                {currentMap === "farm1" && (
-                  <button
-                    type="button"
-                    onClick={() => handleChangeMap("city")}
-                    title="Do miasta"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                    style={{
-                      left: "-27%",
-                      top: "51%",
-                      width: "23%",
-                      height: "18%",
-                      zIndex: 5,
-                      background: "transparent",
-                      border: "none",
-                      padding: 0,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                      <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
-                      <span
-                        style={{
-                          background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-                          color: "white",
-                          padding: "6px 12px",
-                          borderRadius: "10px",
-                          fontSize: "13px",
-                          fontWeight: "bold",
-                          boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-                          border: "1px solid rgba(255,255,255,0.3)",
-                          textShadow: "0 0 4px rgba(0,0,0,0.7)",
-                          pointerEvents: "none",
-                        }}
-                      >
-                        Do miasta
-                      </span>
-                    </div>
-                  </button>
-                )}
-
-                {currentMap === "city" && (
-                  <>
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  {isOnFarmMap && (
                     <button
                       type="button"
-                      onClick={() => handleChangeMap("farm1")}
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                      style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
-                      title="Na farmę"
+                      onClick={() => {
+                        setIsFieldViewOpen(true);
+                        setSelectedPlotId((prev) => prev ?? 1);
+                      }}
+                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105"
+                      style={{
+                        left: "55%",
+                        bottom: "240px",
+                        width: "45%",
+                        height: "150px",
+                      }}
                     >
-                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Na farmę
-                      </span>
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
+                        <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                        <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
+                      </div>
                     </button>
+                  )}
 
+                  {currentMap === "farm1" && (
                     <button
                       type="button"
-                      onClick={() => handleChangeMap("city_shop")}
+                      onClick={() => handleChangeMap("city")}
+                      title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                      style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
-                      title="Sklep"
+                      style={{
+                        left: "-27%",
+                        top: "51%",
+                        width: "23%",
+                        height: "18%",
+                        zIndex: 5,
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
                     >
-                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Sklep
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleChangeMap("city_market")}
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                      style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
-                      title="Targ"
-                    >
-                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Targ
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleChangeMap("city_bank")}
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                      style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
-                      title="Bank"
-                    >
-                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Bank
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleChangeMap("city_townhall")}
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                      style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
-                      title="Ratusz"
-                    >
-                      <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                        Ratusz
-                      </span>
-                    </button>
-                  </>
-                )}
-
-                {currentMap !== "city" && currentMap.startsWith("city_") && (
-                  <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
-                    <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                      <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
-                      <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
-                      <p className="mt-4 text-base leading-7 text-[#dfcfab]">
-                        Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city")}
-                        className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                      >
-                        Wróć do miasta
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-
-        {isFieldViewOpen && isOnFarmMap && (
-          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
-            <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
-              <button
-                onClick={() => {
-                  setIsFieldViewOpen(false);
-                  setSelectedPlotId(null);
-                }}
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
-                aria-label="Zamknij widok pola"
-              >
-                ×
-              </button>
-
-              <div className="mb-4 pr-14">
-                <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
-                <p className="mt-2 text-sm text-[#dfcfab]">
-                  Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
-                </p>
-              </div>
-
-              <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
-                <div className="relative mx-auto aspect-[1536/1092] w-full">
-                  <img
-                    src="/farm-field-view.png"
-                    alt="Widok pola 25 slotów"
-                    className="h-full w-full object-contain"
-                  />
-
-                  <div className="absolute inset-0">
-                    {FIELD_VIEW_PLOTS.map((plot) => {
-                      const plotId = plot.id;
-                      const isUnlocked = isPlotUnlocked(plotId);
-                      const isSelected = selectedPlotId === plotId;
-                      const plotCost = getPlotUnlockCost(plotId);
-
-                      return (
-                        <button
-                          key={plotId}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPlotId(plotId);
-
-                            if (!isUnlocked) {
-                              return;
-                            }
-
-                            if (selectedTool === "watering_can") {
-                              handleWaterPlot(plotId);
-                              return;
-                            }
-
-                            if (selectedSeedId) {
-                              handlePlantFromSelectedSeed(plotId);
-                              return;
-                            }
-
-                            if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
-                              void handleHarvestPlot(plotId);
-                            }
-                          }}
-                          title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
-                          className={`absolute rounded-xl transition-all duration-300 ${
-                            isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
-                          }`}
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+                        <span
                           style={{
-                            left: plot.left,
-                            top: plot.top,
-                            width: plot.width,
-                            height: plot.height,
+                            background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+                            color: "white",
+                            padding: "6px 12px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+                            border: "1px solid rgba(255,255,255,0.3)",
+                            textShadow: "0 0 4px rgba(0,0,0,0.7)",
+                            pointerEvents: "none",
                           }}
                         >
-                          {isUnlocked ? (
-                            <>
-                              <div
-                                className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                                  isSelected
-                                    ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
-                                    : "bg-yellow-300/8"
-                                }`}
-                              />
-                              <div
-                                className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
-                                  isSelected
-                                    ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
-                                    : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
-                                }`}
-                              />
-                              <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+                          Do miasta
+                        </span>
+                      </div>
+                    </button>
+                  )}
 
-                              {getPlotCrop(plotId).cropId && (
-                                <div
-                                  className="absolute inset-[8%] pointer-events-none"
-                                  style={{
-                                    backgroundImage: "url('/carrot.png')",
-                                    backgroundSize: "500% 100%",
-                                    backgroundPosition: `${(getGrowthStage(plotId) - 1) * -100}% 0%`,
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundPositionY: "0%",
-                                    imageRendering: "pixelated",
-                                  }}
-                                />
-                              )}
+                  {currentMap === "city" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("farm1")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
+                        title="Na farmę"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Na farmę
+                        </span>
+                      </button>
 
-                              {getPlotCrop(plotId).watered && (
-                                <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[18px]">
-                                  💧
-                                </div>
-                              )}
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_shop")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
+                        title="Sklep"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Sklep
+                        </span>
+                      </button>
 
-                              <div className="absolute inset-x-1 bottom-1 z-10 text-center">
-                                {getPlotCrop(plotId).cropId ? (
-                                  <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
-                                    {isCropReady(plotId)
-                                      ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
-                                      : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(plotId)} s`}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
-                                    {plotId}
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div
-                                className={`absolute inset-0 rounded-xl transition-all duration-300 ${
-                                  isSelected ? "bg-black/45" : "bg-black/30"
-                                }`}
-                              />
-                              <div
-                                className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
-                                  isSelected ? "border-yellow-200/60" : "border-white/12"
-                                }`}
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                                <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
-                                  KOSZT: {plotCost} PLN
-                                </span>
-                              </div>
-                            </>
-                          )}
-                        </button>
-                      );
-                    })}
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_market")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
+                        title="Targ"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Targ
+                        </span>
+                      </button>
 
-                    {selectedPlotId && (
-                      <>
-                        {(() => {
-                          const selectedPlotUnlocked = isPlotUnlocked(selectedPlotId);
-                          const selectedPlotCost = getPlotUnlockCost(selectedPlotId);
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_bank")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
+                        title="Bank"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Bank
+                        </span>
+                      </button>
 
-                          if (selectedPlotUnlocked) {
-                            const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
-                            if (!activePlot) return null;
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_townhall")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
+                        title="Ratusz"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Ratusz
+                        </span>
+                      </button>
+                    </>
+                  )}
 
-                            return (
-                              <div className="pointer-events-none absolute inset-0">
-                                <div
-                                  className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
-                                  style={{
-                                    left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
-                                    top: activePlot.top,
-                                  }}
-                                >
-                                  {selectedTool === "watering_can"
-                                    ? "Kliknij pole, aby podlać"
-                                    : selectedSeedId
-                                    ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
-                                    : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
-                                    ? "Enter lub kliknij pole, aby zebrać"
-                                    : "Wybierz nasiono z plecaka albo konewkę"}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
-                              <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">Zablokowane pole</p>
-                                    <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
-                                    <p className="mt-1 text-sm text-[#f2ddb0]">Cena odblokowania: {selectedPlotCost} PLN</p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedPlotId(null)}
-                                    className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
-                                    aria-label="Zamknij podpowiedź zakupu pola"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-
-                                <div className="mt-4">
-                                  <button
-                                    type="button"
-                                    onClick={() => setPlotToBuy(selectedPlotId)}
-                                    className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={displayMoney < selectedPlotCost}
-                                  >
-                                    Kup: {selectedPlotCost} PLN
-                                  </button>
-                                  {displayMoney < selectedPlotCost && (
-                                    <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </>
-                    )}
-                  </div>
-
-                  {plotToBuy !== null && (
-                    <div className="absolute inset-0 z-[95] flex items-center justify-center bg-black/60 px-4">
-                      <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
-                        <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
-                        <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
-                          Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
+                  {currentMap !== "city" && currentMap.startsWith("city_") && (
+                    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
+                      <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
+                        <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
+                        <p className="mt-4 text-base leading-7 text-[#dfcfab]">
+                          Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
                         </p>
-
-                        <div className="mt-6 flex justify-end gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setPlotToBuy(null)}
-                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
-                          >
-                            Anuluj
-                          </button>
-                          <button
-                            type="button"
-                            onClick={confirmBuyPlot}
-                            className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                          >
-                            Kup: {getPlotUnlockCost(plotToBuy)} PLN
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleChangeMap("city")}
+                          className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                        >
+                          Wróć do miasta
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            )}
           </div>
-        )}
-        {farmUpgradeModal && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
-            <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-              <button
-                onClick={closeFarmUpgradeModal}
-                className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
-                aria-label="Zamknij komunikat ulepszenia farmy"
-              >
-                ×
-              </button>
 
-              <div className="pr-12">
-                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
-                <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
-                <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
-                <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
-                  Osiągnięto poziom {farmUpgradeModal.level}.
-                </p>
+          {isFieldViewOpen && isOnFarmMap && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
+              <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
+                <button
+                  onClick={() => {
+                    setIsFieldViewOpen(false);
+                    setSelectedPlotId(null);
+                  }}
+                  className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                  aria-label="Zamknij widok pola"
+                >
+                  ×
+                </button>
+
+                <div className="mb-4 pr-14">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
+                  <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
+                  <p className="mt-2 text-sm text-[#dfcfab]">
+                    Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                  </p>
+                </div>
+
+                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative mx-auto aspect-[1536/1092] w-full">
+                    <img
+                      src="/farm-field-view.png"
+                      alt="Widok pola 25 slotów"
+                      className="h-full w-full object-contain"
+                    />
+
+                    <div className="absolute inset-0">
+                      {FIELD_VIEW_PLOTS.map((plot) => {
+                        const plotId = plot.id;
+                        const isUnlocked = isPlotUnlocked(plotId);
+                        const isSelected = selectedPlotId === plotId;
+                        const plotCost = getPlotUnlockCost(plotId);
+
+                        return (
+                          <button
+                            key={plotId}
+                            type="button"
+                            onClick={() => {
+                              setSelectedPlotId(plotId);
+
+                              if (!isUnlocked) {
+                                return;
+                              }
+
+                              if (selectedTool === "watering_can") {
+                                handleWaterPlot(plotId);
+                                return;
+                              }
+
+                              if (selectedSeedId) {
+                                handlePlantFromSelectedSeed(plotId);
+                                return;
+                              }
+
+                              if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
+                                void handleHarvestPlot(plotId);
+                              }
+                            }}
+                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            className={`absolute rounded-xl transition-all duration-300 ${
+                              isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
+                            }`}
+                            style={{
+                              left: plot.left,
+                              top: plot.top,
+                              width: plot.width,
+                              height: plot.height,
+                            }}
+                          >
+                            {isUnlocked ? (
+                              <>
+                                <div
+                                  className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                                    isSelected
+                                      ? "bg-yellow-300/20 shadow-[0_0_32px_rgba(255,220,120,0.8)]"
+                                      : "bg-yellow-300/8"
+                                  }`}
+                                />
+                                <div
+                                  className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
+                                    isSelected
+                                      ? "border-yellow-200 shadow-[0_0_24px_rgba(255,220,120,0.7)]"
+                                      : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
+                                  }`}
+                                />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
+
+                                {getPlotCrop(plotId).cropId && (
+                                  <div
+                                    className="pointer-events-none absolute inset-[8%]"
+                                    style={{
+                                      backgroundImage: "url('/carrot.png')",
+                                      backgroundSize: "500% 100%",
+                                      backgroundPosition: `${(getGrowthStage(plotId) - 1) * -100}% 0%`,
+                                      backgroundRepeat: "no-repeat",
+                                      backgroundPositionY: "0%",
+                                      imageRendering: "pixelated",
+                                    }}
+                                  />
+                                )}
+
+                                {getPlotCrop(plotId).watered && (
+                                  <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[18px]">
+                                    💧
+                                  </div>
+                                )}
+
+                                <div className="absolute inset-x-1 bottom-1 z-10 text-center">
+                                  {getPlotCrop(plotId).cropId ? (
+                                    <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
+                                      {isCropReady(plotId)
+                                        ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
+                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(
+                                            plotId
+                                          )} s`}
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
+                                      {plotId}
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div
+                                  className={`absolute inset-0 rounded-xl transition-all duration-300 ${
+                                    isSelected ? "bg-black/45" : "bg-black/30"
+                                  }`}
+                                />
+                                <div
+                                  className={`absolute inset-0 rounded-xl border-2 transition-all duration-300 ${
+                                    isSelected ? "border-yellow-200/60" : "border-white/12"
+                                  }`}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
+                                  <span className="text-[11px] font-bold uppercase leading-tight text-[#f5dfb0] md:text-sm">
+                                    KOSZT: {plotCost} PLN
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {selectedPlotId && (
+                        <>
+                          {(() => {
+                            const selectedPlotUnlocked = isPlotUnlocked(selectedPlotId);
+                            const selectedPlotCost = getPlotUnlockCost(selectedPlotId);
+
+                            if (selectedPlotUnlocked) {
+                              const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
+                              if (!activePlot) return null;
+
+                              return (
+                                <div className="pointer-events-none absolute inset-0">
+                                  <div
+                                    className="pointer-events-none absolute z-20 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-xs font-bold text-[#f3e6c8] shadow-2xl"
+                                    style={{
+                                      left: `calc(${activePlot.left} + ${activePlot.width} + 0.8%)`,
+                                      top: activePlot.top,
+                                    }}
+                                  >
+                                    {selectedTool === "watering_can"
+                                      ? "Kliknij pole, aby podlać"
+                                      : selectedSeedId
+                                      ? `Kliknij pole, aby posadzić ${
+                                          CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
+                                        }`
+                                      : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
+                                      ? "Enter lub kliknij pole, aby zebrać"
+                                      : "Wybierz nasiono z plecaka albo konewkę"}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
+                                <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">
+                                        Zablokowane pole
+                                      </p>
+                                      <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
+                                      <p className="mt-1 text-sm text-[#f2ddb0]">
+                                        Cena odblokowania: {selectedPlotCost} PLN
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedPlotId(null)}
+                                      className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
+                                      aria-label="Zamknij podpowiedź zakupu pola"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+
+                                  <div className="mt-4">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPlotToBuy(selectedPlotId)}
+                                      className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                                      disabled={displayMoney < selectedPlotCost}
+                                    >
+                                      Kup: {selectedPlotCost} PLN
+                                    </button>
+                                    {displayMoney < selectedPlotCost && (
+                                      <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+                    </div>
+
+                    {plotToBuy !== null && (
+                      <div className="absolute inset-0 z-[95] flex items-center justify-center bg-black/60 px-4">
+                        <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
+                          <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
+                          <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
+                            Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
+                          </p>
+
+                          <div className="mt-6 flex justify-end gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setPlotToBuy(null)}
+                              className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                            >
+                              Anuluj
+                            </button>
+                            <button
+                              type="button"
+                              onClick={confirmBuyPlot}
+                              className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                            >
+                              Kup: {getPlotUnlockCost(plotToBuy)} PLN
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
+            </div>
+          )}
 
-              <div className="mt-6 flex justify-end">
+          {farmUpgradeModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
+              <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
                 <button
                   onClick={closeFarmUpgradeModal}
-                  className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
+                  aria-label="Zamknij komunikat ulepszenia farmy"
                 >
-                  Super
+                  ×
                 </button>
+
+                <div className="pr-12">
+                  <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
+                  <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
+                  <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
+                  <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
+                    Osiągnięto poziom {farmUpgradeModal.level}.
+                  </p>
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={closeFarmUpgradeModal}
+                    className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                  >
+                    Super
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {message && (
-          <div className="fixed bottom-4 left-4 z-50">
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
-                message.type === "error"
-                  ? "border-red-400/40 bg-red-950/80 text-red-100"
-                  : message.type === "success"
-                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-                  : "border-sky-400/40 bg-sky-950/80 text-sky-100"
-              }`}
-            >
-              <p className="font-semibold">{message.title}</p>
-              {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+          {message && (
+            <div className="fixed bottom-4 left-4 z-50">
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
+                  message.type === "error"
+                    ? "border-red-400/40 bg-red-950/80 text-red-100"
+                    : message.type === "success"
+                    ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+                    : "border-sky-400/40 bg-sky-950/80 text-sky-100"
+                }`}
+              >
+                <p className="font-semibold">{message.title}</p>
+                {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </main>
   );
