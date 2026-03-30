@@ -1644,25 +1644,15 @@ export default function Page() {
   }
 
 return (
-  <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
-    <div
-      className="relative overflow-hidden bg-black"
-      style={{
-        aspectRatio: "16 / 9",
-        width: "min(100vw, calc(100vh * 16 / 9))",
-        height: "min(100vh, calc(100vw * 9 / 16))",
-        maxWidth: "100vw",
-        maxHeight: "100vh",
-      }}
-    >
-      <img
-        src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
-        alt="Mapa gry"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
-        draggable={false}
-      />
+  <main className="relative h-screen overflow-hidden bg-black">
+    <img
+      src={profile ? `/${currentMap}.png` : "/assetsmain-lobby.png"}
+      alt="Mapa gry"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+      draggable={false}
+    />
 
-      <div className="relative h-full w-full z-[1]">
+    <div className="relative min-h-screen z-[1]">
         {profile && (
           <>
             <div className="absolute right-4 top-4 z-20 flex gap-2">
@@ -1718,7 +1708,7 @@ return (
           </>
         )}
 
-        <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-center px-4 py-4">
+        <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
           {!profile ? (
             <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
@@ -1888,7 +1878,7 @@ return (
               </aside>
             </div>
           ) : (
-            <div className="relative h-full w-full px-4 pt-8 md:px-8">
+            <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
               <div className="absolute left-56 top-16 z-20">
                 <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
@@ -2135,46 +2125,42 @@ return (
 
                 {currentMap === "farm1" && (
                   <button
-  type="button"
-  onClick={() => handleChangeMap("city")}
-  title="Do miasta"
-  className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-  style={{
-  left: "-27%",
-  top: "49%",
-  width: "18%",
-  height: "18%",
-  zIndex: 5,
-  background: "transparent",
-  border: "none",
-  padding: 0,
-  cursor: "pointer",
-}}
->
-  <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-    <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
-    <span
-      style={{
-        position: "absolute",
-        bottom: "-24px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-        color: "white",
-        padding: "6px 12px",
-        borderRadius: "10px",
-        fontSize: "13px",
-        fontWeight: "bold",
-        boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-        border: "1px solid rgba(255,255,255,0.3)",
-        textShadow: "0 0 4px rgba(0,0,0,0.7)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      Do miasta
-    </span>
-  </div>
-</button>
+                    type="button"
+                    onClick={() => handleChangeMap("city")}
+                    title="Do miasta"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{
+                      left: "-27%",
+                      top: "51%",
+                      width: "23%",
+                      height: "18%",
+                      zIndex: 5,
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                      <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+                      <span
+                        style={{
+                          background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+                          color: "white",
+                          padding: "6px 12px",
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          fontWeight: "bold",
+                          boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+                          border: "1px solid rgba(255,255,255,0.3)",
+                          textShadow: "0 0 4px rgba(0,0,0,0.7)",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        Do miasta
+                      </span>
+                    </div>
+                  </button>
                 )}
 
                 {currentMap === "city" && (
@@ -2566,7 +2552,6 @@ return (
           </div>
         )}
       </div>
-    </div>
-  </main>
+    </main>
   );
 }
