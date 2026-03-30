@@ -2145,6 +2145,10 @@ return (
     <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
     <span
       style={{
+        position: "absolute",
+        bottom: "-24px",
+        left: "50%",
+        transform: "translateX(-50%)",
         background: "linear-gradient(135deg, #1e90ff, #00bfff)",
         color: "white",
         padding: "6px 12px",
@@ -2154,7 +2158,7 @@ return (
         boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
         border: "1px solid rgba(255,255,255,0.3)",
         textShadow: "0 0 4px rgba(0,0,0,0.7)",
-        pointerEvents: "none",
+        whiteSpace: "nowrap",
       }}
     >
       Do miasta
@@ -2555,3 +2559,47 @@ return (
     </main>
   );
 }
+
+// === Wklej poniższy fragment wewnątrz <main> ===
+
+
+{/* HOTSPOT DO MIASTA */}
+{currentMap === "farm1" && (
+  <button
+    type="button"
+    onClick={() => handleChangeMap("city")}
+    title="Do miasta"
+    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+    style={{
+      left: "15.5%",
+      top: "61.5%",
+      width: "11%",
+      height: "11%",
+      zIndex: 5,
+      background: "transparent",
+      border: "none",
+      padding: 0,
+      cursor: "pointer",
+    }}
+  >
+    <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+      <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+      <span
+        style={{
+          background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+          color: "white",
+          padding: "6px 12px",
+          borderRadius: "10px",
+          fontSize: "13px",
+          fontWeight: "bold",
+          boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+          border: "1px solid rgba(255,255,255,0.3)",
+          textShadow: "0 0 4px rgba(0,0,0,0.7)",
+          pointerEvents: "none",
+        }}
+      >
+        Do miasta
+      </span>
+    </div>
+  </button>
+)}
