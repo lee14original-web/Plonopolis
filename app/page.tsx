@@ -643,54 +643,6 @@ export default function Page() {
   }
 
 
-  function resetLocalGameState() {
-    setProfile(null);
-    setSelectedPlotId(null);
-    setUnlockedPlots(getDefaultUnlockedPlots());
-    setPlotCrops({});
-    setSeedInventory(getDefaultSeedInventory());
-    setFarmUpgradeModal(null);
-    setPlotToBuy(null);
-    setIsFieldViewOpen(false);
-    setSelectedSeedId(null);
-    setSelectedTool(null);
-    setIsDraggingBackpack(false);
-  }
-
-  function applyProfileState(rawProfile: unknown) {
-    if (!rawProfile || typeof rawProfile !== "object" || Array.isArray(rawProfile)) {
-      setProfile(null);
-      setUnlockedPlots(getDefaultUnlockedPlots());
-      setPlotCrops({});
-      setSeedInventory(getDefaultSeedInventory());
-      return null;
-    }
-
-    const source = rawProfile as Profile;
-
-    const nextProfile: Profile = {
-      ...source,
-      level: Math.min(source.level ?? DEFAULT_LEVEL, MAX_LEVEL),
-      xp: source.xp ?? DEFAULT_XP,
-      xp_to_next_level: source.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL,
-      money: source.money ?? DEFAULT_MONEY,
-      location: source.location ?? DEFAULT_LOCATION,
-      current_map: source.current_map ?? getMapForLevel(source.level),
-    };
-
-    setProfile(nextProfile);
-    setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
-    setPlotCrops(parsePlotCrops(source.plot_crops));
-    setSeedInventory(parseSeedInventory(source.seed_inventory));
-
-    return nextProfile;
-  }
-
-  function extractRpcProfile(data: unknown) {
-    return Array.isArray(data) ? data[0] : data;
-  }
-
-
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
   const displayXp = profile?.xp ?? DEFAULT_XP;
@@ -874,7 +826,14 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setMessage({
       type: "success",
@@ -935,7 +894,14 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setMessage({
       type: "success",
@@ -1147,7 +1113,7 @@ export default function Page() {
     });
   }
 
-  async function loadProfile(_userId?: string) {
+  async function loadProfile(userId: string) {
     const { data, error } = await supabase.rpc("game_get_my_profile");
 
     if (error) {
@@ -1156,10 +1122,24 @@ export default function Page() {
         title: "Błąd profilu",
         text: error.message,
       });
-      return null;
+      return;
     }
 
-    return applyProfileState(extractRpcProfile(data));
+    const profileData = Array.isArray(data) ? data[0] : data;
+
+    if (!profileData) {
+      setProfile(null);
+      return;
+    }
+
+    const nextProfile = {
+      ...profileData,
+      level: Math.min(profileData.level ?? DEFAULT_LEVEL, MAX_LEVEL),
+    } as Profile;
+    setProfile(nextProfile);
+    setUnlockedPlots(parseUnlockedPlots(profileData.unlocked_plots));
+    setPlotCrops(parsePlotCrops(profileData.plot_crops));
+    setSeedInventory(parseSeedInventory(profileData.seed_inventory));
   }
 
   async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
@@ -1188,7 +1168,7 @@ export default function Page() {
 
 
   function isEmailValid(email: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -1394,7 +1374,17 @@ export default function Page() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    resetLocalGameState();
+    setProfile(null);
+    setSelectedPlotId(null);
+    setUnlockedPlots(getDefaultUnlockedPlots());
+    setPlotCrops({});
+    setSeedInventory(getDefaultSeedInventory());
+    setFarmUpgradeModal(null);
+    setPlotToBuy(null);
+    setIsFieldViewOpen(false);
+    setSelectedSeedId(null);
+    setSelectedTool(null);
+    setIsDraggingBackpack(false);
     setMessage({
       type: "info",
       title: "Wylogowano",
@@ -1498,10 +1488,16 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setPlotToBuy(null);
-    setSelectedPlotId(plotId);
 
     setMessage({
       type: "success",
@@ -1531,14 +1527,7 @@ export default function Page() {
     }
 
     const crop = CROPS.find((item) => item.id === plot.cropId);
-    if (!crop) {
-      setMessage({
-        type: "error",
-        title: "Nieznana uprawa",
-        text: "Nie udało się rozpoznać uprawy na tym polu.",
-      });
-      return;
-    }
+    if (!crop) return;
 
     if (!isCropReady(plotId)) {
       setMessage({
@@ -1548,8 +1537,6 @@ export default function Page() {
       });
       return;
     }
-
-    const previousLevel = displayLevel;
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
@@ -1564,10 +1551,18 @@ export default function Page() {
       return;
     }
 
-    const nextProfile = applyProfileState(extractRpcProfile(data));
+    const nextProfile = Array.isArray(data) ? data[0] : data;
 
-    if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
-      showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
+    if (nextProfile) {
+      const previousLevel = displayLevel;
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+
+      if ((nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
+        showFarmUpgradeModalOnce(profile.id, nextProfile.level ?? DEFAULT_LEVEL);
+      }
     }
 
     setMessage({
@@ -1593,7 +1588,14 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    const nextProfile = Array.isArray(data) ? data[0] : data;
+
+    if (nextProfile) {
+      setProfile(nextProfile as Profile);
+      setUnlockedPlots(parseUnlockedPlots(nextProfile.unlocked_plots));
+      setPlotCrops(parsePlotCrops(nextProfile.plot_crops));
+      setSeedInventory(parseSeedInventory(nextProfile.seed_inventory));
+    }
 
     setIsFieldViewOpen(false);
     setSelectedPlotId(null);
@@ -1637,23 +1639,15 @@ export default function Page() {
   }
 
 return (
-  <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
-    <div
-      className="relative overflow-hidden"
-      style={{
-        aspectRatio: "3 / 2",
-        width: "min(100vw, calc(100vh * 1.5))",
-        height: "min(100vh, calc(100vw / 1.5))",
-      }}
-    >
-      <img
-        src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
-        alt="Mapa gry"
-        className="pointer-events-none absolute inset-0 h-full w-full select-none"
-        draggable={false}
-      />
+  <main className="relative h-screen overflow-hidden bg-black">
+    <img
+      src={profile ? `/${currentMap}.png` : "/assetsmain-lobby.png"}
+      alt="Mapa gry"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+      draggable={false}
+    />
 
-      <div className="relative h-full w-full z-[1]">
+    <div className="relative min-h-screen z-[1]">
         {profile && (
           <>
             <div className="absolute right-4 top-4 z-20 flex gap-2">
