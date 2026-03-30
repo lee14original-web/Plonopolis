@@ -2130,8 +2130,8 @@ return (
   title="Do miasta"
   className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
   style={{
-  left: "-25%",
-  top: "48%",
+  left: "-27%",
+  top: "49%",
   width: "22%",
   height: "22%",
   zIndex: 5,
