@@ -1639,23 +1639,15 @@ export default function Page() {
   }
 
 return (
-  <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
-    <div
-      className="relative overflow-hidden"
-      style={{
-        aspectRatio: "3 / 2",
-        width: "min(100vw, calc(100vh * 1.5))",
-        height: "min(100vh, calc(100vw / 1.5))",
-      }}
-    >
-      <img
-        src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
-        alt="Mapa gry"
-        className="pointer-events-none absolute inset-0 h-full w-full select-none"
-        draggable={false}
-      />
+  <main className="relative h-screen overflow-hidden bg-black">
+    <img
+      src={profile ? `/${currentMap}.png` : "/assetsmain-lobby.png"}
+      alt="Mapa gry"
+      className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+      draggable={false}
+    />
 
-      <div className="relative h-full w-full z-[1]">
+    <div className="relative min-h-screen z-[1]">
         {profile && (
           <>
             <div className="absolute right-4 top-4 z-20 flex gap-2">
@@ -2555,7 +2547,6 @@ return (
           </div>
         )}
       </div>
-    </div>
-  </main>
-);
+    </main>
+  );
 }
