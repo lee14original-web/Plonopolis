@@ -1643,7 +1643,7 @@ return (
     <img
       src={profile ? `/${currentMap}.png` : "/assetsmain-lobby.png"}
       alt="Mapa gry"
-      className="pointer-events-none absolute inset-0 h-full w-full select-none"
+      className="pointer-events-none absolute inset-0 h-full w-full  select-none"
       draggable={false}
     />
 
