@@ -2077,19 +2077,22 @@ export default function Page() {
                         setIsFieldViewOpen(true);
                         setSelectedPlotId((prev) => prev ?? 1);
                       }}
-                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105"
+                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "55%",
-                        bottom: "240px",
-                        width: "45%",
-                        height: "150px",
+                        left: "56%",
+                        bottom: "235px",
+                        width: "34%",
+                        height: "120px",
+                        zIndex: 4,
                       }}
                     >
                       <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
+                        <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
                         <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
                         <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
+                          Pola uprawne
+                        </span>
                       </div>
                     </button>
                   )}
@@ -2101,25 +2104,22 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "18%",
-                        top: "58%",
-                        width: "14%",
-                        height: "18%",
-                        zIndex: 5,
+                        left: "6%",
+                        top: "56%",
+                        width: "12%",
+                        height: "14%",
+                        zIndex: 20,
                         background: "transparent",
                         border: "none",
                         padding: 0,
                         cursor: "pointer",
                       }}
                     >
-                      <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 rounded-xl border border-sky-300/50 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
                         <span
+                          className="pointer-events-none"
                           style={{
-                            position: "absolute",
-                            bottom: "-24px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
                             background: "linear-gradient(135deg, #1e90ff, #00bfff)",
                             color: "white",
                             padding: "6px 12px",
