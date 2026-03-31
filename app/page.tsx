@@ -1602,7 +1602,7 @@ export default function Page() {
             Wersja mobilna pojawi się w przyszłości jako aplikacja.
           </p>
 
-          <div className="mt-6 text-4xl animate-bounce">🌾</div>
+          <div className="mt-6 animate-bounce text-4xl">🌾</div>
         </div>
       </main>
     );
@@ -1636,7 +1636,7 @@ export default function Page() {
           draggable={false}
         />
 
-        <div className="relative h-full w-full z-[1]">
+        <div className="relative z-[1] h-full w-full">
           {profile && (
             <>
               <div className="absolute right-4 top-4 z-20 flex gap-2">
@@ -1652,7 +1652,7 @@ export default function Page() {
                 <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
-                      displayLevel >= MAX_LEVEL ? "md:grid-cols-[auto_auto] justify-center" : "md:grid-cols-[1fr_auto_auto]"
+                      displayLevel >= MAX_LEVEL ? "justify-center md:grid-cols-[auto_auto]" : "md:grid-cols-[1fr_auto_auto]"
                     }`}
                   >
                     <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
@@ -1669,7 +1669,9 @@ export default function Page() {
 
                         <div className="min-w-[210px] flex-1">
                           <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.15em] text-[#d8ba7a]">
-                            <span>EXP {displayXp} / {displayXpToNextLevel}</span>
+                            <span>
+                              EXP {displayXp} / {displayXpToNextLevel}
+                            </span>
                             <span>{xpPercent}%</span>
                           </div>
                           <div className="h-3 overflow-hidden rounded-full bg-black/40">
@@ -1709,9 +1711,7 @@ export default function Page() {
                       <button
                         onClick={() => setTab("login")}
                         className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                          tab === "login"
-                            ? "bg-[#d4a64f] text-[#2b180c]"
-                            : "text-[#f1dfb5] hover:bg-white/5"
+                          tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
                         Logowanie
@@ -1719,9 +1719,7 @@ export default function Page() {
                       <button
                         onClick={() => setTab("register")}
                         className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                          tab === "register"
-                            ? "bg-[#d4a64f] text-[#2b180c]"
-                            : "text-[#f1dfb5] hover:bg-white/5"
+                          tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
                         Rejestracja
@@ -1736,9 +1734,7 @@ export default function Page() {
                             type="text"
                             placeholder="twoj@email.pl"
                             value={loginForm.identifier}
-                            onChange={(e) =>
-                              setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))
-                            }
+                            onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1749,9 +1745,7 @@ export default function Page() {
                             type="password"
                             placeholder="Wpisz hasło"
                             value={loginForm.password}
-                            onChange={(e) =>
-                              setLoginForm((prev) => ({ ...prev, password: e.target.value }))
-                            }
+                            onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1771,9 +1765,7 @@ export default function Page() {
                             type="text"
                             placeholder="Unikalny login"
                             value={registerForm.login}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, login: e.target.value }))
-                            }
+                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1784,9 +1776,7 @@ export default function Page() {
                             type="email"
                             placeholder="twoj@email.pl"
                             value={registerForm.email}
-                            onChange={(e) =>
-                              setRegisterForm((prev) => ({ ...prev, email: e.target.value }))
-                            }
+                            onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
@@ -1798,9 +1788,7 @@ export default function Page() {
                               type="password"
                               placeholder="Minimum 6 znaków"
                               value={registerForm.password}
-                              onChange={(e) =>
-                                setRegisterForm((prev) => ({ ...prev, password: e.target.value }))
-                              }
+                              onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
                               className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                             />
                           </div>
@@ -1840,8 +1828,8 @@ export default function Page() {
 
                   <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
                   <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi polami,
-                    poziomem 1 i 10 PLN.
+                    Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi
+                    polami, poziomem 1 i 10 PLN.
                   </p>
 
                   <div className="mt-6 space-y-4">
@@ -1907,20 +1895,18 @@ export default function Page() {
 
                     <div
                       className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
-                        isBackpackOpen
-                          ? "max-w-[380px] translate-x-0 opacity-100"
-                          : "max-w-0 -translate-x-4 opacity-0"
+                        isBackpackOpen ? "max-w-[380px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
                       <div
-                        className={`w-[380px] max-h-[80vh] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
-                          isBackpackOpen
-                            ? "pointer-events-auto scale-100"
-                            : "pointer-events-none scale-95"
+                        className={`max-h-[80vh] w-[380px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                          isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
                         }`}
                       >
                         <div
-                          className={`mb-3 flex items-center justify-between ${isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"}`}
+                          className={`mb-3 flex items-center justify-between ${
+                            isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"
+                          }`}
                           onPointerDown={startBackpackDrag}
                         >
                           <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
@@ -1989,7 +1975,9 @@ export default function Page() {
                                 setMessage({
                                   type: "info",
                                   title: "Uprawa jeszcze rośnie",
-                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(selectedPlotId)} s.`,
+                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(
+                                    selectedPlotId
+                                  )} s.`,
                                 });
                                 return;
                               }
@@ -2020,7 +2008,9 @@ export default function Page() {
                           ) : (
                             <div className="grid grid-cols-5 gap-2">
                               {Array.from({ length: 50 }).map((_, index) => {
-                                const inventoryItems = Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0) as Array<[string, number]>;
+                                const inventoryItems = Object.entries(seedInventory).filter(
+                                  ([, amount]) => Number(amount) > 0
+                                ) as Array<[string, number]>;
                                 const entry = inventoryItems[index];
 
                                 if (!entry) {
@@ -2078,6 +2068,7 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
+              </div>
 
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   {isOnFarmMap && (
@@ -2087,7 +2078,7 @@ export default function Page() {
                         setIsFieldViewOpen(true);
                         setSelectedPlotId((prev) => prev ?? 1);
                       }}
-                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105"
                       style={{
                         left: "55%",
                         bottom: "240px",
@@ -2096,59 +2087,31 @@ export default function Page() {
                       }}
                     >
                       <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
+                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
                         <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
                         <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-                          Pola uprawne
-                        </span>
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
                       </div>
                     </button>
                   )}
 
                   {currentMap === "farm1" && (
-  <button
-    type="button"
-    onClick={() => handleChangeMap("city")}
-    title="Do miasta"
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-    style={{
-      left: "18%",
-      top: "58%",
-      width: "14%",
-      height: "18%",
-      zIndex: 5,
-      background: "transparent",
-      border: "none",
-      padding: 0,
-      cursor: "pointer",
-    }}
-  >
-    <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-      <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
-      <span
-        style={{
-          position: "absolute",
-          bottom: "-24px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-          color: "white",
-          padding: "6px 12px",
-          borderRadius: "10px",
-          fontSize: "13px",
-          fontWeight: "bold",
-          boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-          border: "1px solid rgba(255,255,255,0.3)",
-          textShadow: "0 0 4px rgba(0,0,0,0.7)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Do miasta
-      </span>
-    </div>
-  </button>
-)}
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city")}
+                      title="Do miasta"
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                      style={{
+                        left: "18%",
+                        top: "58%",
+                        width: "14%",
+                        height: "18%",
+                        zIndex: 5,
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
                     >
                       <div className="relative flex h-full w-full items-end justify-center rounded-xl">
                         <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
@@ -2356,7 +2319,7 @@ export default function Page() {
 
                                 {getPlotCrop(plotId).cropId && (
                                   <div
-                                    className="absolute inset-[8%] pointer-events-none"
+                                    className="pointer-events-none absolute inset-[8%]"
                                     style={{
                                       backgroundImage: "url('/carrot.png')",
                                       backgroundSize: "500% 100%",
@@ -2379,7 +2342,9 @@ export default function Page() {
                                     <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
                                       {isCropReady(plotId)
                                         ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
-                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(plotId)} s`}
+                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(
+                                            plotId
+                                          )} s`}
                                     </span>
                                   ) : (
                                     <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
@@ -2401,7 +2366,7 @@ export default function Page() {
                                   }`}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                                  <span className="text-[11px] font-bold uppercase text-[#f5dfb0] leading-tight md:text-sm">
+                                  <span className="text-[11px] font-bold uppercase leading-tight text-[#f5dfb0] md:text-sm">
                                     KOSZT: {plotCost} PLN
                                   </span>
                                 </div>
@@ -2433,7 +2398,9 @@ export default function Page() {
                                     {selectedTool === "watering_can"
                                       ? "Kliknij pole, aby podlać"
                                       : selectedSeedId
-                                      ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
+                                      ? `Kliknij pole, aby posadzić ${
+                                          CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
+                                        }`
                                       : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
                                       ? "Enter lub kliknij pole, aby zebrać"
                                       : "Wybierz nasiono z plecaka albo konewkę"}
@@ -2447,9 +2414,13 @@ export default function Page() {
                                 <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">Zablokowane pole</p>
+                                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">
+                                        Zablokowane pole
+                                      </p>
                                       <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
-                                      <p className="mt-1 text-sm text-[#f2ddb0]">Cena odblokowania: {selectedPlotCost} PLN</p>
+                                      <p className="mt-1 text-sm text-[#f2ddb0]">
+                                        Cena odblokowania: {selectedPlotCost} PLN
+                                      </p>
                                     </div>
                                     <button
                                       type="button"
@@ -2515,6 +2486,7 @@ export default function Page() {
               </div>
             </div>
           )}
+
           {farmUpgradeModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
               <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
