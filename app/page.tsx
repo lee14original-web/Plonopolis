@@ -2079,20 +2079,18 @@ export default function Page() {
                       }}
                       className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "56%",
-                        bottom: "235px",
-                        width: "34%",
-                        height: "120px",
+                        left: "48%",
+                        top: "63%",
+                        width: "38%",
+                        height: "22%",
                         zIndex: 4,
                       }}
                     >
                       <div className="relative flex h-full w-full items-center justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl bg-yellow-400/20 blur-xl opacity-70 animate-pulse" />
+                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
                         <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
                         <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
-                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">
-                          Pola uprawne
-                        </span>
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
                       </div>
                     </button>
                   )}
@@ -2105,9 +2103,9 @@ export default function Page() {
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
                         left: "6%",
-                        top: "56%",
-                        width: "12%",
-                        height: "14%",
+                        top: "52%",
+                        width: "18%",
+                        height: "28%",
                         zIndex: 20,
                         background: "transparent",
                         border: "none",
