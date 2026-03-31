@@ -2095,7 +2095,7 @@ export default function Page() {
                     </button>
                   )}
 
-                  {currentMap === "farm1" && (
+                  {currentMap.startsWith("farm") && (
                     <button
                       type="button"
                       onClick={() => handleChangeMap("city")}
