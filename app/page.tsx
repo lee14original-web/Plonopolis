@@ -1969,7 +1969,7 @@ export default function Page() {
                             <img
                               src="/sierp.png"
                               alt="Zbierz"
-                              className="h-14 w-14 object-contain"
+                              className="h-14 w-14 object-contain opacity-80"
                               style={{ imageRendering: "pixelated" }}
                             />
 
