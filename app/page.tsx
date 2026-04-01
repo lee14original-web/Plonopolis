@@ -622,7 +622,7 @@ export default function Page() {
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
-  const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
+  const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
