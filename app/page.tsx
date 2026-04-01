@@ -1969,7 +1969,7 @@ export default function Page() {
                             <img
                               src="/sierp.png"
                               alt="Zbierz"
-                              className="h-14 w-14 object-contain opacity-80"
+                              className="h-14 w-14 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
@@ -2356,7 +2356,7 @@ export default function Page() {
                                       : "border-yellow-300/55 hover:border-yellow-200 hover:shadow-[0_0_24px_rgba(255,220,120,0.55)]"
                                   }`}
                                 />
-                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-80 hover:opacity-100"" />
+                                <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
 
                                 {getPlotCrop(plotId).cropId && (
                                   <div
