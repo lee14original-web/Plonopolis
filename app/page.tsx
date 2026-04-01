@@ -622,7 +622,7 @@ export default function Page() {
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
-  const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
+  const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -740,6 +740,11 @@ export default function Page() {
       return;
     }
 
+    if (selectedTool === "sickle") {
+      void handleHarvestPlot(selectedPlotId);
+      return;
+    }
+
     if (selectedSeedId) {
       handlePlantFromSelectedSeed(selectedPlotId);
       return;
@@ -754,7 +759,7 @@ export default function Page() {
     setMessage({
       type: "info",
       title: `Pole #${selectedPlotId}`,
-      text: "Wybierz nasiono z plecaka albo kliknij konewkę.",
+      text: "Wybierz nasiono z plecaka albo kliknij narzędzie.",
     });
   }
 
@@ -1951,40 +1956,15 @@ export default function Page() {
 
                           <button
                             type="button"
-                            onClick={async () => {
-                              if (!selectedPlotId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak wybranego pola",
-                                  text: "Najpierw wybierz pole do zbioru.",
-                                });
-                                return;
-                              }
-
-                              const plot = getPlotCrop(selectedPlotId);
-                              if (!plot.cropId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak uprawy",
-                                  text: "Na wybranym polu nic nie rośnie.",
-                                });
-                                return;
-                              }
-
-                              if (!isCropReady(selectedPlotId)) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Uprawa jeszcze rośnie",
-                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(
-                                    selectedPlotId
-                                  )} s.`,
-                                });
-                                return;
-                              }
-
-                              await handleHarvestPlot(selectedPlotId);
+                            onClick={() => {
+                              setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
+                              setSelectedSeedId(null);
                             }}
-                            className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                            className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                              selectedTool === "sickle"
+                                ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
+                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                            }`}
                           >
                             <img
                               src="/sierp.png"
@@ -2071,121 +2051,51 @@ export default function Page() {
 
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   {isOnFarmMap && (
-  <button
-    type="button"
-    onClick={() => {
-      setIsFieldViewOpen(true);
-      setSelectedPlotId((prev) => prev ?? 1);
-    }}
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-    style={{
-      left: "48%",
-      top: "63%",
-      width: "38%",
-      height: "22%",
-      zIndex: 4,
-    }}
-    title="Pola uprawne"
-  >
-    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.82)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
-
-      <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
-        {FIELD_VIEW_PLOTS.map((plot) => {
-          const plotState = getPlotCrop(plot.id);
-          const plantedCrop = getPlantedCrop(plot.id);
-          const ready = isCropReady(plot.id);
-          const isUnlocked = isPlotUnlocked(plot.id);
-          const growthStage = getGrowthStage(plot.id);
-
-          return (
-            <div
-              key={`farm-preview-${plot.id}`}
-              className={`relative overflow-hidden rounded-md border ${
-                isUnlocked
-                  ? "border-[#8b6a3e] bg-[rgba(90,58,30,0.82)]"
-                  : "border-[#5f4a31] bg-[rgba(18,12,8,0.85)]"
-              }`}
-            >
-              {isUnlocked ? (
-                <>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(160,110,60,0.18),rgba(70,40,20,0.08))]" />
-
-                  {plotState.cropId && plantedCrop && (
-                    <>
-                      <img
-                        src={plantedCrop.spritePath}
-                        alt={plantedCrop.name}
-                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
-                          ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
-                        }`}
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      {ready && (
-                        <div className="absolute inset-0 bg-yellow-300/18 shadow-[inset_0_0_10px_rgba(255,220,120,0.45)]" />
-                      )}
-                    </>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFieldViewOpen(true);
+                        setSelectedPlotId((prev) => prev ?? 1);
+                      }}
+                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105"
+                      style={{
+                        left: "55%",
+                        bottom: "240px",
+                        width: "45%",
+                        height: "150px",
+                      }}
+                    >
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
+                        <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                        <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
+                      </div>
+                    </button>
                   )}
 
-                  {plotState.watered && (
-                    <div className="absolute right-[2px] top-[1px] text-[9px] leading-none">💧</div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-[#c7b08a]/70">
-                  🔒
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-[linear-gradient(180deg,rgba(20,12,8,0),rgba(20,12,8,0.95))] px-3 pb-2 pt-6 text-center">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f8e6b7]">
-          Pola uprawne
-        </p>
-        <p className="mt-1 text-[11px] font-semibold text-[#d8ba7a]">
-          Zajęte: {Object.values(plotCrops).filter((plot) => Boolean(plot?.cropId)).length} / {unlockedPlots.length}
-          {" • "}
-          Gotowe:{" "}
-          {unlockedPlots.filter((plotId) => {
-            const plot = getPlotCrop(plotId);
-            return plot.cropId && isCropReady(plotId);
-          }).length}
-        </p>
-      </div>
-    </div>
-  </button>
-)}
-
-                  {currentMap.startsWith("farm") && (
+                  {currentMap === "farm1" && (
                     <button
                       type="button"
                       onClick={() => handleChangeMap("city")}
                       title="Do miasta"
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                       style={{
-                        left: "11%",
-                        top: "58%",
-                        width: "12%",
-                        height: "16%",
-                        zIndex: 20,
+                        left: "-27%",
+                        top: "51%",
+                        width: "23%",
+                        height: "18%",
+                        zIndex: 5,
                         background: "transparent",
                         border: "none",
                         padding: 0,
                         cursor: "pointer",
                       }}
                     >
-                      <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl border border-sky-300/50 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 rounded-xl border border-sky-300/40 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
                         <span
                           style={{
-                            position: "absolute",
-                            bottom: "-24px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
                             background: "linear-gradient(135deg, #1e90ff, #00bfff)",
                             color: "white",
                             padding: "6px 12px",
@@ -2195,7 +2105,7 @@ export default function Page() {
                             boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
                             border: "1px solid rgba(255,255,255,0.3)",
                             textShadow: "0 0 4px rgba(0,0,0,0.7)",
-                            whiteSpace: "nowrap",
+                            pointerEvents: "none",
                           }}
                         >
                           Do miasta
@@ -2344,6 +2254,11 @@ export default function Page() {
                                 return;
                               }
 
+                              if (selectedTool === "sickle") {
+                                void handleHarvestPlot(plotId);
+                                return;
+                              }
+
                               if (selectedSeedId) {
                                 handlePlantFromSelectedSeed(plotId);
                                 return;
@@ -2462,13 +2377,15 @@ export default function Page() {
                                   >
                                     {selectedTool === "watering_can"
                                       ? "Kliknij pole, aby podlać"
+                                      : selectedTool === "sickle"
+                                      ? "Kliknij gotową uprawę, aby zebrać"
                                       : selectedSeedId
                                       ? `Kliknij pole, aby posadzić ${
                                           CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
                                         }`
                                       : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
                                       ? "Enter lub kliknij pole, aby zebrać"
-                                      : "Wybierz nasiono z plecaka albo konewkę"}
+                                      : "Wybierz nasiono z plecaka albo narzędzie"}
                                   </div>
                                 </div>
                               );
