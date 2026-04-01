@@ -2348,26 +2348,31 @@ export default function Page() {
                             key={plotId}
                             type="button"
                             onClick={() => {
-                              setSelectedPlotId(plotId);
+  setSelectedPlotId(plotId);
 
-                              if (!isUnlocked) {
-                                return;
-                              }
+  if (!isUnlocked) {
+    return;
+  }
 
-                              if (selectedTool === "watering_can") {
-                                handleWaterPlot(plotId);
-                                return;
-                              }
+  if (selectedTool === "watering_can") {
+    handleWaterPlot(plotId);
+    return;
+  }
 
-                              if (selectedSeedId) {
-                                handlePlantFromSelectedSeed(plotId);
-                                return;
-                              }
+  if (selectedTool === "sickle") {
+    void handleHarvestPlot(plotId);
+    return;
+  }
 
-                              if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
-                                void handleHarvestPlot(plotId);
-                              }
-                            }}
+  if (selectedSeedId) {
+    handlePlantFromSelectedSeed(plotId);
+    return;
+  }
+
+  if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
+    void handleHarvestPlot(plotId);
+  }
+}}
                             title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
                             className={`absolute rounded-xl transition-all duration-300 ${
                               isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
