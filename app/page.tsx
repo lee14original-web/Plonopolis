@@ -2067,7 +2067,7 @@ export default function Page() {
     }}
     title="Pola uprawne"
   >
-    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.35)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
+    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.18)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
 
       <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
