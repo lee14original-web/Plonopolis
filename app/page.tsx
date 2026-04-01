@@ -1867,17 +1867,13 @@ export default function Page() {
                     </p>
 
                     <div className="mt-4 flex gap-2">
-                      <button
-                        onClick={handleSaveProgress}
-                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
-                      >
-                        Zapisz
-                      </button>
-
-                      <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                        Graj
-                      </button>
-                    </div>
+  <button
+    onClick={handleSaveProgress}
+    className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
+  >
+    Zapisz
+  </button>
+</div>
                   </div>
                 </div>
 
