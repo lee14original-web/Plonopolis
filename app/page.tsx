@@ -2481,14 +2481,14 @@ export default function Page() {
                                     }}
                                   >
                                     {selectedTool === "watering_can"
-                                      ? "Kliknij pole, aby podlać"
-                                      : selectedSeedId
-                                      ? `Kliknij pole, aby posadzić ${
-                                          CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
-                                        }`
-                                      : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
-                                      ? "Enter lub kliknij pole, aby zebrać"
-                                      : "Wybierz nasiono z plecaka albo konewkę"}
+  ? "Kliknij pole, aby podlać"
+  : selectedTool === "sickle"
+  ? "Kliknij gotową uprawę, aby zebrać"
+  : selectedSeedId
+  ? `Kliknij pole, aby posadzić ${CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"}`
+  : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
+  ? "Enter lub kliknij pole, aby zebrać"
+  : "Wybierz nasiono z plecaka albo narzędzie"}
                                   </div>
                                 </div>
                               );
