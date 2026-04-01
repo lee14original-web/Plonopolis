@@ -2122,23 +2122,11 @@ export default function Page() {
         })}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-[linear-gradient(180deg,rgba(20,12,8,0),rgba(20,12,8,0.95))] px-3 pb-2 pt-8 text-center">
-  <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f8e6b7]">
-    Pola uprawne
-  </p>
-</div>
-
-<div className="absolute inset-x-3 bottom-[44px] z-20 rounded-xl border border-[#d8ba7a]/30 bg-[rgba(24,14,8,0.88)] px-3 py-1.5 text-center shadow-lg backdrop-blur-sm">
-  <p className="text-[11px] font-semibold text-[#d8ba7a]">
-    Zajęte: {Object.values(plotCrops).filter((plot) => Boolean(plot?.cropId)).length} / {unlockedPlots.length}
-    {" • "}
-    Gotowe:{" "}
-    {unlockedPlots.filter((plotId) => {
-      const plot = getPlotCrop(plotId);
-      return plot.cropId && isCropReady(plotId);
-    }).length}
-  </p>
-</div>
+      <div className="absolute inset-x-0 top-[-26px] z-20 flex justify-center pointer-events-none">
+        <div className="rounded-xl border border-[#d8ba7a]/40 bg-[rgba(24,14,8,0.9)] px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f8e6b7] shadow-lg backdrop-blur-sm">
+          Pola uprawne
+        </div>
+      </div>
     </div>
   </button>
 )}
