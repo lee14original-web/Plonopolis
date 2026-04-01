@@ -2071,94 +2071,28 @@ export default function Page() {
 
                 <div className="absolute inset-0 z-20 pointer-events-none">
                   {isOnFarmMap && (
-  <button
-    type="button"
-    onClick={() => {
-      setIsFieldViewOpen(true);
-      setSelectedPlotId((prev) => prev ?? 1);
-    }}
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-    style={{
-      left: "48%",
-      top: "63%",
-      width: "38%",
-      height: "22%",
-      zIndex: 4,
-    }}
-    title="Pola uprawne"
-  >
-    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.82)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
-
-      <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
-        {FIELD_VIEW_PLOTS.map((plot) => {
-          const plotState = getPlotCrop(plot.id);
-          const plantedCrop = getPlantedCrop(plot.id);
-          const ready = isCropReady(plot.id);
-          const isUnlocked = isPlotUnlocked(plot.id);
-          const growthStage = getGrowthStage(plot.id);
-
-          return (
-            <div
-              key={`farm-preview-${plot.id}`}
-              className={`relative overflow-hidden rounded-md border ${
-                isUnlocked
-                  ? "border-[#8b6a3e] bg-[rgba(90,58,30,0.82)]"
-                  : "border-[#5f4a31] bg-[rgba(18,12,8,0.85)]"
-              }`}
-            >
-              {isUnlocked ? (
-                <>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(160,110,60,0.18),rgba(70,40,20,0.08))]" />
-
-                  {plotState.cropId && plantedCrop && (
-                    <>
-                      <img
-                        src={plantedCrop.spritePath}
-                        alt={plantedCrop.name}
-                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
-                          ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
-                        }`}
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      {ready && (
-                        <div className="absolute inset-0 bg-yellow-300/18 shadow-[inset_0_0_10px_rgba(255,220,120,0.45)]" />
-                      )}
-                    </>
-                  )}
-
-                  {plotState.watered && (
-                    <div className="absolute right-[2px] top-[1px] text-[9px] leading-none">💧</div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-[#c7b08a]/70">
-                  🔒
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-[linear-gradient(180deg,rgba(20,12,8,0),rgba(20,12,8,0.95))] px-3 pb-2 pt-6 text-center">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f8e6b7]">
-          Pola uprawne
-        </p>
-        <p className="mt-1 text-[11px] font-semibold text-[#d8ba7a]">
-          Zajęte: {Object.values(plotCrops).filter((plot) => Boolean(plot?.cropId)).length} / {unlockedPlots.length}
-          {" • "}
-          Gotowe:{" "}
-          {unlockedPlots.filter((plotId) => {
-            const plot = getPlotCrop(plotId);
-            return plot.cropId && isCropReady(plotId);
-          }).length}
-        </p>
-      </div>
-    </div>
-  </button>
-)}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFieldViewOpen(true);
+                        setSelectedPlotId((prev) => prev ?? 1);
+                      }}
+                      className="pointer-events-auto absolute flex items-center justify-center text-2xl font-black text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                      style={{
+                        left: "48%",
+                        top: "63%",
+                        width: "38%",
+                        height: "22%",
+                        zIndex: 4,
+                      }}
+                    >
+                      <div className="relative flex h-full w-full items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 animate-pulse rounded-xl bg-yellow-400/20 opacity-70 blur-xl" />
+                        <div className="absolute inset-0 rounded-xl transition-all duration-300 hover:bg-yellow-300/20 hover:shadow-[0_0_40px_rgba(255,220,120,0.8)]" />
+                        <div className="absolute inset-0 rounded-xl border-2 border-yellow-300/60 hover:border-yellow-200" />
+                        <span className="relative drop-shadow-[0_0_10px_rgba(255,220,120,0.9)]">Pola uprawne</span>
+                      </div>
+                    </button>
                   )}
 
                   {currentMap.startsWith("farm") && (
