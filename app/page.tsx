@@ -1856,7 +1856,7 @@ export default function Page() {
               </div>
             ) : (
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-                <div className="absolute bottom-10 right-10 z-20">
+                <div className="absolute bottom-2 right-2 z-20">
                   <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
                     <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
