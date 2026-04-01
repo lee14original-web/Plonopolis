@@ -622,7 +622,7 @@ export default function Page() {
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
-  const [selectedTool, setSelectedTool] = useState<"watering_can" | null>(null);
+  const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -740,6 +740,11 @@ export default function Page() {
       return;
     }
 
+    if (selectedTool === "sickle") {
+      void handleHarvestPlot(selectedPlotId);
+      return;
+    }
+
     if (selectedSeedId) {
       handlePlantFromSelectedSeed(selectedPlotId);
       return;
@@ -754,7 +759,7 @@ export default function Page() {
     setMessage({
       type: "info",
       title: `Pole #${selectedPlotId}`,
-      text: "Wybierz nasiono z plecaka albo kliknij konewkę.",
+      text: "Wybierz nasiono z plecaka albo kliknij narzędzie.",
     });
   }
 
@@ -1951,40 +1956,15 @@ export default function Page() {
 
                           <button
                             type="button"
-                            onClick={async () => {
-                              if (!selectedPlotId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak wybranego pola",
-                                  text: "Najpierw wybierz pole do zbioru.",
-                                });
-                                return;
-                              }
-
-                              const plot = getPlotCrop(selectedPlotId);
-                              if (!plot.cropId) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Brak uprawy",
-                                  text: "Na wybranym polu nic nie rośnie.",
-                                });
-                                return;
-                              }
-
-                              if (!isCropReady(selectedPlotId)) {
-                                setMessage({
-                                  type: "info",
-                                  title: "Uprawa jeszcze rośnie",
-                                  text: `Ta uprawa nie jest jeszcze gotowa. Zostało około ${getRemainingGrowthSeconds(
-                                    selectedPlotId
-                                  )} s.`,
-                                });
-                                return;
-                              }
-
-                              await handleHarvestPlot(selectedPlotId);
+                            onClick={() => {
+                              setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
+                              setSelectedSeedId(null);
                             }}
-                            className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
+                            className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                              selectedTool === "sickle"
+                                ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
+                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+                            }`}
                           >
                             <img
                               src="/sierp.png"
@@ -2344,6 +2324,11 @@ export default function Page() {
                                 return;
                               }
 
+                              if (selectedTool === "sickle") {
+                                void handleHarvestPlot(plotId);
+                                return;
+                              }
+
                               if (selectedSeedId) {
                                 handlePlantFromSelectedSeed(plotId);
                                 return;
@@ -2462,13 +2447,15 @@ export default function Page() {
                                   >
                                     {selectedTool === "watering_can"
                                       ? "Kliknij pole, aby podlać"
+                                      : selectedTool === "sickle"
+                                      ? "Kliknij gotową uprawę, aby zebrać"
                                       : selectedSeedId
                                       ? `Kliknij pole, aby posadzić ${
                                           CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
                                         }`
                                       : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
                                       ? "Enter lub kliknij pole, aby zebrać"
-                                      : "Wybierz nasiono z plecaka albo konewkę"}
+                                      : "Wybierz nasiono z plecaka albo narzędzie"}
                                   </div>
                                 </div>
                               );
