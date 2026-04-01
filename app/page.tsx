@@ -1984,20 +1984,30 @@ export default function Page() {
 
                               await handleHarvestPlot(selectedPlotId);
                             }}
-                            className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-4 text-center transition hover:bg-[rgba(30,18,10,0.9)]"
-                          >
-                            <img
-                              src="/sierp.png"
-                              alt="Zbierz"
-                              className="h-14 w-14 object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                            />
+                            <button
+  type="button"
+  onClick={() => {
+    setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
+    setSelectedSeedId(null);
+  }}
+  className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+    selectedTool === "sickle"
+      ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
+      : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
+  }`}
+>
+  <img
+    src="/sierp.png"
+    alt="Zbierz"
+    className="h-14 w-14 object-contain"
+    style={{ imageRendering: "pixelated" }}
+  />
 
-                            <div className="text-center">
-                              <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
-                              <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
-                            </div>
-                          </button>
+  <div className="text-center">
+    <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
+    <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
+  </div>
+</button>
                         </div>
 
                         <div className="mt-4">
