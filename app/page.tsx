@@ -1871,7 +1871,7 @@ export default function Page() {
     onClick={handleSaveProgress}
     className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
   >
-    Zapisz
+    ADD EXP GOLD
   </button>
 </div>
                   </div>
