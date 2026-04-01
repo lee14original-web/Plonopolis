@@ -2060,7 +2060,7 @@ export default function Page() {
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
     style={{
       left: "51%",
-      top: "60%",
+      top: "58%",
       width: "38%",
       height: "22%",
       zIndex: 4,
