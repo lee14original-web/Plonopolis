@@ -728,34 +728,39 @@ export default function Page() {
   }
 
   function confirmSelectedPlot() {
-    if (!selectedPlotId) return;
+  if (!selectedPlotId) return;
 
-    if (!isPlotUnlocked(selectedPlotId)) {
-      setPlotToBuy(selectedPlotId);
-      return;
-    }
+  if (!isPlotUnlocked(selectedPlotId)) {
+    setPlotToBuy(selectedPlotId);
+    return;
+  }
 
-    if (selectedTool === "watering_can") {
-      handleWaterPlot(selectedPlotId);
-      return;
-    }
+  if (selectedTool === "watering_can") {
+    handleWaterPlot(selectedPlotId);
+    return;
+  }
 
-    if (selectedSeedId) {
-      handlePlantFromSelectedSeed(selectedPlotId);
-      return;
-    }
+  if (selectedTool === "sickle") {
+    void handleHarvestPlot(selectedPlotId);
+    return;
+  }
 
-    const plot = getPlotCrop(selectedPlotId);
-    if (plot.cropId && isCropReady(selectedPlotId)) {
-      void handleHarvestPlot(selectedPlotId);
-      return;
-    }
+  if (selectedSeedId) {
+    handlePlantFromSelectedSeed(selectedPlotId);
+    return;
+  }
 
-    setMessage({
-      type: "info",
-      title: `Pole #${selectedPlotId}`,
-      text: "Wybierz nasiono z plecaka albo kliknij konewkę.",
-    });
+  const plot = getPlotCrop(selectedPlotId);
+  if (plot.cropId && isCropReady(selectedPlotId)) {
+    void handleHarvestPlot(selectedPlotId);
+    return;
+  }
+
+  setMessage({
+    type: "info",
+    title: `Pole #${selectedPlotId}`,
+    text: "Wybierz nasiono z plecaka albo kliknij narzędzie.",
+  });
   }
 
   function getPlotCrop(plotId: number) {
