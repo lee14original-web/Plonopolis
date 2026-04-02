@@ -1653,11 +1653,11 @@ export default function Page() {
                 </button>
               </div>
 
-              <div className="fixed left-1/2 top-4 z-[89] w-full max-w-3xl -translate-x-1/2 px-4">
-                <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+              <div className="fixed left-1/2 top-4 z-[89] w-[700px] -translate-x-1/2 px-4">
+                <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
-                      displayLevel >= MAX_LEVEL ? "justify-center md:grid-cols-[auto_auto]" : "md:grid-cols-[1fr_auto_auto]"
+                      displayLevel >= MAX_LEVEL ? "justify-center grid-cols-[auto_auto]" : "grid-cols-[1fr_auto_auto]"
                     }`}
                   >
                     <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
