@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "TqOBc58_UcpgIvwnjHuOY"
+uri = "file://attached_assets/Kod_poprawiony.txt"
+type = "text"
+title = "Plonopolis — kod z poprawionymi hitboxami"
