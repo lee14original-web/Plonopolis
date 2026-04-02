@@ -2085,10 +2085,6 @@ export default function Page() {
                       >
                         Zapisz
                       </button>
-
-                      <button className="rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-3 py-2 text-sm font-bold text-[#f3e6c8]">
-                        Graj
-                      </button>
                     </div>
                   </div>
                 </div>
