@@ -1644,7 +1644,7 @@ export default function Page() {
         <div className="relative z-[1] h-full w-full">
           {profile && (
             <>
-              <div className="fixed right-4 top-4 z-[90] flex gap-2">
+              <div className="absolute right-4 top-4 z-20 flex gap-2">
                 <button
                   onClick={handleLogout}
                   className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
@@ -1653,11 +1653,11 @@ export default function Page() {
                 </button>
               </div>
 
-              <div className="fixed left-1/2 top-4 z-[89] w-[700px] -translate-x-1/2 px-4">
-                <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
+              <div className="mx-auto flex max-w-5xl justify-center px-4 pt-2">
+                <div className="z-10 w-full max-w-3xl rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
-                      displayLevel >= MAX_LEVEL ? "justify-center grid-cols-[auto_auto]" : "grid-cols-[1fr_auto_auto]"
+                      displayLevel >= MAX_LEVEL ? "justify-center md:grid-cols-[auto_auto]" : "md:grid-cols-[1fr_auto_auto]"
                     }`}
                   >
                     <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
@@ -1699,218 +1699,6 @@ export default function Page() {
             </>
           )}
 
-
-          {profile && (
-                <div className="absolute inset-0 z-20 pointer-events-none">
-                  {isOnFarmMap && (
-  <button
-    type="button"
-    onClick={() => {
-      setIsFieldViewOpen(true);
-      setSelectedPlotId((prev) => prev ?? 1);
-    }}
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
-    style={{
-      left: "51%",
-      top: "57%",
-      width: "38%",
-      height: "22%",
-      zIndex: 4,
-    }}
-    title="Pola uprawne"
-  >
-    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.5)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
-
-      <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
-        {FIELD_VIEW_PLOTS.map((plot) => {
-          const plotState = getPlotCrop(plot.id);
-          const plantedCrop = getPlantedCrop(plot.id);
-          const ready = isCropReady(plot.id);
-          const isUnlocked = isPlotUnlocked(plot.id);
-          const growthStage = getGrowthStage(plot.id);
-
-          return (
-            <div
-              key={`farm-preview-${plot.id}`}
-              className={`relative overflow-hidden rounded-md border ${
-                isUnlocked
-                  ? "border-[#8b6a3e] bg-[rgba(90,58,30,0.82)]"
-                  : "border-[#5f4a31] bg-[rgba(18,12,8,0.85)]"
-              }`}
-            >
-              {isUnlocked ? (
-                <>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(160,110,60,0.18),rgba(70,40,20,0.08))]" />
-
-                  {plotState.cropId && plantedCrop && (
-                    <>
-                      <img
-                        src={plantedCrop.spritePath}
-                        alt={plantedCrop.name}
-                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
-                          ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
-                        }`}
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      {ready && (
-                        <div className="absolute inset-0 bg-yellow-300/18 shadow-[inset_0_0_10px_rgba(255,220,120,0.45)]" />
-                      )}
-                    </>
-                  )}
-
-                  {plotState.watered && (
-                    <div className="absolute right-[2px] top-[1px] text-[9px] leading-none">💧</div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-[#c7b08a]/70">
-                  🔒
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="absolute inset-x-0 top-[-26px] z-20 flex justify-center pointer-events-none">
-        <div className="rounded-xl border border-[#d8ba7a]/40 bg-[rgba(24,14,8,0.9)] px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f8e6b7] shadow-lg backdrop-blur-sm">
-          Pola uprawne
-        </div>
-      </div>
-    </div>
-  </button>
-)}
-
-                  {currentMap.startsWith("farm") && (
-                    <button
-                      type="button"
-                      onClick={() => handleChangeMap("city")}
-                      title="Do miasta"
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                      style={{
-                        left: "4%",
-                        top: "49%",
-                        width: "12%",
-                        height: "16%",
-                        zIndex: 20,
-                        background: "transparent",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl border border-sky-300/50 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
-                        <span
-                          style={{
-                            position: "absolute",
-                            bottom: "-24px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-                            color: "white",
-                            padding: "6px 12px",
-                            borderRadius: "10px",
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                            boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-                            border: "1px solid rgba(255,255,255,0.3)",
-                            textShadow: "0 0 4px rgba(0,0,0,0.7)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Do miasta
-                        </span>
-                      </div>
-                    </button>
-                  )}
-
-                  {currentMap === "city" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("farm1")}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
-                        title="Na farmę"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                          Na farmę
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city_shop")}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
-                        title="Sklep"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                          Sklep
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city_market")}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
-                        title="Targ"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                          Targ
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city_bank")}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
-                        title="Bank"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                          Bank
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city_townhall")}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
-                        title="Ratusz"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
-                          Ratusz
-                        </span>
-                      </button>
-                    </>
-                  )}
-
-                  {currentMap !== "city" && currentMap.startsWith("city_") && (
-                    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
-                      <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
-                        <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
-                        <p className="mt-4 text-base leading-7 text-[#dfcfab]">
-                          Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => handleChangeMap("city")}
-                          className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                        >
-                          Wróć do miasta
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-          )}
           <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
             {!profile ? (
               <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -2259,6 +2047,216 @@ export default function Page() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="absolute inset-0 z-20 pointer-events-none">
+                  {isOnFarmMap && (
+  <button
+    type="button"
+    onClick={() => {
+      setIsFieldViewOpen(true);
+      setSelectedPlotId((prev) => prev ?? 1);
+    }}
+    className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+    style={{
+      left: "51%",
+      top: "57%",
+      width: "38%",
+      height: "22%",
+      zIndex: 4,
+    }}
+    title="Pola uprawne"
+  >
+    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.5)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
+
+      <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
+        {FIELD_VIEW_PLOTS.map((plot) => {
+          const plotState = getPlotCrop(plot.id);
+          const plantedCrop = getPlantedCrop(plot.id);
+          const ready = isCropReady(plot.id);
+          const isUnlocked = isPlotUnlocked(plot.id);
+          const growthStage = getGrowthStage(plot.id);
+
+          return (
+            <div
+              key={`farm-preview-${plot.id}`}
+              className={`relative overflow-hidden rounded-md border ${
+                isUnlocked
+                  ? "border-[#8b6a3e] bg-[rgba(90,58,30,0.82)]"
+                  : "border-[#5f4a31] bg-[rgba(18,12,8,0.85)]"
+              }`}
+            >
+              {isUnlocked ? (
+                <>
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(160,110,60,0.18),rgba(70,40,20,0.08))]" />
+
+                  {plotState.cropId && plantedCrop && (
+                    <>
+                      <img
+                        src={plantedCrop.spritePath}
+                        alt={plantedCrop.name}
+                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
+                          ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
+                        }`}
+                        style={{ imageRendering: "pixelated" }}
+                      />
+
+                      {ready && (
+                        <div className="absolute inset-0 bg-yellow-300/18 shadow-[inset_0_0_10px_rgba(255,220,120,0.45)]" />
+                      )}
+                    </>
+                  )}
+
+                  {plotState.watered && (
+                    <div className="absolute right-[2px] top-[1px] text-[9px] leading-none">💧</div>
+                  )}
+                </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-[#c7b08a]/70">
+                  🔒
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="absolute inset-x-0 top-[-26px] z-20 flex justify-center pointer-events-none">
+        <div className="rounded-xl border border-[#d8ba7a]/40 bg-[rgba(24,14,8,0.9)] px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f8e6b7] shadow-lg backdrop-blur-sm">
+          Pola uprawne
+        </div>
+      </div>
+    </div>
+  </button>
+)}
+
+                  {currentMap.startsWith("farm") && (
+                    <button
+                      type="button"
+                      onClick={() => handleChangeMap("city")}
+                      title="Do miasta"
+                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+                      style={{
+                        left: "4%",
+                        top: "49%",
+                        width: "12%",
+                        height: "16%",
+                        zIndex: 20,
+                        background: "transparent",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div className="relative flex h-full w-full items-end justify-center rounded-xl">
+                        <div className="absolute inset-0 rounded-xl border border-sky-300/50 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
+                        <span
+                          style={{
+                            position: "absolute",
+                            bottom: "-24px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "linear-gradient(135deg, #1e90ff, #00bfff)",
+                            color: "white",
+                            padding: "6px 12px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
+                            border: "1px solid rgba(255,255,255,0.3)",
+                            textShadow: "0 0 4px rgba(0,0,0,0.7)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Do miasta
+                        </span>
+                      </div>
+                    </button>
+                  )}
+
+                  {currentMap === "city" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("farm1")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
+                        title="Na farmę"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Na farmę
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_shop")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
+                        title="Sklep"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Sklep
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_market")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
+                        title="Targ"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Targ
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_bank")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
+                        title="Bank"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Bank
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleChangeMap("city_townhall")}
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
+                        title="Ratusz"
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
+                          Ratusz
+                        </span>
+                      </button>
+                    </>
+                  )}
+
+                  {currentMap !== "city" && currentMap.startsWith("city_") && (
+                    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
+                      <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
+                        <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
+                        <p className="mt-4 text-base leading-7 text-[#dfcfab]">
+                          Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleChangeMap("city")}
+                          className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                        >
+                          Wróć do miasta
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
