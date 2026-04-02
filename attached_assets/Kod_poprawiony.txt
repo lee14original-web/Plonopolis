@@ -1644,7 +1644,7 @@ export default function Page() {
         <div className="relative z-[1] h-full w-full">
           {profile && (
             <>
-              <div className="fixed right-4 top-4 z-[90] flex gap-2">
+              <div className="absolute right-4 top-4 z-[90] flex gap-2">
                 <button
                   onClick={handleLogout}
                   className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
@@ -1653,7 +1653,7 @@ export default function Page() {
                 </button>
               </div>
 
-              <div className="fixed left-1/2 top-4 z-[89] w-[700px] -translate-x-1/2 px-4">
+              <div className="absolute left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4">
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
@@ -2094,7 +2094,7 @@ export default function Page() {
                 </div>
 
                 <div
-                  className="fixed left-4 top-4 z-[95]"
+                  className="absolute left-4 top-4 z-[95]"
                   style={{
                     transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
                   }}
