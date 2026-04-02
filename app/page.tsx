@@ -83,7 +83,7 @@ const CROPS: Crop[] = [
     unlockLevel: 1,
     growthTimeMs: 3 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 6,
     spritePath: "/carrot_icon_transparent.png",
   },
   {
@@ -92,7 +92,7 @@ const CROPS: Crop[] = [
     unlockLevel: 2,
     growthTimeMs: 4 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 8,
     spritePath: "/potato.png",
   },
   {
@@ -101,7 +101,7 @@ const CROPS: Crop[] = [
     unlockLevel: 3,
     growthTimeMs: 5 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 10,
     spritePath: "/tomato.png",
   },
   {
@@ -110,7 +110,7 @@ const CROPS: Crop[] = [
     unlockLevel: 4,
     growthTimeMs: 7 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 14,
     spritePath: "/cucumber.png",
   },
   {
@@ -119,7 +119,7 @@ const CROPS: Crop[] = [
     unlockLevel: 5,
     growthTimeMs: 10 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 20,
     spritePath: "/onion.png",
   },
   {
@@ -128,7 +128,7 @@ const CROPS: Crop[] = [
     unlockLevel: 6,
     growthTimeMs: 14 * 60_000,
     yieldAmount: 2,
-    expReward: 2,
+    expReward: 28,
     spritePath: "/garlic.png",
   },
   {
@@ -137,7 +137,7 @@ const CROPS: Crop[] = [
     unlockLevel: 7,
     growthTimeMs: 18 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 36,
     spritePath: "/lettuce.png",
   },
   {
@@ -146,7 +146,7 @@ const CROPS: Crop[] = [
     unlockLevel: 8,
     growthTimeMs: 24 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 48,
     spritePath: "/radish.png",
   },
   {
@@ -155,7 +155,7 @@ const CROPS: Crop[] = [
     unlockLevel: 9,
     growthTimeMs: 32 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 64,
     spritePath: "/beet.png",
   },
   {
@@ -164,7 +164,7 @@ const CROPS: Crop[] = [
     unlockLevel: 10,
     growthTimeMs: 42 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 84,
     spritePath: "/pepper.png",
   },
   {
@@ -173,7 +173,7 @@ const CROPS: Crop[] = [
     unlockLevel: 11,
     growthTimeMs: 55 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 110,
     spritePath: "/cabbage.png",
   },
   {
@@ -182,7 +182,7 @@ const CROPS: Crop[] = [
     unlockLevel: 12,
     growthTimeMs: 72 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 144,
     spritePath: "/broccoli.png",
   },
   {
@@ -191,7 +191,7 @@ const CROPS: Crop[] = [
     unlockLevel: 13,
     growthTimeMs: 95 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 190,
     spritePath: "/cauliflower.png",
   },
   {
@@ -200,7 +200,7 @@ const CROPS: Crop[] = [
     unlockLevel: 14,
     growthTimeMs: 125 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 250,
     spritePath: "/strawberry.png",
   },
   {
@@ -209,7 +209,7 @@ const CROPS: Crop[] = [
     unlockLevel: 15,
     growthTimeMs: 165 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 330,
     spritePath: "/raspberry.png",
   },
   {
@@ -218,7 +218,7 @@ const CROPS: Crop[] = [
     unlockLevel: 16,
     growthTimeMs: 215 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 430,
     spritePath: "/blueberry.png",
   },
   {
@@ -227,7 +227,7 @@ const CROPS: Crop[] = [
     unlockLevel: 17,
     growthTimeMs: 280 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 560,
     spritePath: "/eggplant.png",
   },
   {
@@ -236,7 +236,7 @@ const CROPS: Crop[] = [
     unlockLevel: 18,
     growthTimeMs: 360 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 720,
     spritePath: "/zucchini.png",
   },
   {
@@ -245,7 +245,7 @@ const CROPS: Crop[] = [
     unlockLevel: 19,
     growthTimeMs: 435 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 870,
     spritePath: "/watermelon.png",
   },
   {
@@ -254,7 +254,7 @@ const CROPS: Crop[] = [
     unlockLevel: 20,
     growthTimeMs: 500 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1000,
     spritePath: "/grape.png",
   },
   {
@@ -263,7 +263,7 @@ const CROPS: Crop[] = [
     unlockLevel: 21,
     growthTimeMs: 540 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1080,
     spritePath: "/pumpkin.png",
   },
   {
@@ -272,7 +272,7 @@ const CROPS: Crop[] = [
     unlockLevel: 22,
     growthTimeMs: 580 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1150,
     spritePath: "/rapeseed.png",
   },
   {
@@ -281,7 +281,7 @@ const CROPS: Crop[] = [
     unlockLevel: 23,
     growthTimeMs: 620 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1240,
     spritePath: "/sunflower.png",
   },
   {
@@ -290,7 +290,7 @@ const CROPS: Crop[] = [
     unlockLevel: 24,
     growthTimeMs: 660 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1320,
     spritePath: "/chili.png",
   },
   {
@@ -299,7 +299,7 @@ const CROPS: Crop[] = [
     unlockLevel: 25,
     growthTimeMs: 720 * 60_000,
     yieldAmount: 3,
-    expReward: 2,
+    expReward: 1440,
     spritePath: "/asparagus.png",
   },
 ];
