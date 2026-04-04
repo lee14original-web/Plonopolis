@@ -1646,16 +1646,31 @@ export default function Page() {
       return;
     }
 
-    const nextProfile = applyProfileState(extractRpcProfile(data));
+    const harvestRpcProfile = extractRpcProfile(data);
+    const nextProfile = applyProfileState(harvestRpcProfile);
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
     }
 
+    // Zręczność: szansa na podwójny zbiór
+    let bonusHarvest = false;
+    const zreczChance = calcStatEffect(playerStats.zrecznosc ?? 0, 0.004) / 100;
+    if (zreczChance > 0 && Math.random() < zreczChance) {
+      bonusHarvest = true;
+      const rpcInv = (harvestRpcProfile as Profile).seed_inventory;
+      const baseInv: Record<string, number> = (rpcInv && typeof rpcInv === "object") ? { ...(rpcInv as Record<string, number>) } : {};
+      baseInv[crop.id] = (baseInv[crop.id] ?? 0) + crop.yieldAmount;
+      await supabase.from("profiles").update({ seed_inventory: baseInv }).eq("id", profile.id);
+      await loadProfile(profile.id);
+    }
+
     setMessage({
       type: "success",
-      title: "Zbiory zakończone",
-      text: `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
+      title: bonusHarvest ? "Podwójny zbiór! 🍀" : "Zbiory zakończone",
+      text: bonusHarvest
+        ? `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP. Zręczność dała bonus +${crop.yieldAmount} szt.!`
+        : `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
     });
   }
 
@@ -1968,8 +1983,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "15%",
-                        top: "44%",
+                        left: "4%",
+                        top: "49%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
