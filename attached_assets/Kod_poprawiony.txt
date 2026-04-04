@@ -76,6 +76,51 @@ const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 
+const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
+const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
+const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE];
+
+const STATS_DEFS = [
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", desc: "Rośliny rosną szybciej",         rate: 0.005  },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", desc: "Szansa na podwójny zbiór",       rate: 0.004  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", desc: "Woda daje większy bonus",        rate: 0.008  },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", desc: "Większy zysk z drzew",           rate: 0.005  },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", desc: "Większy zysk ze zwierząt",       rate: 0.005  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", desc: "Szansa na bonusowy drop",         rate: 0.0025 },
+] as const;
+type StatKey = typeof STATS_DEFS[number]["key"];
+type PlayerStatsMap = Record<StatKey, number>;
+const DEFAULT_STATS: PlayerStatsMap = { wiedza:0, zrecznosc:0, zaradnosc:0, sadownik:0, opieka:0, szczescie:0 };
+
+function calcStatEffect(val: number, rate: number): number {
+  const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
+  return Math.round(eff * rate * 1000) / 10;
+}
+function getStatUpgradeCost(targetLv: number): number {
+  const T: [number,number][] = [[1,100],[5,180],[10,310],[20,960],[30,3000],[40,9400],[50,29000],[60,88000],[70,260000],[80,750000],[90,2100000],[100,6000000]];
+  if (targetLv <= 1) return 100;
+  if (targetLv >= 100) return 6000000;
+  for (let i=1;i<T.length;i++){
+    if (targetLv<=T[i][0]){const t=(targetLv-T[i-1][0])/(T[i][0]-T[i-1][0]);return Math.round(T[i-1][1]+t*(T[i][1]-T[i-1][1]));}
+  }
+  return 6000000;
+}
+function loadAvatarDataLS(userId: string): { skin: number; stats: PlayerStatsMap; fsp: number; prevLevel: number } {
+  const skin = parseInt(localStorage.getItem(`plonopolis_skin_${userId}`) ?? "-1");
+  const statsRaw = localStorage.getItem(`plonopolis_stats_${userId}`);
+  const stats: PlayerStatsMap = statsRaw ? JSON.parse(statsRaw) : { ...DEFAULT_STATS };
+  const fspRaw = localStorage.getItem(`plonopolis_fsp_${userId}`);
+  const fsp = fspRaw !== null ? parseInt(fspRaw) : 3;
+  const prevLevel = parseInt(localStorage.getItem(`plonopolis_prevlv_${userId}`) ?? "0");
+  return { skin, stats, fsp, prevLevel };
+}
+function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
+  localStorage.setItem(`plonopolis_skin_${userId}`, String(skin));
+  localStorage.setItem(`plonopolis_stats_${userId}`, JSON.stringify(stats));
+  localStorage.setItem(`plonopolis_fsp_${userId}`, String(fsp));
+  localStorage.setItem(`plonopolis_prevlv_${userId}`, String(prevLevel));
+}
+
 const CROPS: Crop[] = [
   {
     id: "carrot",
@@ -631,6 +676,12 @@ export default function Page() {
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
+  const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
+  const [showSkinModal, setShowSkinModal] = React.useState(false);
+  const [showAvatarHover, setShowAvatarHover] = React.useState(false);
+  const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
+  const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
+  const prevLevelRef = React.useRef<number>(0);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -680,6 +731,20 @@ export default function Page() {
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     setPlotCrops(parsePlotCrops(source.plot_crops));
     setSeedInventory(parseSeedInventory(source.seed_inventory));
+
+    if (source.id) {
+      const d = loadAvatarDataLS(source.id);
+      setAvatarSkin(d.skin);
+      setPlayerStats(d.stats);
+      setFreeSkillPoints(d.fsp !== null ? d.fsp : 3);
+      prevLevelRef.current = d.prevLevel || (source.level ?? 1);
+      if (!localStorage.getItem(`plonopolis_fsp_${source.id}`)) {
+        const initFsp = 3;
+        localStorage.setItem(`plonopolis_fsp_${source.id}`, String(initFsp));
+        localStorage.setItem(`plonopolis_prevlv_${source.id}`, String(source.level ?? 1));
+        setFreeSkillPoints(initFsp);
+      }
+    }
 
     return nextProfile;
   }
@@ -779,11 +844,13 @@ export default function Page() {
     const crop = getPlantedCrop(plotId);
     if (!crop) return 0;
 
+    const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
+    const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     if (plot.watered) {
-      return Math.round(crop.growthTimeMs * 0.85);
+      return Math.round(crop.growthTimeMs * 0.85 * wiedzaMult);
     }
 
-    return crop.growthTimeMs;
+    return Math.round(crop.growthTimeMs * wiedzaMult);
   }
 
   function getGrowthProgress(plotId: number) {
@@ -972,6 +1039,22 @@ export default function Page() {
   }
 
   const unlockedPlotsCount = unlockedPlots.length;
+
+  React.useEffect(() => {
+    if (!profile?.id) return;
+    const prev = prevLevelRef.current;
+    if (!prev || prev === 0) { prevLevelRef.current = displayLevel; return; }
+    if (displayLevel > prev) {
+      const gained = displayLevel - prev;
+      setFreeSkillPoints(fp => {
+        const next = fp + gained;
+        localStorage.setItem(`plonopolis_fsp_${profile.id}`, String(next));
+        return next;
+      });
+      prevLevelRef.current = displayLevel;
+      localStorage.setItem(`plonopolis_prevlv_${profile.id}`, String(displayLevel));
+    }
+  }, [displayLevel, profile?.id]);
 
   useEffect(() => {
     document.body.style.overflowX = "hidden";
@@ -1659,6 +1742,94 @@ export default function Page() {
                 </button>
               </div>
 
+              {/* ═══ AVATAR ═══ */}
+              <div className="fixed right-4 z-[91]" style={{ top: "72px" }}>
+                <div className="relative" onMouseEnter={() => setShowAvatarHover(true)} onMouseLeave={() => setShowAvatarHover(false)}>
+                  <button
+                    onClick={() => setShowSkinModal(true)}
+                    className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
+                    title="Wybierz postać / Profil"
+                  >
+                    {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
+                  </button>
+                  {freeSkillPoints > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-yellow-300 bg-yellow-500 text-[10px] font-black text-black">{freeSkillPoints}</span>
+                  )}
+                  {/* SKILLS HOVER PANEL */}
+                  {showAvatarHover && (
+                    <div className="absolute right-0 top-[68px] z-[200] w-72 rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                      <div className="mb-3 flex items-center justify-between">
+                        <p className="text-sm font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
+                        {freeSkillPoints > 0 && <span className="rounded-lg bg-yellow-500/20 px-2 py-0.5 text-[10px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>}
+                      </div>
+                      <div className="mb-3 space-y-2">
+                        {STATS_DEFS.map(def => {
+                          const val = playerStats[def.key];
+                          const eff = calcStatEffect(val, def.rate);
+                          const cost = getStatUpgradeCost(val + 1);
+                          const canFree = freeSkillPoints > 0;
+                          const canBuy = !canFree && displayMoney >= cost && val < 100;
+                          const canUp = val < 100 && (canFree || canBuy);
+                          return (
+                            <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
+                                <span className="text-[10px] text-[#8b6a3e]">{val}/100</span>
+                              </div>
+                              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                                <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
+                              </div>
+                              <div className="mt-1 flex items-center justify-between">
+                                <span className="opacity-70">{def.desc} (+{eff.toFixed(1)}%)</span>
+                                <button
+                                  disabled={!canUp}
+                                  onClick={() => {
+                                    if (!profile?.id) return;
+                                    const next = { ...playerStats, [def.key]: val + 1 };
+                                    if (canFree) {
+                                      const nextFsp = freeSkillPoints - 1;
+                                      setFreeSkillPoints(nextFsp);
+                                      setPlayerStats(next);
+                                      saveAvatarDataLS(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
+                                    } else if (canBuy) {
+                                      void (async () => {
+                                        const { error } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                                        if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarDataLS(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
+                                      })();
+                                    }
+                                  }}
+                                  className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50" : canBuy ? "bg-green-900/40 text-green-200 hover:bg-green-800/60" : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"}`}
+                                >{canFree ? "▲ Darmowy" : canBuy ? `▲ ${cost.toLocaleString("pl-PL")} 💰` : val >= 100 ? "MAX" : "Brak pkt"}</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!profile?.id) return;
+                          const resetCost = 50000;
+                          if (displayMoney < resetCost) { alert("Potrzebujesz 50 000 💰 aby zresetować statystyki."); return; }
+                          if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
+                          void (async () => {
+                            const { error } = await supabase.from("profiles").update({ money: displayMoney - resetCost }).eq("id", profile.id);
+                            if (!error) {
+                              const totalSpent = Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0);
+                              const nextFsp = freeSkillPoints + totalSpent;
+                              setPlayerStats({ ...DEFAULT_STATS });
+                              setFreeSkillPoints(nextFsp);
+                              saveAvatarDataLS(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
+                              await loadProfile(profile.id);
+                            }
+                          })();
+                        }}
+                        className="mt-1 w-full rounded-xl border border-red-800/40 bg-red-950/30 py-1.5 text-[10px] font-bold text-red-300 transition hover:bg-red-900/50"
+                      >🔄 Reset statystyk (50 000 💰)</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4">
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
@@ -2276,6 +2447,34 @@ export default function Page() {
               </div>
             )}
           </div>
+
+          {/* ═══ MODAL WYBORU SKINA ═══ */}
+          {showSkinModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
+              <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <button onClick={() => setShowSkinModal(false)} className="absolute right-4 top-4 text-[#8b6a3e] text-xl hover:text-red-400">✕</button>
+                <h2 className="mb-4 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Mężczyźni</p>
+                <div className="mb-4 grid grid-cols-5 gap-2">
+                  {SKINS_MALE.map((sk, i) => (
+                    <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarDataLS(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      {sk}
+                    </button>
+                  ))}
+                </div>
+                <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Kobiety</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {SKINS_FEMALE.map((sk, i) => (
+                    <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarDataLS(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      {sk}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {isFieldViewOpen && isOnFarmMap && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
