@@ -2205,7 +2205,7 @@ export default function Page() {
                                 <p className="mt-0.5">⭐ EXP: +{hoveredCrop.expReward}</p>
                               </div>
                             ) : (
-                              <div className="mb-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(18,10,4,0.4)] px-3 py-4 text-xs text-[#8b6a3e] text-center">
+                              <div className="mb-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(18,10,4,0.4)] px-3 py-8 text-xs text-[#8b6a3e] text-center">
                                 Najedź na uprawę, by zobaczyć szczegóły
                               </div>
                             )}
