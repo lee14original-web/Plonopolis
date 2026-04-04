@@ -2195,6 +2195,7 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
+                            <>
                             {/* Hover info panel */}
                             {hoveredCrop ? (
                               <div className="mb-3 rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.92)] px-3 py-2 text-xs text-[#dfcfab] transition-all duration-200">
@@ -2266,6 +2267,7 @@ export default function Page() {
                                 );
                               })}
                             </div>
+                            </>
                           )}
                         </div>
                       </div>
