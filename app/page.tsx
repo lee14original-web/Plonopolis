@@ -700,6 +700,7 @@ export default function Page() {
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
+  const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const prevLevelRef = React.useRef<number>(0);
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
@@ -1817,13 +1818,24 @@ export default function Page() {
                         <p className="text-sm font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
                         {freeSkillPoints > 0 && <span className="rounded-lg bg-yellow-500/20 px-2 py-0.5 text-[10px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>}
                       </div>
+                      <div className="mb-3 flex items-center gap-1">
+                        <span className="text-[10px] text-[#8b6a3e]">Dodaj:</span>
+                        {([1,5,10] as const).map(n => (
+                          <button key={n} onClick={() => setStatUpgradeAmount(n)}
+                            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold border transition ${statUpgradeAmount === n ? "border-yellow-400 bg-yellow-500/30 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-yellow-600/60 hover:text-yellow-400"}`}>
+                            +{n}
+                          </button>
+                        ))}
+                      </div>
                       <div className="mb-3 space-y-2">
                         {STATS_DEFS.map(def => {
                           const val = playerStats[def.key];
                           const eff = calcStatEffect(val, def.rate);
-                          const cost = getStatUpgradeCost(val + 1);
-                          const canFree = freeSkillPoints > 0;
-                          const canBuy = !canFree && displayMoney >= cost && val < 100;
+                          const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
+                          const canFree = actualFreeAmt > 0;
+                          let multiCost = 0; let actualBuyAmt = 0;
+                          for (let _i = 0; _i < statUpgradeAmount; _i++) { if (val + _i >= 100) break; multiCost += getStatUpgradeCost(val + _i + 1); actualBuyAmt++; }
+                          const canBuy = !canFree && displayMoney >= multiCost && val < 100 && actualBuyAmt > 0;
                           const canUp = val < 100 && (canFree || canBuy);
                           return (
                             <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-2">
@@ -1840,21 +1852,22 @@ export default function Page() {
                                   disabled={!canUp}
                                   onClick={() => {
                                     if (!profile?.id) return;
-                                    const next = { ...playerStats, [def.key]: val + 1 };
                                     if (canFree) {
-                                      const nextFsp = freeSkillPoints - 1;
+                                      const next = { ...playerStats, [def.key]: val + actualFreeAmt };
+                                      const nextFsp = freeSkillPoints - actualFreeAmt;
                                       setFreeSkillPoints(nextFsp);
                                       setPlayerStats(next);
                                       saveAvatarDataLS(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
                                     } else if (canBuy) {
+                                      const next = { ...playerStats, [def.key]: val + actualBuyAmt };
                                       void (async () => {
-                                        const { error } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                                        const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost }).eq("id", profile.id);
                                         if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarDataLS(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
                                       })();
                                     }
                                   }}
                                   className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50" : canBuy ? "bg-green-900/40 text-green-200 hover:bg-green-800/60" : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"}`}
-                                >{canFree ? "▲ Darmowy" : canBuy ? `▲ ${cost.toLocaleString("pl-PL")} 💰` : val >= 100 ? "MAX" : "Brak pkt"}</button>
+                                >{canFree ? `▲ +${actualFreeAmt} Free` : canBuy ? `▲ +${actualBuyAmt} / ${multiCost.toLocaleString("pl-PL")}💰` : val >= 100 ? "MAX" : "Brak pkt"}</button>
                               </div>
                             </div>
                           );
