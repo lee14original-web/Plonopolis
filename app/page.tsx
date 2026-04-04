@@ -682,6 +682,7 @@ export default function Page() {
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const prevLevelRef = React.useRef<number>(0);
+  const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -1744,10 +1745,10 @@ export default function Page() {
 
               {/* ═══ AVATAR ═══ */}
               <div className="fixed right-4 z-[91]" style={{ top: "72px" }}>
-                <div className="relative" onMouseEnter={() => setShowAvatarHover(true)} onMouseLeave={() => setShowAvatarHover(false)}>
+                <div className="relative" onMouseEnter={() => { if (avatarHoverTimeout.current) clearTimeout(avatarHoverTimeout.current); setShowAvatarHover(true); }} onMouseLeave={() => { avatarHoverTimeout.current = setTimeout(() => setShowAvatarHover(false), 300); }}>
                   <button
                     onClick={() => setShowSkinModal(true)}
-                    className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
+                    className="flex h-24 w-24 items-center justify-center rounded-3xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-6xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
                     title="Wybierz postać / Profil"
                   >
                     {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
@@ -1757,7 +1758,7 @@ export default function Page() {
                   )}
                   {/* SKILLS HOVER PANEL */}
                   {showAvatarHover && (
-                    <div className="absolute right-0 top-[68px] z-[200] w-72 rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                    <div className="absolute right-0 top-full mt-1 z-[200] w-72 rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
                       <div className="mb-3 flex items-center justify-between">
                         <p className="text-sm font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
                         {freeSkillPoints > 0 && <span className="rounded-lg bg-yellow-500/20 px-2 py-0.5 text-[10px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>}
