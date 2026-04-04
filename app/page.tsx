@@ -2260,7 +2260,7 @@ export default function Page() {
                           {hoveredCrop && tooltipPos && (
                             <div
                               className="pointer-events-none fixed z-[999] w-48 rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-3 py-2 text-xs text-[#dfcfab] shadow-2xl"
-                              style={{ left: tooltipPos.x + 206 > window.innerWidth ? tooltipPos.x - 206 : tooltipPos.x + 14, top: tooltipPos.y - 20 }}
+                              style={{ left: Math.max(4, Math.min(tooltipPos.x + 206 > window.innerWidth ? tooltipPos.x - 206 : tooltipPos.x + 14, window.innerWidth - 200)), top: tooltipPos.y - 20 }}
                             >
                               <p className="mb-1 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
                               <p>⏱ {(() => { const m = Math.round(hoveredCrop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
