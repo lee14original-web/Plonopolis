@@ -1486,19 +1486,19 @@ export default function Page() {
     });
   }
 
-  async function handleSaveProgress() {
+  async function handleSaveProgress(amount: number) {
     if (!profile) return;
 
     const oldLevel = displayLevel;
-    const nextXp = displayXp + 15;
+    const nextXp = displayXp + amount;
     let nextLevel = displayLevel;
     let nextXpStored = nextXp;
     let nextXpToNextLevel = displayXpToNextLevel;
-    let nextMoney = displayMoney + 25;
+    let nextMoney = displayMoney + amount;
 
-    if (nextXp >= displayXpToNextLevel && nextLevel < MAX_LEVEL) {
+    while (nextXpStored >= nextXpToNextLevel && nextLevel < MAX_LEVEL) {
       nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpStored = nextXp - displayXpToNextLevel;
+      nextXpStored = nextXpStored - nextXpToNextLevel;
       nextXpToNextLevel = getXpForLevel(nextLevel);
       nextMoney += 100;
     }
@@ -1968,8 +1968,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "10%",
-                        top: "46%",
+                        left: "4%",
+                        top: "49%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
@@ -2248,7 +2248,7 @@ export default function Page() {
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
                 <div className="absolute left-56 top-16 z-20">
                   <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Sesja wczytana</p>
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">TESTY GRY</p>
                     <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
                     <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
                     <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
@@ -2256,12 +2256,24 @@ export default function Page() {
                       Pola: {unlockedPlotsCount} / {MAX_FIELDS}
                     </p>
 
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-4 flex flex-wrap gap-2">
                       <button
-                        onClick={handleSaveProgress}
-                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg"
+                        onClick={() => handleSaveProgress(50)}
+                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-xs font-black text-[#2f1b0c] shadow-lg"
                       >
-                        Zapisz
+                        EXP/Gold +50
+                      </button>
+                      <button
+                        onClick={() => handleSaveProgress(250)}
+                        className="rounded-xl border border-[#e8973a] bg-[linear-gradient(180deg,#f0a040,#c06010)] px-3 py-2 text-xs font-black text-[#1a0a00] shadow-lg"
+                      >
+                        EXP/Gold +250
+                      </button>
+                      <button
+                        onClick={() => handleSaveProgress(2500)}
+                        className="rounded-xl border border-[#e84040] bg-[linear-gradient(180deg,#e85050,#a01010)] px-3 py-2 text-xs font-black text-white shadow-lg"
+                      >
+                        EXP/Gold +2500
                       </button>
                     </div>
                   </div>
