@@ -1496,9 +1496,9 @@ export default function Page() {
     let nextXpToNextLevel = displayXpToNextLevel;
     let nextMoney = displayMoney + amount;
 
-    if (nextXp >= displayXpToNextLevel && nextLevel < MAX_LEVEL) {
+    while (nextXpStored >= nextXpToNextLevel && nextLevel < MAX_LEVEL) {
       nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpStored = nextXp - displayXpToNextLevel;
+      nextXpStored = nextXpStored - nextXpToNextLevel;
       nextXpToNextLevel = getXpForLevel(nextLevel);
       nextMoney += 100;
     }
