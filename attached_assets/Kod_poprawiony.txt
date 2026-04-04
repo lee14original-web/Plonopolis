@@ -123,6 +123,15 @@ function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, f
 
 const CROPS: Crop[] = [
   {
+    id: "test_nasiono",
+    name: "Test Nasiono",
+    unlockLevel: 1,
+    growthTimeMs: 10_000,
+    yieldAmount: 2,
+    expReward: 1,
+    spritePath: "/carrot_icon_transparent.png",
+  },
+  {
     id: "carrot",
     name: "Marchew",
     unlockLevel: 1,
