@@ -631,6 +631,7 @@ export default function Page() {
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{x:number;y:number} | null>(null);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -2195,20 +2196,6 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
-                            <>
-                            {/* Hover info panel */}
-                            {hoveredCrop ? (
-                              <div className="mb-3 rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.92)] px-3 py-2 text-xs text-[#dfcfab] transition-all duration-200">
-                                <p className="mb-1 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
-                                <p>⏱ {(() => { const m = Math.round(hoveredCrop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
-                                <p className="mt-0.5">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
-                                <p className="mt-0.5">⭐ EXP: +{hoveredCrop.expReward}</p>
-                              </div>
-                            ) : (
-                              <div className="mb-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(18,10,4,0.4)] px-3 py-8 text-xs text-[#8b6a3e] text-center">
-                                Najedź na uprawę, by zobaczyć szczegóły
-                              </div>
-                            )}
                             <div className="grid grid-cols-5 gap-2">
                               {Array.from({ length: 50 }).map((_, index) => {
                                 const inventoryItems = Object.entries(seedInventory).filter(
@@ -2244,8 +2231,9 @@ export default function Page() {
                                       setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                       setSelectedTool(null);
                                     }}
-                                     onMouseEnter={() => setHoveredCrop(crop)}
-                                     onMouseLeave={() => setHoveredCrop(null)}
+                                     onMouseEnter={(e) => { setHoveredCrop(crop); setTooltipPos({x: e.clientX, y: e.clientY}); }}
+                                     onMouseMove={(e) => setTooltipPos({x: e.clientX, y: e.clientY})}
+                                     onMouseLeave={() => { setHoveredCrop(null); setTooltipPos(null); }}
 
                                     className={`group relative flex h-16 w-16 items-center justify-center rounded-xl border transition ${
                                       selectedSeedId === seedId
@@ -2267,8 +2255,20 @@ export default function Page() {
                                 );
                               })}
                             </div>
-                            </>
+                        )}
+                          {/* Fixed tooltip - never clipped */}
+                          {hoveredCrop && tooltipPos && (
+                            <div
+                              className="pointer-events-none fixed z-[999] w-48 rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-3 py-2 text-xs text-[#dfcfab] shadow-2xl"
+                              style={{ left: tooltipPos.x + 14, top: tooltipPos.y - 20 }}
+                            >
+                              <p className="mb-1 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
+                              <p>⏱ {(() => { const m = Math.round(hoveredCrop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
+                              <p className="mt-0.5">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
+                              <p className="mt-0.5">⭐ EXP: +{hoveredCrop.expReward}</p>
+                            </div>
                           )}
+
                         </div>
                       </div>
                     </div>
