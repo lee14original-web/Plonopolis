@@ -630,6 +630,7 @@ export default function Page() {
 
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -2194,6 +2195,19 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
+                            {/* Hover info panel */}
+                            {hoveredCrop ? (
+                              <div className="mb-3 rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.92)] px-3 py-2 text-xs text-[#dfcfab] transition-all duration-200">
+                                <p className="mb-1 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
+                                <p>⏱ {(() => { const m = Math.round(hoveredCrop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
+                                <p className="mt-0.5">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
+                                <p className="mt-0.5">⭐ EXP: +{hoveredCrop.expReward}</p>
+                              </div>
+                            ) : (
+                              <div className="mb-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(18,10,4,0.4)] px-3 py-2 text-xs text-[#8b6a3e] text-center">
+                                Najedź na uprawę, by zobaczyć szczegóły
+                              </div>
+                            )}
                             <div className="grid grid-cols-5 gap-2">
                               {Array.from({ length: 50 }).map((_, index) => {
                                 const inventoryItems = Object.entries(seedInventory).filter(
@@ -2229,6 +2243,8 @@ export default function Page() {
                                       setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                       setSelectedTool(null);
                                     }}
+                                     onMouseEnter={() => setHoveredCrop(crop)}
+                                     onMouseLeave={() => setHoveredCrop(null)}
 
                                     className={`group relative flex h-16 w-16 items-center justify-center rounded-xl border transition ${
                                       selectedSeedId === seedId
@@ -2246,13 +2262,6 @@ export default function Page() {
                                     <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                       {amount}
                                     </span>
-                                     {/* Tooltip */}
-                                     <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 w-44 origin-bottom rounded-xl border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-3 py-2 text-left shadow-xl opacity-0 scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100">
-                                       <p className="mb-1 text-sm font-black text-[#f9e7b2]">{crop.name}</p>
-                                       <p className="text-xs text-[#dfcfab]">⏱ {(() => { const m = Math.round(crop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
-                                       <p className="mt-0.5 text-xs text-[#dfcfab]">🌾 Zbiór: {crop.yieldAmount} szt. <span className="text-[10px] opacity-60">(bez bonusów)</span></p>
-                                       <p className="mt-0.5 text-xs text-[#dfcfab]">⭐ EXP: +{crop.expReward}</p>
-                                     </div>
                                   </button>
                                 );
                               })}
