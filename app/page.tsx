@@ -975,6 +975,11 @@ export default function Page() {
   const unlockedPlotsCount = unlockedPlots.length;
 
   useEffect(() => {
+    document.body.style.overflowX = "hidden";
+    return () => { document.body.style.overflowX = ""; };
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
     const bootstrap = async () => {
