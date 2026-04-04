@@ -65,6 +65,16 @@ type PlotCropState = {
 };
 
 type SeedInventory = Record<string, number>;
+type HarvestEvent = {
+  id: number;
+  cropName: string;
+  cropId: string;
+  baseAmount: number;
+  bonusAmount: number;
+  bonusSource: string | null;
+  baseExp: number;
+  timestamp: number;
+};
 
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
@@ -692,6 +702,9 @@ export default function Page() {
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const prevLevelRef = React.useRef<number>(0);
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
+  const harvestEventIdRef = React.useRef(0);
+  const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -1070,6 +1083,16 @@ export default function Page() {
     document.body.style.overflowX = "hidden";
     return () => { document.body.style.overflowX = ""; };
   }, []);
+
+  useEffect(() => {
+    if (harvestLog.length === 0) return;
+    if (harvestLogTimerRef.current) clearTimeout(harvestLogTimerRef.current);
+    harvestLogTimerRef.current = setTimeout(() => {
+      const cutoff = Date.now() - 15000;
+      setHarvestLog(prev => prev.filter(e => e.timestamp >= cutoff));
+    }, 15000);
+    return () => { if (harvestLogTimerRef.current) clearTimeout(harvestLogTimerRef.current); };
+  }, [harvestLog]);
 
   useEffect(() => {
     let mounted = true;
@@ -1674,13 +1697,20 @@ export default function Page() {
       await loadProfile(profile.id);
     }
 
-    setMessage({
-      type: "success",
-      title: bonusHarvest ? "Podwójny zbiór! 🍀" : "Zbiory zakończone",
-      text: bonusHarvest
-        ? `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP. Zręczność dała bonus +${crop.yieldAmount} szt.!`
-        : `Zebrano ${crop.yieldAmount} szt. ${crop.name.toLowerCase()} i +${crop.expReward} EXP.`,
-    });
+    // Dodaj do logu zbiorów
+    setHarvestLog(prev => [
+      ...prev.filter(e => Date.now() - e.timestamp < 15000),
+      {
+        id: ++harvestEventIdRef.current,
+        cropId: crop.id,
+        cropName: crop.name,
+        baseAmount: crop.yieldAmount,
+        bonusAmount: bonusHarvest ? crop.yieldAmount : 0,
+        bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
+        baseExp: crop.expReward,
+        timestamp: Date.now(),
+      },
+    ]);
   }
 
   async function handleChangeMap(targetMap: string) {
@@ -2812,6 +2842,49 @@ export default function Page() {
               </div>
             </div>
           )}
+
+          {harvestLog.length > 0 && (() => {
+            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number }>>(
+              (acc, e) => {
+                if (!acc[e.cropId]) {
+                  acc[e.cropId] = { cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0 };
+                }
+                acc[e.cropId].baseAmount += e.baseAmount;
+                acc[e.cropId].bonusAmount += e.bonusAmount;
+                acc[e.cropId].baseExp += e.baseExp;
+                if (e.bonusSource) acc[e.cropId].bonusSource = e.bonusSource;
+                return acc;
+              }, {}
+            );
+            const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
+            const totalBonusExp = 0;
+            return (
+              <div className="fixed bottom-20 right-4 z-[88] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🌾 Ostatnie zbiory (15s)</p>
+                <div className="space-y-2">
+                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number}>).map((g, i) => (
+                    <div key={i} className="rounded-xl bg-[rgba(255,255,255,0.04)] px-3 py-2">
+                      <p className="font-bold text-[#f9e7b2]">{g.cropName}</p>
+                      <p className="mt-0.5 text-[#dfcfab]">Zebrano: <span className="font-semibold text-emerald-300">+{g.baseAmount} szt.</span></p>
+                      {g.bonusAmount > 0 && (
+                        <p className="text-[#dfcfab]">Bonus ({g.bonusSource}): <span className="font-semibold text-yellow-300">+{g.bonusAmount} szt.</span></p>
+                      )}
+                      <p className="mt-0.5 text-[#dfcfab]">EXP: <span className="font-semibold text-sky-300">+{g.baseExp}</span></p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 border-t border-[#8b6a3e]/40 pt-2">
+                  <p className="text-[#d8ba7a]">Łącznie EXP: <span className="font-bold text-sky-300">+{totalExp}</span>{totalBonusExp > 0 && <span className="text-yellow-300"> +{totalBonusExp} bonus</span>}</p>
+                </div>
+                <button
+                  onClick={() => setHarvestLog([])}
+                  className="mt-2 w-full rounded-lg bg-[rgba(255,255,255,0.06)] py-1 text-[10px] text-[#8b6a3e] hover:text-[#d8ba7a]"
+                >
+                  Zamknij
+                </button>
+              </div>
+            );
+          })()}
 
           {message && (
             <div className="fixed bottom-4 left-4 z-50">
