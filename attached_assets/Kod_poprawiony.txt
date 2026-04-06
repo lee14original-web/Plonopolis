@@ -773,23 +773,38 @@ export default function Page() {
     if (source.id && lastLoadedUserIdRef.current !== source.id) {
       lastLoadedUserIdRef.current = source.id;
       const d = loadAvatarDataLS(source.id);
-      // Prefer Supabase values, fallback to localStorage (for cross-device)
-      const skin = (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
-        ? source.avatar_skin : d.skin;
-      const stats = (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats))
-        ? source.player_stats as PlayerStatsMap : d.stats;
-      const fsp = (source.free_skill_points !== null && source.free_skill_points !== undefined)
-        ? source.free_skill_points : (d.fsp !== null ? d.fsp : 3);
-      const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
-        ? source.prev_level : (d.prevLevel || (source.level ?? 1));
+      // localStorage = zawsze aktualne (zapis synchroniczny)
+      // Supabase = tylko dla nowych urządzeń (brak localStorage)
+      const hasSkinLS  = localStorage.getItem(`plonopolis_skin_${source.id}`) !== null;
+      const hasStatsLS = localStorage.getItem(`plonopolis_stats_${source.id}`) !== null;
+      const hasFspLS   = localStorage.getItem(`plonopolis_fsp_${source.id}`) !== null;
+      const hasPrevLS  = localStorage.getItem(`plonopolis_prevlv_${source.id}`) !== null;
+      const skin = hasSkinLS ? d.skin
+        : (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
+          ? source.avatar_skin : 0;
+      const stats: PlayerStatsMap = hasStatsLS ? d.stats
+        : (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats))
+          ? source.player_stats as PlayerStatsMap : { ...DEFAULT_STATS };
+      const fsp = hasFspLS ? (d.fsp ?? 3)
+        : (source.free_skill_points !== null && source.free_skill_points !== undefined)
+          ? source.free_skill_points : 3;
+      const prevLevel = hasPrevLS ? (d.prevLevel || (source.level ?? 1))
+        : (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
+          ? source.prev_level : (source.level ?? 1);
       setAvatarSkin(skin);
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
-      // Cache to localStorage for fast reload
+      // Zawsze aktualizuj localStorage
       saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
+      // Zsynchronizuj Supabase jeśli tam były inne wartości
+      void supabase.rpc("game_save_avatar_data", {
+        p_avatar_skin: skin,
+        p_player_stats: stats as Record<string, number>,
+        p_free_skill_points: fsp,
+        p_prev_level: prevLevel,
+      });
     } else if (source.id) {
-      // Subsequent loads: only update prevLevel if it changed server-side
       const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
         ? source.prev_level : prevLevelRef.current;
       if (prevLevel > prevLevelRef.current) prevLevelRef.current = prevLevel;
