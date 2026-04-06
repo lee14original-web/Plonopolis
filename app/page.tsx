@@ -715,7 +715,7 @@ export default function Page() {
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const prevLevelRef = React.useRef<number>(0);
-  const statsLoadedRef = React.useRef<boolean>(false);
+  const lastLoadedUserIdRef = React.useRef<string | null>(null);
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const harvestEventIdRef = React.useRef(0);
@@ -770,8 +770,8 @@ export default function Page() {
     setPlotCrops(parsePlotCrops(source.plot_crops));
     setSeedInventory(parseSeedInventory(source.seed_inventory));
 
-    if (source.id && !statsLoadedRef.current) {
-      statsLoadedRef.current = true;
+    if (source.id && lastLoadedUserIdRef.current !== source.id) {
+      lastLoadedUserIdRef.current = source.id;
       const d = loadAvatarDataLS(source.id);
       // Prefer Supabase values, fallback to localStorage (for cross-device)
       const skin = (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
@@ -1088,10 +1088,6 @@ export default function Page() {
   }
 
   const unlockedPlotsCount = unlockedPlots.length;
-
-  React.useEffect(() => {
-    statsLoadedRef.current = false;
-  }, [profile?.id]);
 
   React.useEffect(() => {
     if (!profile?.id) return;
