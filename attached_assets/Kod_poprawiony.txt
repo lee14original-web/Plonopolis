@@ -2452,10 +2452,15 @@ export default function Page() {
                             </div>
                           ) : (
                             <div className="grid grid-cols-5 gap-2">
-                              {Array.from({ length: 50 }).map((_, index) => {
-                                const inventoryItems = Object.entries(seedInventory).filter(
+                              {(() => {
+                                const inventoryItems = (Object.entries(seedInventory).filter(
                                   ([, amount]) => Number(amount) > 0
-                                ) as Array<[string, number]>;
+                                ) as Array<[string, number]>).sort(([aId], [bId]) => {
+                                  const aLv = CROPS.find(c => c.id === aId)?.unlockLevel ?? 999;
+                                  const bLv = CROPS.find(c => c.id === bId)?.unlockLevel ?? 999;
+                                  return aLv - bLv;
+                                });
+                                return Array.from({ length: 50 }).map((_, index) => {
                                 const entry = inventoryItems[index];
 
                                 if (!entry) {
@@ -2507,7 +2512,8 @@ export default function Page() {
                                     </span>
                                   </button>
                                 );
-                              })}
+                              });
+                                })()}
                             </div>
                         )}
                         </div>
