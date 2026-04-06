@@ -2409,7 +2409,7 @@ export default function Page() {
                             <img
                               src="/watering_can_transparent.png"
                               alt="Konewka"
-                              className="h-14 w-14 object-contain"
+                              className="h-16 w-16 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
