@@ -715,6 +715,7 @@ export default function Page() {
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const prevLevelRef = React.useRef<number>(0);
+  const statsLoadedRef = React.useRef<boolean>(false);
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const harvestEventIdRef = React.useRef(0);
@@ -769,12 +770,13 @@ export default function Page() {
     setPlotCrops(parsePlotCrops(source.plot_crops));
     setSeedInventory(parseSeedInventory(source.seed_inventory));
 
-    if (source.id) {
+    if (source.id && !statsLoadedRef.current) {
+      statsLoadedRef.current = true;
       const d = loadAvatarDataLS(source.id);
-      // Prefer Supabase values, fallback to localStorage for older accounts
+      // Prefer Supabase values, fallback to localStorage (for cross-device)
       const skin = (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
         ? source.avatar_skin : d.skin;
-      const stats = (source.player_stats && typeof source.player_stats === "object")
+      const stats = (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats))
         ? source.player_stats as PlayerStatsMap : d.stats;
       const fsp = (source.free_skill_points !== null && source.free_skill_points !== undefined)
         ? source.free_skill_points : (d.fsp !== null ? d.fsp : 3);
@@ -784,8 +786,13 @@ export default function Page() {
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
-      // Sync to localStorage cache
+      // Cache to localStorage for fast reload
       saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
+    } else if (source.id) {
+      // Subsequent loads: only update prevLevel if it changed server-side
+      const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
+        ? source.prev_level : prevLevelRef.current;
+      if (prevLevel > prevLevelRef.current) prevLevelRef.current = prevLevel;
     }
 
     return nextProfile;
@@ -1081,6 +1088,10 @@ export default function Page() {
   }
 
   const unlockedPlotsCount = unlockedPlots.length;
+
+  React.useEffect(() => {
+    statsLoadedRef.current = false;
+  }, [profile?.id]);
 
   React.useEffect(() => {
     if (!profile?.id) return;
