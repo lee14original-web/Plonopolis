@@ -1069,12 +1069,6 @@ export default function Page() {
     const prev = prevLevelRef.current;
     if (!prev || prev === 0) { prevLevelRef.current = displayLevel; return; }
     if (displayLevel > prev) {
-      const gained = displayLevel - prev;
-      setFreeSkillPoints(fp => {
-        const next = fp + gained;
-        localStorage.setItem(`plonopolis_fsp_${profile.id}`, String(next));
-        return next;
-      });
       prevLevelRef.current = displayLevel;
       localStorage.setItem(`plonopolis_prevlv_${profile.id}`, String(displayLevel));
     }
