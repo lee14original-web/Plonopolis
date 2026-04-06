@@ -22,6 +22,8 @@ type Profile = {
   player_stats?: Record<string, number> | null;
   free_skill_points?: number | null;
   prev_level?: number | null;
+  equipment_slots?: number | null;
+  equipment?: string[] | null;
 };
 
 type Message = {
@@ -133,6 +135,11 @@ function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, f
   localStorage.setItem(`plonopolis_stats_${userId}`, JSON.stringify(stats));
   localStorage.setItem(`plonopolis_fsp_${userId}`, String(fsp));
   localStorage.setItem(`plonopolis_prevlv_${userId}`, String(prevLevel));
+}
+function saveHouseData(userId: string, slots: number, eq: string[]) {
+  localStorage.setItem(`plonopolis_eqslots_${userId}`, String(slots));
+  localStorage.setItem(`plonopolis_eq_${userId}`, JSON.stringify(eq));
+  void supabase.rpc("game_save_house_data", { p_equipment_slots: slots, p_equipment: eq as unknown as Record<string,unknown> });
 }
 function saveAvatarData(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
   saveAvatarDataLS(userId, skin, stats, fsp, prevLevel);
@@ -714,8 +721,13 @@ export default function Page() {
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
+  const [showDomModal, setShowDomModal] = React.useState(false);
+  const [domTab, setDomTab] = React.useState<"profil"|"kosmetyka"|"eq">("profil");
+  const [equipmentSlots, setEquipmentSlots] = React.useState(1);
+  const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
   const lastLoadedUserIdRef = React.useRef<string | null>(null);
+  const EQ_SLOT_COSTS = [0, 5000, 15000, 30000, 60000, 100000, 200000]; // slot 1 free, 2-7 paid
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const harvestEventIdRef = React.useRef(0);
@@ -795,6 +807,19 @@ export default function Page() {
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
+      // Ekwipunek
+      const hasEqSlotsLS = localStorage.getItem(`plonopolis_eqslots_${source.id}`) !== null;
+      const hasEqLS = localStorage.getItem(`plonopolis_eq_${source.id}`) !== null;
+      const eqSlots = hasEqSlotsLS
+        ? Number(localStorage.getItem(`plonopolis_eqslots_${source.id}`) ?? "1")
+        : (source.equipment_slots ?? 1);
+      const eq: string[] = hasEqLS
+        ? JSON.parse(localStorage.getItem(`plonopolis_eq_${source.id}`) ?? "[]")
+        : (Array.isArray(source.equipment) ? source.equipment : []);
+      setEquipmentSlots(eqSlots);
+      setEquipment(eq);
+      localStorage.setItem(`plonopolis_eqslots_${source.id}`, String(eqSlots));
+      localStorage.setItem(`plonopolis_eq_${source.id}`, JSON.stringify(eq));
       // Zawsze aktualizuj localStorage
       saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
       // Zsynchronizuj Supabase jeśli tam były inne wartości
@@ -1845,6 +1870,18 @@ export default function Page() {
                 </button>
               </div>
 
+              {/* ═══ DOM BUTTON ═══ */}
+              <div className="fixed left-4 z-[91]" style={{ top: "72px" }}>
+                <button
+                  onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
+                  className="flex items-center gap-2 rounded-2xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] px-4 py-3 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
+                  title="Dom gracza"
+                >
+                  <span className="text-2xl">🏠</span>
+                  <span className="text-sm">Dom</span>
+                </button>
+              </div>
+
               {/* ═══ AVATAR ═══ */}
               <div className="fixed right-4 z-[91]" style={{ top: "72px" }}>
                 <div className="relative" onMouseEnter={() => { if (avatarHoverTimeout.current) clearTimeout(avatarHoverTimeout.current); setShowAvatarHover(true); }} onMouseLeave={() => { avatarHoverTimeout.current = setTimeout(() => setShowAvatarHover(false), 300); }}>
@@ -2582,6 +2619,238 @@ export default function Page() {
           </div>
 
           {/* ═══ MODAL WYBORU SKINA ═══ */}
+          {/* ═══ DOM MODAL ═══ */}
+          {showDomModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="relative flex h-[92vh] w-full max-w-[1100px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+
+                {/* ─ Zamknij ─ */}
+                <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+
+                {/* ─ Sidebar ─ */}
+                <div className="flex w-44 shrink-0 flex-col gap-2 border-r border-[#8b6a3e]/30 bg-black/20 p-5 pt-14">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
+                  {(["profil","kosmetyka","eq"] as const).map(tab => (
+                    <button key={tab} onClick={() => setDomTab(tab)}
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                        domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
+                      }`}>
+                      {tab === "profil" ? "👤" : tab === "kosmetyka" ? "🎨" : "⚔️"}
+                      {tab === "profil" ? "Profil" : tab === "kosmetyka" ? "Kosmetyka" : "Ekwipunek"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ─ Zawartość ─ */}
+                <div className="flex-1 overflow-y-auto p-6 pt-5 text-[#dfcfab]">
+
+                  {/* ════ PROFIL ════ */}
+                  {domTab === "profil" && (
+                    <div className="flex gap-6">
+                      {/* Lewa kolumna: avatar */}
+                      <div className="flex w-48 shrink-0 flex-col items-center gap-4">
+                        <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
+                          className="flex h-36 w-36 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] text-8xl shadow-xl transition hover:border-yellow-400/60">
+                          {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
+                        </button>
+                        <div className="text-center">
+                          <p className="font-black text-[#f9e7b2]">{profile?.login}</p>
+                          <p className="text-xs text-[#8b6a3e]">Poziom {displayLevel}</p>
+                          <p className="mt-1 text-xs text-[#8b6a3e]">{displayMoney.toLocaleString("pl-PL")} 💰</p>
+                        </div>
+                        {freeSkillPoints > 0 && (
+                          <span className="rounded-xl bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
+                        )}
+                      </div>
+
+                      {/* Prawa kolumna: statystyki */}
+                      <div className="flex-1">
+                        <div className="mb-4 flex items-center justify-between">
+                          <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
+                            {([1,5,10] as const).map(n => (
+                              <button key={n} onClick={() => setStatUpgradeAmount(n)}
+                                className={`rounded-lg px-2 py-0.5 text-xs font-bold border transition ${
+                                  statUpgradeAmount === n ? "border-yellow-400 bg-yellow-500/30 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-yellow-600/60 hover:text-yellow-400"
+                                }`}>+{n}</button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          {STATS_DEFS.map(def => {
+                            const val = playerStats[def.key];
+                            const eff = calcStatEffect(val, def.rate);
+                            const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
+                            const canFree = actualFreeAmt > 0;
+                            let multiCost2 = 0; let actualBuyAmt2 = 0;
+                            for (let _i = 0; _i < statUpgradeAmount; _i++) { if (val + _i >= 100) break; multiCost2 += getStatUpgradeCost(val + _i + 1); actualBuyAmt2++; }
+                            const canBuy2 = !canFree && displayMoney >= multiCost2 && val < 100 && actualBuyAmt2 > 0;
+                            const canUp2 = val < 100 && (canFree || canBuy2);
+                            return (
+                              <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
+                                  <span className="text-xs text-[#8b6a3e]">{val}/100</span>
+                                </div>
+                                <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-black/40">
+                                  <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
+                                </div>
+                                <div className="mt-2 flex items-center justify-between">
+                                  <span className="text-xs opacity-70">{def.desc} (+{eff.toFixed(1)}%)</span>
+                                  <button disabled={!canUp2}
+                                    onClick={() => {
+                                      if (!profile?.id) return;
+                                      if (canFree) {
+                                        const next = { ...playerStats, [def.key]: val + actualFreeAmt };
+                                        const nextFsp = freeSkillPoints - actualFreeAmt;
+                                        setFreeSkillPoints(nextFsp); setPlayerStats(next);
+                                        saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
+                                      } else if (canBuy2) {
+                                        const next = { ...playerStats, [def.key]: val + actualBuyAmt2 };
+                                        void (async () => {
+                                          const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost2 }).eq("id", profile.id);
+                                          if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
+                                        })();
+                                      }
+                                    }}
+                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                                      canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50"
+                                      : canBuy2 ? "bg-green-900/40 text-green-200 hover:bg-green-800/60"
+                                      : val < 100 && actualBuyAmt2 > 0 ? "cursor-not-allowed opacity-50 bg-black/20 text-[#8b6a3e]"
+                                      : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"
+                                    }`}>
+                                    {canFree ? `▲ +${actualFreeAmt} Free` : val >= 100 ? "MAX" : `${multiCost2.toLocaleString("pl-PL")} 💰`}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Reset */}
+                        <button className="mt-4 w-full rounded-xl border border-red-400/30 bg-red-950/30 py-2 text-xs font-bold text-red-300 transition hover:bg-red-950/60"
+                          onClick={() => {
+                            if (!profile?.id) return;
+                            const resetCost = 50000;
+                            if (displayMoney < resetCost) { alert("Potrzebujesz 50 000 💰 aby zresetować statystyki."); return; }
+                            if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
+                            void (async () => {
+                              const { error } = await supabase.from("profiles").update({ money: displayMoney - resetCost }).eq("id", profile.id);
+                              if (!error) {
+                                const totalSpent = Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0);
+                                const nextFsp = freeSkillPoints + totalSpent;
+                                setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(nextFsp);
+                                saveAvatarData(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
+                                await loadProfile(profile.id);
+                              }
+                            })();
+                          }}>🔄 Reset statystyk (50 000 💰)</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ════ KOSMETYKA ════ */}
+                  {domTab === "kosmetyka" && (
+                    <div>
+                      <p className="mb-4 text-base font-black text-[#f9e7b2]">🎨 Wygląd postaci</p>
+                      <div className="mb-5">
+                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Mężczyźni</p>
+                        <div className="grid grid-cols-5 gap-3">
+                          {SKINS_MALE.map((sk, i) => (
+                            <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); }}
+                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
+                                avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,50,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
+                              }`}>{sk}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Kobiety</p>
+                        <div className="grid grid-cols-5 gap-3">
+                          {SKINS_FEMALE.map((sk, i) => (
+                            <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); }}
+                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
+                                avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
+                              }`}>{sk}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ════ EKWIPUNEK ════ */}
+                  {domTab === "eq" && (
+                    <div>
+                      <p className="mb-1 text-base font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
+                      <p className="mb-5 text-xs text-[#8b6a3e]">Sloty na narzędzia i przedmioty. Slot 1 jest darmowy. Pozostałe wymagają odblokowania.</p>
+                      <div className="grid grid-cols-7 gap-3">
+                        {Array.from({ length: 7 }).map((_, i) => {
+                          const slotNum = i + 1;
+                          const isUnlocked = slotNum <= equipmentSlots;
+                          const cost = EQ_SLOT_COSTS[i];
+                          const canAfford = displayMoney >= cost;
+                          const item = equipment[i] ?? null;
+                          return (
+                            <div key={i} className="flex flex-col items-center gap-2">
+                              <button
+                                disabled={!isUnlocked}
+                                onClick={() => {
+                                  if (!isUnlocked && slotNum === equipmentSlots + 1 && canAfford && profile?.id) {
+                                    void (async () => {
+                                      const { error } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                                      if (!error) {
+                                        const ns = equipmentSlots + 1;
+                                        setEquipmentSlots(ns);
+                                        saveHouseData(profile.id, ns, equipment);
+                                        await loadProfile(profile.id);
+                                      }
+                                    })();
+                                  }
+                                }}
+                                className={`relative flex h-24 w-full flex-col items-center justify-center rounded-2xl border-2 transition ${
+                                  isUnlocked
+                                    ? item ? "border-yellow-400/60 bg-yellow-900/10" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.6)] hover:bg-[rgba(30,18,10,0.8)]"
+                                    : slotNum === equipmentSlots + 1
+                                      ? canAfford ? "border-green-500/60 bg-green-950/30 hover:bg-green-950/50 cursor-pointer" : "border-[#8b6a3e]/30 bg-black/20 cursor-not-allowed opacity-60"
+                                      : "border-[#8b6a3e]/20 bg-black/10 cursor-not-allowed opacity-40"
+                                }`}
+                              >
+                                {isUnlocked ? (
+                                  item ? (
+                                    <span className="text-3xl">{item}</span>
+                                  ) : (
+                                    <span className="text-2xl opacity-30">＋</span>
+                                  )
+                                ) : (
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="text-xl">🔒</span>
+                                    {slotNum === equipmentSlots + 1 && (
+                                      <span className={`text-[10px] font-bold ${canAfford ? "text-green-300" : "text-[#8b6a3e]"}`}>
+                                        {cost.toLocaleString("pl-PL")} 💰
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </button>
+                              <span className={`text-[10px] font-bold ${isUnlocked ? "text-[#8b6a3e]" : "text-[#8b6a3e]/40"}`}>
+                                Slot {slotNum}{slotNum === 1 ? " (darmowy)" : ""}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-6 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4">
+                        <p className="mb-2 text-xs font-black text-[#f9e7b2]">📦 Itemy gracza</p>
+                        <p className="text-xs text-[#8b6a3e] opacity-70">Przedmioty zostaną dodane wkrótce. Sloty są gotowe.</p>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            </div>
+          )}
+
           {showSkinModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
               <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
