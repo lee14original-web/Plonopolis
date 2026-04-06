@@ -1089,7 +1089,6 @@ export default function Page() {
     if (displayLevel > prev) {
       prevLevelRef.current = displayLevel;
       localStorage.setItem(`plonopolis_prevlv_${profile.id}`, String(displayLevel));
-      void supabase.rpc("game_save_avatar_data", { p_avatar_skin: avatarSkin, p_player_stats: playerStats as Record<string,number>, p_free_skill_points: freeSkillPoints, p_prev_level: displayLevel });
     }
   }, [displayLevel, profile?.id]);
 
