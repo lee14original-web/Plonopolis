@@ -1913,8 +1913,8 @@ export default function Page() {
                                       })();
                                     }
                                   }}
-                                  className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50" : canBuy ? "bg-green-900/40 text-green-200 hover:bg-green-800/60" : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"}`}
-                                >{canFree ? `▲ +${actualFreeAmt} Free` : canBuy ? `▲ +${actualBuyAmt} / ${multiCost.toLocaleString("pl-PL")}💰` : val >= 100 ? "MAX" : "Brak pkt"}</button>
+                                  className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50" : canBuy ? "bg-green-900/40 text-green-200 hover:bg-green-800/60 cursor-pointer" : val < 100 && actualBuyAmt > 0 ? "cursor-not-allowed opacity-50 bg-black/20 text-[#8b6a3e]" : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"}`}
+                                >{canFree ? `▲ +${actualFreeAmt} Free` : val >= 100 ? "MAX" : `${multiCost.toLocaleString("pl-PL")} 💰`}</button>
                               </div>
                             </div>
                           );
