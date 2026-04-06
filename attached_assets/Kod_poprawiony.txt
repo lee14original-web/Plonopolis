@@ -136,12 +136,12 @@ function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, f
 }
 function saveAvatarData(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
   saveAvatarDataLS(userId, skin, stats, fsp, prevLevel);
-  void supabase.from("profiles").update({
-    avatar_skin: skin,
-    player_stats: stats as Record<string, number>,
-    free_skill_points: fsp,
-    prev_level: prevLevel,
-  }).eq("id", userId);
+  void supabase.rpc("game_save_avatar_data", {
+    p_avatar_skin: skin,
+    p_player_stats: stats as Record<string, number>,
+    p_free_skill_points: fsp,
+    p_prev_level: prevLevel,
+  });
 }
 
 const CROPS: Crop[] = [
@@ -1089,7 +1089,7 @@ export default function Page() {
     if (displayLevel > prev) {
       prevLevelRef.current = displayLevel;
       localStorage.setItem(`plonopolis_prevlv_${profile.id}`, String(displayLevel));
-      void supabase.from("profiles").update({ prev_level: displayLevel }).eq("id", profile.id);
+      void supabase.rpc("game_save_avatar_data", { p_avatar_skin: avatarSkin, p_player_stats: playerStats as Record<string,number>, p_free_skill_points: freeSkillPoints, p_prev_level: displayLevel });
     }
   }, [displayLevel, profile?.id]);
 
