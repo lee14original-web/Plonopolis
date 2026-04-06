@@ -1993,7 +1993,7 @@ export default function Page() {
                       <img
                         src={plantedCrop.spritePath}
                         alt={plantedCrop.name}
-                        className={`absolute left-1/2 top-1/2 h-[82%] w-[82%] -translate-x-1/2 -translate-y-1/2 object-contain ${
+                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
                           ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
                         }`}
                         style={{ imageRendering: "pixelated" }}
@@ -2498,7 +2498,7 @@ export default function Page() {
                                     <img
                                       src={crop.spritePath}
                                       alt={crop.name}
-                                      className="h-10 w-10 object-contain"
+                                      className="h-14 w-14 object-contain"
                                       style={{ imageRendering: "pixelated" }}
                                     />
 
