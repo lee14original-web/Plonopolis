@@ -18,6 +18,10 @@ type Profile = {
   unlocked_plots?: number[] | null;
   plot_crops?: Record<string, PlotCropState> | null;
   seed_inventory?: Record<string, number> | null;
+  avatar_skin?: number | null;
+  player_stats?: Record<string, number> | null;
+  free_skill_points?: number | null;
+  prev_level?: number | null;
 };
 
 type Message = {
@@ -129,6 +133,15 @@ function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, f
   localStorage.setItem(`plonopolis_stats_${userId}`, JSON.stringify(stats));
   localStorage.setItem(`plonopolis_fsp_${userId}`, String(fsp));
   localStorage.setItem(`plonopolis_prevlv_${userId}`, String(prevLevel));
+}
+function saveAvatarData(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
+  saveAvatarDataLS(userId, skin, stats, fsp, prevLevel);
+  void supabase.from("profiles").update({
+    avatar_skin: skin,
+    player_stats: stats as Record<string, number>,
+    free_skill_points: fsp,
+    prev_level: prevLevel,
+  }).eq("id", userId);
 }
 
 const CROPS: Crop[] = [
@@ -758,16 +771,21 @@ export default function Page() {
 
     if (source.id) {
       const d = loadAvatarDataLS(source.id);
-      setAvatarSkin(d.skin);
-      setPlayerStats(d.stats);
-      setFreeSkillPoints(d.fsp !== null ? d.fsp : 3);
-      prevLevelRef.current = d.prevLevel || (source.level ?? 1);
-      if (!localStorage.getItem(`plonopolis_fsp_${source.id}`)) {
-        const initFsp = 3;
-        localStorage.setItem(`plonopolis_fsp_${source.id}`, String(initFsp));
-        localStorage.setItem(`plonopolis_prevlv_${source.id}`, String(source.level ?? 1));
-        setFreeSkillPoints(initFsp);
-      }
+      // Prefer Supabase values, fallback to localStorage for older accounts
+      const skin = (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
+        ? source.avatar_skin : d.skin;
+      const stats = (source.player_stats && typeof source.player_stats === "object")
+        ? source.player_stats as PlayerStatsMap : d.stats;
+      const fsp = (source.free_skill_points !== null && source.free_skill_points !== undefined)
+        ? source.free_skill_points : (d.fsp !== null ? d.fsp : 3);
+      const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
+        ? source.prev_level : (d.prevLevel || (source.level ?? 1));
+      setAvatarSkin(skin);
+      setPlayerStats(stats);
+      setFreeSkillPoints(fsp);
+      prevLevelRef.current = prevLevel;
+      // Sync to localStorage cache
+      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
     }
 
     return nextProfile;
@@ -1071,6 +1089,7 @@ export default function Page() {
     if (displayLevel > prev) {
       prevLevelRef.current = displayLevel;
       localStorage.setItem(`plonopolis_prevlv_${profile.id}`, String(displayLevel));
+      void supabase.from("profiles").update({ prev_level: displayLevel }).eq("id", profile.id);
     }
   }, [displayLevel, profile?.id]);
 
@@ -1864,12 +1883,12 @@ export default function Page() {
                                       const nextFsp = freeSkillPoints - actualFreeAmt;
                                       setFreeSkillPoints(nextFsp);
                                       setPlayerStats(next);
-                                      saveAvatarDataLS(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
+                                      saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
                                     } else if (canBuy) {
                                       const next = { ...playerStats, [def.key]: val + actualBuyAmt };
                                       void (async () => {
                                         const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost }).eq("id", profile.id);
-                                        if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarDataLS(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
+                                        if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
                                       })();
                                     }
                                   }}
@@ -1893,7 +1912,7 @@ export default function Page() {
                               const nextFsp = freeSkillPoints + totalSpent;
                               setPlayerStats({ ...DEFAULT_STATS });
                               setFreeSkillPoints(nextFsp);
-                              saveAvatarDataLS(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
+                              saveAvatarData(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
                               await loadProfile(profile.id);
                             }
                           })();
@@ -2550,7 +2569,7 @@ export default function Page() {
                 <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Mężczyźni</p>
                 <div className="mb-4 grid grid-cols-5 gap-2">
                   {SKINS_MALE.map((sk, i) => (
-                    <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarDataLS(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                    <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
                       className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
                       {sk}
                     </button>
@@ -2559,7 +2578,7 @@ export default function Page() {
                 <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Kobiety</p>
                 <div className="grid grid-cols-5 gap-2">
                   {SKINS_FEMALE.map((sk, i) => (
-                    <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarDataLS(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                    <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
                       className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
                       {sk}
                     </button>
