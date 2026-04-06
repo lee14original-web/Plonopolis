@@ -1850,7 +1850,7 @@ export default function Page() {
                 <div className="relative" onMouseEnter={() => { if (avatarHoverTimeout.current) clearTimeout(avatarHoverTimeout.current); setShowAvatarHover(true); }} onMouseLeave={() => { avatarHoverTimeout.current = setTimeout(() => setShowAvatarHover(false), 300); }}>
                   <button
                     onClick={() => setShowSkinModal(true)}
-                    className="flex h-24 w-24 items-center justify-center rounded-3xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-6xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
+                    className="flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-7xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
                     title="Wybierz postać / Profil"
                   >
                     {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
@@ -1860,9 +1860,9 @@ export default function Page() {
                   )}
                   {/* SKILLS HOVER PANEL */}
                   {showAvatarHover && (
-                    <div className="absolute right-0 top-full mt-1 z-[200] w-72 rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                    <div className="absolute right-0 top-full mt-1 z-[200] w-[440px] rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-5 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
                       <div className="mb-3 flex items-center justify-between">
-                        <p className="text-sm font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
+                        <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
                         {freeSkillPoints > 0 && <span className="rounded-lg bg-yellow-500/20 px-2 py-0.5 text-[10px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>}
                       </div>
                       <div className="mb-3 flex items-center gap-1">
@@ -1885,12 +1885,12 @@ export default function Page() {
                           const canBuy = !canFree && displayMoney >= multiCost && val < 100 && actualBuyAmt > 0;
                           const canUp = val < 100 && (canFree || canBuy);
                           return (
-                            <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-2">
+                            <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
                               <div className="flex items-center justify-between">
                                 <span className="font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
                                 <span className="text-[10px] text-[#8b6a3e]">{val}/100</span>
                               </div>
-                              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-black/40">
                                 <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
                               </div>
                               <div className="mt-1 flex items-center justify-between">
