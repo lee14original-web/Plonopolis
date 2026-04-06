@@ -1665,6 +1665,8 @@ export default function Page() {
     }
 
     const previousLevel = displayLevel;
+    const prevXp = displayXp;
+    const prevXpToNext = displayXpToNextLevel;
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
@@ -1698,6 +1700,17 @@ export default function Page() {
       await loadProfile(profile.id);
     }
 
+    // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
+    const rpcProf = harvestRpcProfile as Profile;
+    let actualExp = crop.expReward;
+    if (rpcProf) {
+      if ((rpcProf.level ?? previousLevel) > previousLevel) {
+        actualExp = (prevXpToNext - prevXp) + (rpcProf.xp ?? 0);
+      } else {
+        actualExp = Math.max(0, (rpcProf.xp ?? 0) - prevXp);
+      }
+    }
+
     // Dodaj do logu zbiorów
     setHarvestLog(prev => [
       ...prev.filter(e => Date.now() - e.timestamp < 15000),
@@ -1708,7 +1721,7 @@ export default function Page() {
         baseAmount: crop.yieldAmount,
         bonusAmount: bonusHarvest ? crop.yieldAmount : 0,
         bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
-        baseExp: crop.expReward,
+        baseExp: actualExp,
         timestamp: Date.now(),
       },
     ]);
