@@ -2098,8 +2098,8 @@ export default function Page() {
                         <span
                           style={{
                             position: "absolute",
-                            bottom: "-24px",
-                            left: "50%",
+                            bottom: "-38px",
+                            left: "65%",
                             transform: "translateX(-50%)",
                             background: "linear-gradient(135deg, #1e90ff, #00bfff)",
                             color: "white",
