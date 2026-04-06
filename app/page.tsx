@@ -2098,8 +2098,8 @@ export default function Page() {
                         <span
                           style={{
                             position: "absolute",
-                            bottom: "-24px",
-                            left: "50%",
+                            bottom: "-38px",
+                            left: "65%",
                             transform: "translateX(-50%)",
                             background: "linear-gradient(135deg, #1e90ff, #00bfff)",
                             color: "white",
@@ -2447,7 +2447,7 @@ export default function Page() {
                               setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
                               setSelectedSeedId(null);
                             }}
-                            className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                               selectedTool === "watering_can"
                                 ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
                                 : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
@@ -2456,7 +2456,7 @@ export default function Page() {
                             <img
                               src="/watering_can_transparent.png"
                               alt="Konewka"
-                              className="h-20 w-20 object-contain"
+                              className="h-24 w-24 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
@@ -2472,7 +2472,7 @@ export default function Page() {
                               setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
                               setSelectedSeedId(null);
                             }}
-                            className={`flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                               selectedTool === "sickle"
                                 ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
                                 : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
@@ -2481,7 +2481,7 @@ export default function Page() {
                             <img
                               src="/sierp.png"
                               alt="Zbierz"
-                              className="h-14 w-14 object-contain"
+                              className="h-20 w-20 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
@@ -2498,7 +2498,7 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
-                            <div className="grid grid-cols-5 gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                               {(() => {
                                 const inventoryItems = (Object.entries(seedInventory).filter(
                                   ([, amount]) => Number(amount) > 0
@@ -2514,7 +2514,7 @@ export default function Page() {
                                   return (
                                     <div
                                       key={`empty-slot-${index}`}
-                                      className="h-16 w-16 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                                     />
                                   );
                                 }
@@ -2525,7 +2525,7 @@ export default function Page() {
                                   return (
                                     <div
                                       key={`missing-slot-${index}`}
-                                      className="h-16 w-16 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
+                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
                                     />
                                   );
                                 }
@@ -2541,7 +2541,7 @@ export default function Page() {
                                      onMouseEnter={() => setHoveredCrop(crop)}
                                      onMouseLeave={() => setHoveredCrop(null)}
 
-                                    className={`group relative flex h-16 w-16 items-center justify-center rounded-xl border transition ${
+                                    className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${
                                       selectedSeedId === seedId
                                         ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
                                         : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
