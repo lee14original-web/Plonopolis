@@ -2116,7 +2116,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("farm1")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "2%", top: "38%", width: "12%", height: "26%" }}
+                        style={{ left: "10%", top: "58%", width: "14%", height: "22%" }}
                         title="Na farmę"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
@@ -2128,7 +2128,7 @@ export default function Page() {
                         type="button"
                         onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
+                        style={{ left: "14%", top: "20%", width: "16%", height: "38%" }}
                         title="Sklep"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
@@ -2140,7 +2140,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_market")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "38%", top: "26%", width: "18%", height: "36%" }}
+                        style={{ left: "34%", top: "22%", width: "16%", height: "34%" }}
                         title="Targ"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
@@ -2152,7 +2152,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_bank")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "58%", top: "26%", width: "16%", height: "36%" }}
+                        style={{ left: "60%", top: "24%", width: "14%", height: "34%" }}
                         title="Bank"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
@@ -2164,7 +2164,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_townhall")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "76%", top: "24%", width: "18%", height: "38%" }}
+                        style={{ left: "74%", top: "18%", width: "18%", height: "44%" }}
                         title="Ratusz"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-3 py-2 text-sm font-black text-[#f3e6c8] shadow-2xl">
