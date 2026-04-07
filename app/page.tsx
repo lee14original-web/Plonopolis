@@ -1926,6 +1926,16 @@ export default function Page() {
                 </button>
               </div>
 
+              {/* ═══ TESTY GRY BUTTON ═══ */}
+              <div className="fixed left-4 top-4 z-[92]">
+                <button onClick={() => setShowTestModal(true)}
+                  className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-4 py-2 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
+                  <span className="animate-pulse text-xl">🧪</span>
+                  <span className="text-sm">Testy</span>
+                  <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
+                </button>
+              </div>
+
               <div className="fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4">
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
@@ -2063,8 +2073,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "14%",
-                        top: "53%",
+                        left: "16%",
+                        top: "55%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
@@ -2341,14 +2351,9 @@ export default function Page() {
               </div>
             ) : (
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
-                <div className="absolute left-56 top-16 z-20">
-                  <button onClick={() => setShowTestModal(true)}
-                    className="flex items-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] px-4 py-2 text-sm font-black text-[#d8ba7a] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60">
-                    🧪 Testy gry
-                  </button>
-                </div>
 
-                <div className="fixed left-4 top-4 z-[95]">
+
+                <div className="fixed left-4 z-[95]" style={{ top: "132px" }}>
                   <div className="flex items-start">
                     <button
                       type="button"
@@ -2445,7 +2450,7 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                               {(() => {
                                 const inventoryItems = (Object.entries(seedInventory).filter(
                                   ([, amount]) => Number(amount) > 0
