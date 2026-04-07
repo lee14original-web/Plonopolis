@@ -2116,7 +2116,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("farm1")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "15%", top: "58%", width: "14%", height: "22%" }}
+                        style={{ left: "14%", top: "60%", width: "14%", height: "22%" }}
                         title="Na farmę"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
@@ -2152,7 +2152,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_bank")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "77%", top: "26%", width: "14%", height: "36%" }}
+                        style={{ left: "79%", top: "25%", width: "14%", height: "36%" }}
                         title="Bank"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
@@ -2164,7 +2164,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_townhall")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "53%", top: "16%", width: "22%", height: "46%" }}
+                        style={{ left: "57%", top: "11%", width: "22%", height: "46%" }}
                         title="Ratusz"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
