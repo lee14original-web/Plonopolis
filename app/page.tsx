@@ -1915,7 +1915,7 @@ export default function Page() {
               </div>
 
               {/* ═══ DOM BUTTON ═══ */}
-              <div className="fixed left-4 z-[91]" style={{ top: "72px" }}>
+              <div className="fixed left-4 top-4 z-[91]">
                 <button
                   onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                   className="flex items-center gap-2 rounded-2xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] px-4 py-3 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
