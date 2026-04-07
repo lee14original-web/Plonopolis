@@ -1927,7 +1927,7 @@ export default function Page() {
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}
-              <div className="fixed left-4 top-4 z-[92]">
+              <div className="fixed right-4 z-[92]" style={{ top: "68px" }}>
                 <button onClick={() => setShowTestModal(true)}
                   className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-4 py-2 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
                   <span className="animate-pulse text-xl">🧪</span>
@@ -2073,8 +2073,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "16%",
-                        top: "55%",
+                        left: "15%",
+                        top: "56.5%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
