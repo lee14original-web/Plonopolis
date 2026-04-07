@@ -2073,8 +2073,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "14%",
-                        top: "53%",
+                        left: "16%",
+                        top: "55%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
