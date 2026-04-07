@@ -722,12 +722,23 @@ export default function Page() {
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
+  const [showTestModal, setShowTestModal] = React.useState(false);
+  const [showShopModal, setShowShopModal] = React.useState(false);
+  const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
+  const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [domTab, setDomTab] = React.useState<"profil"|"kosmetyka"|"eq">("profil");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
   const lastLoadedUserIdRef = React.useRef<string | null>(null);
   const EQ_SLOT_COSTS = [0, 5000, 15000, 30000, 60000, 100000, 200000]; // slot 1 free, 2-7 paid
+  const CROP_PRICES: Record<string,number> = {
+    carrot:3.2,potato:4.8,tomato:6.4,cucumber:9.6,onion:14.4,garlic:19.2,
+    lettuce:25.6,radish:35.2,beet:48.0,pepper:64.0,cabbage:88.0,broccoli:120.0,
+    cauliflower:160.0,strawberry:208.0,raspberry:272.0,blueberry:352.0,
+    eggplant:448.0,zucchini:576.0,watermelon:720.0,grape:880.0,pumpkin:1040.0,
+    rapeseed:1200.0,sunflower:1440.0,chili:1760.0,asparagus:2240.0,
+  };
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const harvestEventIdRef = React.useRef(0);
@@ -1578,7 +1589,40 @@ export default function Page() {
     });
   }
 
-  async function handleSaveProgress(amount: number) {
+  async function handleAddGold(amount: number) {
+    if (!profile?.id) return;
+    await supabase.from("profiles").update({ money: (profile.money ?? 0) + amount }).eq("id", profile.id);
+    await loadProfile(profile.id);
+  }
+
+  async function handleAddSeeds(amount: number) {
+    if (!profile?.id) return;
+    const allCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
+    const newInv: Record<string,number> = { ...seedInventory };
+    for (const id of allCropIds) newInv[id] = (newInv[id] ?? 0) + amount;
+    const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
+    if (!error) await loadProfile(profile.id);
+  }
+
+  async function handleResetAccount() {
+    if (!profile?.id) return;
+    if (!confirm("UWAGA: Zresetuje CAŁE konto do stanu startowego. Kontynuować?")) return;
+    const { error } = await supabase.from("profiles").update({
+      level: 1, xp: 0, money: 100, location: "farm1", current_map: "farm1",
+      unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
+      avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
+      equipment_slots: 1, equipment: [],
+    }).eq("id", profile.id);
+    if (!error) {
+      lastLoadedUserIdRef.current = null;
+      setEquipmentSlots(1); setEquipment([]);
+      setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
+      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      await loadProfile(profile.id);
+    }
+  }
+
+    async function handleSaveProgress(amount: number) {
     if (!profile) return;
 
     const oldLevel = displayLevel;
@@ -1882,106 +1926,6 @@ export default function Page() {
                 </button>
               </div>
 
-              {/* ═══ AVATAR ═══ */}
-              <div className="fixed right-4 z-[91]" style={{ top: "72px" }}>
-                <div className="relative" onMouseEnter={() => { if (avatarHoverTimeout.current) clearTimeout(avatarHoverTimeout.current); setShowAvatarHover(true); }} onMouseLeave={() => { avatarHoverTimeout.current = setTimeout(() => setShowAvatarHover(false), 300); }}>
-                  <button
-                    onClick={() => setShowSkinModal(true)}
-                    className="flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-7xl shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
-                    title="Wybierz postać / Profil"
-                  >
-                    {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
-                  </button>
-                  {freeSkillPoints > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-yellow-300 bg-yellow-500 text-[10px] font-black text-black">{freeSkillPoints}</span>
-                  )}
-                  {/* SKILLS HOVER PANEL */}
-                  {showAvatarHover && (
-                    <div className="absolute right-0 top-full mt-1 z-[200] w-[440px] rounded-[20px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] p-5 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
-                      <div className="mb-3 flex items-center justify-between">
-                        <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
-                        {freeSkillPoints > 0 && <span className="rounded-lg bg-yellow-500/20 px-2 py-0.5 text-[10px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>}
-                      </div>
-                      <div className="mb-3 flex items-center gap-1">
-                        <span className="text-[10px] text-[#8b6a3e]">Dodaj:</span>
-                        {([1,5,10] as const).map(n => (
-                          <button key={n} onClick={() => setStatUpgradeAmount(n)}
-                            className={`rounded-lg px-2 py-0.5 text-[10px] font-bold border transition ${statUpgradeAmount === n ? "border-yellow-400 bg-yellow-500/30 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-yellow-600/60 hover:text-yellow-400"}`}>
-                            +{n}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mb-3 space-y-2">
-                        {STATS_DEFS.map(def => {
-                          const val = playerStats[def.key];
-                          const eff = calcStatEffect(val, def.rate);
-                          const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
-                          const canFree = actualFreeAmt > 0;
-                          let multiCost = 0; let actualBuyAmt = 0;
-                          for (let _i = 0; _i < statUpgradeAmount; _i++) { if (val + _i >= 100) break; multiCost += getStatUpgradeCost(val + _i + 1); actualBuyAmt++; }
-                          const canBuy = !canFree && displayMoney >= multiCost && val < 100 && actualBuyAmt > 0;
-                          const canUp = val < 100 && (canFree || canBuy);
-                          return (
-                            <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
-                                <span className="text-[10px] text-[#8b6a3e]">{val}/100</span>
-                              </div>
-                              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-black/40">
-                                <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
-                              </div>
-                              <div className="mt-1 flex items-center justify-between">
-                                <span className="opacity-70">{def.desc} (+{eff.toFixed(1)}%)</span>
-                                <button
-                                  disabled={!canUp}
-                                  onClick={() => {
-                                    if (!profile?.id) return;
-                                    if (canFree) {
-                                      const next = { ...playerStats, [def.key]: val + actualFreeAmt };
-                                      const nextFsp = freeSkillPoints - actualFreeAmt;
-                                      setFreeSkillPoints(nextFsp);
-                                      setPlayerStats(next);
-                                      saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
-                                    } else if (canBuy) {
-                                      const next = { ...playerStats, [def.key]: val + actualBuyAmt };
-                                      void (async () => {
-                                        const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost }).eq("id", profile.id);
-                                        if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
-                                      })();
-                                    }
-                                  }}
-                                  className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50" : canBuy ? "bg-green-900/40 text-green-200 hover:bg-green-800/60 cursor-pointer" : val < 100 && actualBuyAmt > 0 ? "cursor-not-allowed opacity-50 bg-black/20 text-[#8b6a3e]" : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"}`}
-                                >{canFree ? `▲ +${actualFreeAmt} Free` : val >= 100 ? "MAX" : `${multiCost.toLocaleString("pl-PL")} 💰`}</button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (!profile?.id) return;
-                          const resetCost = 50000;
-                          if (displayMoney < resetCost) { alert("Potrzebujesz 50 000 💰 aby zresetować statystyki."); return; }
-                          if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
-                          void (async () => {
-                            const { error } = await supabase.from("profiles").update({ money: displayMoney - resetCost }).eq("id", profile.id);
-                            if (!error) {
-                              const totalSpent = Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0);
-                              const nextFsp = freeSkillPoints + totalSpent;
-                              setPlayerStats({ ...DEFAULT_STATS });
-                              setFreeSkillPoints(nextFsp);
-                              saveAvatarData(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
-                              await loadProfile(profile.id);
-                            }
-                          })();
-                        }}
-                        className="mt-1 w-full rounded-xl border border-red-800/40 bg-red-950/30 py-1.5 text-[10px] font-bold text-red-300 transition hover:bg-red-900/50"
-                      >🔄 Reset statystyk (50 000 💰)</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <div className="fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4">
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
@@ -2119,8 +2063,8 @@ export default function Page() {
                       title="Do miasta"
                       className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                       style={{
-                        left: "4%",
-                        top: "49%",
+                        left: "14%",
+                        top: "53%",
                         width: "12%",
                         height: "16%",
                         zIndex: 20,
@@ -2172,7 +2116,7 @@ export default function Page() {
 
                       <button
                         type="button"
-                        onClick={() => handleChangeMap("city_shop")}
+                        onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left: "18%", top: "26%", width: "18%", height: "36%" }}
                         title="Sklep"
@@ -2398,44 +2342,13 @@ export default function Page() {
             ) : (
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
                 <div className="absolute left-56 top-16 z-20">
-                  <div className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">TESTY GRY</p>
-                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">{profile.login}</h2>
-                    <p className="mt-2 text-sm text-[#dfcfab]">Mapa: {currentMap}</p>
-                    <p className="mt-1 text-sm text-[#dfcfab]">Lokacja: {displayLocation}</p>
-                    <p className="mt-1 text-sm text-[#dfcfab]">
-                      Pola: {unlockedPlotsCount} / {MAX_FIELDS}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleSaveProgress(50)}
-                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-xs font-black text-[#2f1b0c] shadow-lg"
-                      >
-                        EXP/Gold +50
-                      </button>
-                      <button
-                        onClick={() => handleSaveProgress(250)}
-                        className="rounded-xl border border-[#e8973a] bg-[linear-gradient(180deg,#f0a040,#c06010)] px-3 py-2 text-xs font-black text-[#1a0a00] shadow-lg"
-                      >
-                        EXP/Gold +250
-                      </button>
-                      <button
-                        onClick={() => handleSaveProgress(2500)}
-                        className="rounded-xl border border-[#e84040] bg-[linear-gradient(180deg,#e85050,#a01010)] px-3 py-2 text-xs font-black text-white shadow-lg"
-                      >
-                        EXP/Gold +2500
-                      </button>
-                    </div>
-                  </div>
+                  <button onClick={() => setShowTestModal(true)}
+                    className="flex items-center gap-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] px-4 py-2 text-sm font-black text-[#d8ba7a] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60">
+                    🧪 Testy gry
+                  </button>
                 </div>
 
-                <div
-                  className="fixed left-4 top-4 z-[95]"
-                  style={{
-                    transform: `translate(${backpackPosition.x}px, ${backpackPosition.y}px)`,
-                  }}
-                >
+                <div className="fixed left-4 top-4 z-[95]">
                   <div className="flex items-start">
                     <button
                       type="button"
@@ -2458,10 +2371,7 @@ export default function Page() {
                         }`}
                       >
                         <div
-                          className={`mb-3 flex items-center justify-between ${
-                            isDraggingBackpack ? "cursor-grabbing" : "cursor-grab"
-                          }`}
-                          onPointerDown={startBackpackDrag}
+                          className="mb-3 flex items-center justify-between"
                         >
                           <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Plecak</p>
 
@@ -2619,6 +2529,154 @@ export default function Page() {
           </div>
 
           {/* ═══ MODAL WYBORU SKINA ═══ */}
+          {/* ═══ TEST MODAL ═══ */}
+          {showTestModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="relative w-full max-w-[600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-6 shadow-2xl text-[#dfcfab]">
+                <button onClick={() => setShowTestModal(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
+                <p className="mb-1 text-xs uppercase tracking-widest text-[#d8ba7a]">Panel deweloperski</p>
+                <h2 className="mb-5 text-2xl font-black text-[#f9e7b2]">🧪 Testy gry</h2>
+                <p className="mb-1 text-xs text-[#8b6a3e]">Mapa: {currentMap} | Lokacja: {displayLocation} | Pola: {unlockedPlotsCount}/{MAX_FIELDS}</p>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">➕ Dodaj EXP</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[100,1000,10000,100000].map(amt => (
+                        <button key={amt} onClick={() => handleSaveProgress(amt)}
+                          className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-xs font-black text-[#2f1b0c]">
+                          +{amt.toLocaleString("pl-PL")} EXP
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">💰 Dodaj Gold</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[1000,10000,100000,9999999999].map(amt => (
+                        <button key={amt} onClick={() => handleAddGold(amt)}
+                          className="rounded-xl border border-yellow-500/60 bg-yellow-900/30 px-3 py-2 text-xs font-black text-yellow-200 hover:bg-yellow-900/50">
+                          +{amt >= 1000000 ? amt.toLocaleString("pl-PL") : amt.toLocaleString("pl-PL")} 💰
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">🌱 Dodaj nasiona (każdy rodzaj)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[1,10,100].map(amt => (
+                        <button key={amt} onClick={() => handleAddSeeds(amt)}
+                          className="rounded-xl border border-green-500/60 bg-green-900/30 px-3 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
+                          +{amt} każdy
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-[#8b6a3e]/30">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">⚠️ Niebezpieczne</p>
+                    <button onClick={handleResetAccount}
+                      className="rounded-xl border border-red-500/60 bg-red-950/40 px-4 py-2 text-xs font-black text-red-300 hover:bg-red-950/70">
+                      🗑️ Zresetuj całe konto
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ SHOP MODAL ═══ */}
+          {showShopModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="relative flex h-[90vh] w-full max-w-[900px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+                <button onClick={() => { setShowShopModal(false); setShopCart({}); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
+                {/* Sidebar */}
+                <div className="flex w-40 shrink-0 flex-col gap-2 border-r border-[#8b6a3e]/30 bg-black/20 p-5 pt-14">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
+                  {(["nasiona","zwierzeta","drzewa"] as const).map(tab => (
+                    <button key={tab} onClick={() => setShopTab(tab)}
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                        shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
+                      }`}>
+                      {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : "🌳"}
+                      {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}
+                    </button>
+                  ))}
+                </div>
+                {/* Content */}
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-5 text-[#dfcfab]">
+                    {shopTab === "nasiona" && (
+                      <div>
+                        <p className="mb-4 text-base font-black text-[#f9e7b2]">🌱 Nasiona do kupienia</p>
+                        <div className="space-y-2">
+                          {CROPS.filter(c => c.id !== "test_nasiono" && displayLevel >= c.unlockLevel).map(crop => {
+                            const price = CROP_PRICES[crop.id] ?? 0;
+                            const qty = shopCart[crop.id] ?? 0;
+                            return (
+                              <div key={crop.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-4 py-2">
+                                <img src={crop.spritePath} alt={crop.name} className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
+                                <div className="flex-1">
+                                  <p className="font-bold text-[#f9e7b2]">{crop.name}</p>
+                                  <p className="text-xs text-[#8b6a3e]">{price.toFixed(2)} 💰 / szt.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">−</button>
+                                  <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="w-16 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-2 py-1 text-center text-sm text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
+                                  <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">+</button>
+                                </div>
+                                <p className="w-24 text-right text-sm font-bold text-yellow-200">{(price * qty).toFixed(2)} 💰</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {(shopTab === "zwierzeta" || shopTab === "drzewa") && (
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-4xl mb-4">{shopTab === "zwierzeta" ? "🐄" : "🌳"}</p>
+                          <p className="text-base font-black text-[#f9e7b2]">{shopTab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}</p>
+                          <p className="mt-2 text-sm text-[#8b6a3e]">Dostępne wkrótce w kolejnej aktualizacji.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Summary bar */}
+                  {shopTab === "nasiona" && (() => {
+                    const total = Object.entries(shopCart).reduce((s,[id,qty]) => s + (CROP_PRICES[id]??0)*(qty as number), 0);
+                    const totalItems = Object.values(shopCart).reduce((s:number,v) => s+(v as number), 0);
+                    const canAfford = displayMoney >= total;
+                    return (
+                      <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-[#8b6a3e]">Podsumowanie zamówienia:</p>
+                            <p className="text-lg font-black text-[#f9e7b2]">{total.toFixed(2)} 💰 <span className="text-xs font-normal text-[#8b6a3e]">({totalItems} szt.)</span></p>
+                            {!canAfford && total > 0 && <p className="text-xs text-red-400">Niewystarczające środki!</p>}
+                          </div>
+                          <button
+                            disabled={total === 0 || !canAfford}
+                            onClick={() => {
+                              if (!profile?.id || total === 0 || !canAfford) return;
+                              void (async () => {
+                                const newInv: Record<string,number> = {...seedInventory};
+                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
+                                const { error } = await supabase.from("profiles").update({ money: displayMoney - total, seed_inventory: newInv }).eq("id", profile.id);
+                                if (!error) { setShopCart({}); await loadProfile(profile.id); }
+                              })();
+                            }}
+                            className={`rounded-2xl px-6 py-3 font-black transition ${
+                              total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"
+                            }`}
+                          >✅ Zatwierdź zakup</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ═══ DOM MODAL ═══ */}
           {showDomModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
