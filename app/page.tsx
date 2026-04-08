@@ -3,6 +3,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type RankingPlayer = {
+  player_name: string;
+  guild_name: string;
+  level: number;
+  money: number;
+  missions_completed: number;
+};
+
 type Profile = {
   id: string;
   login: string;
@@ -714,6 +722,12 @@ export default function Page() {
 
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [isMapLoading, setIsMapLoading] = useState(false);
+  const [showRankingPanel, setShowRankingPanel] = useState(false);
+  const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingSort, setRankingSort] = useState<"level"|"money"|"missions"|"name">("level");
+  const [showGildiaPanel, setShowGildiaPanel] = useState(false);
+  const [showMisjePanel, setShowMisjePanel] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -1861,7 +1875,14 @@ export default function Page() {
       setPlotToBuy(null);
     }
 
-  if (!isDesktop) {
+  async function loadRanking() {
+    setRankingLoading(true);
+    const { data: rows, error } = await supabase.rpc("get_player_ranking");
+    if (!error && rows) setRankingData(rows as RankingPlayer[]);
+    setRankingLoading(false);
+  }
+
+    if (!isDesktop) {
     return (
       <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
         <div className="max-w-md rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-8 shadow-2xl">
@@ -1910,11 +1931,11 @@ export default function Page() {
           draggable={false}
         />
         {isMapLoading && (
-          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-end pb-10">
-            <div className="w-64 overflow-hidden rounded-full border border-[#8b6a3e]/60 bg-black/60 backdrop-blur-sm">
-              <div className="h-2 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
+          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-5">
+            <div className="w-[640px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
+              <div className="h-5 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
             </div>
-            <p className="mt-2 text-xs font-bold text-[#d8ba7a] drop-shadow">Ładowanie mapy...</p>
+            <p className="text-3xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
           </div>
         )}
 
@@ -2160,24 +2181,66 @@ export default function Page() {
                     </>
                   )}
 
-                  {currentMap !== "city" && currentMap.startsWith("city_") && (
-                    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
-                      <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
-                        <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
-                        <p className="mt-4 text-base leading-7 text-[#dfcfab]">
-                          Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => handleChangeMap("city")}
-                          className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                        >
-                          Wróć do miasta
-                        </button>
+                  {/* ═══ RATUSZ ═══ */}
+                    {currentMap === "city_townhall" && (
+                      <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-between px-8 py-6">
+                        <div className="flex w-full justify-start">
+                          <button
+                            type="button"
+                            onClick={() => handleChangeMap("city")}
+                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60"
+                          >
+                            ← Wróć do miasta
+                          </button>
+                        </div>
+                        <div className="flex w-full max-w-2xl items-end justify-between gap-4 pb-4">
+                          <button
+                            type="button"
+                            onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">🏆</span>
+                            <span className="text-lg">Ranking</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowGildiaPanel(true)}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">⚔️</span>
+                            <span className="text-lg">Gildia</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowMisjePanel(true)}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">📜</span>
+                            <span className="text-lg">Misje</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
+                    {currentMap !== "city" && currentMap !== "city_townhall" && currentMap.startsWith("city_") && (
+                      <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
+                        <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
+                          <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
+                          <p className="mt-4 text-base leading-7 text-[#dfcfab]">
+                            Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleChangeMap("city")}
+                            className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          >
+                            Wróć do miasta
+                          </button>
+                        </div>
+                      </div>
+                    )}
                 </div>
           )}
           <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
@@ -2348,7 +2411,7 @@ export default function Page() {
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-56 w-56 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
 
                     <div
@@ -2521,7 +2584,101 @@ export default function Page() {
 
           {/* ═══ MODAL WYBORU SKINA ═══ */}
           {/* ═══ TEST MODAL ═══ */}
-          {showTestModal && (
+          {/* ═══ MODAL RANKINGU ═══ */}
+            {showRankingPanel && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+
+                  {/* Header */}
+                  <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🏆</span>
+                      <div>
+                        <h2 className="text-2xl font-black text-[#f9e7b2]">Ranking graczy</h2>
+                        <p className="text-xs text-[#8b6a3e]">Wszyscy gracze Plonopolis</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setShowRankingPanel(false)}
+                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
+                      ✕ Zamknij
+                    </button>
+                  </div>
+
+                  {/* Sort tabs */}
+                  <div className="flex shrink-0 gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
+                    <button onClick={() => setRankingSort("level")}
+                      className={rankingSort==="level" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Poziom
+                    </button>
+                    <button onClick={() => setRankingSort("money")}
+                      className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Pieniądze
+                    </button>
+                    <button onClick={() => setRankingSort("missions")}
+                      className={rankingSort==="missions" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Misje
+                    </button>
+                    <button onClick={() => setRankingSort("name")}
+                      className={rankingSort==="name" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Nazwa
+                    </button>
+                  </div>
+
+                  {/* Table */}
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                    {rankingLoading ? (
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-center">
+                          <div className="mb-3 text-4xl animate-spin">⚙️</div>
+                          <p className="text-[#8b6a3e]">Ładowanie rankingu...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="border-b border-[#8b6a3e]/40 text-left text-xs uppercase tracking-widest text-[#8b6a3e]">
+                            <th className="py-3 pr-4 w-10">#</th>
+                            <th className="py-3 pr-4">Gracz</th>
+                            <th className="py-3 pr-4">Gildia</th>
+                            <th className="py-3 pr-4 text-right">Poziom</th>
+                            <th className="py-3 pr-4 text-right">Pieniądze</th>
+                            <th className="py-3 text-right">Misje</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[...rankingData].sort((a,b) => {
+                            if (rankingSort==="level") return b.level-a.level||b.money-a.money;
+                            if (rankingSort==="money") return b.money-a.money;
+                            if (rankingSort==="missions") return b.missions_completed-a.missions_completed;
+                            return a.player_name.localeCompare(b.player_name,"pl");
+                          }).map((p,i) => (
+                            <tr key={i} className="border-b border-[#8b6a3e]/20 transition hover:bg-white/5">
+                              <td className="py-3 pr-4 font-black text-[#d8ba7a]">
+                                {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
+                              </td>
+                              <td className="py-3 pr-4 font-bold text-[#f3e6c8]">{p.player_name}</td>
+                              <td className="py-3 pr-4 italic text-[#8b6a3e]">{p.guild_name}</td>
+                              <td className="py-3 pr-4 text-right font-black text-[#f2ca69]">⭐ {p.level}</td>
+                              <td className="py-3 pr-4 text-right text-[#a8e890]">
+                                {new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(p.money)}
+                              </td>
+                              <td className="py-3 text-right text-[#f3e6c8]">{p.missions_completed}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 border-t border-[#8b6a3e]/30 px-6 py-3 text-center text-xs text-[#8b6a3e]">
+                    Łącznie graczy: {rankingData.length}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+                      {showTestModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
               <div className="relative w-full max-w-[600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-6 shadow-2xl text-[#dfcfab]">
                 <button onClick={() => setShowTestModal(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
