@@ -3093,38 +3093,29 @@ export default function Page() {
           )}
 
           {isFieldViewOpen && isOnFarmMap && (
-            <div className={isFieldViewCollapsed ? "fixed bottom-4 left-1/2 z-[80] -translate-x-1/2" : "fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2"}>
-              <div className={isFieldViewCollapsed ? "flex items-center gap-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.97)] px-5 py-3 shadow-2xl" : "relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm"}>
-                {/* Przycisk zwijania */}
+            <div className="fixed inset-0 z-[80] flex items-center justify-center px-2 py-2">
+                <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(20,12,6,0.82)] p-5 shadow-2xl backdrop-blur-[2px]">
                   <button
-                    onClick={() => setIsFieldViewCollapsed(v=>!v)}
-                    className={isFieldViewCollapsed ? "flex items-center gap-2 text-sm font-black text-[#f9e7b2]" : "absolute right-16 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.9)] text-xl font-bold text-[#f3e6c8] transition hover:bg-[rgba(60,38,18,0.98)]"}
-                    title={isFieldViewCollapsed ? "Rozwiń" : "Zwiń"}
+                    onClick={() => {
+                      setIsFieldViewOpen(false);
+                      setSelectedPlotId(null);
+                      setIsFieldViewCollapsed(false);
+                    }}
+                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                    aria-label="Zamknij widok pola"
                   >
-                    {isFieldViewCollapsed ? "🌾 Pola uprawne ▲" : "—"}
+                    ×
                   </button>
-                  {!isFieldViewCollapsed && <button
-                  onClick={() => {
-                    setIsFieldViewOpen(false);
-                    setSelectedPlotId(null);
-                    setIsFieldViewCollapsed(false);
-                  }}
-                  className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
-                  aria-label="Zamknij widok pola"
-                >
-                  ×
-                </button>}
 
-                {!isFieldViewCollapsed && <div className="mb-4 pr-14">
-                  <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                  <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
-                  <p className="mt-2 text-sm text-[#dfcfab]">
-                    Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
-                  </p>
-                </div>}
+                  <div className="mb-4 pr-14">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
+                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
+                    <p className="mt-2 text-sm text-[#dfcfab]">
+                      Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                    </p>
+                  </div>
 
-                {!isFieldViewCollapsed && (
-                <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
                       src="/farm-field-view.png"
@@ -3368,7 +3359,6 @@ export default function Page() {
                     )}
                   </div>
                 </div>
-                )}
               </div>
             </div>
           )}
