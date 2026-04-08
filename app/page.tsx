@@ -722,6 +722,9 @@ export default function Page() {
 
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [isMapLoading, setIsMapLoading] = useState(false);
+  const [mousePos, setMousePos] = React.useState({x:0, y:0});
+  const [draggedSeedId, setDraggedSeedId] = React.useState<string|null>(null);
+  const [isFieldViewCollapsed, setIsFieldViewCollapsed] = React.useState(false);
   const [showRankingPanel, setShowRankingPanel] = useState(false);
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
@@ -1915,7 +1918,7 @@ export default function Page() {
   }
 
   return (
-    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black">
+    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black" onMouseMove={(e)=>setMousePos({x:e.clientX,y:e.clientY})}>
       <div
         className="relative overflow-hidden"
         style={{
@@ -2427,11 +2430,11 @@ export default function Page() {
 
                     <div
                       className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
-                        isBackpackOpen ? "max-w-[480px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
+                        isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
                       <div
-                        className={`max-h-[80vh] w-[480px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                        className={`max-h-[80vh] w-[440px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
                           isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
                         }`}
                       >
@@ -2545,6 +2548,9 @@ export default function Page() {
                                 return (
                                   <button
                                     key={seedId}
+                                    draggable
+                                    onDragStart={() => { setDraggedSeedId(seedId); setSelectedSeedId(seedId); setSelectedTool(null); }}
+                                    onDragEnd={() => setDraggedSeedId(null)}
                                     type="button"
                                     onClick={() => {
                                       setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
@@ -2578,11 +2584,7 @@ export default function Page() {
                         </div>
                       </div>
                     </div>
-                    {/* Panel info uprawy po prawej plecaka */}
-                    {isBackpackOpen && hoveredCrop && (
-                      <div className="ml-3 w-52 shrink-0 self-start rounded-[20px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-3 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
-                        <p className="mb-2 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
-                        <p>⏱ {(() => { const m = Math.round(hoveredCrop.growthTimeMs / 60_000); const h = Math.floor(m / 60); const r = m % 60; return h > 0 ? (r > 0 ? `${h}h ${r} min` : `${h}h`) : `${m} min`; })()}</p>
+                    </p>
                         <p className="mt-1">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
                         <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
                       </div>
@@ -3096,9 +3098,17 @@ export default function Page() {
           )}
 
           {isFieldViewOpen && isOnFarmMap && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2">
-              <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm">
-                <button
+            <div className={isFieldViewCollapsed ? "fixed bottom-4 left-1/2 z-[80] -translate-x-1/2" : "fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-2 py-2"}>
+              <div className={isFieldViewCollapsed ? "flex items-center gap-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.97)] px-5 py-3 shadow-2xl" : "relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.96)] p-5 shadow-2xl backdrop-blur-sm"}>
+                {/* Przycisk zwijania */}
+                  <button
+                    onClick={() => setIsFieldViewCollapsed(v=>!v)}
+                    className={isFieldViewCollapsed ? "flex items-center gap-2 text-sm font-black text-[#f9e7b2]" : "absolute right-16 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.9)] text-xl font-bold text-[#f3e6c8] transition hover:bg-[rgba(60,38,18,0.98)]"}
+                    title={isFieldViewCollapsed ? "Rozwiń" : "Zwiń"}
+                  >
+                    {isFieldViewCollapsed ? "🌾 Pola uprawne ▲" : "—"}
+                  </button>
+                  {!isFieldViewCollapsed && <button
                   onClick={() => {
                     setIsFieldViewOpen(false);
                     setSelectedPlotId(null);
@@ -3107,9 +3117,9 @@ export default function Page() {
                   aria-label="Zamknij widok pola"
                 >
                   ×
-                </button>
+                </button>}
 
-                <div className="mb-4 pr-14">
+                {!isFieldViewCollapsed && <div className="mb-4 pr-14">
                   <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                   <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                   <p className="mt-2 text-sm text-[#dfcfab]">
@@ -3117,6 +3127,7 @@ export default function Page() {
                   </p>
                 </div>
 
+                {!isFieldViewCollapsed && (
                 <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
@@ -3136,6 +3147,8 @@ export default function Page() {
                           <button
                             key={plotId}
                             type="button"
+                            onDragOver={(e)=>e.preventDefault()}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ setSelectedSeedId(draggedSeedId); handlePlantFromSelectedSeed(plotId); setDraggedSeedId(null); }}}
                             onClick={() => {
                               setSelectedPlotId(plotId);
 
@@ -3359,6 +3372,7 @@ export default function Page() {
                     )}
                   </div>
                 </div>
+                )}
               </div>
             </div>
           )}
@@ -3456,6 +3470,18 @@ export default function Page() {
           )}
         </div>
       </div>
-    </main>
+    {/* Tooltip uprawy podążający za kursorem */}
+      {hoveredCrop && (
+        <div
+          className="pointer-events-none fixed z-[999] w-52 rounded-[18px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] p-3 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
+          <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
+          <p className="mt-1">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
+          <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
+        </div>
+      )}
+      </main>
   );
 }
