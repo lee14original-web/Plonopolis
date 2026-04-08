@@ -2183,46 +2183,54 @@ export default function Page() {
 
                   {/* ═══ RATUSZ ═══ */}
                     {currentMap === "city_townhall" && (
-                      <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-between px-8 py-6">
-                        <div className="flex w-full justify-start">
+                        <div className="pointer-events-auto absolute inset-0">
+
+                          {/* Wróć do miasta */}
                           <button
                             type="button"
                             onClick={() => handleChangeMap("city")}
-                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60"
+                            className="absolute left-4 top-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60"
                           >
                             ← Wróć do miasta
                           </button>
-                        </div>
-                        <div className="flex w-full max-w-2xl items-end justify-between gap-4 pb-4">
+
+                          {/* Ranking */}
                           <button
                             type="button"
                             onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
-                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            style={{ left: "26%", top: "80%", width: "14%" }}
                           >
-                            <span className="text-4xl">🏆</span>
-                            <span className="text-lg">Ranking</span>
+                            <span className="text-3xl">🏆</span>
+                            <span className="text-base">Ranking</span>
                           </button>
+
+                          {/* Gildia */}
                           <button
                             type="button"
                             onClick={() => setShowGildiaPanel(true)}
-                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            style={{ left: "43%", top: "80%", width: "14%" }}
                           >
-                            <span className="text-4xl">⚔️</span>
-                            <span className="text-lg">Gildia</span>
+                            <span className="text-3xl">⚔️</span>
+                            <span className="text-base">Gildia</span>
                           </button>
+
+                          {/* Misje */}
                           <button
                             type="button"
                             onClick={() => setShowMisjePanel(true)}
-                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                            style={{ left: "60%", top: "80%", width: "14%" }}
                           >
-                            <span className="text-4xl">📜</span>
-                            <span className="text-lg">Misje</span>
+                            <span className="text-3xl">📜</span>
+                            <span className="text-base">Misje</span>
                           </button>
-                        </div>
-                      </div>
-                    )}
 
-                    {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
+                        </div>
+                      )}
+
+                                          {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
                     {currentMap !== "city" && currentMap !== "city_townhall" && currentMap.startsWith("city_") && (
                       <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
                         <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
