@@ -2584,11 +2584,6 @@ export default function Page() {
                         </div>
                       </div>
                     </div>
-                    </p>
-                        <p className="mt-1">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
-                        <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
