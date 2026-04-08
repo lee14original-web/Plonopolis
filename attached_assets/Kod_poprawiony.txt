@@ -2371,7 +2371,7 @@ export default function Page() {
                     </button>
 
                     <div
-                      className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
+                      className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-500 ease-out ${
                         isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
