@@ -2099,10 +2099,10 @@ export default function Page() {
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                           title="Dom gracza"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "25%", top: "28%", width: "9%", height: "20%", zIndex: 20 }}
+                          style={{ left: "25%", top: "21%", width: "9%", height: "20%", zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                            🏠 Dom
+                            Dom
                           </span>
                         </button>
                       {/* Do miasta */}
