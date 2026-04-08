@@ -744,7 +744,7 @@ export default function Page() {
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
-  const [domTab, setDomTab] = React.useState<"profil"|"kosmetyka"|"eq">("profil");
+  const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -2844,13 +2844,13 @@ export default function Page() {
                 {/* ─ Sidebar ─ */}
                 <div className="flex w-44 shrink-0 flex-col gap-2 border-r border-[#8b6a3e]/30 bg-black/20 p-5 pt-14">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
-                  {(["profil","kosmetyka","eq"] as const).map(tab => (
+                  {(["profil","eq"] as const).map(tab => (
                     <button key={tab} onClick={() => setDomTab(tab)}
                       className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                         domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                       }`}>
-                      {tab === "profil" ? "👤" : tab === "kosmetyka" ? "🎨" : "⚔️"}
-                      {tab === "profil" ? "Profil" : tab === "kosmetyka" ? "Kosmetyka" : "Ekwipunek"}
+                      {tab === "profil" ? "👤" : "⚔️"}
+                      {tab === "profil" ? "Profil" : "Ekwipunek"}
                     </button>
                   ))}
                 </div>
@@ -2964,34 +2964,6 @@ export default function Page() {
                   )}
 
                   {/* ════ KOSMETYKA ════ */}
-                  {domTab === "kosmetyka" && (
-                    <div>
-                      <p className="mb-4 text-base font-black text-[#f9e7b2]">🎨 Wygląd postaci</p>
-                      <div className="mb-5">
-                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Mężczyźni</p>
-                        <div className="grid grid-cols-5 gap-3">
-                          {SKINS_MALE.map((sk, i) => (
-                            <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); }}
-                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
-                                avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,50,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
-                              }`}>{sk}</button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Kobiety</p>
-                        <div className="grid grid-cols-5 gap-3">
-                          {SKINS_FEMALE.map((sk, i) => (
-                            <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); }}
-                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
-                                avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
-                              }`}>{sk}</button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* ════ EKWIPUNEK ════ */}
                   {domTab === "eq" && (
                     <div>
