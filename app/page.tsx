@@ -1004,6 +1004,16 @@ export default function Page() {
     return Date.now() - plot.plantedAt >= getEffectiveGrowthTimeMs(plotId);
   }
 
+
+  function getCropStageSprite(cropId: string, stage: number): string | null {
+    const STAGED: Record<string, string> = {
+      "carrot": "/carrot",
+      "test_nasiono": "/carrot",
+    };
+    const base = STAGED[cropId];
+    if (!base) return null;
+    return `${base}_${stage}.gif`;
+  }
   function getRemainingGrowthSeconds(plotId: number) {
     const plot = getPlotCrop(plotId);
     if (!plot.cropId || !plot.plantedAt) return 0;
@@ -3103,19 +3113,32 @@ export default function Page() {
                                 />
                                 <div className="absolute inset-0 rounded-xl bg-yellow-400/10 opacity-70 blur-md" />
 
-                                {getPlotCrop(plotId).cropId && (
-                                  <div
-                                    className="pointer-events-none absolute inset-[8%]"
-                                    style={{
-                                      backgroundImage: "url('/carrot.png')",
-                                      backgroundSize: "500% 100%",
-                                      backgroundPosition: `${(getGrowthStage(plotId) - 1) * -100}% 0%`,
-                                      backgroundRepeat: "no-repeat",
-                                      backgroundPositionY: "0%",
-                                      imageRendering: "pixelated",
-                                    }}
-                                  />
-                                )}
+                                {getPlotCrop(plotId).cropId && (() => {
+                                  const _plantedCrop = getPlantedCrop(plotId);
+                                  const _stage = getGrowthStage(plotId);
+                                  const _stagedSrc = _plantedCrop ? getCropStageSprite(_plantedCrop.id, _stage) : null;
+                                  if (_stagedSrc) {
+                                    return (
+                                      <img
+                                        src={_stagedSrc}
+                                        alt={_plantedCrop?.name}
+                                        className="pointer-events-none absolute inset-[8%] h-[84%] w-[84%] object-contain"
+                                        style={{ imageRendering: "pixelated" }}
+                                      />
+                                    );
+                                  }
+                                  return (
+                                    <div
+                                      className="pointer-events-none absolute inset-[8%]"
+                                      style={{
+                                        backgroundImage: `url('${_plantedCrop?.spritePath ?? "/carrot.png"}')`,
+                                        backgroundSize: "100% 100%",
+                                        backgroundRepeat: "no-repeat",
+                                        imageRendering: "pixelated",
+                                      }}
+                                    />
+                                  );
+                                })()}
 
                                 {getPlotCrop(plotId).watered && (
                                   <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[18px]">
