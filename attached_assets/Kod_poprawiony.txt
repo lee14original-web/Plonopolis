@@ -714,6 +714,9 @@ export default function Page() {
 
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [isMapLoading, setIsMapLoading] = useState(false);
+  const [showRankingPanel, setShowRankingPanel] = useState(false);
+  const [showGildiaPanel, setShowGildiaPanel] = useState(false);
+  const [showMisjePanel, setShowMisjePanel] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -2160,24 +2163,66 @@ export default function Page() {
                     </>
                   )}
 
-                  {currentMap !== "city" && currentMap.startsWith("city_") && (
-                    <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
-                      <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                        <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
-                        <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
-                        <p className="mt-4 text-base leading-7 text-[#dfcfab]">
-                          Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => handleChangeMap("city")}
-                          className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                        >
-                          Wróć do miasta
-                        </button>
+                  {/* ═══ RATUSZ ═══ */}
+                    {currentMap === "city_townhall" && (
+                      <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-between px-8 py-6">
+                        <div className="flex w-full justify-start">
+                          <button
+                            type="button"
+                            onClick={() => handleChangeMap("city")}
+                            className="rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60"
+                          >
+                            ← Wróć do miasta
+                          </button>
+                        </div>
+                        <div className="flex w-full max-w-2xl items-end justify-between gap-4 pb-4">
+                          <button
+                            type="button"
+                            onClick={() => setShowRankingPanel(true)}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">🏆</span>
+                            <span className="text-lg">Ranking</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowGildiaPanel(true)}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">⚔️</span>
+                            <span className="text-lg">Gildia</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowMisjePanel(true)}
+                            className="flex flex-1 flex-col items-center gap-2 rounded-3xl border-2 border-[#f4cf78]/60 bg-[rgba(24,14,8,0.92)] py-5 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                          >
+                            <span className="text-4xl">📜</span>
+                            <span className="text-lg">Misje</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
+                    {currentMap !== "city" && currentMap !== "city_townhall" && currentMap.startsWith("city_") && (
+                      <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
+                        <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
+                          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>
+                          <h2 className="mt-3 text-4xl font-black text-[#f9e7b2]">{getMapDisplayName(currentMap)}</h2>
+                          <p className="mt-4 text-base leading-7 text-[#dfcfab]">
+                            Ta lokacja jest już podpięta do świata gry, ale jej zawartość dodamy w kolejnym etapie.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleChangeMap("city")}
+                            className="mt-6 rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          >
+                            Wróć do miasta
+                          </button>
+                        </div>
+                      </div>
+                    )}
                 </div>
           )}
           <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
@@ -2348,7 +2393,7 @@ export default function Page() {
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-56 w-56 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
 
                     <div
