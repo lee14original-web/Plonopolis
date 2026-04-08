@@ -1068,10 +1068,11 @@ export default function Page() {
     });
   }
 
-  async function handlePlantFromSelectedSeed(plotId: number) {
+  async function handlePlantFromSelectedSeed(plotId: number, overrideSeedId?: string) {
     if (!profile) return;
+    const effectiveSeedId = overrideSeedId ?? selectedSeedId;
 
-    if (!selectedSeedId) {
+    if (!effectiveSeedId) {
       setMessage({
         type: "info",
         title: "Brak nasiona",
@@ -1080,7 +1081,7 @@ export default function Page() {
       return;
     }
 
-    const crop = CROPS.find((item) => item.id === selectedSeedId);
+    const crop = CROPS.find((item) => item.id === effectiveSeedId);
     if (!crop) return;
 
     const plot = getPlotCrop(plotId);
@@ -1352,7 +1353,6 @@ export default function Page() {
       y: event.clientY - rect.top,
     });
   }
-
   async function loadProfile(_userId?: string) {
     const { data, error } = await supabase.rpc("game_get_my_profile");
 
@@ -3112,6 +3112,7 @@ export default function Page() {
                   onClick={() => {
                     setIsFieldViewOpen(false);
                     setSelectedPlotId(null);
+                    setIsFieldViewCollapsed(false);
                   }}
                   className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
                   aria-label="Zamknij widok pola"
@@ -3125,7 +3126,7 @@ export default function Page() {
                   <p className="mt-2 text-sm text-[#dfcfab]">
                     Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
                   </p>
-                </div>
+                </div>}
 
                 {!isFieldViewCollapsed && (
                 <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
@@ -3148,7 +3149,7 @@ export default function Page() {
                             key={plotId}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
-                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ setSelectedSeedId(draggedSeedId); handlePlantFromSelectedSeed(plotId); setDraggedSeedId(null); }}}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ void handlePlantFromSelectedSeed(plotId, draggedSeedId); setDraggedSeedId(null); }}}
                             onClick={() => {
                               setSelectedPlotId(plotId);
 
