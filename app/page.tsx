@@ -1951,18 +1951,6 @@ export default function Page() {
                 </button>
               </div>
 
-              {/* ═══ DOM BUTTON ═══ */}
-              <div className="fixed left-4 top-4 z-[91]">
-                <button
-                  onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
-                  className="flex items-center gap-2 rounded-2xl border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] px-4 py-3 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)]"
-                  title="Dom gracza"
-                >
-                  <span className="text-2xl">🏠</span>
-                  <span className="text-sm">Dom</span>
-                </button>
-              </div>
-
               {/* ═══ TESTY GRY BUTTON ═══ */}
               <div className="fixed right-4 z-[92]" style={{ top: "85px" }}>
                 <button onClick={() => setShowTestModal(true)}
@@ -2104,7 +2092,21 @@ export default function Page() {
 )}
 
                   {currentMap.startsWith("farm") && (
-                    <button
+                      <>
+                        {/* Dom — na drzwiach domu */}
+                        <button
+                          type="button"
+                          onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
+                          title="Dom gracza"
+                          className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                          style={{ left: "25%", top: "28%", width: "9%", height: "20%", zIndex: 20 }}
+                        >
+                          <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
+                            🏠 Dom
+                          </span>
+                        </button>
+                      {/* Do miasta */}
+                      <button
                         type="button"
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
@@ -2115,6 +2117,7 @@ export default function Page() {
                           Do miasta
                         </span>
                       </button>
+                    </>
                   )}
 
                   {currentMap === "city" && (
@@ -2199,7 +2202,7 @@ export default function Page() {
                             type="button"
                             onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
                             className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "26%", top: "80%", width: "14%" }}
+                            style={{ left: "16%", top: "55%", width: "14%" }}
                           >
                             <span className="text-3xl">🏆</span>
                             <span className="text-base">Ranking</span>
@@ -2210,7 +2213,7 @@ export default function Page() {
                             type="button"
                             onClick={() => setShowGildiaPanel(true)}
                             className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "43%", top: "80%", width: "14%" }}
+                            style={{ left: "43%", top: "55%", width: "14%" }}
                           >
                             <span className="text-3xl">⚔️</span>
                             <span className="text-base">Gildia</span>
@@ -2221,7 +2224,7 @@ export default function Page() {
                             type="button"
                             onClick={() => setShowMisjePanel(true)}
                             className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "60%", top: "80%", width: "14%" }}
+                            style={{ left: "70%", top: "55%", width: "14%" }}
                           >
                             <span className="text-3xl">📜</span>
                             <span className="text-base">Misje</span>
