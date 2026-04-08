@@ -2427,11 +2427,11 @@ export default function Page() {
 
                     <div
                       className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
-                        isBackpackOpen ? "max-w-[380px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
+                        isBackpackOpen ? "max-w-[480px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
                       <div
-                        className={`max-h-[80vh] w-[380px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                        className={`max-h-[80vh] w-[480px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
                           isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
                         }`}
                       >
