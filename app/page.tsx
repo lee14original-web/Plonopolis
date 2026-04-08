@@ -2422,7 +2422,7 @@ export default function Page() {
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-[450px] w-[450px] object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-[256px] w-[256px] object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
 
                     <div
