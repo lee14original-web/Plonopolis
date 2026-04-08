@@ -2468,7 +2468,7 @@ export default function Page() {
                             <img
                               src="/watering_can_transparent.png"
                               alt="Konewka"
-                              className="h-24 w-24 object-contain"
+                              className="h-14 w-14 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
@@ -2493,7 +2493,7 @@ export default function Page() {
                             <img
                               src="/sierp.png"
                               alt="Zbierz"
-                              className="h-20 w-20 object-contain"
+                              className="h-12 w-12 object-contain"
                               style={{ imageRendering: "pixelated" }}
                             />
 
@@ -2510,7 +2510,7 @@ export default function Page() {
                               Plecak jest pusty.
                             </div>
                           ) : (
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                               {(() => {
                                 const inventoryItems = (Object.entries(seedInventory).filter(
                                   ([, amount]) => Number(amount) > 0
@@ -2690,7 +2690,7 @@ export default function Page() {
             )}
 
                       {showTestModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4">
               <div className="relative w-full max-w-[600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-6 shadow-2xl text-[#dfcfab]">
                 <button onClick={() => setShowTestModal(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
                 <p className="mb-1 text-xs uppercase tracking-widest text-[#d8ba7a]">Panel deweloperski</p>
