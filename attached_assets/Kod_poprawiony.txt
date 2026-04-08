@@ -1931,11 +1931,11 @@ export default function Page() {
           draggable={false}
         />
         {isMapLoading && (
-          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-end pb-10">
-            <div className="w-64 overflow-hidden rounded-full border border-[#8b6a3e]/60 bg-black/60 backdrop-blur-sm">
-              <div className="h-2 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
+          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-5">
+            <div className="w-[640px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
+              <div className="h-5 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
             </div>
-            <p className="mt-2 text-xs font-bold text-[#d8ba7a] drop-shadow">Ładowanie mapy...</p>
+            <p className="text-3xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
           </div>
         )}
 
