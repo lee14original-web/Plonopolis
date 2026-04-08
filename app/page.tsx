@@ -1792,9 +1792,11 @@ export default function Page() {
     const prevXpToNext = displayXpToNextLevel;
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
+    const prevSeedAmount = (seedInventory[crop.id] ?? 0) as number;
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
+      p_zrecznosc: playerStats.zrecznosc ?? 0,
     });
     if (error) {
       setMessage({
@@ -1812,20 +1814,15 @@ export default function Page() {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
     }
 
-    // Zręczność: szansa na podwójny zbiór
-    let bonusHarvest = false;
-    const zreczChance = calcStatEffect(playerStats.zrecznosc ?? 0, 0.004) / 100;
-    if (zreczChance > 0 && Math.random() < zreczChance) {
-      bonusHarvest = true;
-      const rpcInv = (harvestRpcProfile as Profile).seed_inventory;
-      const baseInv: Record<string, number> = (rpcInv && typeof rpcInv === "object") ? { ...(rpcInv as Record<string, number>) } : {};
-      baseInv[crop.id] = (baseInv[crop.id] ?? 0) + crop.yieldAmount;
-      await supabase.from("profiles").update({ seed_inventory: baseInv }).eq("id", profile.id);
-      await loadProfile(profile.id);
-    }
+    // Zręczność: wykryj podwójny zbiór na podstawie zwróconego inventory
+    const rpcProf = harvestRpcProfile as Profile;
+    const rpcInv = (rpcProf?.seed_inventory && typeof rpcProf.seed_inventory === "object")
+      ? rpcProf.seed_inventory as Record<string, number>
+      : {};
+    const newSeedAmount = (rpcInv[crop.id] ?? 0) as number;
+    const bonusHarvest = newSeedAmount - prevSeedAmount > crop.yieldAmount;
 
     // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
-    const rpcProf = harvestRpcProfile as Profile;
     let actualExp = crop.expReward;
     if (rpcProf) {
       if ((rpcProf.level ?? previousLevel) > previousLevel) {
