@@ -2464,28 +2464,10 @@ export default function Page() {
                                   const bLv = CROPS.find(c => c.id === bId)?.unlockLevel ?? 999;
                                   return aLv - bLv;
                                 });
-                                return Array.from({ length: 50 }).map((_, index) => {
-                                const entry = inventoryItems[index];
-
-                                if (!entry) {
-                                  return (
-                                    <div
-                                      key={`empty-slot-${index}`}
-                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                                    />
-                                  );
-                                }
-
-                                const [seedId, amount] = entry;
+                                return inventoryItems.map(([seedId, amount]) => {
                                 const crop = CROPS.find((item) => item.id === seedId);
-                                if (!crop) {
-                                  return (
-                                    <div
-                                      key={`missing-slot-${index}`}
-                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                                    />
-                                  );
-                                }
+                                if (!crop) return null;
+
 
                                 return (
                                   <button
