@@ -2071,7 +2071,7 @@ export default function Page() {
                     <>
                       <button
                         type="button"
-                        onClick={() => handleChangeMap("farm1")}
+                        onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left: "14%", top: "60%", width: "14%", height: "22%" }}
                         title="Na farmę"
