@@ -2068,46 +2068,16 @@ export default function Page() {
 
                   {currentMap.startsWith("farm") && (
                     <button
-                      type="button"
-                      onClick={() => handleChangeMap("city")}
-                      title="Do miasta"
-                      className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-                      style={{
-                        left: "15%",
-                        top: "56.5%",
-                        width: "12%",
-                        height: "16%",
-                        zIndex: 20,
-                        background: "transparent",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div className="relative flex h-full w-full items-end justify-center rounded-xl">
-                        <div className="absolute inset-0 rounded-xl border border-sky-300/50 bg-sky-400/10 shadow-[0_0_18px_rgba(0,191,255,0.35)]" />
-                        <span
-                          style={{
-                            position: "absolute",
-                            bottom: "-38px",
-                            left: "65%",
-                            transform: "translateX(-50%)",
-                            background: "linear-gradient(135deg, #1e90ff, #00bfff)",
-                            color: "white",
-                            padding: "6px 12px",
-                            borderRadius: "10px",
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                            boxShadow: "0 0 10px rgba(0, 191, 255, 0.8)",
-                            border: "1px solid rgba(255,255,255,0.3)",
-                            textShadow: "0 0 4px rgba(0,0,0,0.7)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                        type="button"
+                        onClick={() => handleChangeMap("city")}
+                        title="Do miasta"
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left: "15%", top: "56.5%", width: "12%", height: "16%", zIndex: 20 }}
+                      >
+                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                           Do miasta
                         </span>
-                      </div>
-                    </button>
+                      </button>
                   )}
 
                   {currentMap === "city" && (
@@ -2140,7 +2110,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_market")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "34%", top: "22%", width: "16%", height: "34%" }}
+                        style={{ left: "38%", top: "22%", width: "16%", height: "34%" }}
                         title="Targ"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
@@ -2152,7 +2122,7 @@ export default function Page() {
                         type="button"
                         onClick={() => handleChangeMap("city_bank")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "81%", top: "25%", width: "14%", height: "36%" }}
+                        style={{ left: "80%", top: "25%", width: "14%", height: "36%" }}
                         title="Bank"
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
