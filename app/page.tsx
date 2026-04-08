@@ -1791,10 +1791,11 @@ export default function Page() {
     const prevXp = displayXp;
     const prevXpToNext = displayXpToNextLevel;
 
+    const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
+      p_effective_grow_ms: effectiveGrowMs,
     });
-
     if (error) {
       setMessage({
         type: "error",
