@@ -1964,7 +1964,7 @@ export default function Page() {
                 </button>
               </div>
 
-              <div className="fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4">
+              <div className={`fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4 transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
@@ -2020,7 +2020,7 @@ export default function Page() {
       setIsFieldViewOpen(true);
       setSelectedPlotId((prev) => prev ?? 1);
     }}
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
       left: "51%",
       top: "57%",
@@ -2030,15 +2030,9 @@ export default function Page() {
     }}
     title="Pola uprawne"
   >
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2">
-      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f8e6b7] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">Pola uprawne</p>
-      <img
-        src="/farm_field_button.png"
-        alt="Pola uprawne"
-        className="w-1/4 object-contain"
-        style={{ imageRendering: "pixelated" }}
-      />
-    </div>
+    <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
+      Pola uprawne
+    </span>
   </button>
 )}
 
@@ -2377,7 +2371,7 @@ export default function Page() {
                     </button>
 
                     <div
-                      className={`origin-left overflow-hidden transition-all duration-500 ease-out ${
+                      className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-500 ease-out ${
                         isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
