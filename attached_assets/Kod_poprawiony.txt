@@ -2022,8 +2022,8 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: "51%",
-      top: "57%",
+      left: "46%",
+      top: "65%",
       width: "38%",
       height: "22%",
       zIndex: 4,
