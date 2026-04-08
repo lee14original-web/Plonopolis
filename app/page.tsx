@@ -1135,7 +1135,7 @@ export default function Page() {
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
-    if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
+    if (Array.prototype.indexOf.call(FARM_UPGRADE_LEVELS, level) === -1) return;
 
     const modalData = getFarmUpgradeMessage(level);
     if (!modalData) return;
@@ -1936,12 +1936,12 @@ export default function Page() {
           draggable={false}
         />
         {isMapLoading && (
-          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-5">
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
             <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
               <div className="h-10 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
-            <p className="text-3xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
+            </div>
             <p className="text-6xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
+          </div>
         )}
 
         <div className="relative z-[1] h-full w-full">
@@ -2360,6 +2360,7 @@ export default function Page() {
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
 
 
+                {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
                 <div className="fixed left-4 top-4 z-[95]">
                   <div className="flex flex-col items-start">
                     <button
@@ -2526,6 +2527,7 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )}
           </div>
