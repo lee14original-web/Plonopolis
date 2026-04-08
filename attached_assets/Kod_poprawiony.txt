@@ -1927,11 +1927,11 @@ export default function Page() {
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "68px" }}>
+              <div className="fixed right-4 z-[92]" style={{ top: "85px" }}>
                 <button onClick={() => setShowTestModal(true)}
-                  className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-4 py-2 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
-                  <span className="animate-pulse text-xl">🧪</span>
-                  <span className="text-sm">Testy</span>
+                  className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-6 py-3 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
+                  <span className="animate-pulse text-2xl">🧪</span>
+                  <span className="text-base">Testy</span>
                   <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
                 </button>
               </div>
@@ -2332,7 +2332,7 @@ export default function Page() {
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      {isBackpackOpen ? "←" : "→"}
+                      <img src="/backpack.png" alt="Plecak" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
 
                     <div
