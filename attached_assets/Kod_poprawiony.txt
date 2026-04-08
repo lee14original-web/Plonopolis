@@ -2030,12 +2030,15 @@ export default function Page() {
     }}
     title="Pola uprawne"
   >
-    <img
-      src="/farm_field_button.png"
-      alt="Pola uprawne"
-      className="h-full w-full object-cover rounded-[22px]"
-      style={{ imageRendering: "pixelated" }}
-    />
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f8e6b7] drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">Pola uprawne</p>
+      <img
+        src="/farm_field_button.png"
+        alt="Pola uprawne"
+        className="w-1/4 object-contain"
+        style={{ imageRendering: "pixelated" }}
+      />
+    </div>
   </button>
 )}
 
