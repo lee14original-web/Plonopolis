@@ -713,6 +713,7 @@ export default function Page() {
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
 
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
+  const [isMapLoading, setIsMapLoading] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -1831,27 +1832,34 @@ export default function Page() {
   }
 
   async function handleChangeMap(targetMap: string) {
-    if (!profile) return;
+      if (!profile) return;
 
-    const { data, error } = await supabase.rpc("game_change_map", {
-      p_target_map: targetMap,
-    });
+      setIsMapLoading(true);
 
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zmiany mapy",
-        text: error.message,
+      const { data: rpcData, error } = await supabase.rpc("game_change_map", {
+        p_target_map: targetMap,
       });
-      return;
+
+      if (error) {
+        setIsMapLoading(false);
+        setMessage({ type: "error", title: "Błąd zmiany mapy", text: error.message });
+        return;
+      }
+
+      const targetBg = getDisplayBackgroundMap(targetMap);
+      await new Promise<void>((resolve) => {
+        const img = new window.Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = `/${targetBg}.png`;
+      });
+
+      applyProfileState(extractRpcProfile(rpcData));
+      setIsMapLoading(false);
+      setIsFieldViewOpen(false);
+      setSelectedPlotId(null);
+      setPlotToBuy(null);
     }
-
-    applyProfileState(extractRpcProfile(data));
-
-    setIsFieldViewOpen(false);
-    setSelectedPlotId(null);
-    setPlotToBuy(null);
-  }
 
   if (!isDesktop) {
     return (
@@ -1901,6 +1909,14 @@ export default function Page() {
           className="pointer-events-none absolute inset-0 h-full w-full select-none"
           draggable={false}
         />
+        {isMapLoading && (
+          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-end pb-10">
+            <div className="w-64 overflow-hidden rounded-full border border-[#8b6a3e]/60 bg-black/60 backdrop-blur-sm">
+              <div className="h-2 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
+            </div>
+            <p className="mt-2 text-xs font-bold text-[#d8ba7a] drop-shadow">Ładowanie mapy...</p>
+          </div>
+        )}
 
         <div className="relative z-[1] h-full w-full">
           {profile && (
