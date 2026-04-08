@@ -2414,11 +2414,11 @@ export default function Page() {
 
 
                 <div className="fixed left-4 top-4 z-[95]">
-                  <div className="flex items-start">
+                  <div className="flex flex-col items-start">
                     <button
                       type="button"
                       onClick={() => setIsBackpackOpen((prev) => !prev)}
-                      className="mr-2 flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
+                      className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
