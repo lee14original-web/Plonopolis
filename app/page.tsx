@@ -1095,7 +1095,7 @@ export default function Page() {
       return;
     }
 
-    const amount = seedInventory[selectedSeedId] ?? 0;
+    const amount = seedInventory[effectiveSeedId] ?? 0;
     if (amount <= 0) {
       setMessage({
         type: "info",
@@ -1107,7 +1107,7 @@ export default function Page() {
 
     const { data, error } = await supabase.rpc("game_plant_crop", {
       p_plot_id: plotId,
-      p_crop_id: selectedSeedId,
+      p_crop_id: effectiveSeedId,
     });
 
     if (error) {
