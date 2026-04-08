@@ -2884,7 +2884,7 @@ export default function Page() {
                       <div className="flex-1">
                         <div className="mb-4 flex items-center justify-between">
                           <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 mr-8">
                             <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
                             {([1,5,10] as const).map(n => (
                               <button key={n} onClick={() => setStatUpgradeAmount(n)}
