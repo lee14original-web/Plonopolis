@@ -1135,7 +1135,7 @@ export default function Page() {
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
-    if (!FARM_UPGRADE_LEVELS.includes(level as (typeof FARM_UPGRADE_LEVELS)[number])) return;
+    if (Array.prototype.indexOf.call(FARM_UPGRADE_LEVELS, level) === -1) return;
 
     const modalData = getFarmUpgradeMessage(level);
     if (!modalData) return;
