@@ -2404,7 +2404,7 @@ export default function Page() {
                               setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
                               setSelectedSeedId(null);
                             }}
-                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                            className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                               selectedTool === "watering_can"
                                 ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
                                 : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
@@ -2429,7 +2429,7 @@ export default function Page() {
                               setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
                               setSelectedSeedId(null);
                             }}
-                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
+                            className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
                               selectedTool === "sickle"
                                 ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
                                 : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
