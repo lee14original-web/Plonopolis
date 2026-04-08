@@ -744,7 +744,7 @@ export default function Page() {
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
-  const [domTab, setDomTab] = React.useState<"profil"|"kosmetyka"|"eq">("profil");
+  const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -2030,67 +2030,12 @@ export default function Page() {
     }}
     title="Pola uprawne"
   >
-    <div className="relative h-full w-full overflow-hidden rounded-[22px] border-2 border-[#d8ba7a]/70 bg-[rgba(28,18,10,0.5)] shadow-[0_0_30px_rgba(255,220,120,0.18)] backdrop-blur-sm">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,220,120,0.08),rgba(0,0,0,0.18))]" />
-
-      <div className="absolute inset-0 grid grid-cols-5 grid-rows-5 gap-[4px] p-[10px]">
-        {FIELD_VIEW_PLOTS.map((plot) => {
-          const plotState = getPlotCrop(plot.id);
-          const plantedCrop = getPlantedCrop(plot.id);
-          const ready = isCropReady(plot.id);
-          const isUnlocked = isPlotUnlocked(plot.id);
-          const growthStage = getGrowthStage(plot.id);
-
-          return (
-            <div
-              key={`farm-preview-${plot.id}`}
-              className={`relative overflow-hidden rounded-md border ${
-                isUnlocked
-                  ? "border-[#8b6a3e] bg-[rgba(90,58,30,0.82)]"
-                  : "border-[#5f4a31] bg-[rgba(18,12,8,0.85)]"
-              }`}
-            >
-              {isUnlocked ? (
-                <>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(160,110,60,0.18),rgba(70,40,20,0.08))]" />
-
-                  {plotState.cropId && plantedCrop && (
-                    <>
-                      <img
-                        src={plantedCrop.spritePath}
-                        alt={plantedCrop.name}
-                        className={`absolute left-1/2 top-1/2 h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 object-contain ${
-                          ready ? "scale-110" : growthStage <= 2 ? "scale-75 opacity-80" : growthStage === 3 ? "scale-90" : "scale-100"
-                        }`}
-                        style={{ imageRendering: "pixelated" }}
-                      />
-
-                      {ready && (
-                        <div className="absolute inset-0 bg-yellow-300/18 shadow-[inset_0_0_10px_rgba(255,220,120,0.45)]" />
-                      )}
-                    </>
-                  )}
-
-                  {plotState.watered && (
-                    <div className="absolute right-[2px] top-[1px] text-[9px] leading-none">💧</div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-[9px] font-black text-[#c7b08a]/70">
-                  🔒
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="absolute inset-x-0 top-[-26px] z-20 flex justify-center pointer-events-none">
-        <div className="rounded-xl border border-[#d8ba7a]/40 bg-[rgba(24,14,8,0.9)] px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f8e6b7] shadow-lg backdrop-blur-sm">
-          Pola uprawne
-        </div>
-      </div>
-    </div>
+    <img
+      src="/farm_field_button.png"
+      alt="Pola uprawne"
+      className="h-full w-full object-cover rounded-[22px]"
+      style={{ imageRendering: "pixelated" }}
+    />
   </button>
 )}
 
@@ -2844,13 +2789,13 @@ export default function Page() {
                 {/* ─ Sidebar ─ */}
                 <div className="flex w-44 shrink-0 flex-col gap-2 border-r border-[#8b6a3e]/30 bg-black/20 p-5 pt-14">
                   <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
-                  {(["profil","kosmetyka","eq"] as const).map(tab => (
+                  {(["profil","eq"] as const).map(tab => (
                     <button key={tab} onClick={() => setDomTab(tab)}
                       className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                         domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                       }`}>
-                      {tab === "profil" ? "👤" : tab === "kosmetyka" ? "🎨" : "⚔️"}
-                      {tab === "profil" ? "Profil" : tab === "kosmetyka" ? "Kosmetyka" : "Ekwipunek"}
+                      {tab === "profil" ? "👤" : "⚔️"}
+                      {tab === "profil" ? "Profil" : "Ekwipunek"}
                     </button>
                   ))}
                 </div>
@@ -2964,34 +2909,6 @@ export default function Page() {
                   )}
 
                   {/* ════ KOSMETYKA ════ */}
-                  {domTab === "kosmetyka" && (
-                    <div>
-                      <p className="mb-4 text-base font-black text-[#f9e7b2]">🎨 Wygląd postaci</p>
-                      <div className="mb-5">
-                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Mężczyźni</p>
-                        <div className="grid grid-cols-5 gap-3">
-                          {SKINS_MALE.map((sk, i) => (
-                            <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); }}
-                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
-                                avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,50,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
-                              }`}>{sk}</button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="mb-2 text-xs font-bold text-[#8b6a3e] uppercase tracking-wider">Kobiety</p>
-                        <div className="grid grid-cols-5 gap-3">
-                          {SKINS_FEMALE.map((sk, i) => (
-                            <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); }}
-                              className={`flex h-20 w-full items-center justify-center rounded-2xl border-2 text-4xl transition ${
-                                avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"
-                              }`}>{sk}</button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* ════ EKWIPUNEK ════ */}
                   {domTab === "eq" && (
                     <div>
