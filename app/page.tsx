@@ -745,6 +745,8 @@ export default function Page() {
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
+    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
+    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -1935,11 +1937,11 @@ export default function Page() {
         />
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-5">
-            <div className="w-[640px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
-              <div className="h-5 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
-            </div>
+          <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
+            <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
+              <div className="h-10 rounded-full bg-gradient-to-r from-[#c9952f] via-[#f2ca69] to-[#c9952f] animate-pulse" style={{width:"100%"}} />
             <p className="text-3xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
-          </div>
+            <p className="text-6xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
         )}
 
         <div className="relative z-[1] h-full w-full">
@@ -2022,8 +2024,8 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: "51%",
-      top: "57%",
+      left: "46%",
+      top: "65%",
       width: "38%",
       height: "22%",
       zIndex: 4,
@@ -2397,133 +2399,129 @@ export default function Page() {
                           </button>
                         </div>
 
-                        <div className="mt-3 grid w-full grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                              setSelectedSeedId(null);
-                            }}
-                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-                              selectedTool === "watering_can"
-                                ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]"
-                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                            }`}
-                          >
-                            <img
-                              src="/watering_can_transparent.png"
-                              alt="Konewka"
-                              className="h-14 w-14 object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                            />
+                        {/* Zakładki Uprawy / Przedmioty */}
+                          <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
+                            {(["uprawy","przedmioty"] as const).map(tab => (
+                              <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setBackpackTab(tab)}
+                                className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
+                              >
+                                {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                              </button>
+                            ))}
+                          </div>
 
-                            <div className="text-center">
-                              <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                              <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
+                          {/* ZAKŁADKA: UPRAWY */}
+                          {backpackTab === "uprawy" && (
+                            <>
+                              <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
+                                    setSelectedSeedId(null);
+                                  }}
+                                  className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                >
+                                  <img src="/watering_can_transparent.png" alt="Konewka" className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
+                                  <div className="text-center">
+                                    <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
+                                    <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
+                                  </div>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
+                                    setSelectedSeedId(null);
+                                  }}
+                                  className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                >
+                                  <img src="/sierp.png" alt="Zbierz" className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
+                                  <div className="text-center">
+                                    <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
+                                    <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
+                                  </div>
+                                </button>
+                              </div>
+
+                              <div className="mt-3 flex items-center gap-2">
+                                <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
+                                <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
+                                  {(["standardowe","duzo","malo"] as const).map(s => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => setBackpackSort(s)}
+                                      className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
+                                    >
+                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : "Mało"}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="mt-3">
+                                {Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0).length === 0 ? (
+                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                    Plecak jest pusty.
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {(() => {
+                                      const raw = (Object.entries(seedInventory).filter(
+                                        ([, amount]) => Number(amount) > 0
+                                      ) as Array<[string, number]>);
+                                      const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
+                                        const aLv = CROPS.find(c => c.id === aId)?.unlockLevel ?? 999;
+                                        const bLv = CROPS.find(c => c.id === bId)?.unlockLevel ?? 999;
+                                        if (backpackSort === "standardowe") return aLv - bLv;
+                                        if (backpackSort === "duzo") return Number(bAmt) - Number(aAmt);
+                                        const diff = Number(aAmt) - Number(bAmt);
+                                        return diff !== 0 ? diff : aLv - bLv;
+                                      });
+                                      return sorted.map(([seedId, amount]) => {
+                                        const crop = CROPS.find((item) => item.id === seedId);
+                                        if (!crop) return null;
+                                        return (
+                                          <button
+                                            key={seedId}
+                                            draggable
+                                            onDragStart={() => { setDraggedSeedId(seedId); setSelectedSeedId(seedId); setSelectedTool(null); }}
+                                            onDragEnd={() => setDraggedSeedId(null)}
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
+                                              setSelectedTool(null);
+                                            }}
+                                            onMouseEnter={() => setHoveredCrop(crop)}
+                                            onMouseLeave={() => setHoveredCrop(null)}
+                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                          >
+                                            <img src={crop.spritePath} alt={crop.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
+                                            <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
+                                              {amount}
+                                            </span>
+                                          </button>
+                                        );
+                                      });
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          {/* ZAKŁADKA: PRZEDMIOTY */}
+                          {backpackTab === "przedmioty" && (
+                            <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                              <p className="text-2xl mb-2">🎒</p>
+                              <p>Brak przedmiotów.</p>
+                              <p className="mt-1 text-xs text-[#8b6a3e]">Tu pojawią się specjalne przedmioty.</p>
                             </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
-                              setSelectedSeedId(null);
-                            }}
-                            className={`flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${
-                              selectedTool === "sickle"
-                                ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]"
-                                : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                            }`}
-                          >
-                            <img
-                              src="/sierp.png"
-                              alt="Zbierz"
-                              className="h-12 w-12 object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                            />
-
-                            <div className="text-center">
-                              <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
-                              <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
-                            </div>
-                          </button>
-                        </div>
-
-                        <div className="mt-4">
-                          {Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0).length === 0 ? (
-                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                              Plecak jest pusty.
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-4 gap-2">
-                              {(() => {
-                                const inventoryItems = (Object.entries(seedInventory).filter(
-                                  ([, amount]) => Number(amount) > 0
-                                ) as Array<[string, number]>).sort(([aId], [bId]) => {
-                                  const aLv = CROPS.find(c => c.id === aId)?.unlockLevel ?? 999;
-                                  const bLv = CROPS.find(c => c.id === bId)?.unlockLevel ?? 999;
-                                  return aLv - bLv;
-                                });
-                                return Array.from({ length: 50 }).map((_, index) => {
-                                const entry = inventoryItems[index];
-
-                                if (!entry) {
-                                  return (
-                                    <div
-                                      key={`empty-slot-${index}`}
-                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                                    />
-                                  );
-                                }
-
-                                const [seedId, amount] = entry;
-                                const crop = CROPS.find((item) => item.id === seedId);
-                                if (!crop) {
-                                  return (
-                                    <div
-                                      key={`missing-slot-${index}`}
-                                      className="h-24 w-24 rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)]"
-                                    />
-                                  );
-                                }
-
-                                return (
-                                  <button
-                                    key={seedId}
-                                    draggable
-                                    onDragStart={() => { setDraggedSeedId(seedId); setSelectedSeedId(seedId); setSelectedTool(null); }}
-                                    onDragEnd={() => setDraggedSeedId(null)}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
-                                      setSelectedTool(null);
-                                    }}
-                                     onMouseEnter={() => setHoveredCrop(crop)}
-                                     onMouseLeave={() => setHoveredCrop(null)}
-
-                                    className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${
-                                      selectedSeedId === seedId
-                                        ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]"
-                                        : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"
-                                    }`}
-                                  >
-                                    <img
-                                      src={crop.spritePath}
-                                      alt={crop.name}
-                                      className="h-14 w-14 object-contain"
-                                      style={{ imageRendering: "pixelated" }}
-                                    />
-
-                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
-                                      {amount}
-                                    </span>
-                                  </button>
-                                );
-                              });
-                                })()}
-                            </div>
-                        )}
-                        </div>
+                          )}
                       </div>
                     </div>
                   </div>
