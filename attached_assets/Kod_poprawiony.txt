@@ -749,6 +749,14 @@ export default function Page() {
   const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeRecipient, setComposeRecipient] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [recipientSuggestions, setRecipientSuggestions] = useState<{id:string;username:string}[]>([]);
+  const [recipientResolved, setRecipientResolved] = useState<{id:string;username:string}|null>(null);
+  const [composeSending, setComposeSending] = useState(false);
+  const [composeError, setComposeError] = useState("");
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -1953,6 +1961,45 @@ export default function Page() {
     setMessagesLoading(false);
   }
 
+  async function searchPlayers(q: string) {
+    if (q.trim().length < 2) { setRecipientSuggestions([]); return; }
+    const { data } = await supabase
+      .from("profiles")
+      .select("id,username")
+      .ilike("username", `%${q.trim()}%`)
+      .neq("id", profile?.id ?? "")
+      .limit(8);
+    setRecipientSuggestions((data as {id:string;username:string}[]) ?? []);
+  }
+
+  async function sendMessage() {
+    if (!recipientResolved || !profile) return;
+    const subject = composeSubject.trim();
+    const body = composeBody.trim();
+    if (!subject) { setComposeError("Podaj temat wiadomości."); return; }
+    if (!body) { setComposeError("Napisz treść wiadomości."); return; }
+    setComposeSending(true);
+    setComposeError("");
+    const { error } = await supabase.from("messages").insert({
+      from_user_id: profile.id,
+      from_username: (profile as {username?:string}).username ?? "Nieznany",
+      to_user_id: recipientResolved.id,
+      type: "received",
+      subject,
+      body,
+      read: false,
+    });
+    setComposeSending(false);
+    if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
+    setShowCompose(false);
+    setComposeRecipient("");
+    setComposeSubject("");
+    setComposeBody("");
+    setRecipientResolved(null);
+    setRecipientSuggestions([]);
+    void loadMessages();
+  }
+
     if (!isDesktop) {
     return (
       <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
@@ -2758,10 +2805,18 @@ export default function Page() {
                       <p className="text-xs text-[#8b6a3e]">Skrzynka gracza Plonopolis</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowMessagePanel(false)}
-                    className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
-                    ✕ Zamknij
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowCompose(c => !c); setComposeError(""); }}
+                      className="rounded-xl border border-[#d8ba7a]/70 bg-[rgba(80,50,10,0.5)] px-4 py-2 text-sm font-bold text-[#f9e7b2] transition hover:bg-[rgba(100,70,15,0.7)]">
+                      ✉️ Nowa +
+                    </button>
+                    <button onClick={() => { setShowMessagePanel(false); setShowCompose(false); }}
+                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
+                      ✕ Zamknij
+                    </button>
+                  </div>
                 </div>
 
                 {/* Zakładki */}
@@ -2783,6 +2838,86 @@ export default function Page() {
 
                 {/* Treść */}
                 <div className="flex-1 overflow-y-auto p-4">
+                  {showCompose ? (
+                    <div className="flex h-full flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">✉️</span>
+                        <h3 className="text-base font-black text-[#f9e7b2]">Nowa wiadomość</h3>
+                      </div>
+
+                      {/* Odbiorca z autouzupełnianiem */}
+                      <div className="relative">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Do (login gracza)</label>
+                        <input
+                          type="text"
+                          value={composeRecipient}
+                          onChange={e => {
+                            const v = e.target.value;
+                            setComposeRecipient(v);
+                            setRecipientResolved(null);
+                            void searchPlayers(v);
+                          }}
+                          placeholder="Wpisz login gracza..."
+                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
+                        />
+                        {/* Lista podpowiedzi */}
+                        {recipientSuggestions.length > 0 && !recipientResolved && (
+                          <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-[#8b6a3e]/60 bg-[rgba(22,13,8,0.98)] shadow-2xl">
+                            {recipientSuggestions.map(s => (
+                              <button key={s.id} type="button"
+                                onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
+                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[#dfcfab] transition hover:bg-[rgba(80,50,10,0.5)]">
+                                <span className="text-base">👤</span> {s.username}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {recipientResolved && (
+                          <p className="mt-1 text-[11px] font-bold text-green-400">✔ Gracz znaleziony: {recipientResolved.username}</p>
+                        )}
+                        {composeRecipient.length >= 2 && recipientSuggestions.length === 0 && !recipientResolved && (
+                          <p className="mt-1 text-[11px] text-red-400">Nie znaleziono gracza o podanym loginie.</p>
+                        )}
+                      </div>
+
+                      {/* Temat */}
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Temat</label>
+                        <input
+                          type="text"
+                          value={composeSubject}
+                          onChange={e => setComposeSubject(e.target.value)}
+                          maxLength={120}
+                          placeholder="Temat wiadomości..."
+                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
+                        />
+                      </div>
+
+                      {/* Treść */}
+                      <div className="flex flex-1 flex-col">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Treść</label>
+                        <textarea
+                          value={composeBody}
+                          onChange={e => setComposeBody(e.target.value)}
+                          maxLength={2000}
+                          placeholder="Napisz wiadomość..."
+                          className="flex-1 resize-none rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70 min-h-[120px]"
+                        />
+                        <p className="mt-1 text-right text-[10px] text-[#8b6a3e]">{composeBody.length}/2000</p>
+                      </div>
+
+                      {/* Błąd i przycisk Wyślij */}
+                      {composeError && <p className="rounded-xl bg-red-950/40 px-3 py-2 text-xs font-bold text-red-400">{composeError}</p>}
+                      <button
+                        type="button"
+                        disabled={!recipientResolved || composeSending}
+                        onClick={() => void sendMessage()}
+                        className="rounded-xl border border-[#d8ba7a]/70 bg-[linear-gradient(180deg,#d9a93a,#a06e18)] px-6 py-3 text-sm font-black text-[#1a0e00] transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {composeSending ? "Wysyłanie..." : "📤 Wyślij wiadomość"}
+                      </button>
+                    </div>
+                  ) : (<>
                   {messagesLoading ? (
                     <div className="flex h-full items-center justify-center">
                       <p className="animate-pulse text-sm text-[#8b6a3e]">Ładowanie wiadomości...</p>
@@ -2824,6 +2959,7 @@ export default function Page() {
                       </div>
                     );
                   })()}
+                  </>)}
                 </div>
 
               </div>
