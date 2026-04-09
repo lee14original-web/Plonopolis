@@ -123,10 +123,10 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten:    { label: "Zepsuta",    badge: "🟫", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)",   expMult: 0, canPlant: false },
+  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)",   expMult: 0, canPlant: false },
   good:      { label: "Zwykła",     badge: "✅", borderColor: "#4a7a4a", bgColor: "rgba(20,50,20,0.5)",   expMult: 1, canPlant: true  },
-  epic:      { label: "Epicka",     badge: "⚡", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)",  expMult: 3, canPlant: true  },
-  legendary: { label: "Legendarna", badge: "👑", borderColor: "#c084fc", bgColor: "rgba(100,20,180,0.5)", expMult: 5, canPlant: true  },
+  epic:      { label: "Epicka",     badge: "⭐", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)",  expMult: 3, canPlant: true  },
+  legendary: { label: "Legendarna", badge: "🌟", borderColor: "#c084fc", bgColor: "rgba(100,20,180,0.5)", expMult: 5, canPlant: true  },
 } as const;
 type CropQuality = keyof typeof CROP_QUALITY_DEFS;
 
@@ -4116,10 +4116,10 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
-            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[10px] font-black text-purple-300">👑 Legendarna</span>}
-            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-400">⚡ Epicka</span>}
+            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[10px] font-black text-purple-300">🌟 Legendarna</span>}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-400">⭐ Epicka</span>}
             {hoveredSeedQuality === "good" && <span className="ml-1 text-[10px] font-black text-emerald-300">✅ Zwykła</span>}
-            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">🟫 Popsuta</span>}
+            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">⚠️ Popsuta</span>}
           </p>
           <p className="mb-1 text-[10px] text-[#8b6a3e]">
             {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, jedynie na kompost" : "Zwykłe nasiono"}
@@ -4127,7 +4127,7 @@ export default function Page() {
           {hoveredSeedQuality !== "rotten" && <>
             <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
             <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}</p>
-            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}</p>
+            <p className="mt-1">{hoveredSeedQuality === "legendary" ? "🌟" : "⭐"} EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}</p>
           </>}
           {hoveredSeedQuality === "rotten" && <p className="mt-1 text-[10px] text-[#8b6a3e]">Nadaje się jedynie jako kompost lub do zadań specjalnych.</p>}
         </div>
