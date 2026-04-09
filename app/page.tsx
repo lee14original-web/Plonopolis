@@ -818,7 +818,7 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
-    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo"|"epickie">("standardowe");
+    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -2860,14 +2860,14 @@ export default function Page() {
                               <div className="mt-3 flex items-center gap-2">
                                 <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
                                 <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                                  {(["standardowe","duzo","malo","epickie"] as const).map(s => (
+                                  {(["standardowe","duzo","malo"] as const).map(s => (
                                     <button
                                       key={s}
                                       type="button"
                                       onClick={() => setBackpackSort(s)}
                                       className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                                     >
-                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : s === "malo" ? "Mało" : "⚡ Epickie"}
+                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : "Mało"}
                                     </button>
                                   ))}
                                 </div>
@@ -2929,10 +2929,8 @@ export default function Page() {
                                             className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                           >
                                             <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
-                                            {(_bQuality === "legendary" || _bQuality === "rotten") && (
-                                              <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>
-                                                {_bQuality === "legendary" ? "👑" : "🟫"}
-                                              </span>
+                                            {_bQuality === "legendary" && (
+                                              <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>👑</span>
                                             )}
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
@@ -4119,16 +4117,19 @@ export default function Page() {
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
             {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[10px] font-black text-purple-300">👑 Legendarna</span>}
-            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-purple-400">⚡ Epicka</span>}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-400">⚡ Epicka</span>}
             {hoveredSeedQuality === "good" && <span className="ml-1 text-[10px] font-black text-emerald-300">✅ Zwykła</span>}
             {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">🟫 Popsuta</span>}
           </p>
           <p className="mb-1 text-[10px] text-[#8b6a3e]">
             {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, jedynie na kompost" : "Zwykłe nasiono"}
           </p>
-          <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}{hoveredSeedQuality !== "legendary" && <span className="opacity-60"> (bez bonusów)</span>}</p>
-          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredSeedQuality === "rotten" ? 0 : hoveredCrop.expReward}{hoveredSeedQuality === "legendary" && <span className="text-purple-300"> (×5 Zwykła)</span>}{hoveredSeedQuality === "epic" && <span className="text-purple-400"> (×3 Zwykła)</span>}{hoveredSeedQuality === "rotten" && <span className="text-[#8b6a3e]"> (brak)</span>}</p>
+          {hoveredSeedQuality !== "rotten" && <>
+            <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
+            <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}</p>
+            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}</p>
+          </>}
+          {hoveredSeedQuality === "rotten" && <p className="mt-1 text-[10px] text-[#8b6a3e]">Nadaje się jedynie jako kompost lub do zadań specjalnych.</p>}
         </div>
       )}
       </main>
