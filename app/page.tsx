@@ -827,6 +827,7 @@ export default function Page() {
   };
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
+  const [harvestCountdown, setHarvestCountdown] = React.useState(15);
   const harvestEventIdRef = React.useRef(0);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
