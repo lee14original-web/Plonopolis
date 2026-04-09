@@ -1268,10 +1268,10 @@ export default function Page() {
     if (!cityAudioRef.current) {
       const audio = new Audio("/city_music.mp3");
       audio.loop = true;
-      audio.volume = musicMuted ? 0 : musicVolume;
+      audio.volume = musicMuted ? 0 : musicVolume * 0.7;
       cityAudioRef.current = audio;
     }
-    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume;
+    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume * 0.7;
     cityAudioRef.current.play().catch(() => {});
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
