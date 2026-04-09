@@ -1977,7 +1977,7 @@ export default function Page() {
     if (_gainedBase > 0) {
       const qualKey = getQualityKey(crop.id, _harvestQuality);
       nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
-      if (_harvestQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus epicki
+      if (_plantedQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus za epickie nasiono
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
