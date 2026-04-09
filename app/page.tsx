@@ -1996,10 +1996,11 @@ export default function Page() {
     setMessagesLoading(true);
     const { data, error } = await supabase
       .from("messages")
-      .select("id,from_user_id,from_username,to_user_id,type,subject,body,read,created_at")
+      .select("*")
       .or(`to_user_id.eq.${profile.id},type.eq.system`)
       .order("created_at", { ascending: false })
       .limit(100);
+    if (error) console.error("[loadMessages] błąd:", error.message);
     if (!error && data) {
       setGameMessages(data as GameMessage[]);
       setUnreadCount((data as GameMessage[]).filter(m => !m.read && m.to_user_id === profile.id).length);
@@ -2056,16 +2057,27 @@ export default function Page() {
       setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
       return;
     }
-    const { error } = await supabase.from("messages").insert({
-      from_user_id: profile.id,
-      from_username: (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany",
-      to_user_id: recipientResolved.id,
-      type: "received",
-      subject,
-      body,
-      read: false,
-      saved: false,
-    });
+    const fromUsername = (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany";
+    const { error } = await supabase.from("messages").insert([
+      {
+        from_user_id: profile.id,
+        from_username: fromUsername,
+        to_user_id: recipientResolved.id,
+        type: "received",
+        subject,
+        body,
+        read: false,
+      },
+      {
+        from_user_id: profile.id,
+        from_username: fromUsername,
+        to_user_id: profile.id,
+        type: "sent",
+        subject,
+        body,
+        read: true,
+      },
+    ]);
     setComposeSending(false);
     if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
     setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
@@ -2916,6 +2928,14 @@ export default function Page() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void loadMessages()}
+                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-2 text-sm font-bold text-[#8b6a3e] transition hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]"
+                      title="Odśwież skrzynkę"
+                    >
+                      🔄
+                    </button>
                     <button
                       type="button"
                       onClick={() => { setShowCompose(c => !c); setComposeError(""); }}
