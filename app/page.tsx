@@ -775,6 +775,7 @@ export default function Page() {
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showTestModal, setShowTestModal] = React.useState(false);
+  const [showWelcome, setShowWelcome] = React.useState(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -1268,10 +1269,10 @@ export default function Page() {
     if (!cityAudioRef.current) {
       const audio = new Audio("/city_music.mp3");
       audio.loop = true;
-      audio.volume = musicMuted ? 0 : musicVolume;
+      audio.volume = musicMuted ? 0 : musicVolume * 0.7;
       cityAudioRef.current = audio;
     }
-    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume;
+    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume * 0.7;
     cityAudioRef.current.play().catch(() => {});
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
@@ -1350,6 +1351,15 @@ export default function Page() {
       mounted = false;
     };
   }, []);
+
+  // ─── Powitanie nowego gracza ───
+  useEffect(() => {
+    if (!profile?.id) return;
+    const key = `plonopolis_welcome_${profile.id}`;
+    if (!localStorage.getItem(key)) {
+      setShowWelcome(true);
+    }
+  }, [profile?.id]);
 
   useEffect(() => {
     const checkScreen = () => {
@@ -3181,6 +3191,51 @@ export default function Page() {
               </div>
             </div>
           )}
+
+                      {/* ─── Modal powitalny dla nowego gracza ─── */}
+                      {showWelcome && (
+                        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4">
+                          <div className="relative w-full max-w-[520px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
+                            {/* Zamknij */}
+                            <button
+                              onClick={() => {
+                                localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
+                                setShowWelcome(false);
+                              }}
+                              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300 transition"
+                            >✕</button>
+                            {/* Nagłówek */}
+                            <div className="mb-5 flex flex-col items-center gap-3">
+                              <img src="/systemikona.png" alt="Plonopolis" className="h-16 w-16 object-contain" style={{imageRendering:"pixelated"}} />
+                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">[ WIADOMOŚĆ SYSTEMOWA ]</p>
+                              <h2 className="text-center text-2xl font-black text-[#f9e7b2]">Witaj w Plonopolis.</h2>
+                            </div>
+                            {/* Treść */}
+                            <div className="space-y-3 text-[13px] leading-relaxed text-[#dfcfab]/90">
+                              <p>Rozpoczynasz na niewielkiej farmie, którą stopniowo rozbudujesz. Siej, podlewaj i zbieraj plony, zdobywając doświadczenie oraz środki na rozwój.</p>
+                              <p>Wraz z poziomem odblokujesz nowe pola, ulepszenia oraz kolejne możliwości rozwoju. Twoja farma i postać będą się rozwijać, dając dostęp do coraz lepszych efektów i bonusów.</p>
+                              <p>Poza farmą czekają także dodatkowe systemy, takie jak ranking i rywalizacja z innymi.</p>
+                              <p>Rozwijaj się we własnym tempie i buduj swoje gospodarstwo.</p>
+                            </div>
+                            {/* Stopka */}
+                            <div className="mt-6 flex items-center justify-between border-t border-[#8b6a3e]/30 pt-4">
+                              <div className="flex items-center gap-2 text-[11px] text-[#8b6a3e]">
+                                <img src="/systemikona.png" alt="" className="h-5 w-5 object-contain" style={{imageRendering:"pixelated"}} />
+                                <span>System Plonopolis</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
+                                  setShowWelcome(false);
+                                }}
+                                className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(80,55,10,0.5)] px-5 py-2 text-sm font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.6)] hover:border-[#d8ba7a]"
+                              >
+                                Rozumiem →
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {showTestModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4">
