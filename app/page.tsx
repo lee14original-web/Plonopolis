@@ -1269,13 +1269,17 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (harvestLog.length === 0) return;
-    if (harvestLogTimerRef.current) clearTimeout(harvestLogTimerRef.current);
-    harvestLogTimerRef.current = setTimeout(() => {
-      const cutoff = Date.now() - 15000;
-      setHarvestLog(prev => prev.filter(e => e.timestamp >= cutoff));
-    }, 15000);
-    return () => { if (harvestLogTimerRef.current) clearTimeout(harvestLogTimerRef.current); };
+    if (harvestLog.length === 0) { setHarvestCountdown(15); return; }
+    // Reset countdown to 15 whenever new harvest comes in
+    setHarvestCountdown(15);
+    // Interval: tick every second
+    const interval = setInterval(() => {
+      setHarvestCountdown(prev => {
+        if (prev <= 1) { clearInterval(interval); setHarvestLog([]); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
   }, [harvestLog]);
 
   // ─── Farm music ───
@@ -2002,13 +2006,14 @@ export default function Page() {
     }
 
     // Dodaj do logu zbiorów
+    const _epicBonus = _plantedQuality === "epic" ? 1 : 0;
     setHarvestLog(prev => [
       ...prev.filter(e => Date.now() - e.timestamp < 15000),
       {
         id: ++harvestEventIdRef.current,
         cropId: crop.id,
         cropName: crop.name,
-        baseAmount: crop.yieldAmount,
+        baseAmount: crop.yieldAmount + _epicBonus,
         bonusAmount: bonusHarvest ? crop.yieldAmount : 0,
         bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
         baseExp: actualExp,
@@ -4015,7 +4020,7 @@ export default function Page() {
             const totalBonusExp = 0;
             return (
               <div className="fixed bottom-20 right-4 z-[88] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🌾 Ostatnie zbiory (15s)</p>
+                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">{`🌾 Ostatnie zbiory (${harvestCountdown}s)`}</p>
                 <div className="space-y-2">
                   {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"}>).map((g, i) => (
                     <div key={i} className="rounded-xl bg-[rgba(255,255,255,0.04)] px-3 py-2">
