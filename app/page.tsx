@@ -2906,7 +2906,7 @@ export default function Page() {
                                     return (
                                       <div key={seedId} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#5a3a1a] bg-[rgba(30,15,5,0.75)]" title={_rottenName}>
                                         <img src={_rottenSprite} alt={_rottenName} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
-
+                                        <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"#5a3a1aaa",color:"#f9e7b2"}}>🟫 Zepsuta</span>
                                         <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
                                       </div>
                                     );
