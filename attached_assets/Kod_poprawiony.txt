@@ -1794,15 +1794,17 @@ export default function Page() {
 
   async function handleAddGold(amount: number) {
     if (!profile?.id) return;
-    await supabase.from("profiles").update({ money: (profile.money ?? 0) + amount }).eq("id", profile.id);
-    await loadProfile(profile.id);
+    const { error } = await supabase.from("profiles").update({ money: (profile.money ?? 0) + amount }).eq("id", profile.id);
+    if (!error) await loadProfile(profile.id);
   }
 
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
-    const allCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
+    const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten"];
+    const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
-    for (const id of allCropIds) newInv[id] = (newInv[id] ?? 0) + amount;
+    for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -1810,8 +1812,10 @@ export default function Page() {
   async function handleResetAccount() {
     if (!profile?.id) return;
     if (!confirm("UWAGA: Zresetuje CAŁE konto do stanu startowego. Kontynuować?")) return;
+    const xpNeeded = getXpForLevel(1);
     const { error } = await supabase.from("profiles").update({
-      level: 1, xp: 0, money: 100, location: "farm1", current_map: "farm1",
+      level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 100,
+      location: "farm1", current_map: "farm1",
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
       equipment_slots: 1, equipment: [],
@@ -1825,64 +1829,26 @@ export default function Page() {
     }
   }
 
-    async function handleSaveProgress(amount: number) {
+  async function handleAddExp(amount: number) {
     if (!profile) return;
-
-    const oldLevel = displayLevel;
     const nextXp = displayXp + amount;
     let nextLevel = displayLevel;
     let nextXpStored = nextXp;
     let nextXpToNextLevel = displayXpToNextLevel;
-    let nextMoney = displayMoney + amount;
-
     while (nextXpStored >= nextXpToNextLevel && nextLevel < MAX_LEVEL) {
       nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
       nextXpStored = nextXpStored - nextXpToNextLevel;
       nextXpToNextLevel = getXpForLevel(nextLevel);
-      nextMoney += 100;
     }
-
-    if (nextLevel >= MAX_LEVEL) {
-      nextLevel = MAX_LEVEL;
-      nextXpStored = 0;
-      nextXpToNextLevel = 0;
-    }
-
+    if (nextLevel >= MAX_LEVEL) { nextLevel = MAX_LEVEL; nextXpStored = 0; nextXpToNextLevel = 0; }
     const nextMap = getMapForLevel(nextLevel);
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        level: nextLevel,
-        xp: nextXpStored,
-        xp_to_next_level: nextXpToNextLevel,
-        money: nextMoney,
-        location: displayLocation,
-        current_map: nextMap,
-        last_played_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id);
-
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zapisu",
-        text: error.message,
-      });
-      return;
-    }
-
+    const { error } = await supabase.from("profiles").update({
+      level: nextLevel, xp: nextXpStored, xp_to_next_level: nextXpToNextLevel,
+      location: displayLocation, current_map: nextMap, last_played_at: new Date().toISOString(),
+    }).eq("id", profile.id);
+    if (error) { setMessage({ type: "error", title: "Błąd zapisu", text: error.message }); return; }
     await loadProfile(profile.id);
-
-    if (nextLevel > oldLevel) {
-      showFarmUpgradeModalOnce(profile.id, nextLevel);
-    }
-
-    setMessage({
-      type: "success",
-      title: "Postęp zapisany",
-      text: "",
-    });
+    setMessage({ type: "success", title: "EXP dodany!", text: `+${amount.toLocaleString("pl-PL")} EXP` });
   }
 
   async function handleUnlockPlot(plotId: number) {
@@ -3343,8 +3309,8 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">➕ Dodaj EXP</p>
                     <div className="flex flex-wrap gap-2">
-                      {[100,1000,10000,100000].map(amt => (
-                        <button key={amt} onClick={() => handleSaveProgress(amt)}
+                      {[250,1000,25000,500000].map(amt => (
+                        <button key={amt} onClick={() => handleAddExp(amt)}
                           className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-xs font-black text-[#2f1b0c]">
                           +{amt.toLocaleString("pl-PL")} EXP
                         </button>
@@ -3354,7 +3320,7 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">💰 Dodaj Gold</p>
                     <div className="flex flex-wrap gap-2">
-                      {[1000,10000,100000,9999999999].map(amt => (
+                      {[1000,10000,250000,999999999].map(amt => (
                         <button key={amt} onClick={() => handleAddGold(amt)}
                           className="rounded-xl border border-yellow-500/60 bg-yellow-900/30 px-3 py-2 text-xs font-black text-yellow-200 hover:bg-yellow-900/50">
                           +{amt >= 1000000 ? amt.toLocaleString("pl-PL") : amt.toLocaleString("pl-PL")} 💰
@@ -3365,7 +3331,7 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">🌱 Dodaj nasiona (każdy rodzaj)</p>
                     <div className="flex flex-wrap gap-2">
-                      {[1,10,100].map(amt => (
+                      {[10,50,100].map(amt => (
                         <button key={amt} onClick={() => handleAddSeeds(amt)}
                           className="rounded-xl border border-green-500/60 bg-green-900/30 px-3 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
                           +{amt} każdy
