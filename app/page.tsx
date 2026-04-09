@@ -111,7 +111,7 @@ type HarvestEvent = {
 
 const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
-const DEFAULT_XP_TO_NEXT_LEVEL = 100;
+const DEFAULT_XP_TO_NEXT_LEVEL = 12;
 const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
@@ -1822,7 +1822,7 @@ export default function Page() {
     if (!confirm("UWAGA: Zresetuje CAŁE konto do stanu startowego. Kontynuować?")) return;
     const xpNeeded = getXpForLevel(1);
     const { error } = await supabase.from("profiles").update({
-      level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 100,
+      level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
       location: "farm1", current_map: "farm1",
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
