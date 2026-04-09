@@ -2847,7 +2847,7 @@ export default function Page() {
                               </div>
 
                               <div className="mt-3">
-                                {Object.entries(seedInventory).filter(([, amount]) => Number(amount) > 0).length === 0 ? (
+                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !k.endsWith('_rotten')).length === 0 ? (
                                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                                     Plecak jest pusty.
                                   </div>
@@ -2855,7 +2855,7 @@ export default function Page() {
                                   <div className="grid grid-cols-4 gap-2">
                                     {(() => {
                                       const raw = (Object.entries(seedInventory).filter(
-                                        ([, amount]) => Number(amount) > 0
+                                        ([k, amount]) => Number(amount) > 0 && !k.endsWith('_rotten')
                                       ) as Array<[string, number]>);
                                       const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
                                         const aLv = CROPS.find(c => c.id === aId)?.unlockLevel ?? 999;
@@ -2902,13 +2902,37 @@ export default function Page() {
                           )}
 
                           {/* ZAKŁADKA: PRZEDMIOTY */}
-                          {backpackTab === "przedmioty" && (
-                            <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                              <p className="text-2xl mb-2">🎒</p>
-                              <p>Brak przedmiotów.</p>
-                              <p className="mt-1 text-xs text-[#8b6a3e]">Tu pojawią się specjalne przedmioty.</p>
-                            </div>
-                          )}
+                          {backpackTab === "przedmioty" && (() => {
+                            const rottenEntries = (Object.entries(seedInventory).filter(
+                              ([k, amount]) => k.endsWith('_rotten') && Number(amount) > 0
+                            ) as Array<[string, number]>);
+                            return rottenEntries.length === 0 ? (
+                              <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                                <p className="text-2xl mb-2">🟫</p>
+                                <p>Brak zepsutych zbiorów.</p>
+                                <p className="mt-1 text-xs text-[#8b6a3e]">Zepsute uprawy pojawiają się tutaj.</p>
+                              </div>
+                            ) : (
+                              <div className="mt-3">
+                                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#8b6a3e]">🟫 Zepsute zbiory — nie można ponownie zasadzić</p>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {rottenEntries.map(([seedId, amount]) => {
+                                    const { baseCropId: _rCropId } = parseQualityKey(seedId);
+                                    const _rCrop = CROPS.find(c => c.id === _rCropId);
+                                    if (!_rCrop) return null;
+                                    return (
+                                      <div key={seedId} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#5a3a1a] bg-[rgba(30,15,5,0.75)]" title={`Zepsuta: ${_rCrop.name}`}>
+                                        <img src={_rCrop.spritePath} alt={`Zepsuta ${_rCrop.name}`} className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated", filter: "sepia(1) saturate(0.3) brightness(0.55)" }} />
+                                        <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"#5a3a1aaa",color:"#f9e7b2"}}>🟫 Zepsuta</span>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
+                                        <p className="mt-1 text-[8px] text-[#8b6a3e] leading-none text-center">{_rCrop.name}</p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
                       </div>
                     </div>
                   </div>
