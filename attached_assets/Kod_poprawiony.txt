@@ -138,8 +138,8 @@ function calcStatEffect(val: number, rate: number): number {
   return Math.round(eff * rate * 1000) / 10;
 }
 function getStatUpgradeCost(targetLv: number): number {
-  const T: [number,number][] = [[1,100],[5,180],[10,310],[20,960],[30,3000],[40,9400],[50,29000],[60,88000],[70,260000],[80,750000],[90,2100000],[100,6000000]];
-  if (targetLv <= 1) return 100;
+  const T: [number,number][] = [[1,25],[5,45],[10,78],[20,960],[30,3000],[40,9400],[50,29000],[60,88000],[70,260000],[80,750000],[90,2100000],[100,6000000]];
+  if (targetLv <= 1) return 25;
   if (targetLv >= 100) return 6000000;
   for (let i=1;i<T.length;i++){
     if (targetLv<=T[i][0]){const t=(targetLv-T[i-1][0])/(T[i][0]-T[i-1][0]);return Math.round(T[i-1][1]+t*(T[i][1]-T[i-1][1]));}
