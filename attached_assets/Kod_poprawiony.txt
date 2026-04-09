@@ -112,6 +112,7 @@ const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
+const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
 const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
@@ -790,6 +791,7 @@ export default function Page() {
   const harvestEventIdRef = React.useRef(0);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const [musicVolume, setMusicVolume] = React.useState(0.4);
   const [musicMuted, setMusicMuted] = React.useState(false);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
@@ -1243,6 +1245,27 @@ export default function Page() {
     }
     farmAudioRef.current.volume = musicMuted ? 0 : musicVolume;
     farmAudioRef.current.play().catch(() => {});
+    return () => {};
+  }, [currentMap, musicVolume, musicMuted]);
+
+  // ─── City music ───
+  useEffect(() => {
+    const isCityMap = (CITY_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
+    if (!isCityMap) {
+      if (cityAudioRef.current) {
+        cityAudioRef.current.pause();
+        cityAudioRef.current.currentTime = 0;
+      }
+      return;
+    }
+    if (!cityAudioRef.current) {
+      const audio = new Audio("/city_music.mp3");
+      audio.loop = true;
+      audio.volume = musicMuted ? 0 : musicVolume;
+      cityAudioRef.current = audio;
+    }
+    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume;
+    cityAudioRef.current.play().catch(() => {});
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
 
