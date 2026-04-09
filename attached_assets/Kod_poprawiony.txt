@@ -795,6 +795,7 @@ export default function Page() {
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
+  const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -1996,6 +1997,7 @@ export default function Page() {
     if (_gainedBase > 0) {
       const qualKey = getQualityKey(crop.id, _harvestQuality);
       nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
+      if (_harvestQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus epicki
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2882,8 +2884,8 @@ export default function Page() {
                                               setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                               setSelectedTool(null);
                                             }}
-                                            onMouseEnter={() => setHoveredCrop(crop)}
-                                            onMouseLeave={() => setHoveredCrop(null)}
+                                            onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|null); }}
+                                            onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
                                             className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                           >
                                             <img src={_epicSprite} alt={crop.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
@@ -4079,8 +4081,8 @@ export default function Page() {
         >
           <p className="mb-2 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
           <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-          <p className="mt-1">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
-          <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
+          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? hoveredCrop.yieldAmount + 1 : hoveredCrop.yieldAmount} szt.{hoveredSeedQuality === "epic" ? <span className="text-yellow-300"> (+1 Epicka)</span> : <span className="opacity-60"> (bez bonusów)</span>}</p>
+          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}{hoveredSeedQuality === "epic" && <span className="text-yellow-300"> (×3 Epicka)</span>}</p>
         </div>
       )}
       </main>
