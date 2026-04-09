@@ -1205,6 +1205,11 @@ export default function Page() {
     }
 
     applyProfileState(extractRpcProfile(data));
+    // Zapisz jakość zasadzonego nasiona (dla EXP przy zbiorze)
+    if (typeof window !== "undefined" && profile?.id) {
+      const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
+      localStorage.setItem(_pqKey, _seedQuality ?? "good");
+    }
 
     setMessage({
       type: "success",
@@ -1968,14 +1973,19 @@ export default function Page() {
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
     const prevSeedAmount = (prevInventorySnapshot[crop.id] ?? 0) as number;
-    const _harvestQuality = rollCropQuality();
-    const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
+    const _harvestQuality = rollCropQuality(); // jakość PLONU (wpada do plecaka)
+    // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
+    const _pqKey2 = (typeof window !== "undefined" && profile?.id) ? `plonopolis_pq_${profile.id}_${plotId}` : "";
+    const _plantedQualityRaw = _pqKey2 ? (localStorage.getItem(_pqKey2) ?? "good") : "good";
+    const _plantedQuality = (["good","epic","rotten"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten";
+    const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality];
+    const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
-      p_exp_mult: _qDef.expMult,
+      p_exp_mult: _plantedQDef.expMult,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -2006,6 +2016,8 @@ export default function Page() {
     setSeedInventory(nextInventory);
     // Zapisz do DB (await — gwarantowane zachowanie jakości)
     await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
+    // Usuń zapamiętaną jakość zasadzonego nasiona
+    if (_pqKey2) localStorage.removeItem(_pqKey2);
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
