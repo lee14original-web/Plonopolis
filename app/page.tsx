@@ -2098,26 +2098,13 @@ export default function Page() {
       return;
     }
     const fromUsername = (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany";
-    const { error } = await supabase.from("messages").insert([
-      {
-        from_user_id: profile.id,
-        from_username: fromUsername,
-        to_user_id: recipientResolved.id,
-        type: "received",
-        subject,
-        body,
-        read: false,
-      },
-      {
-        from_user_id: profile.id,
-        from_username: fromUsername,
-        to_user_id: profile.id,
-        type: "sent",
-        subject,
-        body,
-        read: true,
-      },
-    ]);
+    const { error } = await supabase.rpc("send_game_message", {
+      p_to_user_id:    recipientResolved.id,
+      p_from_user_id:  profile.id,
+      p_from_username: fromUsername,
+      p_subject:       subject,
+      p_body:          body,
+    });
     setComposeSending(false);
     if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
     setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
