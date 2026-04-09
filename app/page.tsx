@@ -1307,6 +1307,14 @@ export default function Page() {
     }, 30000);
     return () => clearInterval(interval);
   }, [profile?.id]);
+  // ─── Oznacz jako przeczytane gdy gracz patrzy na zakładkę Otrzymane ───
+  useEffect(() => {
+    if (showMessagePanel && messageTab === "otrzymane") {
+      void markAsRead();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMessagePanel, messageTab]);
+
 
   useEffect(() => {
     let mounted = true;
@@ -2152,6 +2160,17 @@ export default function Page() {
     const updated = (profile.blocked_users ?? []).filter(id => id !== fromUserId);
     await supabase.from("profiles").update({ blocked_users: updated }).eq("id", profile.id);
     setBlockedUsers(updated);
+  }
+
+  async function markAsRead() {
+    if (!profile) return;
+    const unreadIds = gameMessages
+      .filter(m => !m.read && m.to_user_id === profile.id && m.type === "received")
+      .map(m => m.id);
+    if (unreadIds.length === 0) return;
+    await supabase.from("messages").update({ read: true }).in("id", unreadIds);
+    setGameMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m));
+    setUnreadCount(0);
   }
 
     if (!isDesktop) {
