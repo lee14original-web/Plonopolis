@@ -1831,6 +1831,14 @@ export default function Page() {
     if (!error) await loadProfile(profile.id);
   }
 
+  async function handleAddLegendary(amount: number) {
+    if (!profile?.id) return;
+    const newInv: Record<string,number> = { ...seedInventory };
+    newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
+    const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
+    if (!error) await loadProfile(profile.id);
+  }
+
   async function handleResetAccount() {
     if (!profile?.id) return;
     if (!confirm("UWAGA: Zresetuje CAŁE konto do stanu startowego. Kontynuować?")) return;
@@ -3365,6 +3373,17 @@ export default function Page() {
                         <button key={amt} onClick={() => handleAddSeeds(amt)}
                           className="rounded-xl border border-green-500/60 bg-green-900/30 px-3 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
                           +{amt} każdy
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-purple-400">👑 Dodaj legendarne nasiona</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[1,5,10].map(amt => (
+                        <button key={amt} onClick={() => handleAddLegendary(amt)}
+                          className="rounded-xl border border-purple-500/60 bg-purple-900/30 px-3 py-2 text-xs font-black text-purple-200 hover:bg-purple-900/50">
+                          +{amt} 👑
                         </button>
                       ))}
                     </div>
