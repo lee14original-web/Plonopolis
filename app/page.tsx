@@ -479,7 +479,7 @@ const PLOT_UNLOCK_COSTS: Record<number, number> = {
 };
 
 const XP_TABLE: Record<number, number> = {
-  1: 100,
+  1: 12,
   2: 140,
   3: 180,
   4: 250,
