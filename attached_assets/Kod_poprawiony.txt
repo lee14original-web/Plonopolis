@@ -211,8 +211,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 1,
     spritePath: "/carrot_icon_transparent.png",
-    epicSpritePath: "/carrot_icon_transparent.png",
-    rottenSpritePath: "/carrot_rotten.png",
   },
   {
     id: "carrot",
@@ -222,8 +220,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 6,
     spritePath: "/carrot_icon_transparent.png",
-    epicSpritePath: "/carrot_epic.png",
-    rottenSpritePath: "/carrot_rotten.png",
   },
   {
     id: "potato",
@@ -233,8 +229,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 8,
     spritePath: "/potato.png",
-    epicSpritePath: "/potato_epic.png",
-    rottenSpritePath: "/potato_rotten.png",
   },
   {
     id: "tomato",
@@ -244,8 +238,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 10,
     spritePath: "/tomato.png",
-    epicSpritePath: "/tomato_epic.png",
-    rottenSpritePath: "/tomato_rotten.png",
   },
   {
     id: "cucumber",
@@ -255,8 +247,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 14,
     spritePath: "/cucumber.png",
-    epicSpritePath: "/cucumber_epic.png",
-    rottenSpritePath: "/cucumber_rotten.png",
   },
   {
     id: "onion",
@@ -266,8 +256,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 20,
     spritePath: "/onion.png",
-    epicSpritePath: "/onion_epic.png",
-    rottenSpritePath: "/onion_rotten.png",
   },
   {
     id: "garlic",
@@ -277,8 +265,6 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 28,
     spritePath: "/garlic.png",
-    epicSpritePath: "/garlic_epic.png",
-    rottenSpritePath: "/garlic_rotten.png",
   },
   {
     id: "lettuce",
