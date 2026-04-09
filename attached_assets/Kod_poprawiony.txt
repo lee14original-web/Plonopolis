@@ -3746,7 +3746,15 @@ export default function Page() {
                                 void handleHarvestPlot(plotId);
                               }
                             }}
-                            title={isUnlocked ? `Pole ${plotId}` : `Pole ${plotId} jest zablokowane`}
+                            title={(() => {
+                              if (!isUnlocked) return `Pole ${plotId} jest zablokowane`;
+                              const _pc = getPlotCrop(plotId);
+                              if (!_pc.cropId) return `Pole ${plotId} (puste)`;
+                              const _cropName = CROPS.find(c => c.id === _pc.cropId)?.name ?? _pc.cropId;
+                              const _qLabel = _pc.plantedQuality === "epic" ? "Epicka" : _pc.plantedQuality === "rotten" ? "Zepsuta" : "Zwykła";
+                              const _status = isCropReady(plotId) ? " — gotowa do zbioru! 🌾" : " — rośnie...";
+                              return `${_cropName} (${_qLabel})${_status}`;
+                            })()}
                             className={`absolute rounded-xl transition-all duration-300 ${
                               isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
                             }`}
