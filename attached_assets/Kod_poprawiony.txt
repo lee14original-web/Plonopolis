@@ -885,7 +885,18 @@ export default function Page() {
     setProfile(nextProfile);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     setPlotCrops(parsePlotCrops(source.plot_crops));
-    setSeedInventory(parseSeedInventory(source.seed_inventory));
+
+    // Migracja: jeśli DB ma stare klucze (np. "carrot"), zapisz do DB nowe ("carrot_good")
+    const _rawInv = source.seed_inventory as Record<string, unknown> | null | undefined;
+    const _needsMigration = !!_rawInv && Object.keys(_rawInv).some(k => {
+      const { quality } = parseQualityKey(k);
+      return quality === null && CROPS.some(c => c.id === k);
+    });
+    const _migratedInv = parseSeedInventory(source.seed_inventory);
+    setSeedInventory(_migratedInv);
+    if (_needsMigration && source.id) {
+      void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
+    }
 
     if (source.id && lastLoadedUserIdRef.current !== source.id) {
       lastLoadedUserIdRef.current = source.id;
