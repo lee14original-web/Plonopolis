@@ -885,7 +885,18 @@ export default function Page() {
     setProfile(nextProfile);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     setPlotCrops(parsePlotCrops(source.plot_crops));
-    setSeedInventory(parseSeedInventory(source.seed_inventory));
+
+    // Migracja: jeśli DB ma stare klucze (np. "carrot"), zapisz do DB nowe ("carrot_good")
+    const _rawInv = source.seed_inventory as Record<string, unknown> | null | undefined;
+    const _needsMigration = !!_rawInv && Object.keys(_rawInv).some(k => {
+      const { quality } = parseQualityKey(k);
+      return quality === null && CROPS.some(c => c.id === k);
+    });
+    const _migratedInv = parseSeedInventory(source.seed_inventory);
+    setSeedInventory(_migratedInv);
+    if (_needsMigration && source.id) {
+      void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
+    }
 
     if (source.id && lastLoadedUserIdRef.current !== source.id) {
       lastLoadedUserIdRef.current = source.id;
@@ -1950,7 +1961,6 @@ export default function Page() {
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
-    const prevSeedAmount = (prevInventorySnapshot[crop.id] ?? 0) as number;
     const _harvestQuality = rollCropQuality(); // jakość PLONU (wpada do plecaka)
     // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
     // Jakość ZASADZONEGO nasiona (z pola w DB — bez localStorage)
@@ -1975,17 +1985,22 @@ export default function Page() {
     const rpcInv = (rpcProf?.seed_inventory && typeof rpcProf.seed_inventory === "object")
       ? rpcProf.seed_inventory as Record<string, number>
       : {};
-    const newSeedAmount = (rpcInv[crop.id] ?? 0) as number;
-    const bonusHarvest = newSeedAmount - prevSeedAmount > crop.yieldAmount;
-    const _gainedBase = Math.max(0, newSeedAmount - Math.max(0, prevSeedAmount));
+    // Plon bazowy z konfiguracji (nie z różnicy inventory — zapobiega błędom race condition)
+    const _gainedBase = crop.yieldAmount;
+    const _epicBonus = _plantedQuality === "epic" ? 1 : 0;
+    // Zręczność bonus: SQL daje 2x plon gdy wylosuje trafienie; wykrywamy po stat > 0 i SQL > base
+    const _zrecznosc = playerStats.zrecznosc ?? 0;
+    const _sqlYield = Math.max(0, (rpcInv[crop.id] ?? 0) as number);
+    const bonusHarvest = _zrecznosc > 0 && _sqlYield > crop.yieldAmount;
+    const _bonusAmount = bonusHarvest ? crop.yieldAmount : 0;
+    const _totalYield = _gainedBase + _bonusAmount + _epicBonus;
 
     // Buduj inventory z kluczami jakości — na bazie snapshotu sprzed zbioru
     const nextInventory: Record<string, number> = { ...prevInventorySnapshot };
     delete nextInventory[crop.id]; // usuń klucz bazowy dodany przez SQL
-    if (_gainedBase > 0) {
+    if (_totalYield > 0) {
       const qualKey = getQualityKey(crop.id, _harvestQuality);
-      nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
-      if (_plantedQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus za epickie nasiono
+      nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _totalYield;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2010,15 +2025,14 @@ export default function Page() {
     }
 
     // Dodaj do logu zbiorów
-    const _epicBonus = _plantedQuality === "epic" ? 1 : 0;
     setHarvestLog(prev => [
       ...prev.filter(e => Date.now() - e.timestamp < 15000),
       {
         id: ++harvestEventIdRef.current,
         cropId: crop.id,
         cropName: crop.name,
-        baseAmount: crop.yieldAmount + _epicBonus,
-        bonusAmount: bonusHarvest ? crop.yieldAmount : 0,
+        baseAmount: _gainedBase + _epicBonus,
+        bonusAmount: _bonusAmount,
         bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
         baseExp: actualExp,
         timestamp: Date.now(),
