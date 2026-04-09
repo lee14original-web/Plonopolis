@@ -3195,7 +3195,7 @@ export default function Page() {
                       {/* ─── Modal powitalny dla nowego gracza ─── */}
                       {showWelcome && (
                         <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4">
-                          <div className="relative w-full max-w-[520px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
+                          <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
                             {/* Zamknij */}
                             <button
                               onClick={() => {
@@ -3206,12 +3206,12 @@ export default function Page() {
                             >✕</button>
                             {/* Nagłówek */}
                             <div className="mb-5 flex flex-col items-center gap-3">
-                              <img src="/systemikona.png" alt="Plonopolis" className="h-16 w-16 object-contain" style={{imageRendering:"pixelated"}} />
-                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">[ WIADOMOŚĆ SYSTEMOWA ]</p>
-                              <h2 className="text-center text-2xl font-black text-[#f9e7b2]">Witaj w Plonopolis.</h2>
+                              <img src="/systemikona.png" alt="Plonopolis" className="h-32 w-32 object-contain" style={{imageRendering:"pixelated"}} />
+                              <p className="text-[19px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">[ WIADOMOŚĆ SYSTEMOWA ]</p>
+                              <h2 className="text-center text-[41px] font-black text-[#f9e7b2]">Witaj w Plonopolis.</h2>
                             </div>
                             {/* Treść */}
-                            <div className="space-y-3 text-[13px] leading-relaxed text-[#dfcfab]/90">
+                            <div className="space-y-3 text-[22px] leading-relaxed text-[#dfcfab]/90">
                               <p>Rozpoczynasz na niewielkiej farmie, którą stopniowo rozbudujesz. Siej, podlewaj i zbieraj plony, zdobywając doświadczenie oraz środki na rozwój.</p>
                               <p>Wraz z poziomem odblokujesz nowe pola, ulepszenia oraz kolejne możliwości rozwoju. Twoja farma i postać będą się rozwijać, dając dostęp do coraz lepszych efektów i bonusów.</p>
                               <p>Poza farmą czekają także dodatkowe systemy, takie jak ranking i rywalizacja z innymi.</p>
@@ -3219,8 +3219,8 @@ export default function Page() {
                             </div>
                             {/* Stopka */}
                             <div className="mt-6 flex items-center justify-between border-t border-[#8b6a3e]/30 pt-4">
-                              <div className="flex items-center gap-2 text-[11px] text-[#8b6a3e]">
-                                <img src="/systemikona.png" alt="" className="h-5 w-5 object-contain" style={{imageRendering:"pixelated"}} />
+                              <div className="flex items-center gap-2 text-[19px] text-[#8b6a3e]">
+                                <img src="/systemikona.png" alt="" className="h-8 w-8 object-contain" style={{imageRendering:"pixelated"}} />
                                 <span>System Plonopolis</span>
                               </div>
                               <button
@@ -3228,7 +3228,7 @@ export default function Page() {
                                   localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
                                   setShowWelcome(false);
                                 }}
-                                className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(80,55,10,0.5)] px-5 py-2 text-sm font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.6)] hover:border-[#d8ba7a]"
+                                className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(80,55,10,0.5)] px-5 py-2 text-[22px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.6)] hover:border-[#d8ba7a]"
                               >
                                 Rozumiem →
                               </button>
