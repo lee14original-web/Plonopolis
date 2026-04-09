@@ -1977,7 +1977,7 @@ export default function Page() {
     if (_gainedBase > 0) {
       const qualKey = getQualityKey(crop.id, _harvestQuality);
       nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
-      if (_harvestQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus epicki
+      if (_plantedQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus za epickie nasiono
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2871,7 +2871,6 @@ export default function Page() {
                                             <img src={_epicSprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
-                                             {_qDef2 && (<span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background: _qDef2.borderColor + "aa", color:"#fff"}}>{_qDef2.badge} {_qDef2.label}</span>)}
                                             </span>
                                           </button>
                                         );
@@ -2907,9 +2906,8 @@ export default function Page() {
                                     return (
                                       <div key={seedId} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#5a3a1a] bg-[rgba(30,15,5,0.75)]" title={_rottenName}>
                                         <img src={_rottenSprite} alt={_rottenName} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
-                                        <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"#5a3a1aaa",color:"#f9e7b2"}}>🟫 Zepsuta</span>
+
                                         <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
-                                        <p className="mt-1 text-[8px] text-[#8b6a3e] leading-none text-center">{_rottenName}</p>
                                       </div>
                                     );
                                   })}
