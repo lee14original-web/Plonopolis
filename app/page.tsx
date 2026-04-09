@@ -220,6 +220,8 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 6,
     spritePath: "/carrot_icon_transparent.png",
+    epicSpritePath: "/carrot_epic.png",
+    rottenSpritePath: "/carrot_rotten.png",
   },
   {
     id: "potato",
