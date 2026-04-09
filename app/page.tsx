@@ -40,6 +40,18 @@ type Message = {
   text: string;
 };
 
+type GameMessage = {
+  id: string;
+  from_user_id: string | null;
+  from_username: string | null;
+  to_user_id: string | null;
+  type: "received" | "sent" | "system";
+  subject: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+};
+
 type FarmUpgradeModal = {
   level: number;
   title: string;
@@ -731,6 +743,11 @@ export default function Page() {
   const [rankingSort, setRankingSort] = useState<"level"|"money"|"missions"|"name">("level");
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
   const [showMisjePanel, setShowMisjePanel] = useState(false);
+  const [showMessagePanel, setShowMessagePanel] = useState(false);
+  const [messageTab, setMessageTab] = useState<"systemowe"|"otrzymane"|"wyslane">("systemowe");
+  const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -1895,6 +1912,22 @@ export default function Page() {
     setRankingLoading(false);
   }
 
+  async function loadMessages() {
+    if (!profile) return;
+    setMessagesLoading(true);
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id,from_user_id,from_username,to_user_id,type,subject,body,read,created_at")
+      .or(`to_user_id.eq.${profile.id},type.eq.system`)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (!error && data) {
+      setGameMessages(data as GameMessage[]);
+      setUnreadCount((data as GameMessage[]).filter(m => !m.read && m.to_user_id === profile.id).length);
+    }
+    setMessagesLoading(false);
+  }
+
     if (!isDesktop) {
     return (
       <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
@@ -2014,6 +2047,19 @@ export default function Page() {
                       <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
                       <p className="text-2xl font-black text-white">{moneyFormatted}</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowMessagePanel(true); void loadMessages(); }}
+                      className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/20 transition hover:bg-[rgba(80,50,20,0.4)]"
+                      title="Wiadomości"
+                    >
+                      <img src="/mail.png" alt="Wiadomości" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
+                      {unreadCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-lg">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2635,6 +2681,92 @@ export default function Page() {
                 </div>
               </div>
             )}
+
+          {/* ═══ MODAL WIADOMOŚCI ═══ */}
+          {showMessagePanel && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+              <div className="flex h-[90vh] w-full max-w-2xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+
+                {/* Header */}
+                <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">📬</span>
+                    <div>
+                      <h2 className="text-2xl font-black text-[#f9e7b2]">Wiadomości</h2>
+                      <p className="text-xs text-[#8b6a3e]">Skrzynka gracza Plonopolis</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowMessagePanel(false)}
+                    className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
+                    ✕ Zamknij
+                  </button>
+                </div>
+
+                {/* Zakładki */}
+                <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/30 bg-black/20 px-4 pt-3 pb-0">
+                  {([
+                    { key: "systemowe", label: "Systemowe", icon: "🔔" },
+                    { key: "otrzymane", label: "Otrzymane", icon: "📩" },
+                    { key: "wyslane",   label: "Wysłane",   icon: "📤" },
+                  ] as const).map(tab => (
+                    <button key={tab.key} onClick={() => setMessageTab(tab.key)}
+                      className={`flex items-center gap-1.5 rounded-t-xl px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] transition border-b-2 ${messageTab === tab.key ? "border-[#d8ba7a] text-[#f9e7b2] bg-[rgba(80,50,20,0.3)]" : "border-transparent text-[#8b6a3e] hover:text-[#dfcfab]"}`}>
+                      {tab.icon} {tab.label}
+                      {tab.key === "otrzymane" && unreadCount > 0 && (
+                        <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">{unreadCount}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Treść */}
+                <div className="flex-1 overflow-y-auto p-4">
+                  {messagesLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="animate-pulse text-sm text-[#8b6a3e]">Ładowanie wiadomości...</p>
+                    </div>
+                  ) : (() => {
+                    const filtered = gameMessages.filter(m => {
+                      if (messageTab === "systemowe") return m.type === "system";
+                      if (messageTab === "otrzymane") return m.type === "received";
+                      if (messageTab === "wyslane")   return m.type === "sent";
+                      return false;
+                    });
+                    if (filtered.length === 0) return (
+                      <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-[#8b6a3e]">
+                        <span className="text-5xl opacity-40">{messageTab === "systemowe" ? "🔔" : messageTab === "otrzymane" ? "📩" : "📤"}</span>
+                        <p className="text-sm">Brak wiadomości</p>
+                      </div>
+                    );
+                    return (
+                      <div className="space-y-2">
+                        {filtered.map(msg => (
+                          <div key={msg.id}
+                            className={`rounded-2xl border p-4 transition ${!msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                            <div className="mb-1 flex items-start justify-between gap-2">
+                              <p className={`text-sm font-black ${!msg.read && msg.type !== "sent" ? "text-[#f9e7b2]" : "text-[#dfcfab]"}`}>
+                                {msg.subject || "(bez tytułu)"}
+                              </p>
+                              <span className="shrink-0 text-[10px] text-[#8b6a3e]">
+                                {new Date(msg.created_at).toLocaleDateString("pl-PL", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" })}
+                              </span>
+                            </div>
+                            {(msg.from_username || msg.type === "system") && (
+                              <p className="mb-1 text-[10px] text-[#8b6a3e]">
+                                {msg.type === "system" ? "🔧 System Plonopolis" : `Od: ${msg.from_username}`}
+                              </p>
+                            )}
+                            <p className="text-xs leading-relaxed text-[#dfcfab]/80 whitespace-pre-wrap">{msg.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+              </div>
+            </div>
+          )}
 
                       {showTestModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4">
