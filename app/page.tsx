@@ -4091,10 +4091,18 @@ export default function Page() {
           className="pointer-events-none fixed z-[999] w-52 rounded-[18px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] p-3 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
-          <p className="mb-2 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
+          <p className="mb-1 font-black text-[#f9e7b2]">
+            {hoveredCrop.name}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-300">⚡ Epicka</span>}
+            {hoveredSeedQuality === "good" && <span className="ml-1 text-[10px] font-black text-emerald-300">✅ Zwykła</span>}
+            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">🟫 Popsuta</span>}
+          </p>
+          <p className="mb-1 text-[10px] text-[#8b6a3e]">
+            {hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić jedynie na kompost" : "Zwykłe nasiono"}
+          </p>
           <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? hoveredCrop.yieldAmount + 1 : hoveredCrop.yieldAmount} szt.{hoveredSeedQuality === "epic" ? <span className="text-yellow-300"> (+1 Epicka)</span> : <span className="opacity-60"> (bez bonusów)</span>}</p>
-          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}{hoveredSeedQuality === "epic" && <span className="text-yellow-300"> (×3 Epicka)</span>}</p>
+          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? hoveredCrop.yieldAmount + 1 : hoveredCrop.yieldAmount} szt.<span className="opacity-60"> (bez bonusów)</span></p>
+          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredSeedQuality === "rotten" ? 0 : hoveredCrop.expReward}{hoveredSeedQuality === "epic" && <span className="text-yellow-300"> (×3 Zwykła)</span>}{hoveredSeedQuality === "rotten" && <span className="text-[#8b6a3e]"> (brak)</span>}</p>
         </div>
       )}
       </main>
