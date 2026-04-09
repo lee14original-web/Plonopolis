@@ -111,6 +111,7 @@ const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
+const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 
 const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
 const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
@@ -780,6 +781,9 @@ export default function Page() {
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const harvestEventIdRef = React.useRef(0);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  const [musicVolume, setMusicVolume] = React.useState(0.4);
+  const [musicMuted, setMusicMuted] = React.useState(false);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
 
   function isPlotUnlocked(plotId: number) {
@@ -1212,6 +1216,27 @@ export default function Page() {
     }, 15000);
     return () => { if (harvestLogTimerRef.current) clearTimeout(harvestLogTimerRef.current); };
   }, [harvestLog]);
+
+  // ─── Farm music ───
+  useEffect(() => {
+    const isFarmMap = (FARM_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
+    if (!isFarmMap) {
+      if (farmAudioRef.current) {
+        farmAudioRef.current.pause();
+        farmAudioRef.current.currentTime = 0;
+      }
+      return;
+    }
+    if (!farmAudioRef.current) {
+      const audio = new Audio("/farm_music.mp3");
+      audio.loop = true;
+      audio.volume = musicMuted ? 0 : musicVolume;
+      farmAudioRef.current = audio;
+    }
+    farmAudioRef.current.volume = musicMuted ? 0 : musicVolume;
+    farmAudioRef.current.play().catch(() => {});
+    return () => {};
+  }, [currentMap, musicVolume, musicMuted]);
 
   useEffect(() => {
     let mounted = true;
@@ -2005,6 +2030,43 @@ export default function Page() {
                   <span className="text-base">Testy</span>
                   <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
                 </button>
+              </div>
+
+              {/* ═══ MUZYKA ═══ */}
+              <div className="fixed right-4 z-[92]" style={{ top: "165px" }}>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] px-3 py-3 shadow-2xl backdrop-blur-sm w-[72px]">
+                  {/* Ikona dźwięku */}
+                  <button
+                    type="button"
+                    onClick={() => setMusicMuted(m => !m)}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#8b6a3e]/50 bg-black/30 text-xl transition hover:border-[#d8ba7a]/50"
+                    title={musicMuted ? "Włącz muzykę" : "Wycisz muzykę"}
+                  >
+                    {musicMuted ? "🔇" : musicVolume < 0.15 ? "🔈" : musicVolume < 0.6 ? "🔉" : "🔊"}
+                  </button>
+
+                  {/* Suwak pionowy */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={musicMuted ? 0 : musicVolume}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      setMusicVolume(v);
+                      if (v > 0 && musicMuted) setMusicMuted(false);
+                      if (v === 0) setMusicMuted(true);
+                    }}
+                    className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-[#3a2510] accent-[#d8ba7a]"
+                    style={{ writingMode: "vertical-lr", direction: "rtl" }}
+                    title="Głośność muzyki"
+                  />
+
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-[#8b6a3e]">
+                    {musicMuted ? "Wycisz" : `${Math.round((musicMuted ? 0 : musicVolume) * 100)}%`}
+                  </p>
+                </div>
               </div>
 
               <div className={`fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4 transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
