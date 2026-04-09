@@ -1962,10 +1962,14 @@ export default function Page() {
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevSeedAmount = (seedInventory[crop.id] ?? 0) as number;
+    const _harvestQuality = rollCropQuality();
+    const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
+
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
+      p_exp_mult: _qDef.expMult,
     });
     if (error) {
       setMessage({
@@ -1991,25 +1995,21 @@ export default function Page() {
     const newSeedAmount = (rpcInv[crop.id] ?? 0) as number;
     const bonusHarvest = newSeedAmount - prevSeedAmount > crop.yieldAmount;
 
-    // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
-
-    // ─── Rzut na jakość zbioru ───
-    const _harvestQuality = rollCropQuality();
-    const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
-    const _gainedBase = Math.max(0, newSeedAmount - (prevSeedAmount < 0 ? 0 : prevSeedAmount));
+    // Przenieś z klucza bazowego na klucz jakości w inventory
+    const _gainedBase = Math.max(0, newSeedAmount - Math.max(0, prevSeedAmount));
     if (_gainedBase > 0) {
-      // Przenieś z klucza bazowego na klucz jakości w lokalnym inventory
       setSeedInventory(prev => {
         const next = { ...prev };
         const baseAmt = Math.max(0, (next[crop.id] ?? 0) - _gainedBase);
         if (baseAmt <= 0) delete next[crop.id]; else next[crop.id] = baseAmt;
         const qualKey = getQualityKey(crop.id, _harvestQuality);
         next[qualKey] = (next[qualKey] ?? 0) + _gainedBase;
-        // Zapisz do DB
         void supabase.from("profiles").update({ seed_inventory: next }).eq("id", profile!.id);
         return next;
       });
     }
+
+    // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
 
     let actualExp = crop.expReward;
     if (rpcProf) {
@@ -2018,7 +2018,6 @@ export default function Page() {
       } else {
         actualExp = Math.max(0, (rpcProf.xp ?? 0) - prevXp);
       }
-    if (_qDef.expMult !== 1 && _qDef.expMult > 0) actualExp = Math.round(actualExp * _qDef.expMult);
     }
 
     // Dodaj do logu zbiorów
