@@ -795,6 +795,7 @@ export default function Page() {
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
+  const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -1204,6 +1205,11 @@ export default function Page() {
     }
 
     applyProfileState(extractRpcProfile(data));
+    // Zapisz jakość zasadzonego nasiona (dla EXP przy zbiorze)
+    if (typeof window !== "undefined" && profile?.id) {
+      const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
+      localStorage.setItem(_pqKey, _seedQuality ?? "good");
+    }
 
     setMessage({
       type: "success",
@@ -1967,14 +1973,19 @@ export default function Page() {
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
     const prevSeedAmount = (prevInventorySnapshot[crop.id] ?? 0) as number;
-    const _harvestQuality = rollCropQuality();
-    const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
+    const _harvestQuality = rollCropQuality(); // jakość PLONU (wpada do plecaka)
+    // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
+    const _pqKey2 = (typeof window !== "undefined" && profile?.id) ? `plonopolis_pq_${profile.id}_${plotId}` : "";
+    const _plantedQualityRaw = _pqKey2 ? (localStorage.getItem(_pqKey2) ?? "good") : "good";
+    const _plantedQuality = (["good","epic","rotten"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten";
+    const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality];
+    const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
-      p_exp_mult: _qDef.expMult,
+      p_exp_mult: _plantedQDef.expMult,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -1996,6 +2007,7 @@ export default function Page() {
     if (_gainedBase > 0) {
       const qualKey = getQualityKey(crop.id, _harvestQuality);
       nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
+      if (_harvestQuality === "epic") nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + 1; // +1 bonus epicki
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2004,6 +2016,8 @@ export default function Page() {
     setSeedInventory(nextInventory);
     // Zapisz do DB (await — gwarantowane zachowanie jakości)
     await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
+    // Usuń zapamiętaną jakość zasadzonego nasiona
+    if (_pqKey2) localStorage.removeItem(_pqKey2);
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
@@ -2882,8 +2896,8 @@ export default function Page() {
                                               setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                               setSelectedTool(null);
                                             }}
-                                            onMouseEnter={() => setHoveredCrop(crop)}
-                                            onMouseLeave={() => setHoveredCrop(null)}
+                                            onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|null); }}
+                                            onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
                                             className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                           >
                                             <img src={_epicSprite} alt={crop.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
@@ -2924,7 +2938,7 @@ export default function Page() {
                                     if (!_rCrop) return null;
                                     return (
                                       <div key={seedId} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#5a3a1a] bg-[rgba(30,15,5,0.75)]" title={_rottenName}>
-                                        <img src={_rottenSprite} alt={_rottenName} className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated", filter: "sepia(1) saturate(0.3) brightness(0.55)" }} />
+                                        <img src={_rottenSprite} alt={_rottenName} className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
                                         <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"#5a3a1aaa",color:"#f9e7b2"}}>🟫 Zepsuta</span>
                                         <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
                                         <p className="mt-1 text-[8px] text-[#8b6a3e] leading-none text-center">{_rottenName}</p>
@@ -4079,8 +4093,8 @@ export default function Page() {
         >
           <p className="mb-2 font-black text-[#f9e7b2]">{hoveredCrop.name}</p>
           <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-          <p className="mt-1">🌾 Zbiór: {hoveredCrop.yieldAmount} szt. <span className="opacity-60">(bez bonusów)</span></p>
-          <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
+          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? hoveredCrop.yieldAmount + 1 : hoveredCrop.yieldAmount} szt.{hoveredSeedQuality === "epic" ? <span className="text-yellow-300"> (+1 Epicka)</span> : <span className="opacity-60"> (bez bonusów)</span>}</p>
+          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}{hoveredSeedQuality === "epic" && <span className="text-yellow-300"> (×3 Epicka)</span>}</p>
         </div>
       )}
       </main>
