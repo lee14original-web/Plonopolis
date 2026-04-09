@@ -3993,7 +3993,7 @@ export default function Page() {
                 acc[_gKey].baseAmount += e.baseAmount;
                 acc[_gKey].bonusAmount += e.bonusAmount;
                 acc[_gKey].baseExp += e.baseExp;
-                if (e.bonusSource) acc[e.cropId].bonusSource = e.bonusSource;
+                if (e.bonusSource) acc[_gKey].bonusSource = e.bonusSource;
                 return acc;
               }, {}
             );
