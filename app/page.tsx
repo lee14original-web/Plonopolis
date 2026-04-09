@@ -87,6 +87,7 @@ type Crop = {
   spritePath: string;
   epicSpritePath?: string;
   rottenSpritePath?: string;
+  legendarySpritePath?: string;
 };
 
 type PlotCropState = {
@@ -105,7 +106,7 @@ type HarvestEvent = {
   bonusAmount: number;
   bonusSource: string | null;
   baseExp: number;
-  quality: "rotten" | "good" | "epic";
+  quality: "rotten" | "good" | "epic" | "legendary";
   timestamp: number;
 };
 
@@ -122,9 +123,10 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten: { label: "Zepsuta", badge: "🟫", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)", expMult: 0, canPlant: false },
-  good:   { label: "Zwykła",  badge: "✅", borderColor: "#4a7a4a", bgColor: "rgba(20,50,20,0.5)", expMult: 1, canPlant: true  },
-  epic:   { label: "Epicka",  badge: "⚡", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)", expMult: 3, canPlant: true  },
+  rotten:    { label: "Zepsuta",    badge: "🟫", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)",   expMult: 0, canPlant: false },
+  good:      { label: "Zwykła",     badge: "✅", borderColor: "#4a7a4a", bgColor: "rgba(20,50,20,0.5)",   expMult: 1, canPlant: true  },
+  epic:      { label: "Epicka",     badge: "⚡", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)",  expMult: 3, canPlant: true  },
+  legendary: { label: "Legendarna", badge: "👑", borderColor: "#c084fc", bgColor: "rgba(100,20,180,0.5)", expMult: 5, canPlant: true  },
 } as const;
 type CropQuality = keyof typeof CROP_QUALITY_DEFS;
 
@@ -138,7 +140,7 @@ function rollCropQuality(): CropQuality {
 function getQualityKey(cropId: string, quality: CropQuality) { return `${cropId}_${quality}`; }
 
 function parseQualityKey(key: string): { baseCropId: string; quality: CropQuality | null } {
-  for (const q of ["rotten","good","epic"] as CropQuality[]) {
+  for (const q of ["rotten","good","epic","legendary"] as CropQuality[]) {
     if (key.endsWith(`_${q}`)) return { baseCropId: key.slice(0, -(q.length+1)), quality: q };
   }
   return { baseCropId: key, quality: null };
@@ -223,6 +225,7 @@ const CROPS: Crop[] = [
     spritePath: "/carrot_icon_transparent.png",
     epicSpritePath: "/carrot_epic.png",
     rottenSpritePath: "/carrot_rotten.png",
+    legendarySpritePath: "/carrot_legendary.png",
   },
   {
     id: "potato",
@@ -800,7 +803,7 @@ export default function Page() {
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
-  const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|null>(null);
+  const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -1820,7 +1823,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten"];
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary"];
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1965,8 +1968,8 @@ export default function Page() {
     // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
     // Jakość ZASADZONEGO nasiona (z pola w DB — bez localStorage)
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
-    const _plantedQuality = (["good","epic","rotten"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten";
-    const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality];
+    const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
+    const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
     const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
@@ -1993,14 +1996,26 @@ export default function Page() {
     const _sqlYield = Math.max(0, (rpcInv[crop.id] ?? 0) as number);
     const bonusHarvest = _zrecznosc > 0 && _sqlYield > crop.yieldAmount;
     const _bonusAmount = bonusHarvest ? crop.yieldAmount : 0;
-    const _totalYield = _gainedBase + _bonusAmount + _epicBonus;
 
     // Buduj inventory z kluczami jakości — na bazie snapshotu sprzed zbioru
     const nextInventory: Record<string, number> = { ...prevInventorySnapshot };
     delete nextInventory[crop.id]; // usuń klucz bazowy dodany przez SQL
-    if (_totalYield > 0) {
-      const qualKey = getQualityKey(crop.id, _harvestQuality);
-      nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _totalYield;
+
+    let _totalYield = 0;
+    if (_plantedQuality === "legendary") {
+      // Specjalny drop legendarny: 10-100 zwykłych + 3-10 epickich
+      const _legGood = Math.floor(Math.random() * 91) + 10;
+      const _legEpic = Math.floor(Math.random() * 8)  + 3;
+      nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legGood;
+      nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
+      _totalYield = _legGood + _legEpic;
+    } else {
+      const _totalNormal = _gainedBase + _bonusAmount + _epicBonus;
+      if (_totalNormal > 0) {
+        const qualKey = getQualityKey(crop.id, _harvestQuality);
+        nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _totalNormal;
+      }
+      _totalYield = _gainedBase + _bonusAmount + _epicBonus;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2031,7 +2046,7 @@ export default function Page() {
         id: ++harvestEventIdRef.current,
         cropId: crop.id,
         cropName: crop.name,
-        baseAmount: _gainedBase + _epicBonus,
+        baseAmount: _plantedQuality === "legendary" ? _totalYield : _gainedBase + _epicBonus,
         bonusAmount: _bonusAmount,
         bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
         baseExp: actualExp,
@@ -2851,7 +2866,7 @@ export default function Page() {
                               </div>
 
                               <div className="mt-3">
-                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !k.endsWith('_rotten')).length === 0 ? (
+                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0).length === 0 ? (
                                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                                     Plecak jest pusty.
                                   </div>
@@ -2859,14 +2874,19 @@ export default function Page() {
                                   <div className="grid grid-cols-4 gap-2">
                                     {(() => {
                                       const raw = (Object.entries(seedInventory).filter(
-                                        ([k, amount]) => Number(amount) > 0 && !k.endsWith('_rotten')
+                                        ([k, amount]) => Number(amount) > 0
                                       ) as Array<[string, number]>);
                                       const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
                                         const { baseCropId: _aCrop, quality: _aQ } = parseQualityKey(aId);
                                         const { baseCropId: _bCrop, quality: _bQ } = parseQualityKey(bId);
                                         const aLv = CROPS.find(c => c.id === _aCrop)?.unlockLevel ?? 999;
                                         const bLv = CROPS.find(c => c.id === _bCrop)?.unlockLevel ?? 999;
-                                        if (backpackSort === "standardowe") return aLv !== bLv ? aLv - bLv : (_aQ === "epic" ? -1 : 1);
+                                        if (backpackSort === "standardowe") {
+                                            const _qOrder: Record<string,number> = {rotten:0,good:1,epic:2,legendary:3};
+                                            const aqo = _qOrder[_aQ ?? "good"] ?? 1;
+                                            const bqo = _qOrder[_bQ ?? "good"] ?? 1;
+                                            return aLv !== bLv ? aLv - bLv : aqo - bqo;
+                                          }
                                         if (backpackSort === "duzo") return Number(bAmt) - Number(aAmt);
                                         if (backpackSort === "malo") { const diff = Number(aAmt) - Number(bAmt); return diff !== 0 ? diff : aLv - bLv; }
                                         // epickie: epic first (by level), then rest by level
@@ -2880,7 +2900,10 @@ export default function Page() {
                                           const crop = CROPS.find((item) => item.id === _bCropId);
                                           const _qDef2 = _bQuality ? CROP_QUALITY_DEFS[_bQuality] : null;
                                           const _isRotten = _bQuality === "rotten";
-                                          const _epicSprite = (_bQuality === "epic" && crop.epicSpritePath) ? crop.epicSpritePath : crop.spritePath;
+                                          const _qualitySprite = _bQuality === "epic" && crop.epicSpritePath ? crop.epicSpritePath
+      : _bQuality === "rotten" && crop.rottenSpritePath ? crop.rottenSpritePath
+      : _bQuality === "legendary" && crop.legendarySpritePath ? crop.legendarySpritePath
+      : crop.spritePath;
                                         if (!crop) return null;
                                         return (
                                           <button
@@ -2893,11 +2916,16 @@ export default function Page() {
                                               setSelectedSeedId((prev) => (prev === seedId ? null : seedId));
                                               setSelectedTool(null);
                                             }}
-                                            onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|null); }}
+                                            onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|"legendary"|null); }}
                                             onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
                                             className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                           >
-                                            <img src={_epicSprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                            <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                            {(_bQuality === "legendary" || _bQuality === "rotten") && (
+                                              <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>
+                                                {_bQuality === "legendary" ? "👑" : "🟫"}
+                                              </span>
+                                            )}
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
                                             </span>
@@ -2911,39 +2939,14 @@ export default function Page() {
                             </>
                           )}
 
-                          {/* ZAKŁADKA: PRZEDMIOTY */}
-                          {backpackTab === "przedmioty" && (() => {
-                            const rottenEntries = (Object.entries(seedInventory).filter(
-                              ([k, amount]) => k.endsWith('_rotten') && Number(amount) > 0
-                            ) as Array<[string, number]>);
-                            return rottenEntries.length === 0 ? (
-                              <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                <p className="text-2xl mb-2">🟫</p>
-                                <p>Brak zepsutych zbiorów.</p>
-                                <p className="mt-1 text-xs text-[#8b6a3e]">Zepsute uprawy pojawiają się tutaj.</p>
-                              </div>
-                            ) : (
-                              <div className="mt-3">
-                                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#8b6a3e]">Zepsute zbiory — nie można ponownie zasadzić</p>
-                                <div className="grid grid-cols-4 gap-2">
-                                  {rottenEntries.map(([seedId, amount]) => {
-                                    const { baseCropId: _rCropId } = parseQualityKey(seedId);
-                                    const _rCrop = CROPS.find(c => c.id === _rCropId);
-                          const _rottenSprite = _rCrop?.rottenSpritePath ?? _rCrop?.spritePath;
-                          const _rottenName = _rCrop ? `${_rCrop.name} (Popsuta)` : "Zepsuta uprawa";
-                                    if (!_rCrop) return null;
-                                    return (
-                                      <div key={seedId} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#5a3a1a] bg-[rgba(30,15,5,0.75)]" title={_rottenName}>
-                                        <img src={_rottenSprite} alt={_rottenName} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
-                                        <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"#5a3a1aaa",color:"#f9e7b2"}}>🟫 Zepsuta</span>
-                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })()}
+                          {/* ZAKŁADKA: PRZEDMIOTY — zarezerwowana na przyszłe przedmioty */}
+                          {backpackTab === "przedmioty" && (
+                            <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                              <p className="text-2xl mb-2">🎒</p>
+                              <p>Brak przedmiotów.</p>
+                              <p className="mt-1 text-xs text-[#8b6a3e]">Przedmioty specjalne pojawią się tutaj w przyszłości.</p>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -3778,7 +3781,7 @@ export default function Page() {
                               const _pc = getPlotCrop(plotId);
                               if (!_pc.cropId) return `Pole ${plotId} (puste)`;
                               const _cropName = CROPS.find(c => c.id === _pc.cropId)?.name ?? _pc.cropId;
-                              const _qLabel = _pc.plantedQuality === "epic" ? "Epicka" : _pc.plantedQuality === "rotten" ? "Zepsuta" : "Zwykła";
+                              const _qLabel = _pc.plantedQuality === "legendary" ? "Legendarna" : _pc.plantedQuality === "epic" ? "Epicka" : _pc.plantedQuality === "rotten" ? "Zepsuta" : "Zwykła";
                               const _status = isCropReady(plotId) ? " — gotowa do zbioru! 🌾" : " — rośnie...";
                               return `${_cropName} (${_qLabel})${_status}`;
                             })()}
@@ -4028,7 +4031,7 @@ export default function Page() {
           )}
 
           {harvestLog.length > 0 && (() => {
-            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic" }>>(
+            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
                   acc[_gKey] = { cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0, quality: e.quality };
@@ -4096,16 +4099,17 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
-            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-300">⚡ Epicka</span>}
+            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[10px] font-black text-purple-300">👑 Legendarna</span>}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-purple-400">⚡ Epicka</span>}
             {hoveredSeedQuality === "good" && <span className="ml-1 text-[10px] font-black text-emerald-300">✅ Zwykła</span>}
             {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">🟫 Popsuta</span>}
           </p>
           <p className="mb-1 text-[10px] text-[#8b6a3e]">
-            {hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić jedynie na kompost" : "Zwykłe nasiono"}
+            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, jedynie na kompost" : "Zwykłe nasiono"}
           </p>
           <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? hoveredCrop.yieldAmount + 1 : hoveredCrop.yieldAmount} szt.<span className="opacity-60"> (bez bonusów)</span></p>
-          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredSeedQuality === "rotten" ? 0 : hoveredCrop.expReward}{hoveredSeedQuality === "epic" && <span className="text-yellow-300"> (×3 Zwykła)</span>}{hoveredSeedQuality === "rotten" && <span className="text-[#8b6a3e]"> (brak)</span>}</p>
+          <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}{hoveredSeedQuality !== "legendary" && <span className="opacity-60"> (bez bonusów)</span>}</p>
+          <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredSeedQuality === "rotten" ? 0 : hoveredCrop.expReward}{hoveredSeedQuality === "legendary" && <span className="text-purple-300"> (×5 Zwykła)</span>}{hoveredSeedQuality === "epic" && <span className="text-purple-400"> (×3 Zwykła)</span>}{hoveredSeedQuality === "rotten" && <span className="text-[#8b6a3e]"> (brak)</span>}</p>
         </div>
       )}
       </main>
