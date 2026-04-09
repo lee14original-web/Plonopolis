@@ -2056,16 +2056,29 @@ export default function Page() {
       setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
       return;
     }
-    const { error } = await supabase.from("messages").insert({
-      from_user_id: profile.id,
-      from_username: (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany",
-      to_user_id: recipientResolved.id,
-      type: "received",
-      subject,
-      body,
-      read: false,
-      saved: false,
-    });
+    const fromUsername = (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany";
+    const { error } = await supabase.from("messages").insert([
+      {
+        from_user_id: profile.id,
+        from_username: fromUsername,
+        to_user_id: recipientResolved.id,
+        type: "received",
+        subject,
+        body,
+        read: false,
+        saved: false,
+      },
+      {
+        from_user_id: profile.id,
+        from_username: fromUsername,
+        to_user_id: profile.id,
+        type: "sent",
+        subject,
+        body,
+        read: true,
+        saved: false,
+      },
+    ]);
     setComposeSending(false);
     if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
     setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
