@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type RankingPlayer = {
+  user_id: string;
   player_name: string;
   guild_name: string;
   level: number;
@@ -32,6 +33,7 @@ type Profile = {
   prev_level?: number | null;
   equipment_slots?: number | null;
   equipment?: string[] | null;
+  blocked_users?: string[] | null;
 };
 
 type Message = {
@@ -49,6 +51,7 @@ type GameMessage = {
   subject: string;
   body: string;
   read: boolean;
+  saved: boolean;
   created_at: string;
 };
 
@@ -112,6 +115,7 @@ const MAX_LEVEL = 50;
 const MAX_FIELDS = 25;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
+const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
 const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
@@ -749,6 +753,17 @@ export default function Page() {
   const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeRecipient, setComposeRecipient] = useState("");
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [recipientSuggestions, setRecipientSuggestions] = useState<{id:string;username:string}[]>([]);
+  const [recipientResolved, setRecipientResolved] = useState<{id:string;username:string}|null>(null);
+  const [composeSending, setComposeSending] = useState(false);
+  const [composeError, setComposeError] = useState("");
+  const [messageCooldowns, setMessageCooldowns] = useState<Record<string,number>>({});
+  const [composeCountdownSecs, setComposeCountdownSecs] = useState(0);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
@@ -782,6 +797,7 @@ export default function Page() {
   const harvestEventIdRef = React.useRef(0);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const [musicVolume, setMusicVolume] = React.useState(0.4);
   const [musicMuted, setMusicMuted] = React.useState(false);
   const BACKPACK_POSITION_STORAGE_KEY = "plonopolis_backpack_position";
@@ -1237,6 +1253,44 @@ export default function Page() {
     farmAudioRef.current.play().catch(() => {});
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
+
+  // ─── City music ───
+  useEffect(() => {
+    const isCityMap = (CITY_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
+    if (!isCityMap) {
+      if (cityAudioRef.current) {
+        cityAudioRef.current.pause();
+        cityAudioRef.current.currentTime = 0;
+      }
+      return;
+    }
+    if (!cityAudioRef.current) {
+      const audio = new Audio("/city_music.mp3");
+      audio.loop = true;
+      audio.volume = musicMuted ? 0 : musicVolume;
+      cityAudioRef.current = audio;
+    }
+    cityAudioRef.current.volume = musicMuted ? 0 : musicVolume;
+    cityAudioRef.current.play().catch(() => {});
+    return () => {};
+  }, [currentMap, musicVolume, musicMuted]);
+
+  // ─── Countdown timer ───
+  useEffect(() => {
+    if (composeCountdownSecs <= 0) return;
+    const t = setInterval(() => {
+      setComposeCountdownSecs(s => {
+        if (s <= 1) { clearInterval(t); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [composeCountdownSecs]);
+
+  // ─── Load blocked users from profile ───
+  useEffect(() => {
+    if (profile?.blocked_users) setBlockedUsers(profile.blocked_users.filter(Boolean) as string[]);
+  }, [profile?.blocked_users]);
 
   useEffect(() => {
     let mounted = true;
@@ -1951,6 +2005,109 @@ export default function Page() {
       setUnreadCount((data as GameMessage[]).filter(m => !m.read && m.to_user_id === profile.id).length);
     }
     setMessagesLoading(false);
+  }
+
+  async function searchPlayers(q: string) {
+    if (q.trim().length < 2) { setRecipientSuggestions([]); return; }
+    const { data } = await supabase
+      .from("profiles")
+      .select("id,username")
+      .ilike("username", `%${q.trim()}%`)
+      .neq("id", profile?.id ?? "")
+      .limit(8);
+    setRecipientSuggestions((data as {id:string;username:string}[]) ?? []);
+  }
+
+  const MESSAGE_COST = 50;
+  const MESSAGE_COOLDOWN_MS = 5 * 60 * 1000;
+
+  async function sendMessage() {
+    if (!recipientResolved || !profile) return;
+    const subject = composeSubject.trim();
+    const body = composeBody.trim();
+    if (!subject) { setComposeError("Podaj temat wiadomości."); return; }
+    if (!body) { setComposeError("Napisz treść wiadomości."); return; }
+    if ((profile.money ?? 0) < MESSAGE_COST) {
+      setComposeError(`Za mało pieniędzy. Wysłanie kosztuje ${MESSAGE_COST} 💰.`);
+      return;
+    }
+    const lastSent = messageCooldowns[recipientResolved.id] ?? 0;
+    const elapsed = Date.now() - lastSent;
+    if (elapsed < MESSAGE_COOLDOWN_MS) {
+      const secsLeft = Math.ceil((MESSAGE_COOLDOWN_MS - elapsed) / 1000);
+      setComposeError(`Możesz napisać do tego gracza za ${secsLeft}s.`);
+      setComposeCountdownSecs(secsLeft);
+      return;
+    }
+    setComposeSending(true);
+    setComposeError("");
+    // Sprawdź czy odbiorca zablokował nadawcę
+    const { data: recipientProfile } = await supabase
+      .from("profiles")
+      .select("blocked_users")
+      .eq("id", recipientResolved.id)
+      .single();
+    // Pobierz opłatę zawsze
+    await supabase.from("profiles").update({ money: (profile.money ?? 0) - MESSAGE_COST }).eq("id", profile.id);
+    const blockedByRecipient = ((recipientProfile as {blocked_users?:string[]|null})?.blocked_users ?? []).includes(profile.id);
+    if (blockedByRecipient) {
+      setComposeSending(false);
+      setComposeError("Ta osoba cię zablokowała. Pobrano " + MESSAGE_COST + " 💰.");
+      setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
+      return;
+    }
+    const { error } = await supabase.from("messages").insert({
+      from_user_id: profile.id,
+      from_username: (profile as {username?:string;login?:string}).username ?? profile.login ?? "Nieznany",
+      to_user_id: recipientResolved.id,
+      type: "received",
+      subject,
+      body,
+      read: false,
+      saved: false,
+    });
+    setComposeSending(false);
+    if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
+    setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
+    setShowCompose(false);
+    setComposeRecipient("");
+    setComposeSubject("");
+    setComposeBody("");
+    setRecipientResolved(null);
+    setRecipientSuggestions([]);
+    void loadMessages();
+  }
+
+  function openComposeTo(userId: string, username: string) {
+    setRecipientResolved({ id: userId, username });
+    setComposeRecipient(username);
+    setRecipientSuggestions([]);
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeError("");
+    setShowCompose(true);
+    setShowMessagePanel(true);
+  }
+
+  async function toggleSaveMessage(msgId: string, currentSaved: boolean) {
+    const { error } = await supabase.from("messages").update({ saved: !currentSaved }).eq("id", msgId);
+    if (!error) setGameMessages(prev => prev.map(m => m.id === msgId ? { ...m, saved: !currentSaved } : m));
+  }
+
+  async function blockUser(fromUserId: string) {
+    if (!profile) return;
+    const current = (profile.blocked_users ?? []).filter(Boolean);
+    if (current.includes(fromUserId)) return;
+    const updated = [...current, fromUserId];
+    await supabase.from("profiles").update({ blocked_users: updated }).eq("id", profile.id);
+    setBlockedUsers(updated);
+  }
+
+  async function unblockUser(fromUserId: string) {
+    if (!profile) return;
+    const updated = (profile.blocked_users ?? []).filter(id => id !== fromUserId);
+    await supabase.from("profiles").update({ blocked_users: updated }).eq("id", profile.id);
+    setBlockedUsers(updated);
   }
 
     if (!isDesktop) {
@@ -2722,7 +2879,7 @@ export default function Page() {
                               <td className="py-3 pr-4 font-black text-[#d8ba7a]">
                                 {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
                               </td>
-                              <td className="py-3 pr-4 font-bold text-[#f3e6c8]">{p.player_name}</td>
+                              <td className="py-3 pr-4"><span className="font-bold text-[#f3e6c8]">{p.player_name}</span>{p.user_id !== profile?.id && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-xs transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}</td>
                               <td className="py-3 pr-4 italic text-[#8b6a3e]">{p.guild_name}</td>
                               <td className="py-3 pr-4 text-right font-black text-[#f2ca69]">⭐ {p.level}</td>
                               <td className="py-3 pr-4 text-right text-[#a8e890]">
@@ -2758,10 +2915,18 @@ export default function Page() {
                       <p className="text-xs text-[#8b6a3e]">Skrzynka gracza Plonopolis</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowMessagePanel(false)}
-                    className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
-                    ✕ Zamknij
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowCompose(c => !c); setComposeError(""); }}
+                      className="rounded-xl border border-[#d8ba7a]/70 bg-[rgba(80,50,10,0.5)] px-4 py-2 text-sm font-bold text-[#f9e7b2] transition hover:bg-[rgba(100,70,15,0.7)]">
+                      ✉️ Nowa +
+                    </button>
+                    <button onClick={() => { setShowMessagePanel(false); setShowCompose(false); }}
+                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
+                      ✕ Zamknij
+                    </button>
+                  </div>
                 </div>
 
                 {/* Zakładki */}
@@ -2783,6 +2948,96 @@ export default function Page() {
 
                 {/* Treść */}
                 <div className="flex-1 overflow-y-auto p-4">
+                  {showCompose ? (
+                    <div className="flex h-full flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">✉️</span>
+                        <h3 className="text-base font-black text-[#f9e7b2]">Nowa wiadomość</h3>
+                      </div>
+
+                      {/* Odbiorca z autouzupełnianiem */}
+                      <div className="relative">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Do (login gracza)</label>
+                        <input
+                          type="text"
+                          value={composeRecipient}
+                          onChange={e => {
+                            const v = e.target.value;
+                            setComposeRecipient(v);
+                            setRecipientResolved(null);
+                            void searchPlayers(v);
+                          }}
+                          placeholder="Wpisz login gracza..."
+                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
+                        />
+                        {/* Lista podpowiedzi */}
+                        {recipientSuggestions.length > 0 && !recipientResolved && (
+                          <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-[#8b6a3e]/60 bg-[rgba(22,13,8,0.98)] shadow-2xl">
+                            {recipientSuggestions.map(s => (
+                              <button key={s.id} type="button"
+                                onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
+                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[#dfcfab] transition hover:bg-[rgba(80,50,10,0.5)]">
+                                <span className="text-base">👤</span> {s.username}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {recipientResolved && (
+                          <p className="mt-1 text-[11px] font-bold text-green-400">✔ Gracz znaleziony: {recipientResolved.username}</p>
+                        )}
+                        {composeRecipient.length >= 2 && recipientSuggestions.length === 0 && !recipientResolved && (
+                          <p className="mt-1 text-[11px] text-red-400">Nie znaleziono gracza o podanym loginie.</p>
+                        )}
+                      </div>
+
+                      {/* Temat */}
+                      <div>
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Temat</label>
+                        <input
+                          type="text"
+                          value={composeSubject}
+                          onChange={e => setComposeSubject(e.target.value)}
+                          maxLength={120}
+                          placeholder="Temat wiadomości..."
+                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
+                        />
+                      </div>
+
+                      {/* Treść */}
+                      <div className="flex flex-1 flex-col">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e]">Treść</label>
+                        <textarea
+                          value={composeBody}
+                          onChange={e => setComposeBody(e.target.value)}
+                          maxLength={2000}
+                          placeholder="Napisz wiadomość..."
+                          className="flex-1 resize-none rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70 min-h-[120px]"
+                        />
+                        <p className="mt-1 text-right text-[10px] text-[#8b6a3e]">{composeBody.length}/2000</p>
+                      </div>
+
+                      {/* Błąd i przycisk Wyślij */}
+                      {/* Koszt i cooldown */}
+                      <div className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                        <span className="text-sm">💰</span>
+                        <p className="text-xs text-[#8b6a3e]">Koszt wysłania: <span className="font-black text-[#f2ca69]">50 💰</span></p>
+                        {recipientResolved && composeCountdownSecs > 0 && (
+                          <span className="ml-auto rounded-lg bg-red-950/40 px-2 py-0.5 text-[11px] font-black text-red-400">
+                            ⏱ Odblokuj za: {Math.floor(composeCountdownSecs/60)}:{String(composeCountdownSecs%60).padStart(2,"0")}
+                          </span>
+                        )}
+                      </div>
+                      {composeError && <p className="rounded-xl bg-red-950/40 px-3 py-2 text-xs font-bold text-red-400">{composeError}</p>}
+                      <button
+                        type="button"
+                        disabled={!recipientResolved || composeSending}
+                        onClick={() => void sendMessage()}
+                        className="rounded-xl border border-[#d8ba7a]/70 bg-[linear-gradient(180deg,#d9a93a,#a06e18)] px-6 py-3 text-sm font-black text-[#1a0e00] transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {composeSending ? "Wysyłanie..." : "📤 Wyślij wiadomość"}
+                      </button>
+                    </div>
+                  ) : (<>
                   {messagesLoading ? (
                     <div className="flex h-full items-center justify-center">
                       <p className="animate-pulse text-sm text-[#8b6a3e]">Ładowanie wiadomości...</p>
@@ -2819,11 +3074,44 @@ export default function Page() {
                               </p>
                             )}
                             <p className="text-xs leading-relaxed text-[#dfcfab]/80 whitespace-pre-wrap">{msg.body}</p>
+                             {/* Akcje */}
+                             {msg.type === "received" && (
+                               <div className="mt-3 flex flex-wrap gap-2 border-t border-[#8b6a3e]/20 pt-3">
+                                 <button type="button"
+                                   onClick={() => void toggleSaveMessage(msg.id, msg.saved)}
+                                   className={`rounded-lg border px-3 py-1.5 text-[11px] font-bold transition ${msg.saved ? "border-green-600/60 bg-green-950/40 text-green-300 hover:bg-green-950/60" : "border-[#8b6a3e]/50 bg-black/20 text-[#8b6a3e] hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]"}`}>
+                                   {msg.saved ? "✔ Zapisano" : "💾 Zapisz"}
+                                 </button>
+                                 {msg.from_user_id && (
+                                   blockedUsers.includes(msg.from_user_id) ? (
+                                     <button type="button"
+                                       onClick={() => void unblockUser(msg.from_user_id!)}
+                                       className="rounded-lg border border-blue-600/60 bg-blue-950/30 px-3 py-1.5 text-[11px] font-bold text-blue-300 transition hover:bg-blue-950/50">
+                                       ✅ Odblokuj
+                                     </button>
+                                   ) : (
+                                     <button type="button"
+                                       onClick={() => void blockUser(msg.from_user_id!)}
+                                       className="rounded-lg border border-red-600/50 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-400 transition hover:bg-red-950/40">
+                                       🚫 Blokuj
+                                     </button>
+                                   )
+                                 )}
+                                 {msg.from_user_id && !blockedUsers.includes(msg.from_user_id) && (
+                                   <button type="button"
+                                     onClick={() => openComposeTo(msg.from_user_id!, msg.from_username ?? "")}
+                                     className="rounded-lg border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-[11px] font-bold text-[#8b6a3e] transition hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]">
+                                     ↩️ Odpowiedz
+                                   </button>
+                                 )}
+                               </div>
+                             )}
                           </div>
                         ))}
                       </div>
                     );
                   })()}
+                  </>)}
                 </div>
 
               </div>
