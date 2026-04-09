@@ -815,7 +815,7 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
-    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
+    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo"|"epickie">("standardowe");
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -2823,14 +2823,14 @@ export default function Page() {
                               <div className="mt-3 flex items-center gap-2">
                                 <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
                                 <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                                  {(["standardowe","duzo","malo"] as const).map(s => (
+                                  {(["standardowe","duzo","malo","epickie"] as const).map(s => (
                                     <button
                                       key={s}
                                       type="button"
                                       onClick={() => setBackpackSort(s)}
                                       className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                                     >
-                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : "Mało"}
+                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : s === "malo" ? "Mało" : "⚡ Epickie"}
                                     </button>
                                   ))}
                                 </div>
@@ -2848,12 +2848,18 @@ export default function Page() {
                                         ([k, amount]) => Number(amount) > 0 && !k.endsWith('_rotten')
                                       ) as Array<[string, number]>);
                                       const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
-                                        const aLv = CROPS.find(c => c.id === aId)?.unlockLevel ?? 999;
-                                        const bLv = CROPS.find(c => c.id === bId)?.unlockLevel ?? 999;
-                                        if (backpackSort === "standardowe") return aLv - bLv;
+                                        const { baseCropId: _aCrop, quality: _aQ } = parseQualityKey(aId);
+                                        const { baseCropId: _bCrop, quality: _bQ } = parseQualityKey(bId);
+                                        const aLv = CROPS.find(c => c.id === _aCrop)?.unlockLevel ?? 999;
+                                        const bLv = CROPS.find(c => c.id === _bCrop)?.unlockLevel ?? 999;
+                                        if (backpackSort === "standardowe") return aLv !== bLv ? aLv - bLv : (_aQ === "epic" ? -1 : 1);
                                         if (backpackSort === "duzo") return Number(bAmt) - Number(aAmt);
-                                        const diff = Number(aAmt) - Number(bAmt);
-                                        return diff !== 0 ? diff : aLv - bLv;
+                                        if (backpackSort === "malo") { const diff = Number(aAmt) - Number(bAmt); return diff !== 0 ? diff : aLv - bLv; }
+                                        // epickie: epic first (by level), then rest by level
+                                        const aEpic = _aQ === "epic" ? 0 : 1;
+                                        const bEpic = _bQ === "epic" ? 0 : 1;
+                                        if (aEpic !== bEpic) return aEpic - bEpic;
+                                        return aLv - bLv;
                                       });
                                       return sorted.map(([seedId, amount]) => {
                                         const { baseCropId: _bCropId, quality: _bQuality } = parseQualityKey(seedId);
@@ -2904,7 +2910,7 @@ export default function Page() {
                               </div>
                             ) : (
                               <div className="mt-3">
-                                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#8b6a3e]">🟫 Zepsute zbiory — nie można ponownie zasadzić</p>
+                                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.15em] text-[#8b6a3e]">Zepsute zbiory — nie można ponownie zasadzić</p>
                                 <div className="grid grid-cols-4 gap-2">
                                   {rottenEntries.map(([seedId, amount]) => {
                                     const { baseCropId: _rCropId } = parseQualityKey(seedId);
