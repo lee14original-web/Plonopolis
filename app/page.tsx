@@ -4122,14 +4122,13 @@ export default function Page() {
             {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">⚠️ Popsuta</span>}
           </p>
           <p className="mb-1 text-[10px] text-[#8b6a3e]">
-            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, jedynie na kompost" : "Zwykłe nasiono"}
+            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
           </p>
           {hoveredSeedQuality !== "rotten" && <>
             <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
             <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}</p>
             <p className="mt-1">{hoveredSeedQuality === "legendary" ? "🌟" : "⭐"} EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}</p>
           </>}
-          {hoveredSeedQuality === "rotten" && <p className="mt-1 text-[10px] text-[#8b6a3e]">Nadaje się jedynie jako kompost lub do zadań specjalnych.</p>}
         </div>
       )}
       </main>
