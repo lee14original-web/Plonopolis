@@ -640,16 +640,19 @@ function parseSeedInventory(value: unknown): SeedInventory {
     return {};
   }
 
-  const parsedEntries = Object.entries(value as Record<string, unknown>)
-    .map(([seedId, amount]) => {
-      const { baseCropId } = parseQualityKey(seedId); if (!CROPS.some((crop) => crop.id === baseCropId)) return null;
-      const safeAmount = Number(amount);
-      if (!Number.isFinite(safeAmount) || safeAmount <= 0) return null;
-      return [seedId, Math.floor(safeAmount)] as const;
-    })
-    .filter((entry): entry is readonly [string, number] => entry !== null);
+  const merged: Record<string, number> = {};
 
-  return Object.fromEntries(parsedEntries);
+  for (const [seedId, amount] of Object.entries(value as Record<string, unknown>)) {
+    const { baseCropId, quality } = parseQualityKey(seedId);
+    if (!CROPS.some((crop) => crop.id === baseCropId)) continue;
+    const safeAmount = Math.floor(Number(amount));
+    if (!Number.isFinite(safeAmount) || safeAmount <= 0) continue;
+    // Migracja: stary klucz bez jakości (np. "carrot") → "carrot_good"
+    const normalizedKey = quality === null ? `${seedId}_good` : seedId;
+    merged[normalizedKey] = (merged[normalizedKey] ?? 0) + safeAmount;
+  }
+
+  return merged;
 }
 
 function serializeSeedInventory(value: SeedInventory) {
