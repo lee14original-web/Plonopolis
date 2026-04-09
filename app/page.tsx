@@ -102,6 +102,7 @@ type HarvestEvent = {
   bonusAmount: number;
   bonusSource: string | null;
   baseExp: number;
+  quality: "rotten" | "good" | "epic";
   timestamp: number;
 };
 
@@ -116,6 +117,29 @@ const MAX_FIELDS = 25;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
+
+const CROP_QUALITY_DEFS = {
+  rotten: { label: "Zepsuta", badge: "🟫", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)", expMult: 0, canPlant: false },
+  good:   { label: "Zwykła",  badge: "✅", borderColor: "#4a7a4a", bgColor: "rgba(20,50,20,0.5)", expMult: 1, canPlant: true  },
+  epic:   { label: "Epicka",  badge: "⚡", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)", expMult: 3, canPlant: true  },
+} as const;
+type CropQuality = keyof typeof CROP_QUALITY_DEFS;
+
+function rollCropQuality(): CropQuality {
+  const r = Math.random();
+  if (r < 0.20) return "rotten";
+  if (r < 0.96) return "good";
+  return "epic";
+}
+
+function getQualityKey(cropId: string, quality: CropQuality) { return `${cropId}_${quality}`; }
+
+function parseQualityKey(key: string): { baseCropId: string; quality: CropQuality | null } {
+  for (const q of ["rotten","good","epic"] as CropQuality[]) {
+    if (key.endsWith(`_${q}`)) return { baseCropId: key.slice(0, -(q.length+1)), quality: q };
+  }
+  return { baseCropId: key, quality: null };
+}
 
 const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
 const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
@@ -612,7 +636,7 @@ function parseSeedInventory(value: unknown): SeedInventory {
 
   const parsedEntries = Object.entries(value as Record<string, unknown>)
     .map(([seedId, amount]) => {
-      if (!CROPS.some((crop) => crop.id === seedId)) return null;
+      const { baseCropId } = parseQualityKey(seedId); if (!CROPS.some((crop) => crop.id === baseCropId)) return null;
       const safeAmount = Number(amount);
       if (!Number.isFinite(safeAmount) || safeAmount <= 0) return null;
       return [seedId, Math.floor(safeAmount)] as const;
@@ -1132,7 +1156,12 @@ export default function Page() {
       return;
     }
 
-    const crop = CROPS.find((item) => item.id === effectiveSeedId);
+    const { baseCropId: _baseCropId, quality: _seedQuality } = parseQualityKey(effectiveSeedId);
+      if (_seedQuality === "rotten") {
+        setMessage({ type: "info", title: "Nie można posadzić", text: "Zepsuta uprawa nie nadaje się do sadzenia. Może przydać się do kompostu." });
+        return;
+      }
+      const crop = CROPS.find((item) => item.id === _baseCropId);
     if (!crop) return;
 
     const plot = getPlotCrop(plotId);
@@ -1158,7 +1187,7 @@ export default function Page() {
 
     const { data, error } = await supabase.rpc("game_plant_crop", {
       p_plot_id: plotId,
-      p_crop_id: effectiveSeedId,
+      p_crop_id: _baseCropId,
     });
 
     if (error) {
@@ -1933,10 +1962,14 @@ export default function Page() {
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevSeedAmount = (seedInventory[crop.id] ?? 0) as number;
+    const _harvestQuality = rollCropQuality();
+    const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
+
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
+      p_exp_mult: _qDef.expMult,
     });
     if (error) {
       setMessage({
@@ -1962,7 +1995,22 @@ export default function Page() {
     const newSeedAmount = (rpcInv[crop.id] ?? 0) as number;
     const bonusHarvest = newSeedAmount - prevSeedAmount > crop.yieldAmount;
 
+    // Przenieś z klucza bazowego na klucz jakości w inventory
+    const _gainedBase = Math.max(0, newSeedAmount - Math.max(0, prevSeedAmount));
+    if (_gainedBase > 0) {
+      setSeedInventory(prev => {
+        const next = { ...prev };
+        const baseAmt = Math.max(0, (next[crop.id] ?? 0) - _gainedBase);
+        if (baseAmt <= 0) delete next[crop.id]; else next[crop.id] = baseAmt;
+        const qualKey = getQualityKey(crop.id, _harvestQuality);
+        next[qualKey] = (next[qualKey] ?? 0) + _gainedBase;
+        void supabase.from("profiles").update({ seed_inventory: next }).eq("id", profile!.id);
+        return next;
+      });
+    }
+
     // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
+
     let actualExp = crop.expReward;
     if (rpcProf) {
       if ((rpcProf.level ?? previousLevel) > previousLevel) {
@@ -1984,6 +2032,7 @@ export default function Page() {
         bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
         baseExp: actualExp,
         timestamp: Date.now(),
+        quality: _harvestQuality,
       },
     ]);
   }
@@ -2817,7 +2866,10 @@ export default function Page() {
                                         return diff !== 0 ? diff : aLv - bLv;
                                       });
                                       return sorted.map(([seedId, amount]) => {
-                                        const crop = CROPS.find((item) => item.id === seedId);
+                                        const { baseCropId: _bCropId, quality: _bQuality } = parseQualityKey(seedId);
+                                          const crop = CROPS.find((item) => item.id === _bCropId);
+                                          const _qDef2 = _bQuality ? CROP_QUALITY_DEFS[_bQuality] : null;
+                                          const _isRotten = _bQuality === "rotten";
                                         if (!crop) return null;
                                         return (
                                           <button
@@ -2832,11 +2884,12 @@ export default function Page() {
                                             }}
                                             onMouseEnter={() => setHoveredCrop(crop)}
                                             onMouseLeave={() => setHoveredCrop(null)}
-                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                           >
                                             <img src={crop.spritePath} alt={crop.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
+                                             {_qDef2 && (<span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background: _qDef2.borderColor + "aa", color:"#fff"}}>{_qDef2.badge} {_qDef2.label}</span>)}
                                             </span>
                                           </button>
                                         );
@@ -3932,14 +3985,14 @@ export default function Page() {
           )}
 
           {harvestLog.length > 0 && (() => {
-            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number }>>(
+            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic" }>>(
               (acc, e) => {
-                if (!acc[e.cropId]) {
-                  acc[e.cropId] = { cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0 };
+                const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
+                  acc[_gKey] = { cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0, quality: e.quality };
                 }
-                acc[e.cropId].baseAmount += e.baseAmount;
-                acc[e.cropId].bonusAmount += e.bonusAmount;
-                acc[e.cropId].baseExp += e.baseExp;
+                acc[_gKey].baseAmount += e.baseAmount;
+                acc[_gKey].bonusAmount += e.bonusAmount;
+                acc[_gKey].baseExp += e.baseExp;
                 if (e.bonusSource) acc[e.cropId].bonusSource = e.bonusSource;
                 return acc;
               }, {}
@@ -3950,9 +4003,9 @@ export default function Page() {
               <div className="fixed bottom-20 right-4 z-[88] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
                 <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🌾 Ostatnie zbiory (15s)</p>
                 <div className="space-y-2">
-                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number}>).map((g, i) => (
+                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"}>).map((g, i) => (
                     <div key={i} className="rounded-xl bg-[rgba(255,255,255,0.04)] px-3 py-2">
-                      <p className="font-bold text-[#f9e7b2]">{g.cropName}</p>
+                      <p className="font-bold text-[#f9e7b2]">{g.cropName} <span style={{color: CROP_QUALITY_DEFS[g.quality].borderColor}} className="text-[10px] font-black">{CROP_QUALITY_DEFS[g.quality].badge} {CROP_QUALITY_DEFS[g.quality].label}</span></p>
                       <p className="mt-0.5 text-[#dfcfab]">Zebrano: <span className="font-semibold text-emerald-300">+{g.baseAmount} szt.</span></p>
                       {g.bonusAmount > 0 && (
                         <p className="text-[#dfcfab]">Bonus ({g.bonusSource}): <span className="font-semibold text-yellow-300">+{g.bonusAmount} szt.</span></p>
