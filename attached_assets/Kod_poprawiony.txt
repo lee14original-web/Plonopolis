@@ -752,6 +752,7 @@ export default function Page() {
   const [messageTab, setMessageTab] = useState<"systemowe"|"otrzymane"|"wyslane">("systemowe");
   const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [showCompose, setShowCompose] = useState(false);
   const [composeRecipient, setComposeRecipient] = useState("");
@@ -1291,6 +1292,21 @@ export default function Page() {
   useEffect(() => {
     if (profile?.blocked_users) setBlockedUsers(profile.blocked_users.filter(Boolean) as string[]);
   }, [profile?.blocked_users]);
+
+  // ─── Auto-polling nieprzeczytanych (co 30s) ───
+  useEffect(() => {
+    if (!profile?.id) return;
+    const interval = setInterval(async () => {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("to_user_id", profile.id)
+        .eq("read", false)
+        .eq("type", "received");
+      if (typeof count === "number") setUnreadCount(count);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [profile?.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -1994,17 +2010,33 @@ export default function Page() {
   async function loadMessages() {
     if (!profile) return;
     setMessagesLoading(true);
+    setMessagesError("");
     const { data, error } = await supabase
       .from("messages")
       .select("*")
-      .or(`to_user_id.eq.${profile.id},type.eq.system`)
+      .eq("to_user_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(100);
-    if (error) console.error("[loadMessages] błąd:", error.message);
-    if (!error && data) {
-      setGameMessages(data as GameMessage[]);
-      setUnreadCount((data as GameMessage[]).filter(m => !m.read && m.to_user_id === profile.id).length);
+    // Pobierz też wiadomości systemowe
+    const { data: sysData } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("type", "system")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error("[loadMessages] błąd:", error.message);
+      setMessagesError("Błąd ładowania: " + error.message);
+      setMessagesLoading(false);
+      return;
     }
+    const combined = [
+      ...(data ?? []),
+      ...(sysData ?? []).filter(s => !(data ?? []).some(d => d.id === s.id)),
+    ] as GameMessage[];
+    combined.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setGameMessages(combined);
+    setUnreadCount(combined.filter(m => !m.read && m.to_user_id === profile.id && m.type === "received").length);
     setMessagesLoading(false);
   }
 
@@ -3058,6 +3090,12 @@ export default function Page() {
                       </button>
                     </div>
                   ) : (<>
+                  {messagesError && (
+                    <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/30 px-4 py-3">
+                      <p className="text-xs font-bold text-red-400">⚠️ {messagesError}</p>
+                      <p className="mt-1 text-[10px] text-red-400/70">Sprawdź konsolę przeglądarki (F12) po więcej szczegółów.</p>
+                    </div>
+                  )}
                   {messagesLoading ? (
                     <div className="flex h-full items-center justify-center">
                       <p className="animate-pulse text-sm text-[#8b6a3e]">Ładowanie wiadomości...</p>
