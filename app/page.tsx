@@ -1965,7 +1965,8 @@ export default function Page() {
     const prevXpToNext = displayXpToNextLevel;
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
-    const prevSeedAmount = (seedInventory[crop.id] ?? 0) as number;
+    const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
+    const prevSeedAmount = (prevInventorySnapshot[crop.id] ?? 0) as number;
     const _harvestQuality = rollCropQuality();
     const _qDef = CROP_QUALITY_DEFS[_harvestQuality];
 
@@ -1976,45 +1977,39 @@ export default function Page() {
       p_exp_mult: _qDef.expMult,
     });
     if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd zbioru",
-        text: error.message,
-      });
+      setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
     }
 
     const harvestRpcProfile = extractRpcProfile(data);
-    const nextProfile = applyProfileState(harvestRpcProfile);
-
-    if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
-      showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
-    }
-
-    // Zręczność: wykryj podwójny zbiór na podstawie zwróconego inventory
     const rpcProf = harvestRpcProfile as Profile;
     const rpcInv = (rpcProf?.seed_inventory && typeof rpcProf.seed_inventory === "object")
       ? rpcProf.seed_inventory as Record<string, number>
       : {};
     const newSeedAmount = (rpcInv[crop.id] ?? 0) as number;
     const bonusHarvest = newSeedAmount - prevSeedAmount > crop.yieldAmount;
-
-    // Przenieś z klucza bazowego na klucz jakości w inventory
     const _gainedBase = Math.max(0, newSeedAmount - Math.max(0, prevSeedAmount));
+
+    // Buduj inventory z kluczami jakości — na bazie snapshotu sprzed zbioru
+    const nextInventory: Record<string, number> = { ...prevInventorySnapshot };
+    delete nextInventory[crop.id]; // usuń klucz bazowy dodany przez SQL
     if (_gainedBase > 0) {
-      setSeedInventory(prev => {
-        const next = { ...prev };
-        const baseAmt = Math.max(0, (next[crop.id] ?? 0) - _gainedBase);
-        if (baseAmt <= 0) delete next[crop.id]; else next[crop.id] = baseAmt;
-        const qualKey = getQualityKey(crop.id, _harvestQuality);
-        next[qualKey] = (next[qualKey] ?? 0) + _gainedBase;
-        void supabase.from("profiles").update({ seed_inventory: next }).eq("id", profile!.id);
-        return next;
-      });
+      const qualKey = getQualityKey(crop.id, _harvestQuality);
+      nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _gainedBase;
     }
 
-    // Oblicz faktyczny EXP dany przez Supabase (z crop_config)
+    // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
+    const nextProfile = applyProfileState(harvestRpcProfile);
+    // Natychmiast nadpisz seedInventory wersją z kluczami jakości
+    setSeedInventory(nextInventory);
+    // Zapisz do DB (await — gwarantowane zachowanie jakości)
+    await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
 
+    if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
+      showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
+    }
+
+    // Oblicz faktyczny EXP przyznany przez Supabase
     let actualExp = crop.expReward;
     if (rpcProf) {
       if ((rpcProf.level ?? previousLevel) > previousLevel) {
