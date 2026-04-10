@@ -235,6 +235,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 8,
     spritePath: "/potato.png",
+    epicSpritePath: "/potato_epic.png",
+    rottenSpritePath: "/potato_rotten.png",
+    legendarySpritePath: "/potato_legendary.png",
   },
   {
     id: "tomato",
@@ -1823,7 +1826,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary"];
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary"];
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1835,6 +1838,7 @@ export default function Page() {
     if (!profile?.id) return;
     const newInv: Record<string,number> = { ...seedInventory };
     newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
+    newInv["potato_legendary"] = (newInv["potato_legendary"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
