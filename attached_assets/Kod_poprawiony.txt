@@ -807,6 +807,7 @@ export default function Page() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
+  const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -2390,9 +2391,16 @@ export default function Page() {
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
                   <div
                     className={`grid items-center gap-3 ${
-                      displayLevel >= MAX_LEVEL ? "justify-center grid-cols-[auto_auto]" : "grid-cols-[1fr_auto_auto]"
+                      displayLevel >= MAX_LEVEL ? "justify-center grid-cols-[auto_auto_auto]" : "grid-cols-[auto_1fr_auto_auto]"
                     }`}
                   >
+                    {/* Avatar gracza — bez możliwości kliknięcia */}
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 text-3xl select-none">
+                        {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "👤"}
+                      </div>
+                      <p className="max-w-[52px] truncate text-[10px] font-bold text-[#d8ba7a]">{profile?.login ?? ""}</p>
+                    </div>
                     <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
                       <div className="flex items-center justify-between gap-4">
                         <div className="text-center">
@@ -2857,12 +2865,13 @@ export default function Page() {
                                     setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
                                     setSelectedSeedId(null);
                                   }}
-                                  className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                  onMouseEnter={() => setHoveredWateringCan(true)}
+                                  onMouseLeave={() => setHoveredWateringCan(false)}
+                                  className={`flex min-h-[59px] flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2 text-center transition ${selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
                                 >
-                                  <img src="/watering_can_transparent.png" alt="Konewka" className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
+                                  <img src="/watering_can_transparent.png" alt="Konewka" className="h-10 w-10 object-contain" style={{ imageRendering: "pixelated" }} />
                                   <div className="text-center">
                                     <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                                    <p className="text-xs text-[#dfcfab]">Podlewa 1 raz</p>
                                   </div>
                                 </button>
                                 <button
@@ -4154,6 +4163,18 @@ export default function Page() {
           )}
         </div>
       </div>
+    {/* Tooltip konewki podążający za kursorem */}
+      {hoveredWateringCan && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Narzędzie do podlewania upraw na polu</p>
+          <p>⏱ Skraca czas rośnięcia o <span className="font-bold text-cyan-300">15%</span></p>
+          <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
+        </div>
+      )}
     {/* Tooltip uprawy podążający za kursorem */}
       {hoveredCrop && (
         <div
