@@ -2004,7 +2004,7 @@ export default function Page() {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
-      p_exp_mult: _plantedQDef.expMult,
+      p_planted_quality: _plantedQuality,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -2018,7 +2018,8 @@ export default function Page() {
       : {};
     // Plon bazowy z konfiguracji (nie z różnicy inventory — zapobiega błędom race condition)
     const _gainedBase = crop.yieldAmount;
-    const _epicBonus = _plantedQuality === "epic" ? 1 : 0;
+    const _epicYield = _plantedQuality === "epic" ? (Math.floor(Math.random() * 8) + 3) : 0;
+    const _epicBonus = _plantedQuality === "epic" ? Math.max(0, _epicYield - _gainedBase) : 0;
     // Zręczność bonus: SQL daje 2x plon gdy wylosuje trafienie; wykrywamy po stat > 0 i SQL > base
     const _zrecznosc = playerStats.zrecznosc ?? 0;
     const _sqlYield = Math.max(0, (rpcInv[crop.id] ?? 0) as number);
@@ -4203,8 +4204,8 @@ export default function Page() {
           </p>
           {hoveredSeedQuality !== "rotten" && <>
             <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
-            <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? `${hoveredCrop.yieldAmount + 1} szt.` : `${hoveredCrop.yieldAmount} szt.`}</p>
-            <p className="mt-1">{hoveredSeedQuality === "legendary" ? "🌟" : "⭐"} EXP: +{hoveredSeedQuality === "legendary" ? hoveredCrop.expReward * 5 : hoveredSeedQuality === "epic" ? hoveredCrop.expReward * 3 : hoveredCrop.expReward}</p>
+            <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "legendary" ? "10–100 zwykłych + 3–10 epickich" : hoveredSeedQuality === "epic" ? "3–10 szt." : `${hoveredCrop.yieldAmount} szt.`}</p>
+            <p className="mt-1">{hoveredSeedQuality === "legendary" ? "🌟" : "⭐"} EXP: +{hoveredSeedQuality === "legendary" ? `${hoveredCrop.expReward * 5}–${hoveredCrop.expReward * 10}` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
           </>}
         </div>
       )}
