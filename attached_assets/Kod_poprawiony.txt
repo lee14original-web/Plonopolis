@@ -2926,7 +2926,12 @@ export default function Page() {
                                             }}
                                             onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|"legendary"|null); }}
                                             onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
-                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""} ${selectedSeedId === seedId ? "border-yellow-300 bg-yellow-900/20 shadow-[0_0_12px_rgba(255,220,120,0.22)]" : _qDef2 ? `border-[${_qDef2.borderColor}] bg-[${_qDef2.bgColor}]` : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
+                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""}`}
+                                            style={selectedSeedId === seedId
+                                              ? { borderColor: "#f6d860", background: "rgba(60,40,5,0.4)", boxShadow: "0 0 12px rgba(255,220,120,0.22)" }
+                                              : _qDef2
+                                                ? { borderColor: _qDef2.borderColor, background: _qDef2.bgColor }
+                                                : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
                                           >
                                             <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
                                             {_bQuality === "legendary" && (
