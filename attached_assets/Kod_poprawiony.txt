@@ -123,10 +123,10 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#6b5a3e", bgColor: "rgba(60,40,15,0.6)",   expMult: 0, canPlant: false },
-  good:      { label: "Zwykła",     badge: "✅", borderColor: "#4a7a4a", bgColor: "rgba(20,50,20,0.5)",   expMult: 1, canPlant: true  },
-  epic:      { label: "Epicka",     badge: "⭐", borderColor: "#9b6fff", bgColor: "rgba(60,20,100,0.5)",  expMult: 3, canPlant: true  },
-  legendary: { label: "Legendarna", badge: "🌟", borderColor: "#c084fc", bgColor: "rgba(100,20,180,0.5)", expMult: 5, canPlant: true  },
+  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#9ca3af", bgColor: "rgba(50,50,50,0.5)",   expMult: 0, canPlant: false },
+  good:      { label: "Zwykła",     badge: "✅", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 1, canPlant: true  },
+  epic:      { label: "Epicka",     badge: "⭐", borderColor: "#22c55e", bgColor: "rgba(20,80,30,0.5)",   expMult: 3, canPlant: true  },
+  legendary: { label: "Legendarna", badge: "🌟", borderColor: "#f59e0b", bgColor: "rgba(80,50,5,0.5)",    expMult: 5, canPlant: true  },
 } as const;
 type CropQuality = keyof typeof CROP_QUALITY_DEFS;
 
