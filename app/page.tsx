@@ -836,7 +836,7 @@ export default function Page() {
   };
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
-  const [harvestCountdown, setHarvestCountdown] = React.useState(15);
+  const [harvestCountdown, setHarvestCountdown] = React.useState(25);
   const harvestEventIdRef = React.useRef(0);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -1290,9 +1290,9 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (harvestLog.length === 0) { setHarvestCountdown(15); return; }
-    // Reset countdown to 15 whenever new harvest comes in
-    setHarvestCountdown(15);
+    if (harvestLog.length === 0) { setHarvestCountdown(25); return; }
+    // Reset countdown to 25 whenever new harvest comes in
+    setHarvestCountdown(25);
     // Interval: tick every second
     const interval = setInterval(() => {
       setHarvestCountdown(prev => {
@@ -2057,13 +2057,13 @@ export default function Page() {
       const _legEpic = nextInventory[getQualityKey(crop.id, "epic")] - ((prevInventorySnapshot[getQualityKey(crop.id, "epic")] ?? 0));
       const _now = Date.now();
       setHarvestLog(prev => [
-        ...prev.filter(e => _now - e.timestamp < 15000),
+        ...prev.filter(e => _now - e.timestamp < 25000),
         { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: Math.max(0, _legGood), bonusAmount: 0, bonusSource: null, baseExp: Math.round(actualExp * 0.7), timestamp: _now, quality: "good" as const },
         { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: Math.max(0, _legEpic), bonusAmount: 0, bonusSource: null, baseExp: Math.round(actualExp * 0.3), timestamp: _now, quality: "epic" as const },
       ]);
     } else {
       setHarvestLog(prev => [
-        ...prev.filter(e => Date.now() - e.timestamp < 15000),
+        ...prev.filter(e => Date.now() - e.timestamp < 25000),
         {
           id: ++harvestEventIdRef.current,
           cropId: crop.id,
@@ -4083,8 +4083,8 @@ export default function Page() {
             const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
             const totalBonusExp = 0;
             return (
-              <div className="fixed bottom-20 right-4 z-[88] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
-                <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">{`🌾 Ostatnie zbiory (${harvestCountdown}s)`}</p>
+              <div className="fixed bottom-20 right-4 z-[88] w-[370px] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-5 text-[16px] text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                <p className="mb-2 text-[13px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">{`🌾 Ostatnie zbiory (${harvestCountdown}s)`}</p>
                 <div className="space-y-2">
                   {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>).map((g, i) => {
                     const _qd = CROP_QUALITY_DEFS[g.quality];
