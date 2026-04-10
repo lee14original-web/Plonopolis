@@ -2402,12 +2402,12 @@ export default function Page() {
                   >
                     {/* Avatar gracza — bez możliwości kliknięcia */}
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 select-none overflow-hidden">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 select-none overflow-hidden">
                         {avatarSkin >= 0
-                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
-                          : <span className="text-2xl">👤</span>}
+                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-16 w-16 object-contain" style={{imageRendering:"pixelated"}} />
+                          : <span className="text-3xl">👤</span>}
                       </div>
-                      <p className="max-w-[52px] truncate text-[10px] font-bold text-[#d8ba7a]">{profile?.login ?? ""}</p>
+                      <p className="max-w-[80px] truncate text-[15px] font-bold text-[#d8ba7a]">{profile?.login ?? ""}</p>
                     </div>
                     <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2">
                       <div className="flex items-center justify-between gap-4">
@@ -3764,8 +3764,8 @@ export default function Page() {
                 <div className="mb-4 grid grid-cols-5 gap-2">
                   {SKINS_MALE.map((src, i) => (
                     <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+1}`} className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} />
+                      className={`flex h-32 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      <img src={src} alt={`Postać ${i+1}`} className="h-24 w-24 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
@@ -3773,8 +3773,8 @@ export default function Page() {
                 <div className="grid grid-cols-5 gap-2">
                   {SKINS_FEMALE.map((src, i) => (
                     <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+11}`} className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} />
+                      className={`flex h-32 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      <img src={src} alt={`Postać ${i+11}`} className="h-24 w-24 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
