@@ -123,7 +123,7 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#9ca3af", bgColor: "rgba(50,50,50,0.5)",   expMult: 0, canPlant: false },
+  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#9ca3af", bgColor: "rgba(120,120,120,0.25)", expMult: 0, canPlant: false },
   good:      { label: "Zwykła",     badge: "✅", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 1, canPlant: true  },
   epic:      { label: "Epicka",     badge: "⭐", borderColor: "#22c55e", bgColor: "rgba(20,80,30,0.5)",   expMult: 3, canPlant: true  },
   legendary: { label: "Legendarna", badge: "🌟", borderColor: "#f59e0b", bgColor: "rgba(80,50,5,0.5)",    expMult: 5, canPlant: true  },
