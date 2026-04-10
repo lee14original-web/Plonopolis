@@ -146,8 +146,14 @@ function parseQualityKey(key: string): { baseCropId: string; quality: CropQualit
   return { baseCropId: key, quality: null };
 }
 
-const SKINS_MALE = ["👨‍🌾","🧔","👱‍♂️","👲","🤠","👨‍🦰","👨‍🦱","👨‍🦲","👨‍🦳","👴"];
-const SKINS_FEMALE = ["👩‍🌾","👸","👱‍♀️","👩‍🦰","👩‍🦱","👩‍🦲","👩‍🦳","🧕","💃","👵"];
+const SKINS_MALE = [
+  "/avatar_m1.png","/avatar_m2.png","/avatar_m3.png","/avatar_m4.png","/avatar_m5.png",
+  "/avatar_m6.png","/avatar_m7.png","/avatar_m8.png","/avatar_m9.png","/avatar_m10.png",
+];
+const SKINS_FEMALE = [
+  "/avatar_f1.png","/avatar_f2.png","/avatar_f3.png","/avatar_f4.png","/avatar_f5.png",
+  "/avatar_f6.png","/avatar_f7.png","/avatar_f8.png","/avatar_f9.png","/avatar_f10.png",
+];
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE];
 
 const STATS_DEFS = [
@@ -2396,8 +2402,10 @@ export default function Page() {
                   >
                     {/* Avatar gracza — bez możliwości kliknięcia */}
                     <div className="flex flex-col items-center justify-center gap-1">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 text-3xl select-none">
-                        {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "👤"}
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 select-none overflow-hidden">
+                        {avatarSkin >= 0
+                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
+                          : <span className="text-2xl">👤</span>}
                       </div>
                       <p className="max-w-[52px] truncate text-[10px] font-bold text-[#d8ba7a]">{profile?.login ?? ""}</p>
                     </div>
@@ -3572,8 +3580,10 @@ export default function Page() {
                       {/* Lewa kolumna: avatar */}
                       <div className="flex w-48 shrink-0 flex-col items-center gap-4">
                         <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
-                          className="flex h-36 w-36 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] text-8xl shadow-xl transition hover:border-yellow-400/60">
-                          {avatarSkin >= 0 ? ALL_SKINS[avatarSkin] : "❓"}
+                          className="flex h-36 w-36 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
+                          {avatarSkin >= 0
+                            ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                            : <span className="text-8xl">❓</span>}
                         </button>
                         <div className="text-center">
                           <p className="font-black text-[#f9e7b2]">{profile?.login}</p>
@@ -3752,19 +3762,19 @@ export default function Page() {
                 <h2 className="mb-4 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
                 <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Mężczyźni</p>
                 <div className="mb-4 grid grid-cols-5 gap-2">
-                  {SKINS_MALE.map((sk, i) => (
+                  {SKINS_MALE.map((src, i) => (
                     <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      {sk}
+                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      <img src={src} alt={`Postać ${i+1}`} className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
                 <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Kobiety</p>
                 <div className="grid grid-cols-5 gap-2">
-                  {SKINS_FEMALE.map((sk, i) => (
+                  {SKINS_FEMALE.map((src, i) => (
                     <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 text-3xl transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      {sk}
+                      className={`flex h-16 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                      <img src={src} alt={`Postać ${i+11}`} className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
