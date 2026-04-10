@@ -123,7 +123,7 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#c4a265", bgColor: "rgba(140,100,50,0.25)",  expMult: 0, canPlant: false },
+  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#ffffff", bgColor: "rgba(140,100,50,0.25)",  expMult: 0, canPlant: false },
   good:      { label: "Zwykła",     badge: "✅", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 1, canPlant: true  },
   epic:      { label: "Epicka",     badge: "⭐", borderColor: "#22c55e", bgColor: "rgba(20,80,30,0.5)",   expMult: 3, canPlant: true  },
   legendary: { label: "Legendarna", badge: "🌟", borderColor: "#f59e0b", bgColor: "rgba(80,50,5,0.5)",    expMult: 5, canPlant: true  },
@@ -4116,17 +4116,17 @@ export default function Page() {
     {/* Tooltip uprawy podążający za kursorem */}
       {hoveredCrop && (
         <div
-          className="pointer-events-none fixed z-[999] w-52 rounded-[18px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] p-3 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
-            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[10px] font-black text-purple-300">🌟 Legendarna</span>}
-            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[10px] font-black text-yellow-400">⭐ Epicka</span>}
-            {hoveredSeedQuality === "good" && <span className="ml-1 text-[10px] font-black text-emerald-300">✅ Zwykła</span>}
-            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[10px] font-black text-[#8b6a3e]">⚠️ Popsuta</span>}
+            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[14px] font-black text-purple-300">🌟 Legendarna</span>}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[14px] font-black text-yellow-400">⭐ Epicka</span>}
+            {hoveredSeedQuality === "good" && <span className="ml-1 text-[14px] font-black text-emerald-300">✅ Zwykła</span>}
+            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[14px] font-black text-[#8b6a3e]">⚠️ Popsuta</span>}
           </p>
-          <p className="mb-1 text-[10px] text-[#8b6a3e]">
+          <p className="mb-1 text-[14px] text-[#8b6a3e]">
             {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
           </p>
           {hoveredSeedQuality !== "rotten" && <>
