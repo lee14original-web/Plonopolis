@@ -123,7 +123,7 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 const CROP_QUALITY_DEFS = {
-  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#9ca3af", bgColor: "rgba(120,120,120,0.25)", expMult: 0, canPlant: false },
+  rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#c4a265", bgColor: "rgba(140,100,50,0.25)",  expMult: 0, canPlant: false },
   good:      { label: "Zwykła",     badge: "✅", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 1, canPlant: true  },
   epic:      { label: "Epicka",     badge: "⭐", borderColor: "#22c55e", bgColor: "rgba(20,80,30,0.5)",   expMult: 3, canPlant: true  },
   legendary: { label: "Legendarna", badge: "🌟", borderColor: "#f59e0b", bgColor: "rgba(80,50,5,0.5)",    expMult: 5, canPlant: true  },
@@ -2926,7 +2926,7 @@ export default function Page() {
                                             }}
                                             onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|"legendary"|null); }}
                                             onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
-                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""}`}
+                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed" : ""}`}
                                             style={selectedSeedId === seedId
                                               ? { borderColor: "#f6d860", background: "rgba(60,40,5,0.4)", boxShadow: "0 0 12px rgba(255,220,120,0.22)" }
                                               : _qDef2
