@@ -2004,11 +2004,7 @@ export default function Page() {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
-      p_exp_mult: _plantedQuality === "epic"
-        ? (Math.floor(Math.random() * 4) + 3)
-        : _plantedQuality === "legendary"
-          ? (Math.floor(Math.random() * 6) + 5)
-          : _plantedQDef.expMult,
+      p_planted_quality: _plantedQuality,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
