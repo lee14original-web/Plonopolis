@@ -2926,7 +2926,7 @@ export default function Page() {
                                             }}
                                             onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(_bQuality as "rotten"|"good"|"epic"|"legendary"|null); }}
                                             onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
-                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed" : ""}`}
+                                            className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed opacity-60" : ""}`}
                                             style={selectedSeedId === seedId
                                               ? { borderColor: "#f6d860", background: "rgba(60,40,5,0.4)", boxShadow: "0 0 12px rgba(255,220,120,0.22)" }
                                               : _qDef2
