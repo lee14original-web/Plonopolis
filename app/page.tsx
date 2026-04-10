@@ -235,6 +235,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 8,
     spritePath: "/potato.png",
+    epicSpritePath: "/potato_epic.png",
+    rottenSpritePath: "/potato_rotten.png",
+    legendarySpritePath: "/potato_legendary.png",
   },
   {
     id: "tomato",
@@ -1823,7 +1826,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary"];
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary"];
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1835,6 +1838,7 @@ export default function Page() {
     if (!profile?.id) return;
     const newInv: Record<string,number> = { ...seedInventory };
     newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
+    newInv["potato_legendary"] = (newInv["potato_legendary"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -4121,10 +4125,10 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
-            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[14px] font-black text-purple-300">🌟 Legendarna</span>}
-            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[14px] font-black text-yellow-400">⭐ Epicka</span>}
+            {hoveredSeedQuality === "legendary" && <span className="ml-1 text-[14px] font-black text-[#f59e0b]">🌟 Legendarna</span>}
+            {hoveredSeedQuality === "epic" && <span className="ml-1 text-[14px] font-black text-[#22c55e]">⭐ Epicka</span>}
             {hoveredSeedQuality === "good" && <span className="ml-1 text-[14px] font-black text-emerald-300">✅ Zwykła</span>}
-            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[14px] font-black text-[#8b6a3e]">⚠️ Popsuta</span>}
+            {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[14px] font-black text-white">⚠️ Popsuta</span>}
           </p>
           <p className="mb-1 text-[14px] text-[#8b6a3e]">
             {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — wyjątkowy drop!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
