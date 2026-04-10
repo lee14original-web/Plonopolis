@@ -2052,20 +2052,31 @@ export default function Page() {
     }
 
     // Dodaj do logu zbiorów
-    setHarvestLog(prev => [
-      ...prev.filter(e => Date.now() - e.timestamp < 15000),
-      {
-        id: ++harvestEventIdRef.current,
-        cropId: crop.id,
-        cropName: crop.name,
-        baseAmount: _plantedQuality === "legendary" ? _totalYield : _gainedBase + _epicBonus,
-        bonusAmount: _bonusAmount,
-        bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
-        baseExp: actualExp,
-        timestamp: Date.now(),
-        quality: _harvestQuality,
-      },
-    ]);
+    if (_plantedQuality === "legendary") {
+      const _legGood = nextInventory[getQualityKey(crop.id, "good")] - ((prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
+      const _legEpic = nextInventory[getQualityKey(crop.id, "epic")] - ((prevInventorySnapshot[getQualityKey(crop.id, "epic")] ?? 0));
+      const _now = Date.now();
+      setHarvestLog(prev => [
+        ...prev.filter(e => _now - e.timestamp < 15000),
+        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: Math.max(0, _legGood), bonusAmount: 0, bonusSource: null, baseExp: Math.round(actualExp * 0.7), timestamp: _now, quality: "good" as const },
+        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: Math.max(0, _legEpic), bonusAmount: 0, bonusSource: null, baseExp: Math.round(actualExp * 0.3), timestamp: _now, quality: "epic" as const },
+      ]);
+    } else {
+      setHarvestLog(prev => [
+        ...prev.filter(e => Date.now() - e.timestamp < 15000),
+        {
+          id: ++harvestEventIdRef.current,
+          cropId: crop.id,
+          cropName: crop.name,
+          baseAmount: _gainedBase + _epicBonus,
+          bonusAmount: _bonusAmount,
+          bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
+          baseExp: actualExp,
+          timestamp: Date.now(),
+          quality: _harvestQuality,
+        },
+      ]);
+    }
   }
 
   async function handleChangeMap(targetMap: string) {
@@ -4075,16 +4086,22 @@ export default function Page() {
               <div className="fixed bottom-20 right-4 z-[88] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-xs text-[#dfcfab] shadow-2xl backdrop-blur-sm">
                 <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">{`🌾 Ostatnie zbiory (${harvestCountdown}s)`}</p>
                 <div className="space-y-2">
-                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"}>).map((g, i) => (
-                    <div key={i} className="rounded-xl bg-[rgba(255,255,255,0.04)] px-3 py-2">
-                      <p className="font-bold text-[#f9e7b2]">{g.cropName} <span style={{color: CROP_QUALITY_DEFS[g.quality].borderColor}} className="text-[10px] font-black">{CROP_QUALITY_DEFS[g.quality].badge} {CROP_QUALITY_DEFS[g.quality].label}</span></p>
-                      <p className="mt-0.5 text-[#dfcfab]">Zebrano: <span className="font-semibold text-emerald-300">+{g.baseAmount} szt.</span></p>
+                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>).map((g, i) => {
+                    const _qd = CROP_QUALITY_DEFS[g.quality];
+                    return (
+                    <div key={i} className="rounded-xl px-3 py-2" style={{background: _qd.bgColor, borderLeft: `3px solid ${_qd.borderColor}`}}>
+                      <p className="font-bold text-[#f9e7b2]">
+                        {g.cropName}{" "}
+                        <span style={{color: _qd.borderColor}} className="text-[10px] font-black">{_qd.badge} {_qd.label}</span>
+                      </p>
+                      <p className="mt-0.5 text-[#dfcfab]">Zebrano: <span className="font-semibold" style={{color: _qd.borderColor}}>+{g.baseAmount} szt.</span></p>
                       {g.bonusAmount > 0 && (
                         <p className="text-[#dfcfab]">Bonus ({g.bonusSource}): <span className="font-semibold text-yellow-300">+{g.bonusAmount} szt.</span></p>
                       )}
                       <p className="mt-0.5 text-[#dfcfab]">EXP: <span className="font-semibold text-sky-300">+{g.baseExp}</span></p>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-3 border-t border-[#8b6a3e]/40 pt-2">
                   <p className="text-[#d8ba7a]">Łącznie EXP: <span className="font-bold text-sky-300">+{totalExp}</span>{totalBonusExp > 0 && <span className="text-yellow-300"> +{totalBonusExp} bonus</span>}</p>
