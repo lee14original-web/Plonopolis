@@ -3291,7 +3291,13 @@ export default function Page() {
                         className="rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d4a64f]/80 w-44"
                       />
                       <button
-                        onClick={() => setRankingHighlightMe(v => !v)}
+                        onClick={() => {
+                          setRankingHighlightMe(v => {
+                            const next = !v;
+                            if (next) setTimeout(() => { const el = document.getElementById("ranking-me-row"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
+                            return next;
+                          });
+                        }}
                         className={`rounded-xl px-4 py-2 text-sm font-bold transition border ${rankingHighlightMe ? "border-yellow-400 bg-yellow-500/20 text-yellow-300" : "border-[#8b6a3e]/50 bg-black/20 text-[#f1dfb5] hover:bg-white/5"}`}>
                         🎯 Znajdź mnie
                       </button>
@@ -3329,7 +3335,7 @@ export default function Page() {
                             const isMe = p.user_id === profile?.id;
                             const highlighted = rankingHighlightMe && isMe;
                             return (
-                            <tr key={i} className={`border-b border-[#8b6a3e]/20 transition ${highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60" : "hover:bg-white/5"}`}>
+                            <tr key={i} id={isMe ? "ranking-me-row" : undefined} className={`border-b border-[#8b6a3e]/20 transition ${highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60" : "hover:bg-white/5"}`}>
                               <td className="py-3 pr-4 font-black text-[#d8ba7a]">
                                 {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
                               </td>
