@@ -2177,20 +2177,10 @@ export default function Page() {
     setRankingLoading(true);
     const { data: rows, error } = await supabase.rpc("get_player_ranking");
     if (!error && rows) {
-      const rRows = rows as RankingPlayer[];
-      const userIds = rRows.map(r => r.user_id).filter(Boolean);
-      const avatarMap: Record<string, number> = {};
-      if (userIds.length > 0) {
-        const { data: avData } = await supabase
-          .from("profiles")
-          .select("id, avatar_skin")
-          .in("id", userIds);
-        (avData ?? []).forEach((p: { id: string; avatar_skin: number | null }) => {
-          if (p.avatar_skin !== null && p.avatar_skin !== undefined)
-            avatarMap[p.id] = p.avatar_skin;
-        });
-      }
-      setRankingData(rRows.map(r => ({ ...r, avatar_skin: avatarMap[r.user_id] ?? 0 })));
+      setRankingData((rows as RankingPlayer[]).map(r => ({
+        ...r,
+        avatar_skin: (r.avatar_skin !== null && r.avatar_skin !== undefined) ? r.avatar_skin : 0,
+      })));
     }
     setRankingLoading(false);
   }
