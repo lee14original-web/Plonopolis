@@ -35,6 +35,7 @@ type Profile = {
   equipment_slots?: number | null;
   equipment?: string[] | null;
   blocked_users?: string[] | null;
+  unlocked_epic_avatars?: number[] | null;
 };
 
 type Message = {
@@ -158,7 +159,15 @@ const SKINS_FEMALE = [
   "/avatar_f1.png","/avatar_f2.png","/avatar_f3.png","/avatar_f4.png","/avatar_f5.png",
   "/avatar_f6.png","/avatar_f7.png","/avatar_f8.png","/avatar_f9.png","/avatar_f10.png",
 ];
-const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE];
+const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] = [
+  { path: "/avatar_epic1.png", name: "Złoty Rolnik",   cost: { "carrot_good": 500 } },
+  { path: "/avatar_epic2.png", name: "Zielona Moc",    cost: { "carrot_epic": 20 } },
+  { path: "/avatar_epic3.png", name: "Plon Bogów",     cost: { "carrot_legendary": 1 } },
+  { path: "/avatar_epic4.png", name: "Władca Pól",     cost: { "potato_epic": 5, "carrot_epic": 5 } },
+  { path: "/avatar_epic5.png", name: "Legenda Farmy",  cost: { "potato_legendary": 1 } },
+];
+const EPIC_SKIN_START = 20; // indeksy 20–24
+const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
 
 const STATS_DEFS = [
   { key: "wiedza",    label: "Wiedza",    icon: "📚", desc: "Rośliny rosną szybciej",         rate: 0.005  },
@@ -890,6 +899,9 @@ export default function Page() {
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
+  const [unlockedEpicAvatars, setUnlockedEpicAvatars] = React.useState<number[]>([]);
+  const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("mezczyzni");
+  const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
@@ -1023,6 +1035,8 @@ export default function Page() {
       setEquipment(eq);
       localStorage.setItem(`plonopolis_eqslots_${source.id}`, String(eqSlots));
       localStorage.setItem(`plonopolis_eq_${source.id}`, JSON.stringify(eq));
+      // Epickie avatary — zawsze z DB (nie z localStorage)
+      setUnlockedEpicAvatars(Array.isArray(source.unlocked_epic_avatars) ? source.unlocked_epic_avatars : []);
       // Zawsze aktualizuj localStorage
       saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
       // Zsynchronizuj Supabase tylko gdy skin jest prawidłowy (nie zapisuj -1 do bazy)
@@ -1955,11 +1969,12 @@ export default function Page() {
       location: "farm1", current_map: "farm1",
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
-      equipment_slots: 1, equipment: [],
+      equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
     }).eq("id", profile.id);
     if (!error) {
       lastLoadedUserIdRef.current = null;
       setEquipmentSlots(1); setEquipment([]);
+      setUnlockedEpicAvatars([]);
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
       saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
       await loadProfile(profile.id);
@@ -4111,30 +4126,171 @@ export default function Page() {
 
           {showSkinModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
-              <div className="relative max-h-[90vh] w-full max-w-[1024px] overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="relative max-h-[90vh] w-full max-w-[1100px] overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
                 <button onClick={() => setShowSkinModal(false)} className="absolute right-4 top-4 text-[#8b6a3e] text-xl hover:text-red-400">✕</button>
-                <h2 className="mb-4 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
-                <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Mężczyźni</p>
-                <div className="mb-4 grid grid-cols-5 gap-2">
-                  {SKINS_MALE.map((src, i) => (
-                    <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-64 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                <h2 className="mb-5 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                {/* Zakładki */}
+                <div className="mb-6 flex gap-2 justify-center flex-wrap">
+                  {(["mezczyzni","kobiety","wszystkie","epickie"] as const).map(tab => (
+                    <button key={tab} onClick={() => setSkinTab(tab)}
+                      className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition border ${
+                        skinTab === tab
+                          ? tab === "epickie" ? "border-green-400 bg-green-900/30 text-green-300" : "border-yellow-400 bg-yellow-900/20 text-yellow-200"
+                          : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"
+                      }`}>
+                      {tab === "mezczyzni" ? "👨 Mężczyźni" : tab === "kobiety" ? "👩 Kobiety" : tab === "wszystkie" ? "🌾 Wszystkie" : "⭐ Epickie"}
                     </button>
                   ))}
                 </div>
-                <p className="mb-3 text-center text-xs text-[#8b6a3e] font-bold uppercase tracking-widest">Kobiety</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {SKINS_FEMALE.map((src, i) => (
-                    <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                      className={`flex h-64 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                    </button>
-                  ))}
-                </div>
+
+                {/* Mężczyźni */}
+                {(skinTab === "mezczyzni" || skinTab === "wszystkie") && (
+                  <>
+                    {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👨 Mężczyźni</p>}
+                    <div className={`${skinTab === "wszystkie" ? "mb-4" : ""} grid grid-cols-5 gap-2`}>
+                      {SKINS_MALE.map((src, i) => (
+                        <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                          <img src={src} alt={`Postać ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Kobiety */}
+                {(skinTab === "kobiety" || skinTab === "wszystkie") && (
+                  <>
+                    {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👩 Kobiety</p>}
+                    <div className="grid grid-cols-5 gap-2">
+                      {SKINS_FEMALE.map((src, i) => (
+                        <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
+                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                          <img src={src} alt={`Postać ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Epickie */}
+                {skinTab === "epickie" && (
+                  <>
+                    <p className="mb-4 text-center text-xs text-green-400/80">Kliknij zablokowany avatar, aby go odblokować za odpowiedni koszt z plecaka.</p>
+                    <div className="grid grid-cols-5 gap-3">
+                      {EPIC_SKINS.map((es, i) => {
+                        const idx = EPIC_SKIN_START + i;
+                        const isUnlocked = unlockedEpicAvatars.includes(idx);
+                        const isActive = avatarSkin === idx;
+                        const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+                        return (
+                          <button key={idx}
+                            onClick={() => {
+                              if (isUnlocked) {
+                                setAvatarSkin(idx);
+                                if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current);
+                                setShowSkinModal(false);
+                              } else {
+                                setEpicPurchaseTarget(idx);
+                              }
+                            }}
+                            className={`relative flex flex-col items-center justify-end rounded-2xl border-2 overflow-hidden transition pb-2 ${
+                              isActive ? "border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.5)] bg-green-900/20"
+                              : isUnlocked ? "border-green-500/70 bg-green-950/20 hover:border-green-400"
+                              : "border-[#8b6a3e]/40 bg-black/30 hover:border-green-600/50"
+                            }`}
+                            style={{ minHeight: "220px" }}>
+                            {/* Obrazek — szary jeśli zablokowany */}
+                            <img
+                              src={es.path} alt={es.name}
+                              className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                              style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(100%) brightness(0.45)" }}
+                            />
+                            {/* Zielona ramka glow dla odblokowanych */}
+                            {isUnlocked && !isActive && (
+                              <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{boxShadow:"inset 0 0 0 2px rgba(34,197,94,0.4)"}} />
+                            )}
+                            {/* Kłódka / aktywny badge */}
+                            <div className="relative z-10 mt-auto w-full px-1">
+                              {isActive && (
+                                <div className="mb-1 rounded-lg bg-green-500/90 px-2 py-0.5 text-center text-[10px] font-black text-white">✓ Aktywny</div>
+                              )}
+                              {!isUnlocked && (
+                                <div className={`mb-1 rounded-lg px-2 py-0.5 text-center text-[10px] font-black ${canAfford ? "bg-green-700/90 text-green-100" : "bg-black/80 text-[#8b6a3e]"}`}>
+                                  🔒 {canAfford ? "Możesz kupić!" : "Zablokowany"}
+                                </div>
+                              )}
+                              <div className="rounded-lg bg-black/70 px-1 py-0.5 text-center text-[10px] font-bold text-[#f9e7b2]">{es.name}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
+
+          {/* ═══ MODAL ZAKUPU EPICKIEGO AVATARA ═══ */}
+          {epicPurchaseTarget !== null && (() => {
+            const es = EPIC_SKINS[epicPurchaseTarget - EPIC_SKIN_START];
+            if (!es) return null;
+            const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+            const costLabel = (key: string, amt: number) => {
+              const { baseCropId, quality } = parseQualityKey(key);
+              const crop = CROPS.find(c => c.id === baseCropId);
+              const qLabel = quality === "epic" ? " epickich" : quality === "legendary" ? " legendarnych" : " zwykłych";
+              return `${amt}× ${crop?.name ?? key}${qLabel}`;
+            };
+            return (
+              <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setEpicPurchaseTarget(null)}>
+                <div className="relative w-full max-w-[420px] rounded-[24px] border border-green-500/60 bg-[rgba(10,30,10,0.98)] p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setEpicPurchaseTarget(null)} className="absolute right-4 top-4 text-[#8b6a3e] hover:text-red-400">✕</button>
+                  <div className="mb-4 flex justify-center">
+                    <div className="relative h-36 w-36 overflow-hidden rounded-2xl border-2 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                      <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{imageRendering:"pixelated"}} />
+                    </div>
+                  </div>
+                  <h3 className="mb-1 text-center text-lg font-black text-green-300">⭐ {es.name}</h3>
+                  <p className="mb-4 text-center text-xs text-[#8b6a3e]">Avatar epicki — odblokuj raz, używaj na zawsze</p>
+                  <div className="mb-5 rounded-2xl border border-green-800/50 bg-black/30 p-4">
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-green-400">Koszt odblokowania:</p>
+                    {Object.entries(es.cost).map(([k,v]) => {
+                      const have = seedInventory[k] ?? 0;
+                      const ok = have >= v;
+                      return (
+                        <div key={k} className={`flex items-center justify-between text-sm font-bold ${ok ? "text-green-300" : "text-red-400"}`}>
+                          <span>{costLabel(k, v)}</span>
+                          <span className="text-xs opacity-70">({ok ? "✓" : `brak — masz ${have}`})</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    disabled={!canAfford}
+                    onClick={async () => {
+                      if (!profile?.id || !canAfford) return;
+                      const newInv = { ...seedInventory };
+                      Object.entries(es.cost).forEach(([k,v]) => { newInv[k] = (newInv[k] ?? 0) - v; });
+                      const newUnlocked = [...unlockedEpicAvatars, epicPurchaseTarget];
+                      const { error } = await supabase.from("profiles").update({
+                        seed_inventory: newInv,
+                        unlocked_epic_avatars: newUnlocked,
+                      }).eq("id", profile.id);
+                      if (!error) {
+                        setSeedInventory(newInv);
+                        setUnlockedEpicAvatars(newUnlocked);
+                        setEpicPurchaseTarget(null);
+                      }
+                    }}
+                    className={`w-full rounded-2xl py-3 font-black transition text-sm ${canAfford ? "border border-green-400 bg-green-700/40 text-green-200 hover:bg-green-700/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
+                    {canAfford ? "✅ Odblokuj avatar" : "❌ Brak surowców"}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {isFieldViewOpen && isOnFarmMap && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center px-2 py-2">
