@@ -996,7 +996,8 @@ export default function Page() {
     return new Intl.NumberFormat("pl-PL", {
       style: "currency",
       currency: "PLN",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(displayMoney);
   }, [displayMoney]);
 
@@ -3684,7 +3685,7 @@ export default function Page() {
                   {/* Kasa gracza */}
                   <div className="border-t border-[#8b6a3e]/30 p-3">
                     <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest">💰 Kasa</p>
-                    <p className="text-sm font-black text-[#f9e7b2]">{Math.round(displayMoney)} 💰</p>
+                    <p className="text-sm font-black text-[#f9e7b2]">{Number(displayMoney).toFixed(2)} 💰</p>
                   </div>
                 </div>
                 {/* Content */}
@@ -3805,7 +3806,7 @@ export default function Page() {
                         <div className="text-center">
                           <p className="font-black text-[#f9e7b2]">{profile?.login}</p>
                           <p className="text-xs text-[#8b6a3e]">Poziom {displayLevel}</p>
-                          <p className="mt-1 text-xs text-[#8b6a3e]">{displayMoney.toLocaleString("pl-PL")} 💰</p>
+                          <p className="mt-1 text-xs text-[#8b6a3e]">{Number(displayMoney).toFixed(2)} 💰</p>
                         </div>
                         {freeSkillPoints > 0 && (
                           <span className="rounded-xl bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
