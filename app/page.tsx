@@ -160,7 +160,7 @@ const SKINS_FEMALE = [
   "/avatar_f6.png","/avatar_f7.png","/avatar_f8.png","/avatar_f9.png","/avatar_f10.png",
 ];
 const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] = [
-  { path: "/avatar_epic1.png", name: "Złoty Rolnik",   cost: { "carrot_good": 500 } },
+  { path: "/avatar_epic1.png", name: "Król Marchewek", cost: { "carrot_good": 500 } },
   { path: "/avatar_epic2.png", name: "Zielona Moc",    cost: { "carrot_epic": 20 } },
   { path: "/avatar_epic3.png", name: "Plon Bogów",     cost: { "carrot_legendary": 1 } },
   { path: "/avatar_epic4.png", name: "Władca Pól",     cost: { "potato_epic": 5, "carrot_epic": 5 } },
@@ -3731,6 +3731,19 @@ export default function Page() {
                       ))}
                     </div>
                   </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-400">⭐ Epickie avatary</p>
+                    <button
+                      onClick={async () => {
+                        if (!profile?.id) return;
+                        const allEpicIds = EPIC_SKINS.map((_, i) => EPIC_SKIN_START + i);
+                        const { error } = await supabase.from("profiles").update({ unlocked_epic_avatars: allEpicIds }).eq("id", profile.id);
+                        if (!error) setUnlockedEpicAvatars(allEpicIds);
+                      }}
+                      className="rounded-xl border border-green-500/60 bg-green-900/30 px-4 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
+                      🔓 Odblokuj wszystkie epickie avatary
+                    </button>
+                  </div>
                   <div className="pt-2 border-t border-[#8b6a3e]/30">
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">⚠️ Niebezpieczne</p>
                     <button onClick={handleResetAccount}
@@ -4131,7 +4144,7 @@ export default function Page() {
                 <h2 className="mb-5 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
                 {/* Zakładki */}
                 <div className="mb-6 flex gap-2 justify-center flex-wrap">
-                  {(["mezczyzni","kobiety","wszystkie","epickie"] as const).map(tab => (
+                  {(["mezczyzni","kobiety","epickie","wszystkie"] as const).map(tab => (
                     <button key={tab} onClick={() => setSkinTab(tab)}
                       className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition border ${
                         skinTab === tab
