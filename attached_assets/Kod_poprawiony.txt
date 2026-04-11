@@ -840,11 +840,11 @@ export default function Page() {
   const lastLoadedUserIdRef = React.useRef<string | null>(null);
   const EQ_SLOT_COSTS = [0, 5000, 15000, 30000, 60000, 100000, 200000]; // slot 1 free, 2-7 paid
   const CROP_PRICES: Record<string,number> = {
-    carrot:3,potato:5,tomato:6,cucumber:10,onion:14,garlic:19,
-    lettuce:26,radish:35,beet:48,pepper:64,cabbage:88,broccoli:120,
-    cauliflower:160,strawberry:208,raspberry:272,blueberry:352,
-    eggplant:448,zucchini:576,watermelon:720,grape:880,pumpkin:1040,
-    rapeseed:1200,sunflower:1440,chili:1760,asparagus:2240,
+    carrot:3.2,potato:4.8,tomato:6.4,cucumber:9.6,onion:14.4,garlic:19.2,
+    lettuce:25.6,radish:35.2,beet:48.0,pepper:64.0,cabbage:88.0,broccoli:120.0,
+    cauliflower:160.0,strawberry:208.0,raspberry:272.0,blueberry:352.0,
+    eggplant:448.0,zucchini:576.0,watermelon:720.0,grape:880.0,pumpkin:1040.0,
+    rapeseed:1200.0,sunflower:1440.0,chili:1760.0,asparagus:2240.0,
   };
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
@@ -3702,14 +3702,14 @@ export default function Page() {
                                 <img src={crop.spritePath} alt={crop.name} className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
                                 <div className="flex-1">
                                   <p className="font-bold text-[#f9e7b2]">{crop.name}</p>
-                                  <p className="text-xs text-[#8b6a3e]">{price} 💰 / szt.</p>
+                                  <p className="text-xs text-[#8b6a3e]">{price.toFixed(2)} 💰 / szt.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">−</button>
                                   <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="w-16 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-2 py-1 text-center text-sm text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
                                   <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">+</button>
                                 </div>
-                                <p className="w-24 text-right text-sm font-bold text-yellow-200">{price * qty} 💰</p>
+                                <p className="w-24 text-right text-sm font-bold text-yellow-200">{(price * qty).toFixed(2)} 💰</p>
                               </div>
                             );
                           })}
@@ -3737,7 +3737,7 @@ export default function Page() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-xs text-[#8b6a3e]">Podsumowanie zamówienia:</p>
-                            <p className="text-lg font-black text-[#f9e7b2]">{total} 💰 <span className="text-xs font-normal text-[#8b6a3e]">({totalItems} szt.)</span></p>
+                            <p className="text-lg font-black text-[#f9e7b2]">{total.toFixed(2)} 💰 <span className="text-xs font-normal text-[#8b6a3e]">({totalItems} szt.)</span></p>
                             {!canAfford && total > 0 && <p className="text-xs text-red-400">Niewystarczające środki!</p>}
                           </div>
                           <button
