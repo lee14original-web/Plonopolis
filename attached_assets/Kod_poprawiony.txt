@@ -1622,6 +1622,13 @@ export default function Page() {
   }, [showRankingPanel]);
 
   useEffect(() => {
+    if (!showDomModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowDomModal(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showDomModal]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const savedPosition = window.localStorage.getItem(BACKPACK_POSITION_STORAGE_KEY);
