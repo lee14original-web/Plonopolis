@@ -3238,7 +3238,7 @@ export default function Page() {
           {/* ═══ MODAL RANKINGU ═══ */}
             {showRankingPanel && (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="flex h-[90vh] w-full max-w-4xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+                <div className="flex h-[90vh] w-full max-w-[1165px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
 
                   {/* Header */}
                   <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
@@ -3312,7 +3312,7 @@ export default function Page() {
                                   <img
                                     src={ALL_SKINS[p.user_id === profile?.id ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
                                     alt={p.player_name}
-                                    className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    className="h-12 w-12 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
                                     style={{imageRendering:"pixelated"}}
                                   />
                                   <span className="font-bold text-[#f3e6c8]">{p.player_name}</span>
