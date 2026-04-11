@@ -281,6 +281,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 20,
     spritePath: "/onion.png",
+    epicSpritePath: "/onion_epic.png",
+    rottenSpritePath: "/onion_rotten.png",
+    legendarySpritePath: "/onion_legendary.png",
   },
   {
     id: "garlic",
@@ -290,6 +293,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 28,
     spritePath: "/garlic.png",
+    epicSpritePath: "/garlic_epic.png",
+    rottenSpritePath: "/garlic_rotten.png",
+    legendarySpritePath: "/garlic_legendary.png",
   },
   {
     id: "lettuce",
@@ -299,6 +305,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 36,
     spritePath: "/lettuce.png",
+    epicSpritePath: "/lettuce_epic.png",
+    rottenSpritePath: "/lettuce_rotten.png",
+    legendarySpritePath: "/lettuce_legendary.png",
   },
   {
     id: "radish",
@@ -308,6 +317,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 48,
     spritePath: "/radish.png",
+    epicSpritePath: "/radish_epic.png",
+    rottenSpritePath: "/radish_rotten.png",
+    legendarySpritePath: "/radish_legendary.png",
   },
   {
     id: "beet",
@@ -317,6 +329,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 64,
     spritePath: "/beet.png",
+    epicSpritePath: "/beet_epic.png",
+    rottenSpritePath: "/beet_rotten.png",
+    legendarySpritePath: "/beet_legendary.png",
   },
   {
     id: "pepper",
@@ -326,6 +341,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 84,
     spritePath: "/pepper.png",
+    epicSpritePath: "/pepper_epic.png",
+    rottenSpritePath: "/pepper_rotten.png",
+    legendarySpritePath: "/pepper_legendary.png",
   },
   {
     id: "cabbage",
@@ -335,6 +353,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 110,
     spritePath: "/cabbage.png",
+    epicSpritePath: "/cabbage_epic.png",
+    rottenSpritePath: "/cabbage_rotten.png",
+    legendarySpritePath: "/cabbage_legendary.png",
   },
   {
     id: "broccoli",
@@ -344,6 +365,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 144,
     spritePath: "/broccoli.png",
+    epicSpritePath: "/broccoli_epic.png",
+    rottenSpritePath: "/broccoli_rotten.png",
+    legendarySpritePath: "/broccoli_legendary.png",
   },
   {
     id: "cauliflower",
@@ -353,6 +377,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 190,
     spritePath: "/cauliflower.png",
+    epicSpritePath: "/cauliflower_epic.png",
+    rottenSpritePath: "/cauliflower_rotten.png",
+    legendarySpritePath: "/cauliflower_legendary.png",
   },
   {
     id: "strawberry",
@@ -362,6 +389,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 250,
     spritePath: "/strawberry.png",
+    epicSpritePath: "/strawberry_epic.png",
+    rottenSpritePath: "/strawberry_rotten.png",
+    legendarySpritePath: "/strawberry_legendary.png",
   },
   {
     id: "raspberry",
@@ -371,6 +401,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 330,
     spritePath: "/raspberry.png",
+    epicSpritePath: "/raspberry_epic.png",
+    rottenSpritePath: "/raspberry_rotten.png",
+    legendarySpritePath: "/raspberry_legendary.png",
   },
   {
     id: "blueberry",
@@ -380,6 +413,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 430,
     spritePath: "/blueberry.png",
+    epicSpritePath: "/blueberry_epic.png",
+    rottenSpritePath: "/blueberry_rotten.png",
+    legendarySpritePath: "/blueberry_legendary.png",
   },
   {
     id: "eggplant",
@@ -389,6 +425,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 560,
     spritePath: "/eggplant.png",
+    epicSpritePath: "/eggplant_epic.png",
+    rottenSpritePath: "/eggplant_rotten.png",
+    legendarySpritePath: "/eggplant_legendary.png",
   },
   {
     id: "zucchini",
@@ -398,6 +437,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 720,
     spritePath: "/zucchini.png",
+    epicSpritePath: "/zucchini_epic.png",
+    rottenSpritePath: "/zucchini_rotten.png",
+    legendarySpritePath: "/zucchini_legendary.png",
   },
   {
     id: "watermelon",
@@ -407,6 +449,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 870,
     spritePath: "/watermelon.png",
+    epicSpritePath: "/watermelon_epic.png",
+    rottenSpritePath: "/watermelon_rotten.png",
+    legendarySpritePath: "/watermelon_legendary.png",
   },
   {
     id: "grape",
@@ -416,6 +461,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1000,
     spritePath: "/grape.png",
+    epicSpritePath: "/grape_epic.png",
+    rottenSpritePath: "/grape_rotten.png",
+    legendarySpritePath: "/grape_legendary.png",
   },
   {
     id: "pumpkin",
@@ -425,6 +473,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1080,
     spritePath: "/pumpkin.png",
+    epicSpritePath: "/pumpkin_epic.png",
+    rottenSpritePath: "/pumpkin_rotten.png",
+    legendarySpritePath: "/pumpkin_legendary.png",
   },
   {
     id: "rapeseed",
@@ -434,6 +485,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1150,
     spritePath: "/rapeseed.png",
+    epicSpritePath: "/rapeseed_epic.png",
+    rottenSpritePath: "/rapeseed_rotten.png",
+    legendarySpritePath: "/rapeseed_legendary.png",
   },
   {
     id: "sunflower",
@@ -443,6 +497,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1240,
     spritePath: "/sunflower.png",
+    epicSpritePath: "/sunflower_epic.png",
+    rottenSpritePath: "/sunflower_rotten.png",
+    legendarySpritePath: "/sunflower_legendary.png",
   },
   {
     id: "chili",
@@ -452,6 +509,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1320,
     spritePath: "/chili.png",
+    epicSpritePath: "/chili_epic.png",
+    rottenSpritePath: "/chili_rotten.png",
+    legendarySpritePath: "/chili_legendary.png",
   },
   {
     id: "asparagus",
@@ -461,6 +521,9 @@ const CROPS: Crop[] = [
     yieldAmount: 3,
     expReward: 1440,
     spritePath: "/asparagus.png",
+    epicSpritePath: "/asparagus_epic.png",
+    rottenSpritePath: "/asparagus_rotten.png",
+    legendarySpritePath: "/asparagus_legendary.png",
   },
 ];
 
@@ -1855,7 +1918,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary", "tomato_epic", "tomato_rotten", "tomato_legendary", "cucumber_epic", "cucumber_rotten", "cucumber_legendary"];
+    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1866,10 +1929,9 @@ export default function Page() {
   async function handleAddEpic(amount: number) {
     if (!profile?.id) return;
     const newInv: Record<string,number> = { ...seedInventory };
-    newInv["carrot_epic"] = (newInv["carrot_epic"] ?? 0) + amount;
-    newInv["potato_epic"] = (newInv["potato_epic"] ?? 0) + amount;
-    newInv["tomato_epic"] = (newInv["tomato_epic"] ?? 0) + amount;
-    newInv["cucumber_epic"] = (newInv["cucumber_epic"] ?? 0) + amount;
+    CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).forEach(c => {
+      newInv[`${c.id}_epic`] = (newInv[`${c.id}_epic`] ?? 0) + amount;
+    });
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -1877,10 +1939,9 @@ export default function Page() {
   async function handleAddLegendary(amount: number) {
     if (!profile?.id) return;
     const newInv: Record<string,number> = { ...seedInventory };
-    newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
-    newInv["potato_legendary"] = (newInv["potato_legendary"] ?? 0) + amount;
-    newInv["tomato_legendary"] = (newInv["tomato_legendary"] ?? 0) + amount;
-    newInv["cucumber_legendary"] = (newInv["cucumber_legendary"] ?? 0) + amount;
+    CROPS.filter(c => c.id !== "test_nasiono" && c.legendarySpritePath).forEach(c => {
+      newInv[`${c.id}_legendary`] = (newInv[`${c.id}_legendary`] ?? 0) + amount;
+    });
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
