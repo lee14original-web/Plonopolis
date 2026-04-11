@@ -10,6 +10,7 @@ type RankingPlayer = {
   level: number;
   money: number;
   missions_completed: number;
+  avatar_skin?: number | null;
 };
 
 type Profile = {
@@ -46,8 +47,10 @@ type GameMessage = {
   id: string;
   from_user_id: string | null;
   from_username: string | null;
+  from_avatar_skin?: number | null;
   to_user_id: string | null;
   to_username: string | null;
+  to_avatar_skin?: number | null;
   type: "received" | "sent" | "system";
   subject: string;
   body: string;
@@ -2173,7 +2176,22 @@ export default function Page() {
   async function loadRanking() {
     setRankingLoading(true);
     const { data: rows, error } = await supabase.rpc("get_player_ranking");
-    if (!error && rows) setRankingData(rows as RankingPlayer[]);
+    if (!error && rows) {
+      const rRows = rows as RankingPlayer[];
+      const userIds = rRows.map(r => r.user_id).filter(Boolean);
+      const avatarMap: Record<string, number> = {};
+      if (userIds.length > 0) {
+        const { data: avData } = await supabase
+          .from("profiles")
+          .select("id, avatar_skin")
+          .in("id", userIds);
+        (avData ?? []).forEach((p: { id: string; avatar_skin: number | null }) => {
+          if (p.avatar_skin !== null && p.avatar_skin !== undefined)
+            avatarMap[p.id] = p.avatar_skin;
+        });
+      }
+      setRankingData(rRows.map(r => ({ ...r, avatar_skin: avatarMap[r.user_id] ?? 0 })));
+    }
     setRankingLoading(false);
   }
 
@@ -2208,18 +2226,35 @@ export default function Page() {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    // 4. Rozwiąż loginy odbiorców dla wysłanych
+    // 4. Rozwiąż loginy i avatary odbiorców dla wysłanych
     const recipientIds = Array.from(new Set(
       (sentRaw ?? []).map(m => m.to_user_id).filter(Boolean) as string[]
     ));
     const recipientLoginMap: Record<string, string> = {};
+    const recipientAvatarMap: Record<string, number> = {};
     if (recipientIds.length > 0) {
       const { data: rProfiles } = await supabase
         .from("profiles")
-        .select("id, login")
+        .select("id, login, avatar_skin")
         .in("id", recipientIds);
-      (rProfiles ?? []).forEach((p: { id: string; login: string }) => {
+      (rProfiles ?? []).forEach((p: { id: string; login: string; avatar_skin: number | null }) => {
         recipientLoginMap[p.id] = p.login;
+        if (p.avatar_skin !== null && p.avatar_skin !== undefined) recipientAvatarMap[p.id] = p.avatar_skin;
+      });
+    }
+
+    // 4b. Avatar nadawców dla otrzymanych wiadomości
+    const senderIds = Array.from(new Set(
+      (inboxData ?? []).map((m: { from_user_id: string | null }) => m.from_user_id).filter(Boolean) as string[]
+    ));
+    const senderAvatarMap: Record<string, number> = {};
+    if (senderIds.length > 0) {
+      const { data: sProfiles } = await supabase
+        .from("profiles")
+        .select("id, avatar_skin")
+        .in("id", senderIds);
+      (sProfiles ?? []).forEach((p: { id: string; avatar_skin: number | null }) => {
+        if (p.avatar_skin !== null && p.avatar_skin !== undefined) senderAvatarMap[p.id] = p.avatar_skin;
       });
     }
 
@@ -2227,6 +2262,8 @@ export default function Page() {
       ...m,
       type: "sent" as const,
       to_username: recipientLoginMap[m.to_user_id ?? ""] ?? null,
+      from_avatar_skin: avatarSkin >= 0 ? avatarSkin : 0,
+      to_avatar_skin: recipientAvatarMap[m.to_user_id ?? ""] ?? 0,
     }));
 
     if (error) {
@@ -2237,14 +2274,17 @@ export default function Page() {
     }
 
     // Skrzynka: tylko received i system (pomijamy stare kopie type="sent" przechowywane u nadawcy)
-    const inboxMessages = (inboxData ?? []).filter(
+    const inboxMessages = ((inboxData ?? []).filter(
       m => m.type === "received" || m.type === "system"
-    ) as GameMessage[];
+    ) as GameMessage[]).map(m => ({
+      ...m,
+      from_avatar_skin: senderAvatarMap[m.from_user_id ?? ""] ?? 0,
+    }));
 
     const combined: GameMessage[] = [
       ...inboxMessages,
       ...sentMessages,
-      ...(sysData ?? []).filter(s => !inboxMessages.some(d => d.id === s.id)) as GameMessage[],
+      ...((sysData ?? []).filter(s => !inboxMessages.some(d => d.id === s.id)) as GameMessage[]),
     ];
     combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setGameMessages(combined);
@@ -3177,7 +3217,18 @@ export default function Page() {
                               <td className="py-3 pr-4 font-black text-[#d8ba7a]">
                                 {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
                               </td>
-                              <td className="py-3 pr-4"><span className="font-bold text-[#f3e6c8]">{p.player_name}</span>{p.user_id !== profile?.id && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-xs transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}</td>
+                              <td className="py-3 pr-4">
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={ALL_SKINS[p.avatar_skin ?? 0] ?? ALL_SKINS[0]}
+                                    alt={p.player_name}
+                                    className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    style={{imageRendering:"pixelated"}}
+                                  />
+                                  <span className="font-bold text-[#f3e6c8]">{p.player_name}</span>
+                                  {p.user_id !== profile?.id && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-xs transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}
+                                </div>
+                              </td>
                               <td className="py-3 pr-4 italic text-[#8b6a3e]">{p.guild_name}</td>
                               <td className="py-3 pr-4 text-right font-black text-[#f2ca69]">⭐ {p.level}</td>
                               <td className="py-3 pr-4 text-right text-[#a8e890]">
@@ -3379,26 +3430,62 @@ export default function Page() {
 
                             {/* Received / System: Od kogo → Tytuł → Treść */}
                             {(msg.type === "received" || msg.type === "system") && (<>
-                              <p className="mb-1 text-sm font-bold text-[#8b6a3e]">
-                                {msg.type === "system" ? "🔧 Od: System Plonopolis" : `👤 Od: ${msg.from_username ?? "Nieznany"}`}
-                              </p>
-                              <p className={`mb-2 text-lg font-black ${!msg.read ? "text-[#f9e7b2]" : "text-[#dfcfab]"}`}>
-                                {msg.subject || "(bez tytułu)"}
-                              </p>
+                              <div className="mb-2 flex items-center gap-3">
+                                {msg.type === "system" ? (
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8b6a3e]/50 bg-black/30 text-xl">🔧</span>
+                                ) : (
+                                  <img
+                                    src={ALL_SKINS[msg.from_avatar_skin ?? 0] ?? ALL_SKINS[0]}
+                                    alt={msg.from_username ?? ""}
+                                    className="h-10 w-10 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    style={{imageRendering:"pixelated"}}
+                                  />
+                                )}
+                                <div>
+                                  <p className="text-xs font-bold text-[#8b6a3e]">
+                                    {msg.type === "system" ? "System Plonopolis" : (msg.from_username ?? "Nieznany")}
+                                  </p>
+                                  <p className={`text-lg font-black ${!msg.read ? "text-[#f9e7b2]" : "text-[#dfcfab]"}`}>
+                                    {msg.subject || "(bez tytułu)"}
+                                  </p>
+                                </div>
+                              </div>
                               <p className="text-base leading-relaxed text-[#dfcfab]/90 whitespace-pre-wrap">{msg.body}</p>
                             </>)}
 
                             {/* Sent: Od kogo (ja) → Do kogo → Tytuł → Treść */}
                             {msg.type === "sent" && (<>
-                              <p className="mb-1 text-sm font-bold text-[#8b6a3e]">
-                                👤 Od: <span className="text-[#d8ba7a]">{msg.from_username ?? profile?.login ?? "Ty"}</span>
-                              </p>
-                              <p className="mb-1 text-sm font-bold text-[#8b6a3e]">
-                                📨 Do: <span className="text-[#d8ba7a]">{msg.to_username ?? "Nieznany"}</span>
-                              </p>
-                              <p className="mb-2 text-lg font-black text-[#dfcfab]">
-                                {msg.subject || "(bez tytułu)"}
-                              </p>
+                              <div className="mb-2 flex items-center gap-3">
+                                <div className="flex shrink-0 flex-col items-center gap-1">
+                                  <img
+                                    src={ALL_SKINS[msg.from_avatar_skin ?? avatarSkin ?? 0] ?? ALL_SKINS[0]}
+                                    alt={msg.from_username ?? profile?.login ?? "Ty"}
+                                    className="h-10 w-10 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    style={{imageRendering:"pixelated"}}
+                                    title="Ty"
+                                  />
+                                  <span className="text-[9px] text-[#8b6a3e]">Ty</span>
+                                </div>
+                                <span className="text-[#8b6a3e]">→</span>
+                                <div className="flex shrink-0 flex-col items-center gap-1">
+                                  <img
+                                    src={ALL_SKINS[msg.to_avatar_skin ?? 0] ?? ALL_SKINS[0]}
+                                    alt={msg.to_username ?? "Odbiorca"}
+                                    className="h-10 w-10 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    style={{imageRendering:"pixelated"}}
+                                    title={msg.to_username ?? "Odbiorca"}
+                                  />
+                                  <span className="text-[9px] text-[#8b6a3e]">{msg.to_username ?? "?"}</span>
+                                </div>
+                                <div className="ml-1">
+                                  <p className="text-xs text-[#8b6a3e]">
+                                    <span className="font-bold text-[#d8ba7a]">{msg.from_username ?? profile?.login ?? "Ty"}</span>
+                                    {" → "}
+                                    <span className="font-bold text-[#d8ba7a]">{msg.to_username ?? "Nieznany"}</span>
+                                  </p>
+                                  <p className="text-lg font-black text-[#dfcfab]">{msg.subject || "(bez tytułu)"}</p>
+                                </div>
+                              </div>
                               <p className="text-base leading-relaxed text-[#dfcfab]/90 whitespace-pre-wrap">{msg.body}</p>
                             </>)}
 
