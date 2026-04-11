@@ -3238,7 +3238,7 @@ export default function Page() {
           {/* ═══ MODAL RANKINGU ═══ */}
             {showRankingPanel && (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="flex h-[90vh] w-full max-w-[1165px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+                <div className="flex h-[90vh] w-full max-w-[1631px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
 
                   {/* Header */}
                   <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
