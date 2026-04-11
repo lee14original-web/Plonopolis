@@ -2174,9 +2174,9 @@ export default function Page() {
       .limit(50);
 
     // 4. Rozwiąż loginy odbiorców dla wysłanych
-    const recipientIds = [...new Set(
+    const recipientIds = Array.from(new Set(
       (sentRaw ?? []).map(m => m.to_user_id).filter(Boolean) as string[]
-    )];
+    ));
     const recipientLoginMap: Record<string, string> = {};
     if (recipientIds.length > 0) {
       const { data: rProfiles } = await supabase
