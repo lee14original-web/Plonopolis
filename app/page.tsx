@@ -933,6 +933,7 @@ export default function Page() {
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const [harvestCountdown, setHarvestCountdown] = React.useState(25);
   const harvestEventIdRef = React.useRef(0);
+  const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -3294,7 +3295,14 @@ export default function Page() {
                         onClick={() => {
                           setRankingHighlightMe(v => {
                             const next = !v;
-                            if (next) setTimeout(() => { const el = document.getElementById("ranking-me-row"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 50);
+                            if (next) setTimeout(() => {
+                              const el = document.getElementById("ranking-me-row");
+                              const container = rankingScrollRef.current;
+                              if (el && container) {
+                                const top = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
+                                container.scrollTo({ top, behavior: "smooth" });
+                              }
+                            }, 80);
                             return next;
                           });
                         }}
@@ -3305,7 +3313,7 @@ export default function Page() {
                   </div>
 
                   {/* Table */}
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div ref={rankingScrollRef} className="flex-1 overflow-y-auto px-6 py-4">
                     {rankingLoading ? (
                       <div className="flex h-full items-center justify-center">
                         <div className="text-center">
