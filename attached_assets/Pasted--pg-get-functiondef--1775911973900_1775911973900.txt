@@ -1,0 +1,17 @@
+| pg_get_functiondef                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CREATE OR REPLACE FUNCTION public.send_game_message(p_to_user_id uuid, p_from_user_id uuid, p_from_username text, p_subject text, p_body text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  INSERT INTO messages (from_user_id, from_username, to_user_id, type, subject, body, read, saved)
+  VALUES (p_from_user_id, p_from_username, p_to_user_id, 'received', p_subject, p_body, false, false);
+
+  INSERT INTO messages (from_user_id, from_username, to_user_id, type, subject, body, read, saved)
+  VALUES (p_from_user_id, p_from_username, p_from_user_id, 'sent', p_subject, p_body, true, false);
+END;
+$function$
+ |

@@ -2261,7 +2261,8 @@ export default function Page() {
     const sentMessages: GameMessage[] = (sentRaw ?? []).map(m => ({
       ...m,
       type: "sent" as const,
-      to_username: recipientLoginMap[m.to_user_id ?? ""] ?? null,
+      // Priorytet: to_username z DB (nowe wiadomości), fallback: lookup z profiles (stare)
+      to_username: (m.to_username as string | null) ?? recipientLoginMap[m.to_user_id ?? ""] ?? null,
       from_avatar_skin: avatarSkin >= 0 ? avatarSkin : 0,
       to_avatar_skin: recipientAvatarMap[m.to_user_id ?? ""] ?? 0,
     }));
@@ -2348,6 +2349,7 @@ export default function Page() {
       p_from_username: fromUsername,
       p_subject:       subject,
       p_body:          body,
+      p_to_username:   recipientResolved.username,
     });
     setComposeSending(false);
     if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
