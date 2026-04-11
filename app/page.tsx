@@ -3299,8 +3299,10 @@ export default function Page() {
                               const el = document.getElementById("ranking-me-row");
                               const container = rankingScrollRef.current;
                               if (el && container) {
-                                const top = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
-                                container.scrollTo({ top, behavior: "smooth" });
+                                const elRect = el.getBoundingClientRect();
+                                const containerRect = container.getBoundingClientRect();
+                                const offset = elRect.top - containerRect.top - container.clientHeight / 2 + el.clientHeight / 2;
+                                container.scrollBy({ top: offset, behavior: "smooth" });
                               }
                             }, 80);
                             return next;
