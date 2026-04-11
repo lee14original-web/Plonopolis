@@ -986,6 +986,14 @@ export default function Page() {
   }, [displayXp, displayXpToNextLevel]);
 
   const moneyFormatted = useMemo(() => {
+    if (displayMoney >= 1_000_000_000) {
+      const v = (displayMoney / 1_000_000_000).toFixed(1).replace(".", ",");
+      return v + " mld zł";
+    }
+    if (displayMoney >= 1_000_000) {
+      const v = (displayMoney / 1_000_000).toFixed(1).replace(".", ",");
+      return v + " mln zł";
+    }
     return new Intl.NumberFormat("pl-PL", {
       style: "currency",
       currency: "PLN",
@@ -2430,9 +2438,9 @@ export default function Page() {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
-                      <p className="text-2xl font-black text-white">{moneyFormatted}</p>
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center max-w-[200px] overflow-hidden shrink-0">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a] truncate">Pieniądze</p>
+                      <p className="text-2xl font-black text-white truncate tabular-nums">{moneyFormatted}</p>
                     </div>
                     <button
                       type="button"
@@ -2803,8 +2811,9 @@ export default function Page() {
 
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
                 <div className="fixed left-4 top-4 z-[95]">
-                  <div className="flex flex-row items-start gap-2">
-                    <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start">
+                    {/* Górny rząd: przycisk plecaka + avatar */}
+                    <div className="flex flex-row items-start gap-2">
                     <button
                       type="button"
                       onClick={() => setIsBackpackOpen((prev) => !prev)}
@@ -2814,7 +2823,22 @@ export default function Page() {
                     >
                       <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
-
+                    {/* Avatar gracza — po prawej od plecaka, nie rusza się przy otwarciu */}
+                    <div className="group relative flex flex-col items-center gap-1 cursor-default select-none">
+                      <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
+                        {avatarSkin >= 0
+                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                          : <span className="text-5xl">👤</span>}
+                      </div>
+                      <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
+                      <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
+                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl whitespace-nowrap">
+                          💡 Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span>
+                        </div>
+                      </div>
+                    </div>
+                    </div>
+                    {/* Panel plecaka — rozsuwa się w dół, nie przesuwa avatara */}
                     <div
                       className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-500 ease-out ${
                         isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
@@ -2992,21 +3016,6 @@ export default function Page() {
                               <p className="mt-1 text-xs text-[#8b6a3e]">Przedmioty specjalne pojawią się tutaj w przyszłości.</p>
                             </div>
                           )}
-                      </div>
-                    </div>
-                    </div>
-                    {/* Avatar gracza — po prawej od plecaka */}
-                    <div className="group relative flex flex-col items-center gap-1 cursor-default select-none">
-                      <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
-                        {avatarSkin >= 0
-                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          : <span className="text-5xl">👤</span>}
-                      </div>
-                      <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
-                      <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl whitespace-nowrap">
-                          💡 Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span>
-                        </div>
                       </div>
                     </div>
                   </div>
