@@ -2235,10 +2235,10 @@ export default function Page() {
     if (recipientIds.length > 0) {
       const { data: rProfiles } = await supabase
         .from("profiles")
-        .select("id, login, avatar_skin")
+        .select("id, username, login, avatar_skin")
         .in("id", recipientIds);
-      (rProfiles ?? []).forEach((p: { id: string; login: string; avatar_skin: number | null }) => {
-        recipientLoginMap[p.id] = p.login;
+      (rProfiles ?? []).forEach((p: { id: string; username?: string | null; login: string; avatar_skin: number | null }) => {
+        recipientLoginMap[p.id] = p.username ?? p.login;
         if (p.avatar_skin !== null && p.avatar_skin !== undefined) recipientAvatarMap[p.id] = p.avatar_skin;
       });
     }
