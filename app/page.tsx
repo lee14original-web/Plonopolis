@@ -257,6 +257,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 10,
     spritePath: "/tomato.png",
+    epicSpritePath: "/tomato_epic.png",
+    rottenSpritePath: "/tomato_rotten.png",
+    legendarySpritePath: "/tomato_legendary.png",
   },
   {
     id: "cucumber",
@@ -1849,7 +1852,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary"];
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary", "tomato_epic", "tomato_rotten", "tomato_legendary"];
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1862,6 +1865,7 @@ export default function Page() {
     const newInv: Record<string,number> = { ...seedInventory };
     newInv["carrot_epic"] = (newInv["carrot_epic"] ?? 0) + amount;
     newInv["potato_epic"] = (newInv["potato_epic"] ?? 0) + amount;
+    newInv["tomato_epic"] = (newInv["tomato_epic"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -1871,6 +1875,7 @@ export default function Page() {
     const newInv: Record<string,number> = { ...seedInventory };
     newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
     newInv["potato_legendary"] = (newInv["potato_legendary"] ?? 0) + amount;
+    newInv["tomato_legendary"] = (newInv["tomato_legendary"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -2027,13 +2032,19 @@ export default function Page() {
       }
     }
 
+    // ─── Epicki EXP — losowy mnożnik 3–6x ───
+    let _epicExpMult = 0;
+    if (_plantedQuality === "epic") {
+      _epicExpMult = Math.floor(Math.random() * 4) + 3; // 3–6
+    }
+
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      p_exp_mult_override: _legExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik (opcja EXP)
+      p_exp_mult_override: _legExpMult > 0 ? _legExpMult : _epicExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
