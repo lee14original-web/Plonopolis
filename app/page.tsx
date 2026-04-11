@@ -3298,13 +3298,12 @@ export default function Page() {
                             if (next) setTimeout(() => {
                               const el = document.getElementById("ranking-me-row");
                               const container = rankingScrollRef.current;
-                              if (el && container) {
-                                const elRect = el.getBoundingClientRect();
-                                const containerRect = container.getBoundingClientRect();
-                                const offset = elRect.top - containerRect.top - container.clientHeight / 2 + el.clientHeight / 2;
-                                container.scrollBy({ top: offset, behavior: "smooth" });
-                              }
-                            }, 80);
+                              if (!el || !container) return;
+                              let elTop = 0;
+                              let node: HTMLElement | null = el as HTMLElement;
+                              while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
+                              container.scrollTop = elTop - container.clientHeight / 2 + el.offsetHeight / 2;
+                            }, 120);
                             return next;
                           });
                         }}
