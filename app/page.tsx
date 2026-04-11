@@ -830,6 +830,7 @@ export default function Page() {
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
+  const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
     const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
@@ -3651,19 +3652,40 @@ export default function Page() {
           {showShopModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
               <div className="relative flex h-[90vh] w-full max-w-[900px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
-                <button onClick={() => { setShowShopModal(false); setShopCart({}); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
+                <button onClick={() => { setShowShopModal(false); setShopCart({}); setShopError(""); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
                 {/* Sidebar */}
-                <div className="flex w-40 shrink-0 flex-col gap-2 border-r border-[#8b6a3e]/30 bg-black/20 p-5 pt-14">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
-                  {(["nasiona","zwierzeta","drzewa"] as const).map(tab => (
-                    <button key={tab} onClick={() => setShopTab(tab)}
-                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
-                        shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
-                      }`}>
-                      {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : "🌳"}
-                      {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}
-                    </button>
-                  ))}
+                <div className="flex w-44 shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
+                  <div className="flex flex-col gap-2 p-5 pt-14">
+                    <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
+                    {(["nasiona","zwierzeta","drzewa"] as const).map(tab => (
+                      <button key={tab} onClick={() => setShopTab(tab)}
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                          shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
+                        }`}>
+                        {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : "🌳"}
+                        {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Posiadane nasiona */}
+                  <div className="flex-1 overflow-y-auto border-t border-[#8b6a3e]/30 p-3">
+                    <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-[#8b6a3e]">🎒 W plecaku</p>
+                    {CROPS.filter(c => c.id !== "test_nasiono" && (seedInventory[c.id] ?? 0) > 0).length === 0
+                      ? <p className="text-[10px] text-[#8b6a3e] italic">Brak nasion</p>
+                      : CROPS.filter(c => c.id !== "test_nasiono" && (seedInventory[c.id] ?? 0) > 0).map(c => (
+                          <div key={c.id} className="flex items-center gap-1.5 py-0.5">
+                            <img src={c.spritePath} alt={c.name} className="h-5 w-5 object-contain" style={{imageRendering:"pixelated"}} />
+                            <span className="flex-1 truncate text-[10px] text-[#dfcfab]">{c.name}</span>
+                            <span className="text-[10px] font-bold text-yellow-300">{seedInventory[c.id]}</span>
+                          </div>
+                        ))
+                    }
+                  </div>
+                  {/* Kasa gracza */}
+                  <div className="border-t border-[#8b6a3e]/30 p-3">
+                    <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest">💰 Kasa</p>
+                    <p className="text-sm font-black text-[#f9e7b2]">{displayMoney.toFixed(2)}</p>
+                  </div>
                 </div>
                 {/* Content */}
                 <div className="flex flex-1 flex-col overflow-hidden">
@@ -3711,6 +3733,7 @@ export default function Page() {
                     const canAfford = displayMoney >= total;
                     return (
                       <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
+                        {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{shopError}</p>}
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-xs text-[#8b6a3e]">Podsumowanie zamówienia:</p>
@@ -3721,11 +3744,13 @@ export default function Page() {
                             disabled={total === 0 || !canAfford}
                             onClick={() => {
                               if (!profile?.id || total === 0 || !canAfford) return;
+                              setShopError("");
                               void (async () => {
                                 const newInv: Record<string,number> = {...seedInventory};
                                 for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
                                 const { error } = await supabase.from("profiles").update({ money: displayMoney - total, seed_inventory: newInv }).eq("id", profile.id);
-                                if (!error) { setShopCart({}); await loadProfile(profile.id); }
+                                if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
+                                else { setShopError("Błąd zakupu: " + error.message); }
                               })();
                             }}
                             className={`rounded-2xl px-6 py-3 font-black transition ${
