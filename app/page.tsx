@@ -2405,7 +2405,7 @@ export default function Page() {
                     <div className="flex flex-col items-center justify-center gap-1">
                       <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/30 select-none overflow-hidden">
                         {avatarSkin >= 0
-                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-16 w-16 object-contain" style={{imageRendering:"pixelated"}} />
+                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                           : <span className="text-3xl">👤</span>}
                       </div>
                       <p className="max-w-[80px] truncate text-[15px] font-bold text-[#d8ba7a]">{profile?.login ?? ""}</p>
@@ -3583,7 +3583,7 @@ export default function Page() {
                         <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
                           className="flex h-36 w-36 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
                           {avatarSkin >= 0
-                            ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                            ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                             : <span className="text-8xl">❓</span>}
                         </button>
                         <div className="text-center">
@@ -3766,7 +3766,7 @@ export default function Page() {
                   {SKINS_MALE.map((src, i) => (
                     <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
                       className={`flex h-64 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+1}`} className="h-48 w-48 object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={src} alt={`Postać ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
@@ -3775,7 +3775,7 @@ export default function Page() {
                   {SKINS_FEMALE.map((src, i) => (
                     <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
                       className={`flex h-64 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                      <img src={src} alt={`Postać ${i+11}`} className="h-48 w-48 object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={src} alt={`Postać ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                     </button>
                   ))}
                 </div>
