@@ -269,6 +269,9 @@ const CROPS: Crop[] = [
     yieldAmount: 2,
     expReward: 14,
     spritePath: "/cucumber.png",
+    epicSpritePath: "/cucumber_epic.png",
+    rottenSpritePath: "/cucumber_rotten.png",
+    legendarySpritePath: "/cucumber_legendary.png",
   },
   {
     id: "onion",
@@ -1852,7 +1855,7 @@ export default function Page() {
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary", "tomato_epic", "tomato_rotten", "tomato_legendary"];
+    const qualityKeys: string[] = ["carrot_epic", "carrot_rotten", "carrot_legendary", "potato_epic", "potato_rotten", "potato_legendary", "tomato_epic", "tomato_rotten", "tomato_legendary", "cucumber_epic", "cucumber_rotten", "cucumber_legendary"];
     const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
@@ -1866,6 +1869,7 @@ export default function Page() {
     newInv["carrot_epic"] = (newInv["carrot_epic"] ?? 0) + amount;
     newInv["potato_epic"] = (newInv["potato_epic"] ?? 0) + amount;
     newInv["tomato_epic"] = (newInv["tomato_epic"] ?? 0) + amount;
+    newInv["cucumber_epic"] = (newInv["cucumber_epic"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -1876,6 +1880,7 @@ export default function Page() {
     newInv["carrot_legendary"] = (newInv["carrot_legendary"] ?? 0) + amount;
     newInv["potato_legendary"] = (newInv["potato_legendary"] ?? 0) + amount;
     newInv["tomato_legendary"] = (newInv["tomato_legendary"] ?? 0) + amount;
+    newInv["cucumber_legendary"] = (newInv["cucumber_legendary"] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
