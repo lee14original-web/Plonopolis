@@ -986,20 +986,20 @@ export default function Page() {
   }, [displayXp, displayXpToNextLevel]);
 
   const moneyFormatted = useMemo(() => {
-    if (displayMoney >= 1_000_000_000) {
-      const v = (displayMoney / 1_000_000_000).toFixed(1).replace(".", ",");
-      return v + " mld zł";
-    }
-    if (displayMoney >= 1_000_000) {
-      const v = (displayMoney / 1_000_000).toFixed(1).replace(".", ",");
-      return v + " mln zł";
-    }
     return new Intl.NumberFormat("pl-PL", {
       style: "currency",
       currency: "PLN",
       maximumFractionDigits: 0,
     }).format(displayMoney);
   }, [displayMoney]);
+
+  const moneyFontSize = useMemo(() => {
+    const len = moneyFormatted.length;
+    if (len > 14) return "text-sm leading-tight";
+    if (len > 11) return "text-base leading-tight";
+    if (len > 8)  return "text-xl leading-tight";
+    return "text-2xl";
+  }, [moneyFormatted]);
 
   const availableCrops = CROPS.filter((crop) => displayLevel >= crop.unlockLevel);
   const cropsInInventory = availableCrops.filter((crop) => (seedInventory[crop.id] ?? 0) > 0);
@@ -2438,9 +2438,9 @@ export default function Page() {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center max-w-[200px] overflow-hidden shrink-0">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a] truncate">Pieniądze</p>
-                      <p className="text-2xl font-black text-white truncate tabular-nums">{moneyFormatted}</p>
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-black/20 px-4 py-2 text-center shrink-0">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">Pieniądze</p>
+                      <p className={`font-black text-white tabular-nums whitespace-nowrap ${moneyFontSize}`}>{moneyFormatted}</p>
                     </div>
                     <button
                       type="button"
