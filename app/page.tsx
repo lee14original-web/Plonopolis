@@ -3652,9 +3652,9 @@ export default function Page() {
           {/* ═══ SHOP MODAL ═══ */}
           {showShopModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[90vh] w-full max-w-[900px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+              <div className="relative flex h-[90vh] w-full max-w-[1170px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
                 <button onClick={() => { setShowShopModal(false); setShopCart({}); setShopError(""); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
-                {/* Sidebar */}
+                {/* Sidebar — kategorie sklepu */}
                 <div className="flex w-44 shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
                   <div className="flex flex-col gap-2 p-5 pt-14">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
@@ -3668,20 +3668,7 @@ export default function Page() {
                       </button>
                     ))}
                   </div>
-                  {/* Posiadane nasiona */}
-                  <div className="flex-1 overflow-y-auto border-t border-[#8b6a3e]/30 p-3">
-                    <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-[#8b6a3e]">🎒 W plecaku</p>
-                    {CROPS.filter(c => c.id !== "test_nasiono" && (seedInventory[c.id] ?? 0) > 0).length === 0
-                      ? <p className="text-[10px] text-[#8b6a3e] italic">Brak nasion</p>
-                      : CROPS.filter(c => c.id !== "test_nasiono" && (seedInventory[c.id] ?? 0) > 0).map(c => (
-                          <div key={c.id} className="flex items-center gap-1.5 py-0.5">
-                            <img src={c.spritePath} alt={c.name} className="h-5 w-5 object-contain" style={{imageRendering:"pixelated"}} />
-                            <span className="flex-1 truncate text-[10px] text-[#dfcfab]">{c.name}</span>
-                            <span className="text-[10px] font-bold text-yellow-300">{seedInventory[c.id]}</span>
-                          </div>
-                        ))
-                    }
-                  </div>
+                  <div className="flex-1" />
                   {/* Kasa gracza */}
                   <div className="border-t border-[#8b6a3e]/30 p-3">
                     <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest">💰 Kasa</p>
@@ -3762,6 +3749,76 @@ export default function Page() {
                       </div>
                     );
                   })()}
+                </div>
+                {/* ═══ PANEL PLECAKA (prawy) ═══ */}
+                <div className="flex w-[300px] shrink-0 flex-col border-l border-[#8b6a3e]/30 bg-[rgba(20,12,8,0.6)]">
+                  <div className="flex items-center border-b border-[#8b6a3e]/30 px-4 py-3 pt-5">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">🎒 Plecak</p>
+                  </div>
+                  <div className="px-3 pt-3">
+                    <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
+                      {(["uprawy","przedmioty"] as const).map(tab => (
+                        <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
+                          className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                          {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                        </button>
+                      ))}
+                    </div>
+                    {backpackTab === "uprawy" && (
+                      <div className="mt-2 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
+                        {(["standardowe","duzo","malo"] as const).map(s => (
+                          <button key={s} type="button" onClick={() => setBackpackSort(s)}
+                            className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                            {s === "standardowe" ? "Std" : s === "duzo" ? "Dużo" : "Mało"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-3">
+                    {backpackTab === "uprawy" && (
+                      Object.entries(seedInventory).filter(([,amt]) => Number(amt) > 0).length === 0
+                        ? <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>
+                        : <div className="grid grid-cols-3 gap-2">
+                            {(() => {
+                              const raw = Object.entries(seedInventory).filter(([,amt]) => Number(amt) > 0) as Array<[string,number]>;
+                              return [...raw].sort(([aId,aAmt],[bId,bAmt]) => {
+                                const {baseCropId:_aC,quality:_aQ}=parseQualityKey(aId);
+                                const {baseCropId:_bC,quality:_bQ}=parseQualityKey(bId);
+                                const aLv=CROPS.find(c=>c.id===_aC)?.unlockLevel??999;
+                                const bLv=CROPS.find(c=>c.id===_bC)?.unlockLevel??999;
+                                if(backpackSort==="standardowe"){const qo:Record<string,number>={rotten:0,good:1,epic:2,legendary:3};return aLv!==bLv?aLv-bLv:(qo[_aQ??"good"]??1)-(qo[_bQ??"good"]??1);}
+                                if(backpackSort==="duzo")return Number(bAmt)-Number(aAmt);
+                                if(backpackSort==="malo"){const d=Number(aAmt)-Number(bAmt);return d!==0?d:aLv-bLv;}
+                                return aLv-bLv;
+                              }).map(([seedId,amount]) => {
+                                const {baseCropId:_bc,quality:_bq}=parseQualityKey(seedId);
+                                const crop=CROPS.find(c=>c.id===_bc);
+                                if(!crop)return null;
+                                const _qd=_bq?CROP_QUALITY_DEFS[_bq]:null;
+                                const spr=_bq==="epic"&&crop.epicSpritePath?crop.epicSpritePath:_bq==="rotten"&&crop.rottenSpritePath?crop.rottenSpritePath:_bq==="legendary"&&crop.legendarySpritePath?crop.legendarySpritePath:crop.spritePath;
+                                return (
+                                  <button key={seedId} type="button"
+                                    onClick={()=>{setSelectedSeedId(p=>p===seedId?null:seedId);setSelectedTool(null);}}
+                                    className={`relative flex h-20 w-full items-center justify-center rounded-xl border transition ${_bq==="rotten"?"cursor-not-allowed":""}`}
+                                    style={selectedSeedId===seedId?{borderColor:"#f6d860",background:"rgba(60,40,5,0.4)",boxShadow:"0 0 12px rgba(255,220,120,0.22)"}:_qd?{borderColor:_qd.borderColor,background:_qd.bgColor}:{borderColor:"#8b6a3e",background:"rgba(20,12,8,0.65)"}}>
+                                    <img src={spr} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{imageRendering:"pixelated"}}/>
+                                    {_bq==="legendary"&&<span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>👑</span>}
+                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+                    )}
+                    {backpackTab === "przedmioty" && (
+                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                        <p className="text-2xl mb-2">🎒</p>
+                        <p>Brak przedmiotów.</p>
+                        <p className="mt-1 text-xs text-[#8b6a3e]">Przedmioty specjalne pojawią się tutaj w przyszłości.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
