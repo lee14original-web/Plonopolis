@@ -873,6 +873,8 @@ export default function Page() {
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingSort, setRankingSort] = useState<"level"|"money"|"missions"|"name">("level");
+  const [rankingSearch, setRankingSearch] = useState("");
+  const [rankingHighlightMe, setRankingHighlightMe] = useState(false);
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
   const [showMisjePanel, setShowMisjePanel] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
@@ -1610,6 +1612,13 @@ export default function Page() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId]);
+
+  useEffect(() => {
+    if (!showRankingPanel) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowRankingPanel(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showRankingPanel]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3255,8 +3264,8 @@ export default function Page() {
                     </button>
                   </div>
 
-                  {/* Sort tabs */}
-                  <div className="flex shrink-0 gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
+                  {/* Sort tabs + search + znajdź mnie */}
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
                     <button onClick={() => setRankingSort("level")}
                       className={rankingSort==="level" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Poziom
@@ -3273,6 +3282,20 @@ export default function Page() {
                       className={rankingSort==="name" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Nazwa
                     </button>
+                    <div className="ml-auto flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={rankingSearch}
+                        onChange={e => setRankingSearch(e.target.value)}
+                        placeholder="🔍 Szukaj nicku..."
+                        className="rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d4a64f]/80 w-44"
+                      />
+                      <button
+                        onClick={() => setRankingHighlightMe(v => !v)}
+                        className={`rounded-xl px-4 py-2 text-sm font-bold transition border ${rankingHighlightMe ? "border-yellow-400 bg-yellow-500/20 text-yellow-300" : "border-[#8b6a3e]/50 bg-black/20 text-[#f1dfb5] hover:bg-white/5"}`}>
+                        🎯 Znajdź mnie
+                      </button>
+                    </div>
                   </div>
 
                   {/* Table */}
@@ -3302,21 +3325,24 @@ export default function Page() {
                             if (rankingSort==="money") return b.money-a.money;
                             if (rankingSort==="missions") return b.missions_completed-a.missions_completed;
                             return a.player_name.localeCompare(b.player_name,"pl");
-                          }).map((p,i) => (
-                            <tr key={i} className="border-b border-[#8b6a3e]/20 transition hover:bg-white/5">
+                          }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
+                            const isMe = p.user_id === profile?.id;
+                            const highlighted = rankingHighlightMe && isMe;
+                            return (
+                            <tr key={i} className={`border-b border-[#8b6a3e]/20 transition ${highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60" : "hover:bg-white/5"}`}>
                               <td className="py-3 pr-4 font-black text-[#d8ba7a]">
                                 {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
                               </td>
                               <td className="py-3 pr-4">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                   <img
-                                    src={ALL_SKINS[p.user_id === profile?.id ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
+                                    src={ALL_SKINS[isMe ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
                                     alt={p.player_name}
-                                    className="h-12 w-12 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
+                                    className="h-[62px] w-[62px] shrink-0 rounded-full object-cover border-2 border-[#8b6a3e]/60"
                                     style={{imageRendering:"pixelated"}}
                                   />
-                                  <span className="font-bold text-[#f3e6c8]">{p.player_name}</span>
-                                  {p.user_id !== profile?.id && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-xs transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}
+                                  <span className={`text-base font-bold ${highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>{p.player_name}</span>
+                                  {!isMe && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-sm transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}
                                 </div>
                               </td>
                               <td className="py-3 pr-4 italic text-[#8b6a3e]">{p.guild_name}</td>
@@ -3326,7 +3352,8 @@ export default function Page() {
                               </td>
                               <td className="py-3 text-right text-[#f3e6c8]">{p.missions_completed}</td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     )}
