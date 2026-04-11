@@ -3684,7 +3684,7 @@ export default function Page() {
                   {/* Kasa gracza */}
                   <div className="border-t border-[#8b6a3e]/30 p-3">
                     <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest">💰 Kasa</p>
-                    <p className="text-sm font-black text-[#f9e7b2]">{displayMoney.toFixed(2)}</p>
+                    <p className="text-sm font-black text-[#f9e7b2]">{Math.round(displayMoney)} 💰</p>
                   </div>
                 </div>
                 {/* Content */}
@@ -3748,7 +3748,7 @@ export default function Page() {
                               void (async () => {
                                 const newInv: Record<string,number> = {...seedInventory};
                                 for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
-                                const { error } = await supabase.from("profiles").update({ money: displayMoney - total, seed_inventory: newInv }).eq("id", profile.id);
+                                const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - total) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
                                 if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
                                 else { setShopError("Błąd zakupu: " + error.message); }
                               })();
