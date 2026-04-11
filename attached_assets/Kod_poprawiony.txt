@@ -2032,13 +2032,19 @@ export default function Page() {
       }
     }
 
+    // ─── Epicki EXP — losowy mnożnik 3–6x ───
+    let _epicExpMult = 0;
+    if (_plantedQuality === "epic") {
+      _epicExpMult = Math.floor(Math.random() * 4) + 3; // 3–6
+    }
+
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: playerStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      p_exp_mult_override: _legExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik (opcja EXP)
+      p_exp_mult_override: _legExpMult > 0 ? _legExpMult : _epicExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
