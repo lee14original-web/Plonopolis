@@ -955,13 +955,15 @@ export default function Page() {
       localStorage.setItem(`plonopolis_eq_${source.id}`, JSON.stringify(eq));
       // Zawsze aktualizuj localStorage
       saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
-      // Zsynchronizuj Supabase jeśli tam były inne wartości
-      void supabase.rpc("game_save_avatar_data", {
-        p_avatar_skin: skin,
-        p_player_stats: stats as Record<string, number>,
-        p_free_skill_points: fsp,
-        p_prev_level: prevLevel,
-      });
+      // Zsynchronizuj Supabase tylko gdy skin jest prawidłowy (nie zapisuj -1 do bazy)
+      if (skin >= 0) {
+        void supabase.rpc("game_save_avatar_data", {
+          p_avatar_skin: skin,
+          p_player_stats: stats as Record<string, number>,
+          p_free_skill_points: fsp,
+          p_prev_level: prevLevel,
+        });
+      }
     } else if (source.id) {
       const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
         ? source.prev_level : prevLevelRef.current;
@@ -3212,7 +3214,7 @@ export default function Page() {
                               <td className="py-3 pr-4">
                                 <div className="flex items-center gap-2">
                                   <img
-                                    src={ALL_SKINS[p.avatar_skin ?? 0] ?? ALL_SKINS[0]}
+                                    src={ALL_SKINS[p.user_id === profile?.id ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
                                     alt={p.player_name}
                                     className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
                                     style={{imageRendering:"pixelated"}}
