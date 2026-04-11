@@ -2470,7 +2470,9 @@ export default function Page() {
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "85px" }}>
+              <style>{`@keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}`}</style>
+              <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
+                <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
                   className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-6 py-3 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
                   <span className="animate-pulse text-2xl">🧪</span>
