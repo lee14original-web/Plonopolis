@@ -4802,8 +4802,8 @@ export default function Page() {
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
-          <p className="mb-2 text-[14px] text-[#8b6a3e]">Narzędzie do podlewania upraw na polu</p>
-          <p>⏱ Skraca czas rośnięcia o <span className="font-bold text-cyan-300">15%</span></p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–45%)</p>
+          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">0–45%</span> (zależnie od Zaradności)</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
