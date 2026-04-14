@@ -908,6 +908,7 @@ export default function Page() {
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
+  const [showStodolaModal, setShowStodolaModal] = React.useState(false);
   const [showTestModal, setShowTestModal] = React.useState(false);
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
@@ -1627,6 +1628,13 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showDomModal]);
+
+  useEffect(() => {
+    if (!showStodolaModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowStodolaModal(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showStodolaModal]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2724,6 +2732,18 @@ export default function Page() {
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                             Dom
+                          </span>
+                        </button>
+                        {/* Stodoła — nad polem uprawnym po prawej */}
+                        <button
+                          type="button"
+                          onClick={() => setShowStodolaModal(true)}
+                          title="Stodoła"
+                          className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                          style={{ left: "62%", top: "22%", width: "20%", height: "28%", zIndex: 20 }}
+                        >
+                          <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
+                            🏚️ Stodoła
                           </span>
                         </button>
                       {/* Do miasta */}
@@ -4182,6 +4202,29 @@ export default function Page() {
                   )}
 
                 </div>
+              </div>
+            </div>
+          )}
+
+          {showStodolaModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+              <div className="relative flex w-full max-w-[700px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl">
+                <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                <div className="mb-6 flex items-center gap-4">
+                  <span className="text-5xl">🏚️</span>
+                  <div>
+                    <h2 className="text-2xl font-black text-[#f9e7b2]">Stodoła</h2>
+                    <p className="text-sm text-[#8b6a3e]">Twoja farma · magazyn i zasoby</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-[#8b6a3e]/30 bg-black/30 p-6 text-center">
+                  <span className="text-4xl">🌾</span>
+                  <p className="mt-3 text-base font-bold text-[#f3e6c8]">Stodoła jest w budowie</p>
+                  <p className="mt-1 text-sm text-[#8b6a3e]">Wkrótce znajdziesz tutaj magazyn plonów, siano, narzędzia i zwierzęta.</p>
+                </div>
+                <button onClick={() => setShowStodolaModal(false)} className="mt-6 w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
+                  ✕ Zamknij (Esc)
+                </button>
               </div>
             </div>
           )}
