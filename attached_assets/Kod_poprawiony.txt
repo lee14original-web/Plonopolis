@@ -1168,7 +1168,9 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     if (plot.watered) {
-      return Math.round(crop.growthTimeMs * 0.85 * wiedzaMult);
+      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.008) / 100;
+      const waterMult = Math.max(0.5, 1 - (0.15 + zaradnoscBonus / 2));
+      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult);
     }
 
     return Math.round(crop.growthTimeMs * wiedzaMult);
