@@ -3237,9 +3237,6 @@ export default function Page() {
                                                 : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
                                           >
                                             <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
-                                            {_bQuality === "legendary" && (
-                                              <span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>👑</span>
-                                            )}
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
                                             </span>
@@ -3979,7 +3976,6 @@ export default function Page() {
                                     className={`relative flex h-20 w-full items-center justify-center rounded-xl border transition ${_bq==="rotten"?"cursor-not-allowed":""}`}
                                     style={selectedSeedId===seedId?{borderColor:"#f6d860",background:"rgba(60,40,5,0.4)",boxShadow:"0 0 12px rgba(255,220,120,0.22)"}:_qd?{borderColor:_qd.borderColor,background:_qd.bgColor}:{borderColor:"#8b6a3e",background:"rgba(20,12,8,0.65)"}}>
                                     <img src={spr} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{imageRendering:"pixelated"}}/>
-                                    {_bq==="legendary"&&<span className="absolute left-1 top-1 rounded px-1 py-0.5 text-[9px] font-black leading-none" style={{background:"rgba(0,0,0,0.65)",color:"#f9e7b2"}}>👑</span>}
                                     <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
                                   </button>
                                 );
