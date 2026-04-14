@@ -1226,6 +1226,13 @@ export default function Page() {
     return Math.max(0, Math.ceil(remaining / 1000));
   }
 
+  function formatHMS(secs: number): string {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
   async function handleWaterPlot(plotId: number) {
     if (!profile) return;
 
@@ -2108,7 +2115,7 @@ export default function Page() {
       setMessage({
         type: "info",
         title: "Uprawa jeszcze rośnie",
-        text: `${crop.name} będzie gotowa za około ${getRemainingGrowthSeconds(plotId)} s.`,
+        text: `${crop.name} będzie gotowa za około ${formatHMS(getRemainingGrowthSeconds(plotId))}.`,
       });
       return;
     }
@@ -4538,9 +4545,7 @@ export default function Page() {
                                     <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
                                       {isCropReady(plotId)
                                         ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
-                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${getRemainingGrowthSeconds(
-                                            plotId
-                                          )} s`}
+                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${formatHMS(getRemainingGrowthSeconds(plotId))}`}
                                     </span>
                                   ) : (
                                     <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
