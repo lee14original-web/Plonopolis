@@ -879,6 +879,7 @@ export default function Page() {
   const [showMisjePanel, setShowMisjePanel] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
   const [messageTab, setMessageTab] = useState<"systemowe"|"otrzymane"|"wyslane">("systemowe");
+  const [selectedMsgIds, setSelectedMsgIds] = useState<Set<string>>(new Set());
   const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState("");
@@ -2499,6 +2500,21 @@ export default function Page() {
     if (!error) setGameMessages(prev => prev.map(m => m.id === msgId ? { ...m, saved: !currentSaved } : m));
   }
 
+  async function deleteMessage(msgId: string) {
+    if (!confirm("Usunąć tę wiadomość?")) return;
+    setGameMessages(prev => prev.filter(m => m.id !== msgId));
+    setSelectedMsgIds(prev => { const n = new Set(prev); n.delete(msgId); return n; });
+    await supabase.from("messages").delete().eq("id", msgId);
+  }
+
+  async function deleteSelectedMessages(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(`Usunąć ${ids.length} zaznaczon${ids.length === 1 ? "ą" : ids.length < 5 ? "e" : "ych"} wiadomość${ids.length === 1 ? "" : ids.length < 5 ? "i" : "i"}?`)) return;
+    setGameMessages(prev => prev.filter(m => !ids.includes(m.id)));
+    setSelectedMsgIds(new Set());
+    await supabase.from("messages").delete().in("id", ids);
+  }
+
   async function blockUser(fromUserId: string) {
     if (!profile) return;
     const current = (profile.blocked_users ?? []).filter(Boolean);
@@ -3458,7 +3474,7 @@ export default function Page() {
                     { key: "otrzymane", label: "Otrzymane", icon: "📩" },
                     { key: "wyslane",   label: "Wysłane",   icon: "📤" },
                   ] as const).map(tab => (
-                    <button key={tab.key} onClick={() => setMessageTab(tab.key)}
+                    <button key={tab.key} onClick={() => { setMessageTab(tab.key); setSelectedMsgIds(new Set()); }}
                       className={`flex items-center gap-2 rounded-t-xl px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] transition border-b-2 ${messageTab === tab.key ? "border-[#d8ba7a] text-[#f9e7b2] bg-[rgba(80,50,20,0.3)]" : "border-transparent text-[#8b6a3e] hover:text-[#dfcfab]"}`}>
                       {tab.icon} {tab.label}
                       {tab.key === "otrzymane" && unreadCount > 0 && (
@@ -3582,12 +3598,46 @@ export default function Page() {
                         <p className="text-base">Brak wiadomości</p>
                       </div>
                     );
+                    const selectable = messageTab !== "systemowe";
+                    const selectableIds = filtered.map(m => m.id);
+                    const allSelected = selectable && selectableIds.length > 0 && selectableIds.every(id => selectedMsgIds.has(id));
+                    const selectedInTab = selectableIds.filter(id => selectedMsgIds.has(id));
                     return (
                       <div className="space-y-3">
+                        {/* ─ Toolbar zaznaczania ─ */}
+                        {selectable && (
+                          <div className="mb-1 flex items-center gap-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-2">
+                            <label className="flex cursor-pointer items-center gap-2 text-sm text-[#dfcfab] select-none">
+                              <input type="checkbox" checked={allSelected} onChange={() => {
+                                if (allSelected) setSelectedMsgIds(prev => { const n = new Set(prev); selectableIds.forEach(id => n.delete(id)); return n; });
+                                else setSelectedMsgIds(prev => { const n = new Set(prev); selectableIds.forEach(id => n.add(id)); return n; });
+                              }} className="h-4 w-4 accent-yellow-400 cursor-pointer" />
+                              {allSelected ? "Odznacz wszystkie" : "Zaznacz wszystkie"}
+                            </label>
+                            {selectedInTab.length > 0 && (
+                              <>
+                                <span className="text-xs text-[#8b6a3e]">Zaznaczono: <span className="font-bold text-yellow-300">{selectedInTab.length}</span></span>
+                                <button type="button"
+                                  onClick={() => void deleteSelectedMessages(selectedInTab)}
+                                  className="ml-auto rounded-lg border border-red-600/50 bg-red-950/30 px-4 py-1.5 text-sm font-bold text-red-300 transition hover:bg-red-950/60">
+                                  🗑️ Usuń zaznaczone ({selectedInTab.length})
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                         {filtered.map(msg => (
                           <div key={msg.id}
-                            className={`rounded-2xl border p-5 transition ${!msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                            className={`relative rounded-2xl border p-5 transition ${selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
 
+                            {/* Checkbox zaznaczania */}
+                            {msg.type !== "system" && (
+                              <input type="checkbox"
+                                checked={selectedMsgIds.has(msg.id)}
+                                onChange={() => setSelectedMsgIds(prev => { const n = new Set(prev); n.has(msg.id) ? n.delete(msg.id) : n.add(msg.id); return n; })}
+                                className="absolute right-4 top-4 h-5 w-5 accent-yellow-400 cursor-pointer"
+                              />
+                            )}
                             {/* Data */}
                             <p className="mb-2 text-xs text-[#8b6a3e]">
                               {new Date(msg.created_at).toLocaleDateString("pl-PL", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
@@ -3684,6 +3734,21 @@ export default function Page() {
                                     ↩️ Odpowiedz
                                   </button>
                                 )}
+                                <button type="button"
+                                  onClick={() => void deleteMessage(msg.id)}
+                                  className="ml-auto rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
+                                  🗑️ Usuń
+                                </button>
+                              </div>
+                            )}
+                            {/* Akcje (tylko sent) */}
+                            {msg.type === "sent" && (
+                              <div className="mt-4 flex justify-end border-t border-[#8b6a3e]/20 pt-4">
+                                <button type="button"
+                                  onClick={() => void deleteMessage(msg.id)}
+                                  className="rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
+                                  🗑️ Usuń
+                                </button>
                               </div>
                             )}
                           </div>
@@ -4803,7 +4868,7 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–45%)</p>
-          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">0–45%</span> (zależnie od Zaradności)</p>
+          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{Math.round((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100)}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
