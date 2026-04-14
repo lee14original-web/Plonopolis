@@ -2740,10 +2740,10 @@ export default function Page() {
                           onClick={() => setShowStodolaModal(true)}
                           title="Stodoła"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "62%", top: "22%", width: "20%", height: "28%", zIndex: 20 }}
+                          style={{ left: "69%", top: "19%", width: "20%", height: "28%", zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                            🏚️ Stodoła
+                            Stodoła
                           </span>
                         </button>
                       {/* Do miasta */}
