@@ -172,7 +172,7 @@ const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path
 const STATS_DEFS = [
   { key: "wiedza",    label: "Wiedza",    icon: "📚", desc: "Rośliny rosną szybciej",         rate: 0.005  },
   { key: "zrecznosc", label: "Zręczność", icon: "🎯", desc: "Szansa na podwójny zbiór",       rate: 0.004  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", desc: "Woda daje większy bonus",        rate: 0.008  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
   { key: "sadownik",  label: "Sadownik",  icon: "🌳", desc: "Większy zysk z drzew",           rate: 0.005  },
   { key: "opieka",    label: "Opieka",    icon: "🐄", desc: "Większy zysk ze zwierząt",       rate: 0.005  },
   { key: "szczescie", label: "Szczęście", icon: "🍀", desc: "Szansa na bonusowy drop",         rate: 0.0025 },
@@ -1168,7 +1168,9 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     if (plot.watered) {
-      return Math.round(crop.growthTimeMs * 0.85 * wiedzaMult);
+      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.006) / 100;
+      const waterMult = Math.max(0.5, 1 - zaradnoscBonus);
+      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult);
     }
 
     return Math.round(crop.growthTimeMs * wiedzaMult);
