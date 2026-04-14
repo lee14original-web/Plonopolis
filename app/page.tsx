@@ -4868,7 +4868,7 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–45%)</p>
-          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{Math.round((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100)}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
+          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100).toFixed(1)}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
