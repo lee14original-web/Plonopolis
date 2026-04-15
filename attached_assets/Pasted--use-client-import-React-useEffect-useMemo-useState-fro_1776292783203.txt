@@ -2201,12 +2201,10 @@ export default function Page() {
       }
     } else {
       // SQL zapisał jakości per sztuka — buduj z rpcInv (pełne inventory po zbiorze)
-      const _rawNext: Record<string, number> = {};
+      nextInventory = {};
       for (const [_k, _v] of Object.entries(rpcInv)) {
-        if (typeof _v === "number") _rawNext[_k] = _v;
+        if (typeof _v === "number") nextInventory[_k] = _v;
       }
-      // Migracja: usuń stare klucze bez sufiksu jakości (np. "carrot" → "carrot_good")
-      nextInventory = parseSeedInventory(_rawNext);
       // Oblicz łączny zysk (diff) dla _totalYield
       _totalYield = (["rotten","good","epic","legendary"] as CropQuality[]).reduce((_s, _q) => {
         const _key = getQualityKey(crop.id, _q);
@@ -2216,9 +2214,9 @@ export default function Page() {
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
     const nextProfile = applyProfileState(harvestRpcProfile);
-    // Natychmiast nadpisz seedInventory wersją z kluczami jakości (po migracji)
+    // Natychmiast nadpisz seedInventory wersją z kluczami jakości
     setSeedInventory(nextInventory);
-    // Zapisz do DB (await — gwarantowane zachowanie jakości, bez starych kluczy)
+    // Zapisz do DB (await — gwarantowane zachowanie jakości)
     await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
