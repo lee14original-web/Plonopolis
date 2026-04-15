@@ -1967,11 +1967,9 @@ export default function Page() {
 
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
-    const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
-    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
-    const allKeys = [...baseCropIds, ...qualityKeys];
+    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono").flatMap(c => [`${c.id}_good`, `${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
     const newInv: Record<string,number> = { ...seedInventory };
-    for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
+    for (const id of qualityKeys) newInv[id] = (newInv[id] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -3993,7 +3991,7 @@ export default function Page() {
                               setShopError("");
                               void (async () => {
                                 const newInv: Record<string,number> = {...seedInventory};
-                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
+                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) { const _key = id.includes("_") ? id : `${id}_good`; newInv[_key] = (newInv[_key]??0) + (qty as number); } }
                                 const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - total) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
                                 if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
                                 else { setShopError("Błąd zakupu: " + error.message); }
