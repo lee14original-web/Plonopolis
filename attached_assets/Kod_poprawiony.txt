@@ -4836,19 +4836,33 @@ export default function Page() {
                     return (
                       <div key={i} className="group relative">
                         {/* Ikona przedmiotu */}
-                        <div className="relative h-[68px] w-[68px] cursor-default overflow-hidden rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
-                          style={{ borderColor: _qd.borderColor, background: _qd.bgColor }}>
-                          {_sprite
-                            ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1.5" />
-                            : <span className="flex h-full w-full items-center justify-center text-2xl">🌾</span>
-                          }
-                          {/* Odznaka jakości — lewy górny róg */}
-                          <span className="absolute left-0.5 top-0.5 text-[11px] leading-none drop-shadow">{_qd.badge}</span>
-                          {/* Ilość — prawy dolny róg */}
-                          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[11px] font-black text-white leading-tight">
-                            {_total === 0 && g.bonusSource ? g.bonusSource : `×${_total}`}
-                          </span>
-                        </div>
+                        {(() => {
+                          const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
+                          return (
+                            <div className="relative h-[68px] w-[68px] cursor-default overflow-hidden rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
+                              style={_isExpOnly
+                                ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
+                                : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
+                              {_isExpOnly
+                                ? <span className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                                    <span className="text-[28px] leading-none">⭐</span>
+                                    <span className="text-[11px] font-black text-sky-300 leading-none">XP</span>
+                                  </span>
+                                : _sprite
+                                  ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1.5" />
+                                  : <span className="flex h-full w-full items-center justify-center text-2xl">🌾</span>
+                              }
+                              {/* Odznaka jakości — lewy górny róg */}
+                              <span className="absolute left-0.5 top-0.5 text-[11px] leading-none drop-shadow">
+                                {_isExpOnly ? "✨" : _qd.badge}
+                              </span>
+                              {/* Ilość — prawy dolny róg */}
+                              <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[11px] font-black text-white leading-tight">
+                                {_total === 0 && g.bonusSource ? g.bonusSource : `×${_total}`}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         {/* Tooltip przy hover */}
                         <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-[200] hidden w-48 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
                           <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
