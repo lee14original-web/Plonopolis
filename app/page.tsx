@@ -137,9 +137,10 @@ type CropQuality = keyof typeof CROP_QUALITY_DEFS;
 
 function rollCropQuality(): CropQuality {
   const r = Math.random();
-  if (r < 0.20) return "rotten";
-  if (r < 0.96) return "good";
-  return "epic";
+  if (r < 0.15) return "rotten";
+  if (r < 0.94) return "good";
+  if (r < 0.99) return "epic";
+  return "legendary";
 }
 
 function getQualityKey(cropId: string, quality: CropQuality) { return `${cropId}_${quality}`; }
@@ -2129,7 +2130,7 @@ export default function Page() {
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
-    const _harvestQuality = rollCropQuality(); // jakość PLONU (wpada do plecaka)
+    // jakość PLONU jest losowana osobno dla każdej sztuki — patrz niżej
     // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
     // Jakość ZASADZONEGO nasiona (z pola w DB — bez localStorage)
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
@@ -2186,6 +2187,11 @@ export default function Page() {
     const nextInventory: Record<string, number> = { ...prevInventorySnapshot };
     delete nextInventory[crop.id]; // usuń klucz bazowy dodany przez SQL
 
+    // Zmienne dla per-item rolowania (używane też w sekcji log zbiorów)
+    let _baseQG: Partial<Record<CropQuality, number>> = {};
+    let _bonusQG: Partial<Record<CropQuality, number>> = {};
+    let _allQuals: CropQuality[] = [];
+
     let _totalYield = 0;
     if (_plantedQuality === "legendary") {
       if (_legOption === 0) {
@@ -2203,12 +2209,22 @@ export default function Page() {
         _totalYield = 0;
       }
     } else {
-      const _totalNormal = _gainedBase + _bonusAmount + _epicBonus;
-      if (_totalNormal > 0) {
-        const qualKey = getQualityKey(crop.id, _harvestQuality);
-        nextInventory[qualKey] = (nextInventory[qualKey] ?? 0) + _totalNormal;
+      // Losuj jakość osobno dla każdej sztuki bazowej i bonusowej
+      const _totalBaseItems = _gainedBase + _epicBonus;
+      const _baseRolls: CropQuality[] = [];
+      for (let _i = 0; _i < _totalBaseItems; _i++) { _baseRolls.push(rollCropQuality()); }
+      const _bonusRolls: CropQuality[] = [];
+      if (bonusHarvest) { for (let _i = 0; _i < _bonusAmount; _i++) { _bonusRolls.push(rollCropQuality()); } }
+      // Grupuj po jakości (przypisz do zmiennych zewnętrznych)
+      for (const _q of _baseRolls) { _baseQG[_q] = (_baseQG[_q] ?? 0) + 1; }
+      for (const _q of _bonusRolls) { _bonusQG[_q] = (_bonusQG[_q] ?? 0) + 1; }
+      _allQuals = Array.from(new Set([...Object.keys(_baseQG), ...Object.keys(_bonusQG)])) as CropQuality[];
+      // Aktualizuj inventory dla każdej jakości
+      for (const _q of _allQuals) {
+        const _cnt = (_baseQG[_q] ?? 0) + (_bonusQG[_q] ?? 0);
+        if (_cnt > 0) nextInventory[getQualityKey(crop.id, _q)] = (nextInventory[getQualityKey(crop.id, _q)] ?? 0) + _cnt;
       }
-      _totalYield = _gainedBase + _bonusAmount + _epicBonus;
+      _totalYield = _baseRolls.length + _bonusRolls.length;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2257,19 +2273,21 @@ export default function Page() {
         ]);
       }
     } else {
+      const _now2 = Date.now();
+      const _logEvents = _allQuals.map((_q, _idx) => ({
+        id: ++harvestEventIdRef.current,
+        cropId: crop.id,
+        cropName: crop.name,
+        baseAmount: _baseQG[_q] ?? 0,
+        bonusAmount: _bonusQG[_q] ?? 0,
+        bonusSource: (_bonusQG[_q] ?? 0) > 0 ? "Zręczność 🎯" : null,
+        baseExp: _idx === 0 ? actualExp : 0,
+        timestamp: _now2,
+        quality: _q,
+      }));
       setHarvestLog(prev => [
-        ...prev.filter(e => Date.now() - e.timestamp < 25000),
-        {
-          id: ++harvestEventIdRef.current,
-          cropId: crop.id,
-          cropName: crop.name,
-          baseAmount: _gainedBase + _epicBonus,
-          bonusAmount: _bonusAmount,
-          bonusSource: bonusHarvest ? "Zręczność 🎯" : null,
-          baseExp: actualExp,
-          timestamp: Date.now(),
-          quality: _harvestQuality,
-        },
+        ...prev.filter(e => _now2 - e.timestamp < 25000),
+        ..._logEvents,
       ]);
     }
   }
