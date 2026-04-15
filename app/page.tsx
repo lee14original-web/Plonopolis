@@ -4790,10 +4790,10 @@ export default function Page() {
           )}
 
           {harvestLog.length > 0 && (() => {
-            const grouped = harvestLog.reduce<Record<string, { cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
+            const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
-                  acc[_gKey] = { cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0, quality: e.quality };
+                  acc[_gKey] = { cropId: e.cropId, cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0, quality: e.quality };
                 }
                 acc[_gKey].baseAmount += e.baseAmount;
                 acc[_gKey].bonusAmount += e.bonusAmount;
@@ -4803,34 +4803,55 @@ export default function Page() {
               }, {}
             );
             const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
-            const totalBonusExp = 0;
+            const items = Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>;
             return (
-              <div className="fixed bottom-20 right-4 z-[88] w-[370px] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-5 text-[16px] text-[#dfcfab] shadow-2xl backdrop-blur-sm">
-                <p className="mb-2 text-[13px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">{`🌾 Ostatnie zbiory (${harvestCountdown}s)`}</p>
-                <div className="space-y-2">
-                  {(Object.values(grouped) as Array<{cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>).map((g, i) => {
+              <div className="fixed bottom-20 right-4 z-[88] w-[300px] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.95)] p-4 text-[#dfcfab] shadow-2xl backdrop-blur-sm">
+                <p className="mb-3 text-[12px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🎒 Ostatnie zbiory ({harvestCountdown}s)</p>
+                {/* Siatka ikon — plecaczek */}
+                <div className="flex flex-wrap justify-center gap-3">
+                  {items.map((g, i) => {
                     const _qd = CROP_QUALITY_DEFS[g.quality];
+                    const _cropDef = CROPS.find(c => c.id === g.cropId);
+                    const _sprite = g.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
+                                  : g.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
+                                  : g.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
+                                  : _cropDef?.spritePath;
+                    const _total = g.baseAmount + g.bonusAmount;
                     return (
-                    <div key={i} className="rounded-xl px-3 py-2" style={{background: _qd.bgColor, borderLeft: `3px solid ${_qd.borderColor}`}}>
-                      <p className="font-bold text-[#f9e7b2]">
-                        {g.cropName}{" "}
-                        <span style={{color: _qd.borderColor}} className="text-[10px] font-black">{_qd.badge} {_qd.label}</span>
-                      </p>
-                      {g.baseAmount > 0 ? (
-                        <p className="mt-0.5 text-[#dfcfab]">Zebrano: <span className="font-semibold" style={{color: _qd.borderColor}}>+{g.baseAmount} szt.</span>{g.bonusSource && <span className="ml-1 text-[10px] text-amber-300">({g.bonusSource})</span>}</p>
-                      ) : g.quality === "legendary" ? (
-                        <p className="mt-0.5 text-[#dfcfab]">🌟 <span className="font-bold text-amber-300">Bonus EXP {g.bonusSource}</span></p>
-                      ) : null}
-                      {g.bonusAmount > 0 && (
-                        <p className="text-[#dfcfab]">Bonus ({g.bonusSource}): <span className="font-semibold text-yellow-300">+{g.bonusAmount} szt.</span></p>
-                      )}
-                      <p className="mt-0.5 text-[#dfcfab]">EXP: <span className="font-semibold text-sky-300">+{g.baseExp}</span></p>
-                    </div>
+                      <div key={i} className="group relative">
+                        {/* Ikona przedmiotu */}
+                        <div className="relative h-[68px] w-[68px] cursor-default overflow-hidden rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
+                          style={{ borderColor: _qd.borderColor, background: _qd.bgColor }}>
+                          {_sprite
+                            ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1.5" />
+                            : <span className="flex h-full w-full items-center justify-center text-2xl">🌾</span>
+                          }
+                          {/* Odznaka jakości — lewy górny róg */}
+                          <span className="absolute left-0.5 top-0.5 text-[11px] leading-none drop-shadow">{_qd.badge}</span>
+                          {/* Ilość — prawy dolny róg */}
+                          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[11px] font-black text-white leading-tight">×{_total}</span>
+                        </div>
+                        {/* Tooltip przy hover */}
+                        <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-[200] hidden w-48 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
+                          <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
+                          <p className="mb-1" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
+                          {g.baseAmount > 0 && (
+                            <p className="text-[#dfcfab]">Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>
+                          )}
+                          {g.bonusAmount > 0 && (
+                            <p className="text-[#dfcfab]">Bonus <span className="text-amber-300">({g.bonusSource})</span>: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>
+                          )}
+                          {g.quality === "legendary" && g.baseAmount === 0 && (
+                            <p className="text-amber-300">🌟 Bonus EXP {g.bonusSource}</p>
+                          )}
+                          <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-sky-300">EXP: +{g.baseExp}</p>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-                <div className="mt-3 border-t border-[#8b6a3e]/40 pt-2">
-                  <p className="text-[#d8ba7a]">Łącznie EXP: <span className="font-bold text-sky-300">+{totalExp}</span>{totalBonusExp > 0 && <span className="text-yellow-300"> +{totalBonusExp} bonus</span>}</p>
+                <div className="mt-3 border-t border-[#8b6a3e]/40 pt-2 text-[13px]">
+                  <p className="text-[#d8ba7a]">Łącznie EXP: <span className="font-bold text-sky-300">+{totalExp}</span></p>
                 </div>
                 <button
                   onClick={() => setHarvestLog([])}
