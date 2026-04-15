@@ -2136,7 +2136,6 @@ export default function Page() {
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
     const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
-    const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     // ─── Legendarny drop — losuj PRZED wywołaniem RPC ───
     // 0 = zwykłe (15-100 szt.), 1 = epickie (5-15 szt.), 2 = EXP (15-30x)
