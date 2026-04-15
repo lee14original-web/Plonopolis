@@ -124,7 +124,9 @@ begin
   v_level := v_profile.level;
 
   IF p_exp_mult_override > 0 THEN
-    v_exp_mult := p_exp_mult_override;
+    v_exp_mult := p_exp_mult_override;       -- dokładny mnożnik (leg. opcja EXP, epicki)
+  ELSIF p_exp_mult_override < 0 THEN
+    v_exp_mult := 0;                         -- wymuś 0 EXP (leg. opcja 0/1 — tylko plony)
   ELSIF p_planted_quality = 'rotten' THEN
     v_exp_mult := 0;
   ELSIF p_planted_quality = 'epic' THEN

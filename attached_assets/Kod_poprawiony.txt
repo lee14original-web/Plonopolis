@@ -2158,7 +2158,10 @@ export default function Page() {
       p_zrecznosc: playerStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      p_exp_mult_override: _legExpMult > 0 ? _legExpMult : _epicExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik
+      // -1 = wymuś 0 EXP (leg. opcja 0/1 — tylko plony); 0 = jakość decyduje; >0 = dokładny mnożnik
+      p_exp_mult_override: _plantedQuality === "legendary"
+        ? (_legOption === 2 ? _legExpMult : -1)
+        : _epicExpMult,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -4923,14 +4926,14 @@ export default function Page() {
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
                 <p className="font-black text-amber-300">🎲 Jedna z 3 równych szans:</p>
-                <p>✅ 15–100 zwykłych nasion</p>
-                <p>⭐ 5–15 epickich nasion</p>
+                <p>✅ 15–100 zwykłych (bez EXP)</p>
+                <p>⭐ 5–15 epickich (bez EXP)</p>
                 <p>🌟 EXP ×15–30 (bez plonu)</p>
               </div>
             ) : (
               <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "3–10 szt." : `${hoveredCrop.yieldAmount} szt.`}</p>
             )}
-            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `${hoveredCrop.expReward}–${hoveredCrop.expReward * 30}` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
+            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `0 lub ×15–30 (${hoveredCrop.expReward * 15}–${hoveredCrop.expReward * 30})` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
           </>}
         </div>
       )}
