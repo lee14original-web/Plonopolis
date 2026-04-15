@@ -1967,9 +1967,11 @@ export default function Page() {
 
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
-    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono").flatMap(c => [`${c.id}_good`, `${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
+    const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
+    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
+    const allKeys = [...baseCropIds, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
-    for (const id of qualityKeys) newInv[id] = (newInv[id] ?? 0) + amount;
+    for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
@@ -2134,6 +2136,7 @@ export default function Page() {
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
     const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
+    const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     // ─── Legendarny drop — losuj PRZED wywołaniem RPC ───
     // 0 = zwykłe (15-100 szt.), 1 = epickie (5-15 szt.), 2 = EXP (15-30x)
@@ -2158,33 +2161,39 @@ export default function Page() {
       p_zrecznosc: playerStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      // -1 = wymuś 0 EXP (leg. opcja 0/1 — tylko plony); 0 = jakość decyduje; >0 = dokładny mnożnik
-      p_exp_mult_override: _plantedQuality === "legendary"
-        ? (_legOption === 2 ? _legExpMult : -1)
-        : _epicExpMult,
+      p_exp_mult_override: _legExpMult > 0 ? _legExpMult : _epicExpMult, // 0 = jakość decyduje; >0 = dokładny mnożnik
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
     }
 
-    // Nowy format RPC: { profile: {...}, zrecznosc_triggered: bool }
-    const _rpcWrapper = data as { profile?: unknown; zrecznosc_triggered?: boolean };
-    const harvestRpcProfile = extractRpcProfile(_rpcWrapper.profile ?? data);
+    const harvestRpcProfile = extractRpcProfile(data);
     const rpcProf = harvestRpcProfile as Profile;
     const rpcInv = (rpcProf?.seed_inventory && typeof rpcProf.seed_inventory === "object")
       ? rpcProf.seed_inventory as Record<string, number>
       : {};
-    const _zrecznoscionTriggered = _rpcWrapper.zrecznosc_triggered ?? false;
+    // Plon bazowy z konfiguracji (nie z różnicy inventory — zapobiega błędom race condition)
+    const _gainedBase = crop.yieldAmount;
+    const _epicYield = _plantedQuality === "epic" ? (Math.floor(Math.random() * 8) + 3) : 0;
+    const _epicBonus = _plantedQuality === "epic" ? Math.max(0, _epicYield - _gainedBase) : 0;
+    // Zręczność bonus: SQL daje 2x plon gdy wylosuje trafienie; wykrywamy po stat > 0 i SQL > base
+    const _zrecznosc = playerStats.zrecznosc ?? 0;
+    const _sqlYield = Math.max(0, (rpcInv[crop.id] ?? 0) as number);
+    const bonusHarvest = _zrecznosc > 0 && _sqlYield > crop.yieldAmount;
+    const _bonusAmount = bonusHarvest ? crop.yieldAmount : 0;
 
-    // Buduj nextInventory:
-    // - dla nie-legendarnych: SQL już zapisał jakościowe klucze — używamy rpcInv jako bazę
-    // - dla legendarnych: SQL nie dodał itemów — startujemy od snapshotu i dodajemy ręcznie
-    let nextInventory: Record<string, number>;
+    // Buduj inventory z kluczami jakości — na bazie snapshotu sprzed zbioru
+    const nextInventory: Record<string, number> = { ...prevInventorySnapshot };
+    delete nextInventory[crop.id]; // usuń klucz bazowy dodany przez SQL
+
+    // Zmienne dla per-item rolowania (używane też w sekcji log zbiorów)
+    let _baseQG: Partial<Record<CropQuality, number>> = {};
+    let _bonusQG: Partial<Record<CropQuality, number>> = {};
+    let _allQuals: CropQuality[] = [];
+
     let _totalYield = 0;
-
     if (_plantedQuality === "legendary") {
-      nextInventory = { ...prevInventorySnapshot };
       if (_legOption === 0) {
         // Opcja 1: 15–100 zwykłych
         const _legGood = Math.floor(Math.random() * 86) + 15;
@@ -2196,20 +2205,28 @@ export default function Page() {
         nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
         _totalYield = _legEpic;
       } else {
-        // Opcja 3: tylko EXP
+        // Opcja 3: tylko EXP (15–30x) — bez upraw
         _totalYield = 0;
       }
     } else {
-      // SQL zapisał jakości per sztuka — buduj z rpcInv (pełne inventory po zbiorze)
-      nextInventory = {};
-      for (const [_k, _v] of Object.entries(rpcInv)) {
-        if (typeof _v === "number") nextInventory[_k] = _v;
+      // Losuj jakość osobno dla każdej sztuki bazowej i bonusowej
+      const _totalBaseItems = _gainedBase + _epicBonus;
+      const _baseRolls: CropQuality[] = [];
+      for (let _i = 0; _i < _totalBaseItems; _i++) { _baseRolls.push(rollCropQuality()); }
+      const _bonusRolls: CropQuality[] = [];
+      if (bonusHarvest) { for (let _i = 0; _i < _bonusAmount; _i++) { _bonusRolls.push(rollCropQuality()); } }
+      // Grupuj po jakości
+      const _baseQG: Partial<Record<CropQuality, number>> = {};
+      for (const _q of _baseRolls) { _baseQG[_q] = (_baseQG[_q] ?? 0) + 1; }
+      const _bonusQG: Partial<Record<CropQuality, number>> = {};
+      for (const _q of _bonusRolls) { _bonusQG[_q] = (_bonusQG[_q] ?? 0) + 1; }
+      const _allQuals = Array.from(new Set([...Object.keys(_baseQG), ...Object.keys(_bonusQG)])) as CropQuality[];
+      // Aktualizuj inventory dla każdej jakości
+      for (const _q of _allQuals) {
+        const _cnt = (_baseQG[_q] ?? 0) + (_bonusQG[_q] ?? 0);
+        if (_cnt > 0) nextInventory[getQualityKey(crop.id, _q)] = (nextInventory[getQualityKey(crop.id, _q)] ?? 0) + _cnt;
       }
-      // Oblicz łączny zysk (diff) dla _totalYield
-      _totalYield = (["rotten","good","epic","legendary"] as CropQuality[]).reduce((_s, _q) => {
-        const _key = getQualityKey(crop.id, _q);
-        return _s + Math.max(0, (nextInventory[_key] ?? 0) - (prevInventorySnapshot[_key] ?? 0));
-      }, 0);
+      _totalYield = _baseRolls.length + _bonusRolls.length;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — nadpisze seedInventory kluczem bazowym
@@ -2259,26 +2276,17 @@ export default function Page() {
       }
     } else {
       const _now2 = Date.now();
-      // Diff inventory: które jakości się zmieniły?
-      const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => {
-        const _key = getQualityKey(crop.id, _q);
-        return (nextInventory[_key] ?? 0) > (prevInventorySnapshot[_key] ?? 0);
-      });
-      const _logEvents = _diffQuals.map((_q, _idx) => {
-        const _key = getQualityKey(crop.id, _q);
-        const _gained = (nextInventory[_key] ?? 0) - (prevInventorySnapshot[_key] ?? 0);
-        return {
-          id: ++harvestEventIdRef.current,
-          cropId: crop.id,
-          cropName: crop.name,
-          baseAmount: _gained,
-          bonusAmount: 0,
-          bonusSource: _idx === 0 && _zrecznoscionTriggered ? "Zręczność 🎯" : null,
-          baseExp: _idx === 0 ? actualExp : 0,
-          timestamp: _now2,
-          quality: _q,
-        };
-      });
+      const _logEvents = _allQuals.map((_q, _idx) => ({
+        id: ++harvestEventIdRef.current,
+        cropId: crop.id,
+        cropName: crop.name,
+        baseAmount: _baseQG[_q] ?? 0,
+        bonusAmount: _bonusQG[_q] ?? 0,
+        bonusSource: (_bonusQG[_q] ?? 0) > 0 ? "Zręczność 🎯" : null,
+        baseExp: _idx === 0 ? actualExp : 0,
+        timestamp: _now2,
+        quality: _q,
+      }));
       setHarvestLog(prev => [
         ...prev.filter(e => _now2 - e.timestamp < 25000),
         ..._logEvents,
@@ -3994,7 +4002,7 @@ export default function Page() {
                               setShopError("");
                               void (async () => {
                                 const newInv: Record<string,number> = {...seedInventory};
-                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) { const _key = id.includes("_") ? id : `${id}_good`; newInv[_key] = (newInv[_key]??0) + (qty as number); } }
+                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
                                 const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - total) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
                                 if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
                                 else { setShopError("Błąd zakupu: " + error.message); }
@@ -4926,14 +4934,14 @@ export default function Page() {
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
                 <p className="font-black text-amber-300">🎲 Jedna z 3 równych szans:</p>
-                <p>✅ 15–100 zwykłych (bez EXP)</p>
-                <p>⭐ 5–15 epickich (bez EXP)</p>
+                <p>✅ 15–100 zwykłych nasion</p>
+                <p>⭐ 5–15 epickich nasion</p>
                 <p>🌟 EXP ×15–30 (bez plonu)</p>
               </div>
             ) : (
               <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "3–10 szt." : `${hoveredCrop.yieldAmount} szt.`}</p>
             )}
-            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `0 lub ×15–30 (${hoveredCrop.expReward * 15}–${hoveredCrop.expReward * 30})` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
+            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `${hoveredCrop.expReward}–${hoveredCrop.expReward * 30}` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
           </>}
         </div>
       )}
