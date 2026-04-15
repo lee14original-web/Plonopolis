@@ -2136,7 +2136,6 @@ export default function Page() {
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
     const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
-    const _qDef = CROP_QUALITY_DEFS[_harvestQuality]; // używane tylko dla plonu
 
     // ─── Legendarny drop — losuj PRZED wywołaniem RPC ───
     // 0 = zwykłe (15-100 szt.), 1 = epickie (5-15 szt.), 2 = EXP (15-30x)
@@ -4849,7 +4848,9 @@ export default function Page() {
                           {/* Odznaka jakości — lewy górny róg */}
                           <span className="absolute left-0.5 top-0.5 text-[11px] leading-none drop-shadow">{_qd.badge}</span>
                           {/* Ilość — prawy dolny róg */}
-                          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[11px] font-black text-white leading-tight">×{_total}</span>
+                          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-1 text-[11px] font-black text-white leading-tight">
+                            {_total === 0 && g.bonusSource ? g.bonusSource : `×${_total}`}
+                          </span>
                         </div>
                         {/* Tooltip przy hover */}
                         <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-[200] hidden w-48 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
