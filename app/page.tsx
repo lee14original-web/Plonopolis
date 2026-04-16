@@ -2600,10 +2600,8 @@ export default function Page() {
           height: "min(100vh, calc(100vw / 1.5))",
         }}
       >
-        {/* Warstwa 1: Statyczne tło bazowe */}
-        <img src={profile ? "/base.png" : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
-        {/* Warstwa 2: Chmury — powolny drift */}
-        {profile && <img src="/clouds.png" alt="" className="pointer-events-none absolute left-0 w-full select-none" draggable={false} style={{imageRendering:"pixelated", top:"-5%", opacity:0.5, animation:"cloudDrift 60s linear alternate infinite"}} />}
+        {/* Tło mapy — farma: base.png, miasto: klasyczny obrazek */}
+        <img src={profile && isOnFarmMap ? "/base.png" : profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={profile && isOnFarmMap ? {imageRendering:"pixelated"} : {}} />
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
             <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
@@ -2630,7 +2628,7 @@ export default function Page() {
                 @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
                 @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.02)}}
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
-                @keyframes cloudDrift{0%{transform:translateX(-5%) scale(0.6)}100%{transform:translateX(5%) scale(0.6)}}
+
               `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
                 <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
