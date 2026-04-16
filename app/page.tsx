@@ -2600,12 +2600,14 @@ export default function Page() {
           height: "min(100vh, calc(100vw / 1.5))",
         }}
       >
-        <img
-          src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
-          alt="Mapa gry"
-          className="pointer-events-none absolute inset-0 h-full w-full select-none"
-          draggable={false}
-        />
+        {/* Warstwa 1: Statyczne tło bazowe */}
+        <img src={profile ? "/base.png" : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
+        {/* Warstwa 2: Chmury — powolny drift */}
+        {profile && <img src="/clouds.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"cloudDrift 60s linear alternate infinite"}} />}
+        {/* Warstwa 3a: Roślinność klatka 1 */}
+        {profile && <img src="/trees_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"treesSway1 1.8s steps(1) infinite"}} />}
+        {/* Warstwa 3b: Roślinność klatka 2 */}
+        {profile && <img src="/trees_2.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"treesSway2 1.8s steps(1) infinite"}} />}
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
             <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
@@ -4523,14 +4525,11 @@ export default function Page() {
 
                   <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
-                    {/* Warstwa 1: Statyczne tło bazowe */}
-                    <img src="/base.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} />
-                    {/* Warstwa 2: Chmury — powolny drift poziomy */}
-                    <img src="/clouds.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"cloudDrift 60s linear alternate infinite"}} />
-                    {/* Warstwa 3a: Roślinność klatka 1 */}
-                    <img src="/trees_1.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"treesSway1 1.8s steps(1) infinite"}} />
-                    {/* Warstwa 3b: Roślinność klatka 2 */}
-                    <img src="/trees_2.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"treesSway2 1.8s steps(1) infinite"}} />
+                    <img
+                      src="/farm-field-view.png"
+                      alt="Widok pola 25 slotów"
+                      className="h-full w-full object-contain"
+                    />
 
                     <div className="absolute inset-0">
                       {FIELD_VIEW_PLOTS.map((plot) => {
