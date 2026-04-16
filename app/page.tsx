@@ -2604,10 +2604,10 @@ export default function Page() {
         {(!profile || !isOnFarmMap)
           ? <img src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
           : <>
-              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF1 8s steps(1) infinite"}} />
-              <img src="/base_2.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF2 8s steps(1) infinite"}} />
-              <img src="/base_3.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF3 8s steps(1) infinite"}} />
-              <img src="/base_4.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF4 8s steps(1) infinite"}} />
+              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF1 4s steps(1) infinite"}} />
+              <img src="/base_2.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF2 4s steps(1) infinite"}} />
+              <img src="/base_3.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF3 4s steps(1) infinite"}} />
+              <img src="/base_4.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF4 4s steps(1) infinite"}} />
             </>
         }
         {isMapLoading && (
