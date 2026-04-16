@@ -2628,7 +2628,11 @@ export default function Page() {
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}
-              <style>{`@keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}`}</style>
+              <style>{`
+                @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
+                @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.06)}}
+                @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
+              `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
                 <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
@@ -3273,11 +3277,18 @@ export default function Page() {
                                             className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${_isRotten ? "cursor-not-allowed" : ""}`}
                                             style={selectedSeedId === seedId
                                               ? { borderColor: "#f6d860", background: "rgba(60,40,5,0.4)", boxShadow: "0 0 12px rgba(255,220,120,0.22)" }
-                                              : _qDef2
-                                                ? { borderColor: _qDef2.borderColor, background: _qDef2.bgColor }
-                                                : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
+                                              : _bQuality === "legendary"
+                                                ? { borderColor: _qDef2!.borderColor, background: _qDef2!.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
+                                                : _qDef2
+                                                  ? { borderColor: _qDef2.borderColor, background: _qDef2.bgColor }
+                                                  : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
                                           >
                                             <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                            {_bQuality === "legendary" && (
+                                              <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                                <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                              </span>
+                                            )}
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">
                                               {amount}
                                             </span>
@@ -4064,8 +4075,9 @@ export default function Page() {
                                   <button key={seedId} type="button"
                                     onClick={()=>{setSelectedSeedId(p=>p===seedId?null:seedId);setSelectedTool(null);}}
                                     className={`relative flex h-20 w-full items-center justify-center rounded-xl border transition ${_bq==="rotten"?"cursor-not-allowed":""}`}
-                                    style={selectedSeedId===seedId?{borderColor:"#f6d860",background:"rgba(60,40,5,0.4)",boxShadow:"0 0 12px rgba(255,220,120,0.22)"}:_qd?{borderColor:_qd.borderColor,background:_qd.bgColor}:{borderColor:"#8b6a3e",background:"rgba(20,12,8,0.65)"}}>
+                                    style={selectedSeedId===seedId?{borderColor:"#f6d860",background:"rgba(60,40,5,0.4)",boxShadow:"0 0 12px rgba(255,220,120,0.22)"}:_bq==="legendary"?{borderColor:_qd!.borderColor,background:_qd!.bgColor,animation:"legendaryPulse 2s ease-in-out infinite"}:_qd?{borderColor:_qd.borderColor,background:_qd.bgColor}:{borderColor:"#8b6a3e",background:"rgba(20,12,8,0.65)"}}>
                                     <img src={spr} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{imageRendering:"pixelated"}}/>
+                                    {_bq==="legendary"&&<span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden"><span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{animation:"legendaryShimmer 2.4s ease-in-out infinite"}}/></span>}
                                     <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
                                   </button>
                                 );
@@ -4842,7 +4854,9 @@ export default function Page() {
                             <div className="relative h-[68px] w-[68px] cursor-default overflow-hidden rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
                               style={_isExpOnly
                                 ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
-                                : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
+                                : g.quality === "legendary"
+                                  ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
+                                  : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
                               {_isExpOnly
                                 ? <span className="flex h-full w-full flex-col items-center justify-center gap-0.5">
                                     <span className="text-[28px] leading-none">⭐</span>
@@ -4852,6 +4866,11 @@ export default function Page() {
                                   ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1.5" />
                                   : <span className="flex h-full w-full items-center justify-center text-2xl">🌾</span>
                               }
+                              {g.quality === "legendary" && !_isExpOnly && (
+                                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                                  <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                </span>
+                              )}
                               {/* Odznaka jakości — lewy górny róg */}
                               <span className="absolute left-0.5 top-0.5 text-[11px] leading-none drop-shadow">
                                 {_isExpOnly ? "✨" : _qd.badge}
