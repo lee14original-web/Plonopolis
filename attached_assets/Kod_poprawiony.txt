@@ -2600,10 +2600,16 @@ export default function Page() {
           height: "min(100vh, calc(100vw / 1.5))",
         }}
       >
-        {/* Warstwa 1: Statyczne tło bazowe */}
-        <img src={profile ? "/base.png" : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
-        {/* Warstwa 2: Chmury — powolny drift */}
-        {profile && <img src="/clouds.png" alt="" className="pointer-events-none absolute left-0 w-full select-none" draggable={false} style={{imageRendering:"pixelated", top:"-5%", opacity:0.5, animation:"cloudDrift 60s linear alternate infinite"}} />}
+        {/* Tło mapy — farma: warstwy animowane, miasto: klasyczny obrazek */}
+        {(!profile || !isOnFarmMap)
+          ? <img src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
+          : <>
+              {/* Warstwa 1: Statyczne tło bazowe */}
+              <img src="/base.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
+              {/* Warstwa 2: Chmury — powolny drift */}
+              <img src="/clouds.png" alt="" className="pointer-events-none absolute left-0 w-full select-none" draggable={false} style={{imageRendering:"pixelated", top:"-5%", opacity:0.5, animation:"cloudDrift 60s linear alternate infinite"}} />
+            </>
+        }
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
             <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
