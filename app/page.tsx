@@ -2632,6 +2632,9 @@ export default function Page() {
                 @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
                 @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.02)}}
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
+                @keyframes cloudDrift{0%{transform:translateX(-6%)}100%{transform:translateX(6%)}}
+                @keyframes treesSway1{0%,49.9%{opacity:1}50%,100%{opacity:0}}
+                @keyframes treesSway2{0%,49.9%{opacity:0}50%,100%{opacity:1}}
               `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
                 <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
@@ -4520,11 +4523,14 @@ export default function Page() {
 
                   <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
-                    <img
-                      src="/farm-field-view.png"
-                      alt="Widok pola 25 slotów"
-                      className="h-full w-full object-contain"
-                    />
+                    {/* Warstwa 1: Statyczne tło bazowe */}
+                    <img src="/base.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} />
+                    {/* Warstwa 2: Chmury — powolny drift poziomy */}
+                    <img src="/clouds.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"cloudDrift 60s linear alternate infinite"}} />
+                    {/* Warstwa 3a: Roślinność klatka 1 */}
+                    <img src="/trees_1.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"treesSway1 1.8s steps(1) infinite"}} />
+                    {/* Warstwa 3b: Roślinność klatka 2 */}
+                    <img src="/trees_2.png" alt="" className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated", animation:"treesSway2 1.8s steps(1) infinite"}} />
 
                     <div className="absolute inset-0">
                       {FIELD_VIEW_PLOTS.map((plot) => {
