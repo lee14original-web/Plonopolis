@@ -131,13 +131,13 @@ type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lad
 interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
 const BUILDINGS: BuildingDef[] = [
   { id: "dom",          name: "Dom",              maxTiers: 5, left: "16.8%", top: "14.9%", width: "17.5%", height: "17.0%" },
-  { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.8%", top: "15.0%", width: "15.9%", height: "16.9%" },
+  { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.5%", top: "15.1%", width: "15.9%", height: "16.8%" },
   { id: "ule",          name: "Ule",              maxTiers: 5, left: "64.5%", top: "15.0%", width: "17.4%", height: "17.3%" },
   { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "13.4%", top: "39.0%", width: "18.6%", height: "19.9%" },
   { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "66.4%", top: "38.8%", width: "19.5%", height: "20.5%" },
-  { id: "rower",        name: "Rower",            maxTiers: 5, left: "13.8%", top: "63.9%", width: "17.9%", height: "21.3%" },
-  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "40.9%", top: "66.2%", width: "17.1%", height: "21.0%" },
-  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "67.1%", top: "66.6%", width: "19.5%", height: "20.2%" },
+  { id: "rower",        name: "Rower",            maxTiers: 5, left: "43.3%", top: "88.6%", width: "12.4%", height: "10.6%" },
+  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "40.9%", top: "66.7%", width: "17.3%", height: "20.8%" },
+  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "13.0%", top: "66.5%", width: "19.5%", height: "20.2%" },
 ];
 function getBuildingTier(playerLevel: number, maxTiers: number): number {
   return Math.min(Math.max(Math.ceil(playerLevel / 5), 1), maxTiers);
@@ -956,10 +956,10 @@ export default function Page() {
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    dom:        {left:25.5, top:32.5},
-    stodola:    {left:22.7, top:59.5},
-    doMiasta:   {left:22.8, top:86.0},
-    polaUprawne:{left:76.0, top:60.0},
+    dom:        {left:25.7, top:33.2},
+    stodola:    {left:22.7, top:59.9},
+    doMiasta:   {left:40.3, top:95.6},
+    polaUprawne:{left:70.7, top:60.1},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
