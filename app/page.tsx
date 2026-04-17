@@ -2806,9 +2806,9 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: "46%",
-      top: "65%",
-      width: "38%",
+      left: "61%",
+      top: "33%",
+      width: "24%",
       height: "22%",
       zIndex: 4,
     }}
@@ -2828,7 +2828,7 @@ export default function Page() {
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                           title="Dom gracza"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "25%", top: "21%", width: "9%", height: "20%", zIndex: 20 }}
+                          style={{ left: "11%", top: "8%", width: "19%", height: "22%", zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                             Dom
@@ -2840,7 +2840,7 @@ export default function Page() {
                           onClick={() => setShowStodolaModal(true)}
                           title="Stodoła"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "69%", top: "20.5%", width: "14%", height: "19.6%", zIndex: 20 }}
+                          style={{ left: "11%", top: "33%", width: "19%", height: "22%", zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                             Stodoła
@@ -2852,7 +2852,7 @@ export default function Page() {
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "15%", top: "56.5%", width: "12%", height: "16%", zIndex: 20 }}
+                        style={{ left: "11%", top: "58%", width: "18%", height: "22%", zIndex: 20 }}
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                           Do miasta
