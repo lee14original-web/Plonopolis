@@ -929,6 +929,7 @@ export default function Page() {
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
   const [showTestModal, setShowTestModal] = React.useState(false);
   const [buildingEditMode, setBuildingEditMode] = React.useState(false);
+  const [selectedBuildId, setSelectedBuildId] = React.useState<string|null>(null);
   const [editPositions, setEditPositions] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>(() =>
     Object.fromEntries(BUILDINGS.map(b => [b.id, {left:parseFloat(b.left),top:parseFloat(b.top),width:parseFloat(b.width),height:parseFloat(b.height)}]))
   );
@@ -2711,28 +2712,64 @@ export default function Page() {
                   {/* Interaktywne ramki budynków */}
                   {BUILDINGS.map(b => {
                     const p = editPositions[b.id];
+                    const isSelected = selectedBuildId === b.id;
                     return (
                       <div
                         key={`ed${b.id}`}
                         className="absolute cursor-move select-none"
-                        style={{left:`${p.left}%`,top:`${p.top}%`,width:`${p.width}%`,height:`${p.height}%`,border:"2px solid #f59e0b",background:"rgba(245,158,11,0.15)"}}
-                        onMouseDown={e => { e.preventDefault(); dragStateRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                        style={{left:`${p.left}%`,top:`${p.top}%`,width:`${p.width}%`,height:`${p.height}%`,
+                          border: isSelected ? "2px solid #facc15" : "2px solid #f59e0b",
+                          background: isSelected ? "rgba(250,204,21,0.25)" : "rgba(245,158,11,0.15)"}}
+                        onMouseDown={e => { e.preventDefault(); setSelectedBuildId(b.id); dragStateRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
                       >
-                        <span className="absolute top-0 left-0 text-[9px] font-black text-yellow-300 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{b.name}</span>
+                        <span className="absolute top-0 left-0 text-[9px] font-black leading-none" style={{color: isSelected?"#facc15":"#fde68a",background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{b.name}</span>
                         <span className="absolute bottom-0 left-0 text-[9px] text-yellow-200 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}×{p.height.toFixed(1)}</span>
-                        {/* Uchwyt resize — prawy dolny róg */}
                         <div
                           className="absolute bottom-0 right-0 cursor-se-resize"
                           style={{width:14,height:14,background:"#f59e0b",borderRadius:"3px 0 3px 0"}}
-                          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragStateRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setSelectedBuildId(b.id); dragStateRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
                         />
                       </div>
                     );
                   })}
-                  {/* Panel z pozycjami do skopiowania */}
-                  <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[260px]" style={{zIndex:60}}>
+                  {/* Panel rozmiarów — wybrany budynek */}
+                  {selectedBuildId && (() => {
+                    const p = editPositions[selectedBuildId];
+                    const bname = BUILDINGS.find(b=>b.id===selectedBuildId)?.name ?? selectedBuildId;
+                    const adj = (field:"width"|"height", delta:number) =>
+                      setEditPositions(prev => ({...prev, [selectedBuildId]: {...prev[selectedBuildId], [field]: Math.max(2, parseFloat((prev[selectedBuildId][field]+delta).toFixed(1)))}}));
+                    return (
+                      <div className="absolute top-2 left-2 rounded-xl border-2 border-yellow-400 bg-black/95 p-3 select-none" style={{zIndex:65, minWidth:220}}>
+                        <div className="font-black text-yellow-300 text-sm mb-2">✏️ {bname}</div>
+                        {/* Szerokość */}
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-yellow-200 text-[11px] w-16">Szer.:</span>
+                          <button type="button" onClick={()=>adj("width",-0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">−</button>
+                          <span className="text-yellow-100 font-black text-sm w-14 text-center">{p.width.toFixed(1)}%</span>
+                          <button type="button" onClick={()=>adj("width",+0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">+</button>
+                          <button type="button" onClick={()=>adj("width",+2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">+2</button>
+                          <button type="button" onClick={()=>adj("width",-2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">−2</button>
+                        </div>
+                        {/* Wysokość */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-yellow-200 text-[11px] w-16">Wys.:</span>
+                          <button type="button" onClick={()=>adj("height",-0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">−</button>
+                          <span className="text-yellow-100 font-black text-sm w-14 text-center">{p.height.toFixed(1)}%</span>
+                          <button type="button" onClick={()=>adj("height",+0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">+</button>
+                          <button type="button" onClick={()=>adj("height",+2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">+2</button>
+                          <button type="button" onClick={()=>adj("height",-2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">−2</button>
+                        </div>
+                        <div className="text-[10px] text-yellow-400 font-black border-t border-yellow-700 pt-1">
+                          {selectedBuildId}: left={p.left.toFixed(1)}% top={p.top.toFixed(1)}% width={p.width.toFixed(1)}% height={p.height.toFixed(1)}%
+                        </div>
+                        <button type="button" onClick={()=>setSelectedBuildId(null)} className="mt-1 text-[10px] text-yellow-600 hover:text-yellow-300">✕ odznacz</button>
+                      </div>
+                    );
+                  })()}
+                  {/* Panel z wszystkimi pozycjami do skopiowania */}
+                  <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[280px]" style={{zIndex:60}}>
                     <div className="font-black text-yellow-400 mb-1">📋 Aktualne pozycje:</div>
-                    {BUILDINGS.map(b => { const p = editPositions[b.id]; return <div key={b.id}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
+                    {BUILDINGS.map(b => { const p = editPositions[b.id]; return <div key={b.id} className={b.id===selectedBuildId?"text-yellow-300 font-black":""}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
                   </div>
                 </div>
               )}
