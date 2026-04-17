@@ -954,28 +954,30 @@ export default function Page() {
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, []);
   const [navEditMode, setNavEditMode] = React.useState(false);
-  const [navPositions, setNavPositions] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
-    dom:        {left:16.8, top:14.9, width:17.5, height:17.0},
-    stodola:    {left:13.4, top:39.0, width:18.6, height:19.9},
-    doMiasta:   {left:13.8, top:63.9, width:17.9, height:21.3},
-    polaUprawne:{left:66.4, top:38.8, width:19.5, height:20.5},
+  // pozycje etykiet (niezależne od hitboxów)
+  const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
+    dom:        {left:25.5, top:32.5},
+    stodola:    {left:22.7, top:59.5},
+    doMiasta:   {left:22.8, top:86.0},
+    polaUprawne:{left:76.0, top:60.0},
   });
-  const navDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
     const onMove = (e: MouseEvent) => {
-      const ds = navDragRef.current;
+      const ds = navLabelDragRef.current;
       if (!ds || !mapContainerRef.current) return;
       const rect = mapContainerRef.current.getBoundingClientRect();
       const dx = ((e.clientX - ds.startX) / rect.width) * 100;
       const dy = ((e.clientY - ds.startY) / rect.height) * 100;
-      setNavPositions(prev => {
-        const p = {...prev[ds.id]};
-        if (ds.type === "move") { p.left = Math.max(0, Math.min(95, ds.startPos.left + dx)); p.top = Math.max(0, Math.min(95, ds.startPos.top + dy)); }
-        else { p.width = Math.max(5, ds.startPos.width + dx); p.height = Math.max(5, ds.startPos.height + dy); }
-        return {...prev, [ds.id]: p};
-      });
+      setNavLabelPos(prev => ({
+        ...prev,
+        [ds.id]: {
+          left: Math.max(0, Math.min(98, ds.startPos.left + dx)),
+          top:  Math.max(0, Math.min(98, ds.startPos.top  + dy)),
+        }
+      }));
     };
-    const onUp = () => { navDragRef.current = null; };
+    const onUp = () => { navLabelDragRef.current = null; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
@@ -2902,18 +2904,14 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: `${navPositions.polaUprawne.left}%`,
-      top: `${navPositions.polaUprawne.top}%`,
-      width: `${navPositions.polaUprawne.width}%`,
-      height: `${navPositions.polaUprawne.height}%`,
+      left: "66.4%",
+      top: "38.8%",
+      width: "19.5%",
+      height: "20.5%",
       zIndex: 4,
     }}
     title="Pola uprawne"
-  >
-    <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-      Pola uprawne
-    </span>
-  </button>
+  />
 )}
 
                   {currentMap.startsWith("farm") && (
@@ -2924,65 +2922,73 @@ export default function Page() {
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                           title="Dom gracza"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:`${navPositions.dom.left}%`, top:`${navPositions.dom.top}%`, width:`${navPositions.dom.width}%`, height:`${navPositions.dom.height}%`, zIndex: 20 }}
-                        >
-                          <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                            Dom
-                          </span>
-                        </button>
-                        {/* Stodoła — nad polem uprawnym po prawej */}
+                          style={{ left:"16.8%", top:"14.9%", width:"17.5%", height:"17.0%", zIndex: 20 }}
+                        />
+                        {/* Stodoła */}
                         <button
                           type="button"
                           onClick={() => setShowStodolaModal(true)}
                           title="Stodoła"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:`${navPositions.stodola.left}%`, top:`${navPositions.stodola.top}%`, width:`${navPositions.stodola.width}%`, height:`${navPositions.stodola.height}%`, zIndex: 20 }}
-                        >
-                          <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                            Stodoła
-                          </span>
-                        </button>
+                          style={{ left:"13.4%", top:"39.0%", width:"18.6%", height:"19.9%", zIndex: 20 }}
+                        />
                       {/* Do miasta */}
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navPositions.doMiasta.left}%`, top:`${navPositions.doMiasta.top}%`, width:`${navPositions.doMiasta.width}%`, height:`${navPositions.doMiasta.height}%`, zIndex: 20 }}
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                          Do miasta
-                        </span>
-                      </button>
+                        style={{ left:"13.8%", top:"63.9%", width:"17.9%", height:"21.3%", zIndex: 20 }}
+                      />
+                      {/* Etykiety nawigacyjne — niezależne od hitboxów */}
+                      {(["dom","stodola","doMiasta","polaUprawne"] as const).map(id => {
+                        const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne"};
+                        const lp = navLabelPos[id];
+                        return (
+                          <div key={`lbl${id}`} className="pointer-events-none absolute select-none"
+                            style={{left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", zIndex:22}}>
+                            <span className="rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
+                              {labels[id]}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </>
                   )}
 
-                  {/* ══ EDYTOR PRZYCISKÓW NAWIGACYJNYCH ══ */}
+                  {/* ══ EDYTOR ETYKIET NAWIGACYJNYCH ══ */}
                   {navEditMode && isOnFarmMap && (
-                    <div className="absolute inset-0" style={{zIndex:55}}>
+                    <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
                       {([
                         {id:"dom", name:"Dom"},
                         {id:"stodola", name:"Stodoła"},
                         {id:"doMiasta", name:"Do miasta"},
                         {id:"polaUprawne", name:"Pola uprawne"},
                       ] as Array<{id:string,name:string}>).map(nb => {
-                        const p = navPositions[nb.id];
+                        const lp = navLabelPos[nb.id];
                         return (
-                          <div key={`ne${nb.id}`} className="absolute cursor-move select-none"
-                            style={{left:`${p.left}%`,top:`${p.top}%`,width:`${p.width}%`,height:`${p.height}%`,border:"2px solid #38bdf8",background:"rgba(56,189,248,0.15)"}}
-                            onMouseDown={e => { e.preventDefault(); navDragRef.current = {type:"move",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                          <div key={`nle${nb.id}`}
+                            className="absolute cursor-move pointer-events-auto select-none"
+                            style={{
+                              left:`${lp.left}%`, top:`${lp.top}%`,
+                              transform:"translateX(-50%)",
+                              border:"2px dashed #38bdf8",
+                              background:"rgba(56,189,248,0.18)",
+                              borderRadius:8, padding:"2px 4px",
+                              userSelect:"none",
+                            }}
+                            onMouseDown={e => { e.preventDefault(); navLabelDragRef.current = {id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }}
                           >
-                            <span className="absolute top-0 left-0 text-[9px] font-black text-sky-300 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{nb.name}</span>
-                            <span className="absolute bottom-0 left-0 text-[9px] text-sky-200 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}×{p.height.toFixed(1)}</span>
-                            <div className="absolute bottom-0 right-0 cursor-se-resize" style={{width:14,height:14,background:"#38bdf8",borderRadius:"3px 0 3px 0"}}
-                              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); navDragRef.current = {type:"resize",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
-                            />
+                            <span className="block text-[9px] font-black text-sky-200 whitespace-nowrap leading-none text-center" style={{background:"rgba(0,0,0,0.7)",padding:"1px 3px",borderRadius:4}}>
+                              {nb.name}<br/>
+                              <span className="text-sky-400">{lp.left.toFixed(1)}% {lp.top.toFixed(1)}%</span>
+                            </span>
                           </div>
                         );
                       })}
-                      <div className="absolute bottom-2 left-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[220px]" style={{zIndex:60}}>
-                        <div className="font-black text-sky-400 mb-1">📋 Pozycje przycisków:</div>
-                        {Object.entries(navPositions).map(([id,p]) => <div key={id}>{id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>)}
+                      <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
+                        <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet:</div>
+                        {Object.entries(navLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
                       </div>
                     </div>
                   )}
