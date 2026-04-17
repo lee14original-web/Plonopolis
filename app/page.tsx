@@ -130,14 +130,14 @@ const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_town
 type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
 interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
 const BUILDINGS: BuildingDef[] = [
-  { id: "dom",          name: "Dom",              maxTiers: 5, left: "5%",  top: "10%", width: "20%", height: "28%" },
-  { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "33%", top: "25%", width: "32%", height: "38%" },
-  { id: "rower",        name: "Rower",            maxTiers: 5, left: "3%",  top: "55%", width: "10%", height: "15%" },
-  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "20%", top: "12%", width: "12%", height: "17%" },
-  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "72%", top: "8%",  width: "22%", height: "28%" },
-  { id: "sad",          name: "Sad",              maxTiers: 5, left: "68%", top: "48%", width: "22%", height: "30%" },
-  { id: "ule",          name: "Ule",              maxTiers: 5, left: "42%", top: "65%", width: "12%", height: "18%" },
-  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "58%", top: "62%", width: "15%", height: "20%" },
+  { id: "dom",          name: "Dom",              maxTiers: 5, left: "11%", top: "8%",  width: "19%", height: "22%" },
+  { id: "sad",          name: "Sad",              maxTiers: 5, left: "38%", top: "8%",  width: "19%", height: "22%" },
+  { id: "ule",          name: "Ule",              maxTiers: 5, left: "64%", top: "8%",  width: "19%", height: "22%" },
+  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "11%", top: "33%", width: "19%", height: "22%" },
+  { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "61%", top: "33%", width: "24%", height: "22%" },
+  { id: "rower",        name: "Rower",            maxTiers: 5, left: "11%", top: "58%", width: "18%", height: "22%" },
+  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "37%", top: "58%", width: "19%", height: "22%" },
+  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "62%", top: "58%", width: "22%", height: "22%" },
 ];
 function getBuildingTier(playerLevel: number, maxTiers: number): number {
   return Math.min(Math.max(Math.ceil(playerLevel / 5), 1), maxTiers);
