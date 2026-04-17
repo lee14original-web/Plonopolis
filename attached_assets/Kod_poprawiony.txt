@@ -134,9 +134,9 @@ const BUILDINGS: BuildingDef[] = [
   { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "33%", top: "25%", width: "32%", height: "38%" },
   { id: "rower",        name: "Rower",            maxTiers: 5, left: "3%",  top: "55%", width: "10%", height: "15%" },
   { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "20%", top: "12%", width: "12%", height: "17%" },
-  { id: "stodola",      name: "Stodoła",          maxTiers: 4, left: "72%", top: "8%",  width: "22%", height: "28%" },
+  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "72%", top: "8%",  width: "22%", height: "28%" },
   { id: "sad",          name: "Sad",              maxTiers: 5, left: "68%", top: "48%", width: "22%", height: "30%" },
-  { id: "ule",          name: "Ule",              maxTiers: 4, left: "42%", top: "65%", width: "12%", height: "18%" },
+  { id: "ule",          name: "Ule",              maxTiers: 5, left: "42%", top: "65%", width: "12%", height: "18%" },
   { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "58%", top: "62%", width: "15%", height: "20%" },
 ];
 function getBuildingTier(playerLevel: number, maxTiers: number): number {
