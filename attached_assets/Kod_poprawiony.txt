@@ -2604,10 +2604,7 @@ export default function Page() {
         {(!profile || !isOnFarmMap)
           ? <img src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
           : <>
-              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF1 4s steps(1) infinite"}} />
-              <img src="/base_2.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF2 4s steps(1) infinite"}} />
-              <img src="/base_3.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF3 4s steps(1) infinite"}} />
-              <img src="/base_4.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", animation:"mapF4 4s steps(1) infinite"}} />
+              <img src="/farm_animation.gif" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
             </>
         }
         {isMapLoading && (
@@ -2636,10 +2633,6 @@ export default function Page() {
                 @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
                 @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.02)}}
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
-                @keyframes mapF1{0%,24.9%{opacity:1}25%,100%{opacity:0}}
-                @keyframes mapF2{0%,24.9%{opacity:0}25%,49.9%{opacity:1}50%,100%{opacity:0}}
-                @keyframes mapF3{0%,49.9%{opacity:0}50%,74.9%{opacity:1}75%,100%{opacity:0}}
-                @keyframes mapF4{0%,74.9%{opacity:0}75%,100%{opacity:1}}
 
               `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
