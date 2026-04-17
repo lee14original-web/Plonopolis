@@ -127,6 +127,22 @@ const FARM_UPGRADE_LEVELS = [5, 10, 15, 20] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
+type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
+interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
+const BUILDINGS: BuildingDef[] = [
+  { id: "dom",          name: "Dom",              maxTiers: 5, left: "5%",  top: "10%", width: "20%", height: "28%" },
+  { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "33%", top: "25%", width: "32%", height: "38%" },
+  { id: "rower",        name: "Rower",            maxTiers: 5, left: "3%",  top: "55%", width: "10%", height: "15%" },
+  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "20%", top: "12%", width: "12%", height: "17%" },
+  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "72%", top: "8%",  width: "22%", height: "28%" },
+  { id: "sad",          name: "Sad",              maxTiers: 5, left: "68%", top: "48%", width: "22%", height: "30%" },
+  { id: "ule",          name: "Ule",              maxTiers: 5, left: "42%", top: "65%", width: "12%", height: "18%" },
+  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "58%", top: "62%", width: "15%", height: "20%" },
+];
+function getBuildingTier(playerLevel: number, maxTiers: number): number {
+  return Math.min(Math.max(Math.ceil(playerLevel / 5), 1), maxTiers);
+}
+
 const CROP_QUALITY_DEFS = {
   rotten:    { label: "Popsuta",    badge: "⚠️", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 0, canPlant: false },
   good:      { label: "Zwykła",     badge: "✅", borderColor: "#ffffff", bgColor: "rgba(255,255,255,0.05)", expMult: 1, canPlant: true  },
@@ -2600,11 +2616,44 @@ export default function Page() {
           height: "min(100vh, calc(100vw / 1.5))",
         }}
       >
-        {/* Tło mapy — farma: 4 animowane klatki, miasto: klasyczny obrazek */}
+        {/* Tło mapy — farma: base_1.png + budynki, miasto: klasyczny obrazek */}
         {(!profile || !isOnFarmMap)
           ? <img src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
           : <>
-              <img src="/farm_animation.gif" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
+              {/* Warstwa 1: Statyczne tło farmy */}
+              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
+              {/* Warstwa 2: Budynki zależne od poziomu */}
+              {BUILDINGS.map(b => {
+                const tier = getBuildingTier(displayLevel, b.maxTiers);
+                return (
+                  <img
+                    key={b.id}
+                    src={`/${b.id}_${tier}.png`}
+                    alt={b.name}
+                    className="pointer-events-none absolute select-none"
+                    draggable={false}
+                    style={{ left: b.left, top: b.top, width: b.width, height: b.height, imageRendering: "pixelated", objectFit: "contain" }}
+                  />
+                );
+              })}
+              {/* ══ SIATKA POZYCJONOWANIA (tymczasowa) ══ */}
+              <div className="pointer-events-none absolute inset-0" style={{zIndex:50}}>
+                {[0,10,20,30,40,50,60,70,80,90,100].map(x => (
+                  <div key={`vg${x}`} className="absolute top-0 bottom-0" style={{left:`${x}%`,borderLeft:"1px solid rgba(255,255,255,0.35)"}}>
+                    <span className="absolute top-0 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.55)",padding:"0 2px"}}>{x}%</span>
+                  </div>
+                ))}
+                {[0,10,20,30,40,50,60,70,80,90,100].map(y => (
+                  <div key={`hg${y}`} className="absolute left-0 right-0" style={{top:`${y}%`,borderTop:"1px solid rgba(255,255,255,0.35)"}}>
+                    <span className="absolute top-0.5 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.55)",padding:"0 2px"}}>{y}%</span>
+                  </div>
+                ))}
+                {BUILDINGS.map(b => (
+                  <div key={`bl${b.id}`} className="absolute" style={{left:b.left,top:b.top,width:b.width,height:b.height,border:"2px solid #f59e0b",background:"rgba(245,158,11,0.12)"}}>
+                    <span className="absolute top-0 left-0 text-[9px] font-black text-yellow-300" style={{background:"rgba(0,0,0,0.7)",padding:"0 3px"}}>{b.name}</span>
+                  </div>
+                ))}
+              </div>
             </>
         }
         {isMapLoading && (
@@ -2633,6 +2682,10 @@ export default function Page() {
                 @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
                 @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.02)}}
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
+                @keyframes mapF1{0%,24.9%{opacity:1}25%,100%{opacity:0}}
+                @keyframes mapF2{0%,24.9%{opacity:0}25%,49.9%{opacity:1}50%,100%{opacity:0}}
+                @keyframes mapF3{0%,49.9%{opacity:0}50%,74.9%{opacity:1}75%,100%{opacity:0}}
+                @keyframes mapF4{0%,74.9%{opacity:0}75%,100%{opacity:1}}
 
               `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
