@@ -130,14 +130,14 @@ const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_town
 type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
 interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
 const BUILDINGS: BuildingDef[] = [
-  { id: "dom",          name: "Dom",              maxTiers: 5, left: "11%", top: "8%",  width: "19%", height: "22%" },
-  { id: "sad",          name: "Sad",              maxTiers: 5, left: "38%", top: "8%",  width: "19%", height: "22%" },
-  { id: "ule",          name: "Ule",              maxTiers: 5, left: "64%", top: "8%",  width: "19%", height: "22%" },
-  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "11%", top: "33%", width: "19%", height: "22%" },
-  { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "61%", top: "33%", width: "24%", height: "22%" },
-  { id: "rower",        name: "Rower",            maxTiers: 5, left: "11%", top: "58%", width: "18%", height: "22%" },
-  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "37%", top: "58%", width: "19%", height: "22%" },
-  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "62%", top: "58%", width: "22%", height: "22%" },
+  { id: "dom",          name: "Dom",              maxTiers: 5, left: "16.8%", top: "14.9%", width: "17.5%", height: "17.0%" },
+  { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.8%", top: "15.0%", width: "15.9%", height: "16.9%" },
+  { id: "ule",          name: "Ule",              maxTiers: 5, left: "64.5%", top: "15.0%", width: "17.4%", height: "17.3%" },
+  { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "13.4%", top: "39.0%", width: "18.6%", height: "19.9%" },
+  { id: "pola",         name: "Pola uprawne",     maxTiers: 5, left: "66.4%", top: "38.8%", width: "19.5%", height: "20.5%" },
+  { id: "rower",        name: "Rower",            maxTiers: 5, left: "13.8%", top: "63.9%", width: "17.9%", height: "21.3%" },
+  { id: "lada",         name: "Lada dla klientów",maxTiers: 5, left: "40.9%", top: "66.2%", width: "17.1%", height: "21.0%" },
+  { id: "kompostownik", name: "Kompostownik",     maxTiers: 5, left: "67.1%", top: "66.6%", width: "19.5%", height: "20.2%" },
 ];
 function getBuildingTier(playerLevel: number, maxTiers: number): number {
   return Math.min(Math.max(Math.ceil(playerLevel / 5), 1), maxTiers);
@@ -949,6 +949,33 @@ export default function Page() {
       });
     };
     const onUp = () => { dragStateRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+  const [navEditMode, setNavEditMode] = React.useState(false);
+  const [navPositions, setNavPositions] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
+    dom:        {left:16.8, top:14.9, width:17.5, height:17.0},
+    stodola:    {left:13.4, top:39.0, width:18.6, height:19.9},
+    doMiasta:   {left:13.8, top:63.9, width:17.9, height:21.3},
+    polaUprawne:{left:66.4, top:38.8, width:19.5, height:20.5},
+  });
+  const navDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const ds = navDragRef.current;
+      if (!ds || !mapContainerRef.current) return;
+      const rect = mapContainerRef.current.getBoundingClientRect();
+      const dx = ((e.clientX - ds.startX) / rect.width) * 100;
+      const dy = ((e.clientY - ds.startY) / rect.height) * 100;
+      setNavPositions(prev => {
+        const p = {...prev[ds.id]};
+        if (ds.type === "move") { p.left = Math.max(0, Math.min(95, ds.startPos.left + dx)); p.top = Math.max(0, Math.min(95, ds.startPos.top + dy)); }
+        else { p.width = Math.max(5, ds.startPos.width + dx); p.height = Math.max(5, ds.startPos.height + dy); }
+        return {...prev, [ds.id]: p};
+      });
+    };
+    const onUp = () => { navDragRef.current = null; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
@@ -2747,15 +2774,22 @@ export default function Page() {
                 </button>
               </div>
 
-              {/* ═══ EDYTOR BUDYNKÓW ═══ */}
+              {/* ═══ EDYTOR BUDYNKÓW + PRZYCISKÓW ═══ */}
               {isOnFarmMap && (
-                <div className="fixed right-4 z-[92]" style={{ top: "140px" }}>
+                <div className="fixed right-4 z-[92] flex flex-col gap-1" style={{ top: "140px" }}>
                   <button
                     type="button"
                     onClick={() => setBuildingEditMode(m => !m)}
                     className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${buildingEditMode ? "border-yellow-400 bg-yellow-900/80 text-yellow-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
                   >
                     🏗️ {buildingEditMode ? "Zakończ edycję" : "Edytuj pozycje"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNavEditMode(m => !m)}
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${navEditMode ? "border-sky-400 bg-sky-900/80 text-sky-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                  >
+                    🖱️ {navEditMode ? "Zakończ edycję" : "Edytuj przyciski"}
                   </button>
                 </div>
               )}
@@ -2868,10 +2902,10 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: "61%",
-      top: "33%",
-      width: "24%",
-      height: "22%",
+      left: `${navPositions.polaUprawne.left}%`,
+      top: `${navPositions.polaUprawne.top}%`,
+      width: `${navPositions.polaUprawne.width}%`,
+      height: `${navPositions.polaUprawne.height}%`,
       zIndex: 4,
     }}
     title="Pola uprawne"
@@ -2890,7 +2924,7 @@ export default function Page() {
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                           title="Dom gracza"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "11%", top: "8%", width: "19%", height: "22%", zIndex: 20 }}
+                          style={{ left:`${navPositions.dom.left}%`, top:`${navPositions.dom.top}%`, width:`${navPositions.dom.width}%`, height:`${navPositions.dom.height}%`, zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                             Dom
@@ -2902,7 +2936,7 @@ export default function Page() {
                           onClick={() => setShowStodolaModal(true)}
                           title="Stodoła"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left: "11%", top: "33%", width: "19%", height: "22%", zIndex: 20 }}
+                          style={{ left:`${navPositions.stodola.left}%`, top:`${navPositions.stodola.top}%`, width:`${navPositions.stodola.width}%`, height:`${navPositions.stodola.height}%`, zIndex: 20 }}
                         >
                           <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                             Stodoła
@@ -2914,13 +2948,43 @@ export default function Page() {
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "11%", top: "58%", width: "18%", height: "22%", zIndex: 20 }}
+                        style={{ left:`${navPositions.doMiasta.left}%`, top:`${navPositions.doMiasta.top}%`, width:`${navPositions.doMiasta.width}%`, height:`${navPositions.doMiasta.height}%`, zIndex: 20 }}
                       >
                         <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
                           Do miasta
                         </span>
                       </button>
                     </>
+                  )}
+
+                  {/* ══ EDYTOR PRZYCISKÓW NAWIGACYJNYCH ══ */}
+                  {navEditMode && isOnFarmMap && (
+                    <div className="absolute inset-0" style={{zIndex:55}}>
+                      {([
+                        {id:"dom", name:"Dom"},
+                        {id:"stodola", name:"Stodoła"},
+                        {id:"doMiasta", name:"Do miasta"},
+                        {id:"polaUprawne", name:"Pola uprawne"},
+                      ] as Array<{id:string,name:string}>).map(nb => {
+                        const p = navPositions[nb.id];
+                        return (
+                          <div key={`ne${nb.id}`} className="absolute cursor-move select-none"
+                            style={{left:`${p.left}%`,top:`${p.top}%`,width:`${p.width}%`,height:`${p.height}%`,border:"2px solid #38bdf8",background:"rgba(56,189,248,0.15)"}}
+                            onMouseDown={e => { e.preventDefault(); navDragRef.current = {type:"move",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                          >
+                            <span className="absolute top-0 left-0 text-[9px] font-black text-sky-300 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{nb.name}</span>
+                            <span className="absolute bottom-0 left-0 text-[9px] text-sky-200 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}×{p.height.toFixed(1)}</span>
+                            <div className="absolute bottom-0 right-0 cursor-se-resize" style={{width:14,height:14,background:"#38bdf8",borderRadius:"3px 0 3px 0"}}
+                              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); navDragRef.current = {type:"resize",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                            />
+                          </div>
+                        );
+                      })}
+                      <div className="absolute bottom-2 left-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[220px]" style={{zIndex:60}}>
+                        <div className="font-black text-sky-400 mb-1">📋 Pozycje przycisków:</div>
+                        {Object.entries(navPositions).map(([id,p]) => <div key={id}>{id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>)}
+                      </div>
+                    </div>
                   )}
 
                   {currentMap === "city" && (
