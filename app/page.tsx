@@ -958,7 +958,7 @@ export default function Page() {
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
     dom:        {left:25.7, top:33.2},
     stodola:    {left:22.7, top:59.9},
-    doMiasta:   {left:40.3, top:95.6},
+    doMiasta:   {left:49.0, top:96.1},
     polaUprawne:{left:70.7, top:60.1},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
@@ -2938,7 +2938,7 @@ export default function Page() {
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:"13.8%", top:"63.9%", width:"17.9%", height:"21.3%", zIndex: 20 }}
+                        style={{ left:"43.3%", top:"88.6%", width:"12.4%", height:"10.6%", zIndex: 20 }}
                       />
                       {/* Etykiety nawigacyjne — niezależne od hitboxów */}
                       {(["dom","stodola","doMiasta","polaUprawne"] as const).map(id => {
