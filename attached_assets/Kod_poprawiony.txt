@@ -928,6 +928,31 @@ export default function Page() {
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
   const [showTestModal, setShowTestModal] = React.useState(false);
+  const [buildingEditMode, setBuildingEditMode] = React.useState(false);
+  const [editPositions, setEditPositions] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>(() =>
+    Object.fromEntries(BUILDINGS.map(b => [b.id, {left:parseFloat(b.left),top:parseFloat(b.top),width:parseFloat(b.width),height:parseFloat(b.height)}]))
+  );
+  const mapContainerRef = React.useRef<HTMLDivElement>(null);
+  const dragStateRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const ds = dragStateRef.current;
+      if (!ds || !mapContainerRef.current) return;
+      const rect = mapContainerRef.current.getBoundingClientRect();
+      const dx = ((e.clientX - ds.startX) / rect.width) * 100;
+      const dy = ((e.clientY - ds.startY) / rect.height) * 100;
+      setEditPositions(prev => {
+        const p = {...prev[ds.id]};
+        if (ds.type === "move") { p.left = Math.max(0, Math.min(95, ds.startPos.left + dx)); p.top = Math.max(0, Math.min(95, ds.startPos.top + dy)); }
+        else { p.width = Math.max(5, ds.startPos.width + dx); p.height = Math.max(5, ds.startPos.height + dy); }
+        return {...prev, [ds.id]: p};
+      });
+    };
+    const onUp = () => { dragStateRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
@@ -2609,6 +2634,7 @@ export default function Page() {
   return (
     <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black" onMouseMove={(e)=>setMousePos({x:e.clientX,y:e.clientY})}>
       <div
+        ref={mapContainerRef}
         className="relative overflow-hidden"
         style={{
           aspectRatio: "3 / 2",
@@ -2625,6 +2651,7 @@ export default function Page() {
               {/* Warstwa 2: Budynki zależne od poziomu */}
               {BUILDINGS.map(b => {
                 const tier = getBuildingTier(displayLevel, b.maxTiers);
+                const pos = buildingEditMode ? editPositions[b.id] : null;
                 return (
                   <img
                     key={b.id}
@@ -2632,28 +2659,54 @@ export default function Page() {
                     alt={b.name}
                     className="pointer-events-none absolute select-none"
                     draggable={false}
-                    style={{ left: b.left, top: b.top, width: b.width, height: b.height, imageRendering: "pixelated", objectFit: "contain" }}
+                    style={pos
+                      ? { left:`${pos.left}%`, top:`${pos.top}%`, width:`${pos.width}%`, height:`${pos.height}%`, imageRendering:"pixelated", objectFit:"contain" }
+                      : { left:b.left, top:b.top, width:b.width, height:b.height, imageRendering:"pixelated", objectFit:"contain" }}
                   />
                 );
               })}
-              {/* ══ SIATKA POZYCJONOWANIA (tymczasowa) ══ */}
-              <div className="pointer-events-none absolute inset-0" style={{zIndex:50}}>
-                {[0,10,20,30,40,50,60,70,80,90,100].map(x => (
-                  <div key={`vg${x}`} className="absolute top-0 bottom-0" style={{left:`${x}%`,borderLeft:"1px solid rgba(255,255,255,0.35)"}}>
-                    <span className="absolute top-0 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.55)",padding:"0 2px"}}>{x}%</span>
+              {/* ══ SIATKA + EDYTOR INTERAKTYWNY ══ */}
+              {buildingEditMode && (
+                <div className="absolute inset-0" style={{zIndex:50}}>
+                  {/* Linie siatki */}
+                  {[0,10,20,30,40,50,60,70,80,90,100].map(x => (
+                    <div key={`vg${x}`} className="pointer-events-none absolute top-0 bottom-0" style={{left:`${x}%`,borderLeft:"1px solid rgba(255,255,255,0.25)"}}>
+                      <span className="absolute top-0 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.5)",padding:"0 2px"}}>{x}%</span>
+                    </div>
+                  ))}
+                  {[0,10,20,30,40,50,60,70,80,90,100].map(y => (
+                    <div key={`hg${y}`} className="pointer-events-none absolute left-0 right-0" style={{top:`${y}%`,borderTop:"1px solid rgba(255,255,255,0.25)"}}>
+                      <span className="absolute top-0.5 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.5)",padding:"0 2px"}}>{y}%</span>
+                    </div>
+                  ))}
+                  {/* Interaktywne ramki budynków */}
+                  {BUILDINGS.map(b => {
+                    const p = editPositions[b.id];
+                    return (
+                      <div
+                        key={`ed${b.id}`}
+                        className="absolute cursor-move select-none"
+                        style={{left:`${p.left}%`,top:`${p.top}%`,width:`${p.width}%`,height:`${p.height}%`,border:"2px solid #f59e0b",background:"rgba(245,158,11,0.15)"}}
+                        onMouseDown={e => { e.preventDefault(); dragStateRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                      >
+                        <span className="absolute top-0 left-0 text-[9px] font-black text-yellow-300 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{b.name}</span>
+                        <span className="absolute bottom-0 left-0 text-[9px] text-yellow-200 leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 3px"}}>{p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}×{p.height.toFixed(1)}</span>
+                        {/* Uchwyt resize — prawy dolny róg */}
+                        <div
+                          className="absolute bottom-0 right-0 cursor-se-resize"
+                          style={{width:14,height:14,background:"#f59e0b",borderRadius:"3px 0 3px 0"}}
+                          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragStateRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...p}}; }}
+                        />
+                      </div>
+                    );
+                  })}
+                  {/* Panel z pozycjami do skopiowania */}
+                  <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[260px]" style={{zIndex:60}}>
+                    <div className="font-black text-yellow-400 mb-1">📋 Aktualne pozycje:</div>
+                    {BUILDINGS.map(b => { const p = editPositions[b.id]; return <div key={b.id}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
                   </div>
-                ))}
-                {[0,10,20,30,40,50,60,70,80,90,100].map(y => (
-                  <div key={`hg${y}`} className="absolute left-0 right-0" style={{top:`${y}%`,borderTop:"1px solid rgba(255,255,255,0.35)"}}>
-                    <span className="absolute top-0.5 left-0.5 text-[9px] font-black text-white" style={{background:"rgba(0,0,0,0.55)",padding:"0 2px"}}>{y}%</span>
-                  </div>
-                ))}
-                {BUILDINGS.map(b => (
-                  <div key={`bl${b.id}`} className="absolute" style={{left:b.left,top:b.top,width:b.width,height:b.height,border:"2px solid #f59e0b",background:"rgba(245,158,11,0.12)"}}>
-                    <span className="absolute top-0 left-0 text-[9px] font-black text-yellow-300" style={{background:"rgba(0,0,0,0.7)",padding:"0 3px"}}>{b.name}</span>
-                  </div>
-                ))}
-              </div>
+                </div>
+              )}
             </>
         }
         {isMapLoading && (
@@ -2682,10 +2735,6 @@ export default function Page() {
                 @keyframes arrowBlink{0%,100%{opacity:0;transform:translateX(-6px)}50%{opacity:1;transform:translateX(0)}}
                 @keyframes legendaryPulse{0%,100%{box-shadow:0 0 6px 2px rgba(245,158,11,0.55),0 0 14px 4px rgba(245,158,11,0.2);transform:scale(1)}50%{box-shadow:0 0 18px 7px rgba(245,158,11,0.9),0 0 36px 12px rgba(245,158,11,0.4);transform:scale(1.02)}}
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
-                @keyframes mapF1{0%,24.9%{opacity:1}25%,100%{opacity:0}}
-                @keyframes mapF2{0%,24.9%{opacity:0}25%,49.9%{opacity:1}50%,100%{opacity:0}}
-                @keyframes mapF3{0%,49.9%{opacity:0}50%,74.9%{opacity:1}75%,100%{opacity:0}}
-                @keyframes mapF4{0%,74.9%{opacity:0}75%,100%{opacity:1}}
 
               `}</style>
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
@@ -2697,6 +2746,19 @@ export default function Page() {
                   <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
                 </button>
               </div>
+
+              {/* ═══ EDYTOR BUDYNKÓW ═══ */}
+              {isOnFarmMap && (
+                <div className="fixed right-4 z-[92]" style={{ top: "140px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setBuildingEditMode(m => !m)}
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${buildingEditMode ? "border-yellow-400 bg-yellow-900/80 text-yellow-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                  >
+                    🏗️ {buildingEditMode ? "Zakończ edycję" : "Edytuj pozycje"}
+                  </button>
+                </div>
+              )}
 
               {/* ═══ MUZYKA ═══ */}
               <div className="fixed right-4 z-[92]" style={{ top: "165px" }}>
