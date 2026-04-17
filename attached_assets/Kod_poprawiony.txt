@@ -2676,7 +2676,7 @@ export default function Page() {
           ? <img src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"} alt="Mapa gry" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} />
           : <>
               {/* Warstwa 1: Statyczne tło farmy */}
-              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated"}} />
+              <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", zIndex:1}} />
               {/* Warstwa 2: Budynki zależne od poziomu */}
               {BUILDINGS.map(b => {
                 const tier = getBuildingTier(displayLevel, b.maxTiers);
@@ -2689,8 +2689,8 @@ export default function Page() {
                     className="pointer-events-none absolute select-none"
                     draggable={false}
                     style={pos
-                      ? { left:`${pos.left}%`, top:`${pos.top}%`, width:`${pos.width}%`, height:`${pos.height}%`, imageRendering:"pixelated", objectFit:"contain" }
-                      : { left:b.left, top:b.top, width:b.width, height:b.height, imageRendering:"pixelated", objectFit:"contain" }}
+                      ? { left:`${pos.left}%`, top:`${pos.top}%`, width:`${pos.width}%`, height:`${pos.height}%`, imageRendering:"pixelated", objectFit:"contain", zIndex:2 }
+                      : { left:b.left, top:b.top, width:b.width, height:b.height, imageRendering:"pixelated", objectFit:"contain", zIndex:2 }}
                   />
                 );
               })}
