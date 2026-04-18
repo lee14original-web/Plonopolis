@@ -130,7 +130,7 @@ const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_town
 type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
 interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
 const BUILDINGS: BuildingDef[] = [
-  { id: "dom",          name: "Dom",              maxTiers: 5, left: "0.8%",  top: "5.9%",  width: "46.3%", height: "37.4%" },
+  { id: "dom",          name: "Dom",              maxTiers: 5, left: "2.1%",  top: "1.4%",  width: "46.3%", height: "37.4%" },
   { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.5%", top: "15.1%", width: "15.9%", height: "16.8%" },
   { id: "ule",          name: "Ule",              maxTiers: 5, left: "64.5%", top: "15.0%", width: "17.4%", height: "17.3%" },
   { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "13.4%", top: "39.0%", width: "18.6%", height: "19.9%" },
