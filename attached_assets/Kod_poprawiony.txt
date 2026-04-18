@@ -128,9 +128,18 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
-interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
+interface TierPos { left:string; top:string; width:string; height:string; }
+interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; tierPos?: Record<number,TierPos>; }
 const BUILDINGS: BuildingDef[] = [
-  { id: "dom",          name: "Dom",              maxTiers: 5, left: "2.1%",  top: "1.4%",  width: "46.3%", height: "37.4%" },
+  { id: "dom", name: "Dom", maxTiers: 5, left: "1.4%", top: "8.1%", width: "46.3%", height: "37.4%",
+    tierPos: {
+      1: {left:"1.4%", top:"8.1%", width:"46.3%", height:"37.4%"},
+      2: {left:"2.0%", top:"6.6%", width:"46.3%", height:"37.4%"},
+      3: {left:"1.2%", top:"4.7%", width:"46.3%", height:"37.4%"},
+      4: {left:"0.8%", top:"3.5%", width:"46.3%", height:"37.4%"},
+      5: {left:"1.1%", top:"1.3%", width:"46.3%", height:"37.4%"},
+    }
+  },
   { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.5%", top: "15.1%", width: "15.9%", height: "16.8%" },
   { id: "ule",          name: "Ule",              maxTiers: 5, left: "64.5%", top: "15.0%", width: "17.4%", height: "17.3%" },
   { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "13.4%", top: "39.0%", width: "18.6%", height: "19.9%" },
@@ -935,7 +944,10 @@ export default function Page() {
   const [editPositions, setEditPositions] = React.useState<Record<string,Record<number,{left:number,top:number,width:number,height:number}>>>(() =>
     Object.fromEntries(BUILDINGS.map(b => {
       const def = {left:parseFloat(b.left),top:parseFloat(b.top),width:parseFloat(b.width),height:parseFloat(b.height)};
-      return [b.id, {1:{...def},2:{...def},3:{...def},4:{...def},5:{...def}}];
+      const tp = (t: number) => b.tierPos?.[t]
+        ? {left:parseFloat(b.tierPos[t].left),top:parseFloat(b.tierPos[t].top),width:parseFloat(b.tierPos[t].width),height:parseFloat(b.tierPos[t].height)}
+        : {...def};
+      return [b.id, {1:tp(1),2:tp(2),3:tp(3),4:tp(4),5:tp(5)}];
     }))
   );
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
