@@ -128,9 +128,18 @@ const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 type BuildingId = "dom"|"pola"|"rower"|"kompostownik"|"stodola"|"sad"|"ule"|"lada";
-interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; }
+interface TierPos { left:string; top:string; width:string; height:string; }
+interface BuildingDef { id: BuildingId; name: string; maxTiers: number; left: string; top: string; width: string; height: string; tierPos?: Record<number,TierPos>; }
 const BUILDINGS: BuildingDef[] = [
-  { id: "dom",          name: "Dom",              maxTiers: 5, left: "2.1%",  top: "1.4%",  width: "46.3%", height: "37.4%" },
+  { id: "dom", name: "Dom", maxTiers: 5, left: "1.4%", top: "8.1%", width: "46.3%", height: "37.4%",
+    tierPos: {
+      1: {left:"1.4%", top:"8.1%", width:"46.3%", height:"37.4%"},
+      2: {left:"2.0%", top:"6.6%", width:"46.3%", height:"37.4%"},
+      3: {left:"1.2%", top:"4.7%", width:"46.3%", height:"37.4%"},
+      4: {left:"0.8%", top:"3.5%", width:"46.3%", height:"37.4%"},
+      5: {left:"1.1%", top:"1.3%", width:"46.3%", height:"37.4%"},
+    }
+  },
   { id: "sad",          name: "Sad",              maxTiers: 5, left: "41.5%", top: "15.1%", width: "15.9%", height: "16.8%" },
   { id: "ule",          name: "Ule",              maxTiers: 5, left: "64.5%", top: "15.0%", width: "17.4%", height: "17.3%" },
   { id: "stodola",      name: "Stodoła",          maxTiers: 5, left: "13.4%", top: "39.0%", width: "18.6%", height: "19.9%" },
@@ -930,11 +939,21 @@ export default function Page() {
   const [showTestModal, setShowTestModal] = React.useState(false);
   const [buildingEditMode, setBuildingEditMode] = React.useState(false);
   const [selectedBuildId, setSelectedBuildId] = React.useState<string|null>(null);
-  const [editPositions, setEditPositions] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>(() =>
-    Object.fromEntries(BUILDINGS.map(b => [b.id, {left:parseFloat(b.left),top:parseFloat(b.top),width:parseFloat(b.width),height:parseFloat(b.height)}]))
+  const [previewTier, setPreviewTier] = React.useState<number>(1);
+  // editPositions[buildingId][tier 1-5] = {left,top,width,height}
+  const [editPositions, setEditPositions] = React.useState<Record<string,Record<number,{left:number,top:number,width:number,height:number}>>>(() =>
+    Object.fromEntries(BUILDINGS.map(b => {
+      const def = {left:parseFloat(b.left),top:parseFloat(b.top),width:parseFloat(b.width),height:parseFloat(b.height)};
+      const tp = (t: number) => b.tierPos?.[t]
+        ? {left:parseFloat(b.tierPos[t].left),top:parseFloat(b.tierPos[t].top),width:parseFloat(b.tierPos[t].width),height:parseFloat(b.tierPos[t].height)}
+        : {...def};
+      return [b.id, {1:tp(1),2:tp(2),3:tp(3),4:tp(4),5:tp(5)}];
+    }))
   );
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const dragStateRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  const previewTierRef = React.useRef<number>(1);
+  React.useEffect(() => { previewTierRef.current = previewTier; }, [previewTier]);
   React.useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const ds = dragStateRef.current;
@@ -942,11 +961,12 @@ export default function Page() {
       const rect = mapContainerRef.current.getBoundingClientRect();
       const dx = ((e.clientX - ds.startX) / rect.width) * 100;
       const dy = ((e.clientY - ds.startY) / rect.height) * 100;
+      const t = previewTierRef.current;
       setEditPositions(prev => {
-        const p = {...prev[ds.id]};
+        const p = {...prev[ds.id][t]};
         if (ds.type === "move") { p.left = Math.max(0, Math.min(95, ds.startPos.left + dx)); p.top = Math.max(0, Math.min(95, ds.startPos.top + dy)); }
         else { p.width = Math.max(5, ds.startPos.width + dx); p.height = Math.max(5, ds.startPos.height + dy); }
-        return {...prev, [ds.id]: p};
+        return {...prev, [ds.id]: {...prev[ds.id], [t]: p}};
       });
     };
     const onUp = () => { dragStateRef.current = null; };
@@ -2680,8 +2700,8 @@ export default function Page() {
               <img src="/base_1.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full select-none" draggable={false} style={{imageRendering:"pixelated", zIndex:1}} />
               {/* Warstwa 2: Budynki zależne od poziomu */}
               {BUILDINGS.map(b => {
-                const tier = getBuildingTier(displayLevel, b.maxTiers);
-                const pos = buildingEditMode ? editPositions[b.id] : null;
+                const tier = buildingEditMode ? previewTier : getBuildingTier(displayLevel, b.maxTiers);
+                const ep = editPositions[b.id]?.[tier];
                 return (
                   <img
                     key={b.id}
@@ -2689,8 +2709,8 @@ export default function Page() {
                     alt={b.name}
                     className="pointer-events-none absolute select-none"
                     draggable={false}
-                    style={pos
-                      ? { left:`${pos.left}%`, top:`${pos.top}%`, width:`${pos.width}%`, height:`${pos.height}%`, imageRendering:"pixelated", objectFit:"contain", zIndex:2 }
+                    style={ep
+                      ? { left:`${ep.left}%`, top:`${ep.top}%`, width:`${ep.width}%`, height:`${ep.height}%`, imageRendering:"pixelated", objectFit:"contain", zIndex:2 }
                       : { left:b.left, top:b.top, width:b.width, height:b.height, imageRendering:"pixelated", objectFit:"contain", zIndex:2 }}
                   />
                 );
@@ -2711,7 +2731,7 @@ export default function Page() {
                   ))}
                   {/* Interaktywne ramki budynków */}
                   {BUILDINGS.map(b => {
-                    const p = editPositions[b.id];
+                    const p = editPositions[b.id][previewTier];
                     const isSelected = selectedBuildId === b.id;
                     return (
                       <div
@@ -2732,45 +2752,56 @@ export default function Page() {
                       </div>
                     );
                   })}
-                  {/* Panel rozmiarów — wybrany budynek */}
-                  {selectedBuildId && (() => {
-                    const p = editPositions[selectedBuildId];
-                    const bname = BUILDINGS.find(b=>b.id===selectedBuildId)?.name ?? selectedBuildId;
-                    const adj = (field:"width"|"height", delta:number) =>
-                      setEditPositions(prev => ({...prev, [selectedBuildId]: {...prev[selectedBuildId], [field]: Math.max(2, parseFloat((prev[selectedBuildId][field]+delta).toFixed(1)))}}));
-                    return (
-                      <div className="absolute top-2 left-2 rounded-xl border-2 border-yellow-400 bg-black/95 p-3 select-none" style={{zIndex:65, minWidth:220}}>
-                        <div className="font-black text-yellow-300 text-sm mb-1">✏️ {bname}</div>
-                        <div className="text-[9px] text-yellow-600 mb-2">tylko obrazek — hitbox osobno</div>
-                        {/* Szerokość */}
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-200 text-[11px] w-16">Szer.:</span>
-                          <button type="button" onClick={()=>adj("width",-0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">−</button>
-                          <span className="text-yellow-100 font-black text-sm w-14 text-center">{p.width.toFixed(1)}%</span>
-                          <button type="button" onClick={()=>adj("width",+0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">+</button>
-                          <button type="button" onClick={()=>adj("width",+2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">+2</button>
-                          <button type="button" onClick={()=>adj("width",-2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">−2</button>
-                        </div>
-                        {/* Wysokość */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-yellow-200 text-[11px] w-16">Wys.:</span>
-                          <button type="button" onClick={()=>adj("height",-0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">−</button>
-                          <span className="text-yellow-100 font-black text-sm w-14 text-center">{p.height.toFixed(1)}%</span>
-                          <button type="button" onClick={()=>adj("height",+0.5)} className="w-7 h-7 rounded-lg bg-yellow-700 hover:bg-yellow-500 text-white font-black text-base leading-none">+</button>
-                          <button type="button" onClick={()=>adj("height",+2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">+2</button>
-                          <button type="button" onClick={()=>adj("height",-2)} className="w-8 h-7 rounded-lg bg-yellow-800 hover:bg-yellow-600 text-yellow-200 font-black text-[11px] leading-none">−2</button>
-                        </div>
-                        <div className="text-[10px] text-yellow-400 font-black border-t border-yellow-700 pt-1">
-                          {selectedBuildId}: left={p.left.toFixed(1)}% top={p.top.toFixed(1)}% width={p.width.toFixed(1)}% height={p.height.toFixed(1)}%
-                        </div>
-                        <button type="button" onClick={()=>setSelectedBuildId(null)} className="mt-1 text-[10px] text-yellow-600 hover:text-yellow-300">✕ odznacz</button>
+                  {/* Selektor tieru + panel wybranego budynku */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-2" style={{zIndex:65}}>
+                    {/* Selektor tieru */}
+                    <div className="rounded-xl border-2 border-yellow-500 bg-black/95 px-3 py-2 select-none">
+                      <div className="text-[10px] font-black text-yellow-400 mb-1">Podgląd tieru (PNG):</div>
+                      <div className="flex gap-1">
+                        {[1,2,3,4,5].map(t => (
+                          <button key={t} type="button" onClick={()=>setPreviewTier(t)}
+                            className={`w-8 h-8 rounded-lg font-black text-sm transition ${previewTier===t?"bg-yellow-400 text-black":"bg-yellow-900 text-yellow-300 hover:bg-yellow-700"}`}>
+                            {t}
+                          </button>
+                        ))}
                       </div>
-                    );
-                  })()}
+                      <div className="text-[9px] text-yellow-600 mt-1">Tier {previewTier} = poziom {(previewTier-1)*5+1}–{previewTier*5}</div>
+                    </div>
+                    {/* Panel wybranego budynku */}
+                    {selectedBuildId && (() => {
+                      const p = editPositions[selectedBuildId][previewTier];
+                      const bname = BUILDINGS.find(b=>b.id===selectedBuildId)?.name ?? selectedBuildId;
+                      const adj = (field:"width"|"height"|"left"|"top", delta:number) =>
+                        setEditPositions(prev => ({...prev, [selectedBuildId]: {...prev[selectedBuildId], [previewTier]: {...prev[selectedBuildId][previewTier], [field]: Math.max(field==="width"||field==="height"?2:0, parseFloat((prev[selectedBuildId][previewTier][field]+delta).toFixed(1)))}}}));
+                      return (
+                        <div className="rounded-xl border-2 border-yellow-400 bg-black/95 p-3 select-none" style={{minWidth:240}}>
+                          <div className="font-black text-yellow-300 text-sm mb-1">✏️ {bname} — tier {previewTier}</div>
+                          <div className="text-[9px] text-yellow-600 mb-2">tylko obrazek, hitbox osobno</div>
+                          {(["width","height","left","top"] as const).map(field => {
+                            const labels: Record<string,string> = {width:"Szerokość",height:"Wysokość",left:"Pozycja X",top:"Pozycja Y"};
+                            return (
+                              <div key={field} className="flex items-center gap-1 mb-1">
+                                <span className="text-yellow-200 text-[11px] w-20">{labels[field]}:</span>
+                                <button type="button" onClick={()=>adj(field,-2)} className="w-8 h-6 rounded bg-yellow-900 hover:bg-yellow-700 text-yellow-200 font-black text-[10px]">−2</button>
+                                <button type="button" onClick={()=>adj(field,-0.5)} className="w-7 h-6 rounded bg-yellow-800 hover:bg-yellow-600 text-white font-black text-sm">−</button>
+                                <span className="text-yellow-100 font-black text-xs w-12 text-center">{p[field].toFixed(1)}%</span>
+                                <button type="button" onClick={()=>adj(field,+0.5)} className="w-7 h-6 rounded bg-yellow-800 hover:bg-yellow-600 text-white font-black text-sm">+</button>
+                                <button type="button" onClick={()=>adj(field,+2)} className="w-8 h-6 rounded bg-yellow-900 hover:bg-yellow-700 text-yellow-200 font-black text-[10px]">+2</button>
+                              </div>
+                            );
+                          })}
+                          <div className="text-[10px] text-yellow-400 font-black border-t border-yellow-700 pt-1 mt-1">
+                            {selectedBuildId} tier{previewTier}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%
+                          </div>
+                          <button type="button" onClick={()=>setSelectedBuildId(null)} className="mt-1 text-[10px] text-yellow-600 hover:text-yellow-300">✕ odznacz</button>
+                        </div>
+                      );
+                    })()}
+                  </div>
                   {/* Panel z wszystkimi pozycjami do skopiowania */}
-                  <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[280px]" style={{zIndex:60}}>
-                    <div className="font-black text-yellow-400 mb-1">📋 Pozycje obrazków (nie hitboxów):</div>
-                    {BUILDINGS.map(b => { const p = editPositions[b.id]; return <div key={b.id} className={b.id===selectedBuildId?"text-yellow-300 font-black":""}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
+                  <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[300px]" style={{zIndex:60}}>
+                    <div className="font-black text-yellow-400 mb-1">📋 Pozycje obrazków — tier {previewTier}:</div>
+                    {BUILDINGS.map(b => { const p = editPositions[b.id][previewTier]; return <div key={b.id} className={b.id===selectedBuildId?"text-yellow-300 font-black":""}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
                   </div>
                 </div>
               )}
