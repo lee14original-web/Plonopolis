@@ -2740,7 +2740,8 @@ export default function Page() {
                       setEditPositions(prev => ({...prev, [selectedBuildId]: {...prev[selectedBuildId], [field]: Math.max(2, parseFloat((prev[selectedBuildId][field]+delta).toFixed(1)))}}));
                     return (
                       <div className="absolute top-2 left-2 rounded-xl border-2 border-yellow-400 bg-black/95 p-3 select-none" style={{zIndex:65, minWidth:220}}>
-                        <div className="font-black text-yellow-300 text-sm mb-2">✏️ {bname}</div>
+                        <div className="font-black text-yellow-300 text-sm mb-1">✏️ {bname}</div>
+                        <div className="text-[9px] text-yellow-600 mb-2">tylko obrazek — hitbox osobno</div>
                         {/* Szerokość */}
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-yellow-200 text-[11px] w-16">Szer.:</span>
@@ -2768,7 +2769,7 @@ export default function Page() {
                   })()}
                   {/* Panel z wszystkimi pozycjami do skopiowania */}
                   <div className="absolute bottom-2 right-2 rounded-xl border border-yellow-600 bg-black/90 p-2 text-[10px] text-yellow-200 max-w-[280px]" style={{zIndex:60}}>
-                    <div className="font-black text-yellow-400 mb-1">📋 Aktualne pozycje:</div>
+                    <div className="font-black text-yellow-400 mb-1">📋 Pozycje obrazków (nie hitboxów):</div>
                     {BUILDINGS.map(b => { const p = editPositions[b.id]; return <div key={b.id} className={b.id===selectedBuildId?"text-yellow-300 font-black":""}>{b.id}: {p.left.toFixed(1)}% {p.top.toFixed(1)}% {p.width.toFixed(1)}% {p.height.toFixed(1)}%</div>; })}
                   </div>
                 </div>
@@ -2821,7 +2822,7 @@ export default function Page() {
                     onClick={() => setBuildingEditMode(m => !m)}
                     className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${buildingEditMode ? "border-yellow-400 bg-yellow-900/80 text-yellow-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
                   >
-                    🏗️ {buildingEditMode ? "Zakończ edycję" : "Edytuj pozycje"}
+                    🖼️ {buildingEditMode ? "Zakończ edycję" : "Edytuj obrazki"}
                   </button>
                   <button
                     type="button"
