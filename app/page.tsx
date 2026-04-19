@@ -919,10 +919,13 @@ export default function Page() {
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    dom:        {left:25.7, top:33.2},
-    stodola:    {left:22.7, top:59.9},
-    doMiasta:   {left:49.0, top:96.1},
-    polaUprawne:{left:70.7, top:60.1},
+    dom:        {left:20.7, top:22.9},
+    stodola:    {left:56.4, top:65.2},
+    doMiasta:   {left:48.6, top:89.8},
+    polaUprawne:{left:56.5, top:26.8},
+    ul:         {left:73.5, top:24.0},
+    lada:       {left:49.5, top:77.5},
+    kompostownik:{left:22.5, top:77.5},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
@@ -2837,9 +2840,30 @@ export default function Page() {
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:"43.3%", top:"88.6%", width:"12.4%", height:"10.6%", zIndex: 20 }}
                       />
+                      {/* Ul — bez akcji */}
+                      <button
+                        type="button"
+                        title="Ul"
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left:"64.5%", top:"15.0%", width:"17.4%", height:"17.3%", zIndex: 20 }}
+                      />
+                      {/* Lada dla klientów — bez akcji */}
+                      <button
+                        type="button"
+                        title="Lada"
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left:"40.9%", top:"66.7%", width:"17.3%", height:"20.8%", zIndex: 20 }}
+                      />
+                      {/* Kompostownik — bez akcji */}
+                      <button
+                        type="button"
+                        title="Kompostownik"
+                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                        style={{ left:"13.0%", top:"66.5%", width:"19.5%", height:"20.2%", zIndex: 20 }}
+                      />
                       {/* Etykiety nawigacyjne — niezależne od hitboxów */}
-                      {(["dom","stodola","doMiasta","polaUprawne"] as const).map(id => {
-                        const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne"};
+                      {(["dom","stodola","doMiasta","polaUprawne","ul","lada","kompostownik"] as const).map(id => {
+                        const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne",ul:"Ul",lada:"Lada",kompostownik:"Kompostownik"};
                         const lp = navLabelPos[id];
                         return (
                           <div key={`lbl${id}`} className="pointer-events-none absolute select-none"
@@ -2861,6 +2885,9 @@ export default function Page() {
                         {id:"stodola", name:"Stodoła"},
                         {id:"doMiasta", name:"Do miasta"},
                         {id:"polaUprawne", name:"Pola uprawne"},
+                        {id:"ul", name:"Ul"},
+                        {id:"lada", name:"Lada"},
+                        {id:"kompostownik", name:"Kompostownik"},
                       ] as Array<{id:string,name:string}>).map(nb => {
                         const lp = navLabelPos[nb.id];
                         return (
