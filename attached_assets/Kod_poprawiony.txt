@@ -919,13 +919,13 @@ export default function Page() {
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    dom:         {left:17.0, top:12.9},
+    dom:         {left:20.7, top:22.0},
     stodola:     {left:54.9, top:52.1},
-    doMiasta:    {left:48.6, top:89.8},
-    polaUprawne: {left:56.4, top:13.5},
+    doMiasta:    {left:51.9, top:89.0},
+    polaUprawne: {left:56.8, top:27.1},
     ul:          {left:84.4, top:85.2},
-    lada:        {left:17.7, top:60.6},
-    kompostownik:{left:83.9, top:18.5},
+    lada:        {left:17.0, top:61.0},
+    kompostownik:{left:83.8, top:17.7},
     sad:         {left:50.0, top:25.0},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
