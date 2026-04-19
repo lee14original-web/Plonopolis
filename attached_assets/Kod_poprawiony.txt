@@ -919,13 +919,13 @@ export default function Page() {
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    dom:        {left:20.7, top:22.9},
-    stodola:    {left:56.4, top:65.2},
-    doMiasta:   {left:48.6, top:89.8},
-    polaUprawne:{left:56.5, top:26.8},
-    ul:         {left:73.5, top:24.0},
-    lada:       {left:49.5, top:77.5},
-    kompostownik:{left:22.5, top:77.5},
+    dom:         {left:17.0, top:12.9},
+    stodola:     {left:54.9, top:52.1},
+    doMiasta:    {left:48.6, top:89.8},
+    polaUprawne: {left:56.4, top:13.5},
+    ul:          {left:84.4, top:85.2},
+    lada:        {left:17.7, top:60.6},
+    kompostownik:{left:83.9, top:18.5},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
@@ -944,6 +944,41 @@ export default function Page() {
       }));
     };
     const onUp = () => { navLabelDragRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+  const [hitboxEditMode, setHitboxEditMode] = React.useState(false);
+  const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
+    dom:         {left:16.8, top:14.9, width:17.5, height:17.0},
+    stodola:     {left:13.4, top:39.0, width:18.6, height:19.9},
+    doMiasta:    {left:43.3, top:88.6, width:12.4, height:10.6},
+    polaUprawne: {left:66.4, top:38.8, width:19.5, height:20.5},
+    ul:          {left:64.5, top:15.0, width:17.4, height:17.3},
+    lada:        {left:40.9, top:66.7, width:17.3, height:20.8},
+    kompostownik:{left:13.0, top:66.5, width:19.5, height:20.2},
+  });
+  const navHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const ds = navHitboxDragRef.current;
+      if (!ds || !mapContainerRef.current) return;
+      const rect = mapContainerRef.current.getBoundingClientRect();
+      const dx = ((e.clientX - ds.startX) / rect.width) * 100;
+      const dy = ((e.clientY - ds.startY) / rect.height) * 100;
+      setNavHitboxPos(prev => {
+        const p = {...prev[ds.id]};
+        if (ds.type === "move") {
+          p.left = Math.max(0, Math.min(95, ds.startPos.left + dx));
+          p.top  = Math.max(0, Math.min(95, ds.startPos.top  + dy));
+        } else {
+          p.width  = Math.max(3, ds.startPos.width  + dx);
+          p.height = Math.max(3, ds.startPos.height + dy);
+        }
+        return {...prev, [ds.id]: p};
+      });
+    };
+    const onUp = () => { navHitboxDragRef.current = null; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
@@ -2691,7 +2726,14 @@ export default function Page() {
                     onClick={() => setNavEditMode(m => !m)}
                     className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${navEditMode ? "border-sky-400 bg-sky-900/80 text-sky-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
                   >
-                    🖱️ {navEditMode ? "Zakończ edycję" : "Edytuj przyciski"}
+                    🖱️ {navEditMode ? "Zakończ etykiety" : "Edytuj etykiety"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHitboxEditMode(m => !m)}
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${hitboxEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                  >
+                    🎯 {hitboxEditMode ? "Zakończ hitboxy" : "Edytuj hitboxy"}
                   </button>
                 </div>
               )}
@@ -2804,10 +2846,10 @@ export default function Page() {
     }}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: "66.4%",
-      top: "38.8%",
-      width: "19.5%",
-      height: "20.5%",
+      left: `${navHitboxPos.polaUprawne.left}%`,
+      top: `${navHitboxPos.polaUprawne.top}%`,
+      width: `${navHitboxPos.polaUprawne.width}%`,
+      height: `${navHitboxPos.polaUprawne.height}%`,
       zIndex: 4,
     }}
     title="Pola uprawne"
@@ -2822,7 +2864,7 @@ export default function Page() {
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                           title="Dom gracza"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:"16.8%", top:"14.9%", width:"17.5%", height:"17.0%", zIndex: 20 }}
+                          style={{ left:`${navHitboxPos.dom.left}%`, top:`${navHitboxPos.dom.top}%`, width:`${navHitboxPos.dom.width}%`, height:`${navHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
                         {/* Stodoła */}
                         <button
@@ -2830,7 +2872,7 @@ export default function Page() {
                           onClick={() => setShowStodolaModal(true)}
                           title="Stodoła"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:"13.4%", top:"39.0%", width:"18.6%", height:"19.9%", zIndex: 20 }}
+                          style={{ left:`${navHitboxPos.stodola.left}%`, top:`${navHitboxPos.stodola.top}%`, width:`${navHitboxPos.stodola.width}%`, height:`${navHitboxPos.stodola.height}%`, zIndex: 20 }}
                         />
                       {/* Do miasta */}
                       <button
@@ -2838,28 +2880,28 @@ export default function Page() {
                         onClick={() => handleChangeMap("city")}
                         title="Do miasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:"43.3%", top:"88.6%", width:"12.4%", height:"10.6%", zIndex: 20 }}
+                        style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
                       {/* Ul — bez akcji */}
                       <button
                         type="button"
                         title="Ul"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:"64.5%", top:"15.0%", width:"17.4%", height:"17.3%", zIndex: 20 }}
+                        style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
                       />
                       {/* Lada dla klientów — bez akcji */}
                       <button
                         type="button"
                         title="Lada"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:"40.9%", top:"66.7%", width:"17.3%", height:"20.8%", zIndex: 20 }}
+                        style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
                       {/* Kompostownik — bez akcji */}
                       <button
                         type="button"
                         title="Kompostownik"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:"13.0%", top:"66.5%", width:"19.5%", height:"20.2%", zIndex: 20 }}
+                        style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
                       {/* Etykiety nawigacyjne — niezależne od hitboxów */}
                       {(["dom","stodola","doMiasta","polaUprawne","ul","lada","kompostownik"] as const).map(id => {
@@ -2913,6 +2955,54 @@ export default function Page() {
                       <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
                         <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet:</div>
                         {Object.entries(navLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ══ EDYTOR HITBOXÓW ══ */}
+                  {hitboxEditMode && isOnFarmMap && (
+                    <div className="absolute inset-0 pointer-events-none" style={{zIndex:57}}>
+                      {([
+                        {id:"dom",          name:"Dom"},
+                        {id:"stodola",      name:"Stodoła"},
+                        {id:"doMiasta",     name:"Do miasta"},
+                        {id:"polaUprawne",  name:"Pola uprawne"},
+                        {id:"ul",           name:"Ul"},
+                        {id:"lada",         name:"Lada"},
+                        {id:"kompostownik", name:"Kompostownik"},
+                      ] as Array<{id:string,name:string}>).map(nb => {
+                        const hp = navHitboxPos[nb.id];
+                        return (
+                          <div key={`hbe${nb.id}`}
+                            className="absolute cursor-move pointer-events-auto select-none"
+                            style={{
+                              left:`${hp.left}%`, top:`${hp.top}%`,
+                              width:`${hp.width}%`, height:`${hp.height}%`,
+                              border:"2px dashed #f97316",
+                              background:"rgba(249,115,22,0.15)",
+                              borderRadius:4,
+                              userSelect:"none",
+                              boxSizing:"border-box",
+                            }}
+                            onMouseDown={e => { e.preventDefault(); navHitboxDragRef.current = {type:"move",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                          >
+                            <span className="block text-[9px] font-black text-orange-200 whitespace-nowrap leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 4px",borderRadius:3,display:"inline-block"}}>
+                              {nb.name} · {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% · {hp.width.toFixed(1)}×{hp.height.toFixed(1)}
+                            </span>
+                            {/* uchwyt rozmiaru */}
+                            <div
+                              className="absolute bottom-0 right-0 cursor-se-resize pointer-events-auto"
+                              style={{width:14,height:14,background:"#f97316",borderRadius:"3px 0 3px 0"}}
+                              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); navHitboxDragRef.current = {type:"resize",id:nb.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                            />
+                          </div>
+                        );
+                      })}
+                      <div className="absolute bottom-2 left-2 rounded-xl border border-orange-600 bg-black/90 p-2 text-[10px] text-orange-200 max-w-[270px] pointer-events-auto" style={{zIndex:60}}>
+                        <div className="font-black text-orange-400 mb-1">📋 Pozycje hitboxów:</div>
+                        {Object.entries(navHitboxPos).map(([id,hp]) => (
+                          <div key={id}>{id}: {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% {hp.width.toFixed(1)}%×{hp.height.toFixed(1)}%</div>
+                        ))}
                       </div>
                     </div>
                   )}
