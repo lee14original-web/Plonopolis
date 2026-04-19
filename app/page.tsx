@@ -952,13 +952,13 @@ export default function Page() {
   const [hitboxEditMode, setHitboxEditMode] = React.useState(false);
   const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
     dom:         {left:6.8,  top:11.1, width:29.9, height:28.1},
-    stodola:     {left:40.4, top:51.8, width:29.6, height:27.2},
+    stodola:     {left:40.5, top:50.7, width:29.7, height:28.1},
     doMiasta:    {left:36.1, top:82.8, width:31.4, height:15.9},
     polaUprawne: {left:41.9, top:15.7, width:29.3, height:27.2},
     ul:          {left:73.2, top:68.7, width:23.1, height:23.9},
     lada:        {left:6.8,  top:44.4, width:21.2, height:20.3},
-    kompostownik:{left:73.8, top:18.8, width:19.7, height:22.9},
-    sad:         {left:5.5,  top:69.2, width:28.4, height:22.2},
+    kompostownik:{left:73.9, top:16.5, width:19.9, height:24.4},
+    sad:         {left:6.0,  top:69.0, width:29.8, height:22.6},
   });
   const navHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   React.useEffect(() => {
