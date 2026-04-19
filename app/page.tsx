@@ -924,7 +924,7 @@ export default function Page() {
     doMiasta:    {left:51.9, top:89.0},
     polaUprawne: {left:56.8, top:27.1},
     ul:          {left:84.4, top:85.2},
-    lada:        {left:17.0, top:61.0},
+    lada:        {left:17.6, top:61.0},
     kompostownik:{left:83.8, top:17.7},
     sad:         {left:21.2, top:80.4},
   });
