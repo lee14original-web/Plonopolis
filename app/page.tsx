@@ -926,7 +926,7 @@ export default function Page() {
     ul:          {left:84.4, top:85.2},
     lada:        {left:17.0, top:61.0},
     kompostownik:{left:83.8, top:17.7},
-    sad:         {left:50.0, top:25.0},
+    sad:         {left:21.2, top:80.4},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
@@ -951,14 +951,14 @@ export default function Page() {
   }, []);
   const [hitboxEditMode, setHitboxEditMode] = React.useState(false);
   const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
-    dom:         {left:6.4,  top:10.5, width:29.9, height:28.1},
+    dom:         {left:6.8,  top:11.1, width:29.9, height:28.1},
     stodola:     {left:40.4, top:51.8, width:29.6, height:27.2},
     doMiasta:    {left:36.1, top:82.8, width:31.4, height:15.9},
     polaUprawne: {left:41.9, top:15.7, width:29.3, height:27.2},
     ul:          {left:73.2, top:68.7, width:23.1, height:23.9},
     lada:        {left:6.8,  top:44.4, width:21.2, height:20.3},
     kompostownik:{left:73.8, top:18.8, width:19.7, height:22.9},
-    sad:         {left:41.5, top:15.1, width:15.9, height:16.8},
+    sad:         {left:5.5,  top:69.2, width:28.4, height:22.2},
   });
   const navHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   React.useEffect(() => {
