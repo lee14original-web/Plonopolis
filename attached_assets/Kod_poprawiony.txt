@@ -1841,6 +1841,12 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showUlModal]);
   React.useEffect(() => {
+    if (currentMap !== "city_townhall") return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleChangeMap("city"); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [currentMap]);
+  React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
     return () => clearInterval(t);
