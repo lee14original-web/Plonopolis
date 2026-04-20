@@ -1447,6 +1447,15 @@ export default function Page() {
       return;
     }
 
+    // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
+    // zanim serwer spróbuje go odczytać
+    if (profile.id) {
+      await supabase
+        .from("profiles")
+        .update({ seed_inventory: serializeSeedInventory(seedInventory) })
+        .eq("id", profile.id);
+    }
+
     const { data, error } = await supabase.rpc("game_plant_crop", {
       p_plot_id: plotId,
       p_crop_id: _baseCropId,
