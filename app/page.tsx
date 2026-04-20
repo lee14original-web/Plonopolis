@@ -1447,6 +1447,15 @@ export default function Page() {
       return;
     }
 
+    // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
+    // zanim serwer spróbuje go odczytać
+    if (profile.id) {
+      await supabase
+        .from("profiles")
+        .update({ seed_inventory: serializeSeedInventory(seedInventory) })
+        .eq("id", profile.id);
+    }
+
     const { data, error } = await supabase.rpc("game_plant_crop", {
       p_plot_id: plotId,
       p_crop_id: _baseCropId,
@@ -3570,12 +3579,59 @@ export default function Page() {
                             </>
                           )}
 
-                          {/* ZAKŁADKA: PRZEDMIOTY — zarezerwowana na przyszłe przedmioty */}
                           {backpackTab === "przedmioty" && (
-                            <div className="mt-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                              <p className="text-2xl mb-2">🎒</p>
-                              <p>Brak przedmiotów.</p>
-                              <p className="mt-1 text-xs text-[#8b6a3e]">Przedmioty specjalne pojawią się tutaj w przyszłości.</p>
+                            <div className="mt-2 flex flex-col gap-2">
+                              {/* Puste słoiki */}
+                              {hiveData.empty_jars > 0 && (
+                                <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                                  <img src="/jar_empty.png" alt="Słoik" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
+                                  </div>
+                                  <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
+                                </div>
+                              )}
+                              {/* Słoiki z miodem */}
+                              {hiveData.honey_jars > 0 && (
+                                <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
+                                  <img src="/jar_honey.png" alt="Miód" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
+                                  </div>
+                                  <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
+                                </div>
+                              )}
+                              {/* Strój pszczelarza */}
+                              {hiveData.suit_durability > 0 && (
+                                <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
+                                  <img src="/beekeeper_suit.png" alt="Strój" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <div className="flex-1">
+                                    <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
+                                    <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
+                                      <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
+                                  {/* Tooltip */}
+                                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                      <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
+                                      <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
+                                      <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
+                                    </div>
+                                    <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                  </div>
+                                </div>
+                              )}
+                              {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && (
+                                <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                                  <p className="text-2xl mb-2">🎒</p>
+                                  <p>Brak przedmiotów.</p>
+                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
+                                </div>
+                              )}
                             </div>
                           )}
                       </div>
@@ -4396,10 +4452,54 @@ export default function Page() {
                           </div>
                     )}
                     {backpackTab === "przedmioty" && (
-                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                        <p className="text-2xl mb-2">🎒</p>
-                        <p>Brak przedmiotów.</p>
-                        <p className="mt-1 text-xs text-[#8b6a3e]">Przedmioty specjalne pojawią się tutaj w przyszłości.</p>
+                      <div className="flex flex-col gap-2 mt-1">
+                        {hiveData.empty_jars > 0 && (
+                          <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                            <img src="/jar_empty.png" alt="Słoik" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
+                              <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
+                            </div>
+                            <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
+                          </div>
+                        )}
+                        {hiveData.honey_jars > 0 && (
+                          <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
+                            <img src="/jar_honey.png" alt="Miód" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
+                              <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
+                            </div>
+                            <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
+                          </div>
+                        )}
+                        {hiveData.suit_durability > 0 && (
+                          <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
+                            <img src="/beekeeper_suit.png" alt="Strój" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
+                              <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
+                                <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                              </div>
+                            </div>
+                            <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
+                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                              <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
+                                <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
+                                <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
+                              </div>
+                              <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                            </div>
+                          </div>
+                        )}
+                        {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && (
+                          <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                            <p className="text-2xl mb-2">🎒</p>
+                            <p>Brak przedmiotów.</p>
+                            <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
