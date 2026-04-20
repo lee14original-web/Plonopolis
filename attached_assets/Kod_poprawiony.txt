@@ -4665,8 +4665,8 @@ export default function Page() {
               const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
               if (!error) {
                 setHiveData(newHive);
-                if (success) addMessage({ type:"success", title:`Zebrano ${collected} słoiki miodu! 🍯`, body:"" });
-                else addMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", body:"" });
+                if (success) setMessage({ type:"success", title:`Zebrano ${collected} słoiki miodu! 🍯`, text:"" });
+                else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
               }
             };
             return (

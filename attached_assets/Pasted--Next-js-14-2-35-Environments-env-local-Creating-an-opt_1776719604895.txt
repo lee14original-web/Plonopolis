@@ -1,0 +1,36 @@
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+   	- lib was set to dom,dom.iterable,esnext
+   	- allowJs was set to true
+   	- skipLibCheck was set to true
+   	- strict was set to false
+   	- noEmit was set to true
+   	- incremental was set to true
+   	- include was set to ['next-env.d.ts', '.next/types/**/*.ts', '**/*.ts', '**/*.tsx']
+   	- plugins was updated to add { name: 'next' }
+   	- exclude was set to ['node_modules']
+   The following mandatory changes were made to your tsconfig.json:
+   	- module was set to esnext (for dynamic import() support)
+   	- esModuleInterop was set to true (requirement for SWC / babel)
+   	- moduleResolution was set to node (to match webpack resolution)
+   	- resolveJsonModule was set to true (to match webpack resolution)
+   	- isolatedModules was set to true (requirement for SWC / Babel)
+   	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+Failed to compile.
+./app/page.tsx:4668:30
+Type error: Cannot find name 'addMessage'. Did you mean 'message'?
+
+  4666 |               if (!error) {
+  4667 |                 setHiveData(newHive);
+> 4668 |                 if (success) addMessage({ type:"success", title:`Zebrano ${collected} słoiki miodu! 🍯`, body:"" });
+       |                              ^
+  4669 |                 else addMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", body:"" });
+  4670 |               }
+  4671 |             };
+Next.js build worker exited with code: 1 and signal: null
+ERROR: failed to build: failed to solve: process "npm run build" did not complete successfully: exit code: 1
