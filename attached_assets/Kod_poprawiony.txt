@@ -197,6 +197,7 @@ const HIVE_MAX_HONEY     = [0, 8, 10, 12, 14, 16];
 const HIVE_UPGRADE_BEES  = [0, 20, 30, 40, 50];
 const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
 const HONEY_MS_PER_PT    = 3_600_000;
+const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -930,6 +931,9 @@ export default function Page() {
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
   const [showUlModal, setShowUlModal] = React.useState(false);
+  const [showLadaModal, setShowLadaModal] = React.useState(false);
+  const [ladaSellQty, setLadaSellQty] = React.useState(1);
+  const [ladaSelling, setLadaSelling] = React.useState(false);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -2938,10 +2942,11 @@ export default function Page() {
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
                       />
-                      {/* Lada dla klientów — bez akcji */}
+                      {/* Lada dla klientów — sprzedaż słoików miodu */}
                       <button
                         type="button"
                         title="Lada"
+                        onClick={() => { setLadaSellQty(1); setLadaSelling(false); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
@@ -4756,6 +4761,133 @@ export default function Page() {
                   {hlvl >= 5 && <p className="text-center text-sm text-amber-300 font-bold">✨ Ul osiągnął maksymalny poziom!</p>}
                   <button onClick={() => setShowUlModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
                     ✕ Zamknij (Esc)
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {showLadaModal && (() => {
+            const jarPrice = HONEY_JAR_PRICE[hiveData.level] ?? 8;
+            const owned = hiveData.honey_jars;
+            const clampedQty = Math.min(ladaSellQty, owned);
+            const totalValue = clampedQty * jarPrice;
+            const sellAll = async () => {
+              if (!profile?.id || owned <= 0 || ladaSelling) return;
+              setLadaSelling(true);
+              const earned = owned * jarPrice;
+              const newMoney = Math.round((displayMoney + earned) * 100) / 100;
+              const newHive: HiveData = { ...hiveData, honey_jars: 0 };
+              const { error } = await supabase.from("profiles").update({ money: newMoney, hive_data: newHive }).eq("id", profile.id);
+              if (!error) {
+                setHiveData(newHive);
+                await loadProfile(profile.id);
+                addMessage({ type:"success", title:`Sprzedano ${owned} słoiki za ${(earned).toFixed(2)} zł! 💰`, body:"" });
+                setShowLadaModal(false);
+              } else {
+                addMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", body:"" });
+              }
+              setLadaSelling(false);
+            };
+            const sellQtyFn = async () => {
+              if (!profile?.id || clampedQty <= 0 || ladaSelling) return;
+              setLadaSelling(true);
+              const earned = clampedQty * jarPrice;
+              const newMoney = Math.round((displayMoney + earned) * 100) / 100;
+              const newHive: HiveData = { ...hiveData, honey_jars: owned - clampedQty };
+              const { error } = await supabase.from("profiles").update({ money: newMoney, hive_data: newHive }).eq("id", profile.id);
+              if (!error) {
+                setHiveData(newHive);
+                await loadProfile(profile.id);
+                addMessage({ type:"success", title:`Sprzedano ${clampedQty} słoiki za ${(earned).toFixed(2)} zł! 💰`, body:"" });
+                setShowLadaModal(false);
+              } else {
+                addMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", body:"" });
+              }
+              setLadaSelling(false);
+            };
+            return (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                <div className="relative flex w-full max-w-[520px] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5">
+                  <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🛒</span>
+                    <div>
+                      <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
+                      <p className="text-sm text-amber-400/80">Sprzedaj słoiki miodu</p>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4 flex items-center gap-4">
+                    <img src="/jar_honey.png" alt="Słoik miodu" className="w-14 h-14 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                    <div className="flex-1">
+                      <p className="text-sm text-[#8b6a3e]">Posiadane słoiki z miodem</p>
+                      <p className="text-3xl font-black text-[#f9e7b2]">{owned}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-[#8b6a3e]">Cena za słoik</p>
+                      <p className="text-xl font-black text-amber-400">{jarPrice} zł</p>
+                      <p className="text-xs text-[#8b6a3e] mt-1">Poziom ula {hiveData.level}</p>
+                    </div>
+                  </div>
+                  {owned === 0 ? (
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4 text-center">
+                      <p className="text-[#8b6a3e] text-sm">Nie masz żadnych słoików z miodem do sprzedania.</p>
+                      <p className="text-xs text-[#8b6a3e]/60 mt-1">Zbierz miód w Ulu, a potem wróć tutaj!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4">
+                        <p className="text-sm font-bold text-[#dfcfab] mb-3">Sprzedaj wybraną ilość</p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setLadaSellQty(q => Math.max(1, q - 1))}
+                            disabled={ladaSellQty <= 1}
+                            className="w-9 h-9 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-lg hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >−</button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={owned}
+                            value={ladaSellQty}
+                            onChange={e => {
+                              const v = parseInt(e.target.value, 10);
+                              if (!isNaN(v)) setLadaSellQty(Math.max(1, Math.min(owned, v)));
+                            }}
+                            className="flex-1 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-lg py-1 outline-none focus:border-amber-500"
+                          />
+                          <button
+                            onClick={() => setLadaSellQty(q => Math.min(owned, q + 1))}
+                            disabled={ladaSellQty >= owned}
+                            className="w-9 h-9 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-lg hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >+</button>
+                          <button
+                            onClick={() => setLadaSellQty(owned)}
+                            className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-800/30"
+                          >MAX</button>
+                        </div>
+                        <div className="mt-3 flex justify-between items-center">
+                          <span className="text-sm text-[#8b6a3e]">Wartość:</span>
+                          <span className="text-lg font-black text-amber-300">{totalValue.toFixed(2)} zł 💰</span>
+                        </div>
+                        <button
+                          onClick={() => { void sellQtyFn(); }}
+                          disabled={clampedQty <= 0 || ladaSelling}
+                          className="mt-3 w-full rounded-xl py-3 text-sm font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {ladaSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${clampedQty} ${clampedQty === 1 ? "słoik" : clampedQty < 5 ? "słoiki" : "słoików"} za ${totalValue.toFixed(2)} zł`}
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => { void sellAll(); }}
+                        disabled={owned <= 0 || ladaSelling}
+                        className="w-full rounded-xl py-3 text-sm font-black transition border border-green-500/60 bg-green-900/20 text-green-300 hover:bg-green-800/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {ladaSelling ? "⏳ Sprzedaję..." : `💰 Sprzedaj wszystko (${owned} słoików) za ${(owned * jarPrice).toFixed(2)} zł`}
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
+                    ✕ Zamknij
                   </button>
                 </div>
               </div>
