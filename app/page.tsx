@@ -4113,7 +4113,7 @@ export default function Page() {
                         )}
                         {filtered.map(msg => (
                           <div key={msg.id}
-                            className={`relative rounded-2xl border p-5 transition ${msg.type === "system" ? "border-green-800/70 bg-[rgba(5,45,15,0.75)]" : selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                            className={`relative rounded-2xl border p-5 transition ${selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
 
                             {/* Checkbox zaznaczania */}
                             {msg.type !== "system" && (
