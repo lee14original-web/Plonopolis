@@ -4294,7 +4294,7 @@ export default function Page() {
                             const qty = shopCart[crop.id] ?? 0;
                             return (
                               <div key={crop.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-4 py-2">
-                                <img src={crop.spritePath} alt={crop.name} className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
+                                <img src={crop.spritePath} alt={crop.name} className="h-[60px] w-[60px] object-contain" style={{imageRendering:"pixelated"}} />
                                 <div className="flex-1">
                                   <p className="font-bold text-[#f9e7b2]">{crop.name}</p>
                                   <p className="text-xs text-[#8b6a3e]">{price.toFixed(2)} 💰 / szt.</p>
@@ -4324,7 +4324,7 @@ export default function Page() {
                             const canAfford = displayMoney >= item.price;
                             return (
                               <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                                <img src={item.img} alt={item.label} className="w-14 h-14 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                <img src={item.img} alt={item.label} className="w-[84px] h-[84px] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                 <div className="flex-1">
                                   <p className="font-black text-[#f9e7b2]">{item.label}</p>
                                   <p className="text-xs text-[#8b6a3e]">{item.desc}</p>
