@@ -3330,7 +3330,10 @@ export default function Page() {
                       <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
                         {avatarSkin >= 0
                           ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          : <span className="text-5xl">👤</span>}
+                          : <span className="flex flex-col items-center justify-center gap-0.5 animate-pulse">
+                              <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
+                              <span className="text-[#c9952f] text-[10px] font-bold">(kliknij Dom)</span>
+                            </span>}
                       </div>
                       <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                       <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
@@ -4344,7 +4347,10 @@ export default function Page() {
                           className="flex h-56 w-56 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
                           {avatarSkin >= 0
                             ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                            : <span className="text-9xl">❓</span>}
+                            : <span className="flex flex-col items-center justify-center gap-1 animate-pulse">
+                                <span className="text-[#f9e7b2] text-xl font-black leading-tight text-center">Wybierz Avatar</span>
+                                <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                              </span>}
                         </button>
                         <div className="text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
