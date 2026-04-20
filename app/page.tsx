@@ -1458,10 +1458,13 @@ export default function Page() {
 
     applyProfileState(extractRpcProfile(data));
 
+    const _zaradPct = ((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100);
     setMessage({
       type: "success",
-      title: "Podlano pole",
-      text: `${crop.name} będzie rosła o 15% szybciej.`,
+      title: "Podlano pole 💧",
+      text: _zaradPct > 0
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${playerStats.zaradnosc}/100).`
+        : `${crop.name} podlana. Rozwijaj Zaradność, aby przyspieszać wzrost.`,
     });
   }
 
