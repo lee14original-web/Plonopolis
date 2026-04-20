@@ -919,6 +919,7 @@ export default function Page() {
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
   const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
+  const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -3474,6 +3475,8 @@ export default function Page() {
                                 </button>
                                 <button
                                   type="button"
+                                  onMouseEnter={() => setHoveredSickle(true)}
+                                  onMouseLeave={() => setHoveredSickle(false)}
                                   onClick={() => {
                                     setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
                                     setSelectedSeedId(null);
@@ -5601,6 +5604,20 @@ export default function Page() {
           )}
         </div>
       </div>
+    {/* Tooltip sierpa podążający za kursorem */}
+      {hoveredSickle && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
+          <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
+          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(playerStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({playerStats.zrecznosc}/100)</p>
+          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(playerStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({playerStats.szczescie}/100)</p>
+        </div>
+      )}
     {/* Tooltip konewki podążający za kursorem */}
       {hoveredWateringCan && (
         <div
