@@ -172,13 +172,13 @@ const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
 
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", desc: "Rośliny rosną szybciej",         rate: 0.005  },
-  { key: "zrecznosc", label: "Zręczność", icon: "🎯", desc: "Szansa na podwójny zbiór",       rate: 0.004  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
-  { key: "sadownik",  label: "Sadownik",  icon: "🌳", desc: "Większy zysk z drzew",           rate: 0.005  },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", desc: "Większy zysk ze zwierząt",       rate: 0.005  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", desc: "Szansa na bonusowy drop",         rate: 0.0025 },
-] as const;
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej",              rate: 0.005  },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Szansa na podwójny zbiór",            rate: 0.004  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Większy zysk z drzew",               rate: 0.005  },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Większy zysk ze zwierząt",            rate: 0.005  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Szansa na bonusowy drop",             rate: 0.0025 },
+];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
 const DEFAULT_STATS: PlayerStatsMap = { wiedza:0, zrecznosc:0, zaradnosc:0, sadownik:0, opieka:0, szczescie:0 };
@@ -4389,7 +4389,11 @@ export default function Page() {
                             return (
                               <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-5">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-base font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
+                                  <span className="flex items-center gap-2 text-base font-bold text-[#f9e7b2]">
+                                    <img src={def.img} alt={def.label} className="w-7 h-7 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
+                                    <span style={{display:"none"}}>{def.icon}</span>
+                                    {def.label}
+                                  </span>
                                   <span className="text-sm text-[#8b6a3e]">{val}/100</span>
                                 </div>
                                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-black/40">
