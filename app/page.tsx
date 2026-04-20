@@ -919,6 +919,7 @@ export default function Page() {
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
   const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
+  const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
@@ -1007,6 +1008,65 @@ export default function Page() {
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
   }, []);
+
+  // ══ MIASTO — EDYTOR HITBOXÓW I ETYKIET ══
+  const [cityNavEditMode, setCityNavEditMode] = React.useState(false);
+  const [cityHitboxEditMode, setCityHitboxEditMode] = React.useState(false);
+  const [cityHitboxPos, setCityHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
+    naFarme: {left:14.0, top:60.0, width:14.0, height:22.0},
+    sklep:   {left:12.0, top:20.0, width:16.0, height:38.0},
+    targ:    {left:38.0, top:22.0, width:16.0, height:34.0},
+    bank:    {left:80.0, top:25.0, width:14.0, height:36.0},
+    ratusz:  {left:62.0, top:0.0,  width:22.0, height:46.0},
+  });
+  const [cityLabelPos, setCityLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
+    naFarme: {left:21.0, top:83.0},
+    sklep:   {left:20.0, top:59.0},
+    targ:    {left:46.0, top:57.0},
+    bank:    {left:87.0, top:62.0},
+    ratusz:  {left:73.0, top:47.0},
+  });
+  const cityHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
+  const cityLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const dh = cityHitboxDragRef.current;
+      if (dh && mapContainerRef.current) {
+        const rect = mapContainerRef.current.getBoundingClientRect();
+        const dx = ((e.clientX - dh.startX) / rect.width) * 100;
+        const dy = ((e.clientY - dh.startY) / rect.height) * 100;
+        setCityHitboxPos(prev => {
+          const p = {...prev[dh.id]};
+          if (dh.type === "move") {
+            p.left = Math.max(0, Math.min(95, dh.startPos.left + dx));
+            p.top  = Math.max(0, Math.min(95, dh.startPos.top  + dy));
+          } else {
+            p.width  = Math.max(3, dh.startPos.width  + dx);
+            p.height = Math.max(3, dh.startPos.height + dy);
+          }
+          return {...prev, [dh.id]: p};
+        });
+      }
+      const dl = cityLabelDragRef.current;
+      if (dl && mapContainerRef.current) {
+        const rect = mapContainerRef.current.getBoundingClientRect();
+        const dx = ((e.clientX - dl.startX) / rect.width) * 100;
+        const dy = ((e.clientY - dl.startY) / rect.height) * 100;
+        setCityLabelPos(prev => ({
+          ...prev,
+          [dl.id]: {
+            left: Math.max(0, Math.min(98, dl.startPos.left + dx)),
+            top:  Math.max(0, Math.min(98, dl.startPos.top  + dy)),
+          }
+        }));
+      }
+    };
+    const onUp = () => { cityHitboxDragRef.current = null; cityLabelDragRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
@@ -1780,6 +1840,12 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showUlModal]);
+  React.useEffect(() => {
+    if (currentMap !== "city_townhall") return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleChangeMap("city"); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [currentMap]);
   React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
@@ -2787,21 +2853,21 @@ export default function Page() {
               </div>
 
               {/* ═══ EDYTOR BUDYNKÓW + PRZYCISKÓW ═══ */}
-              {isOnFarmMap && (
+              {(isOnFarmMap || currentMap === "city") && (
                 <div className="fixed right-4 z-[92] flex flex-col gap-1" style={{ top: "140px" }}>
                   <button
                     type="button"
-                    onClick={() => setNavEditMode(m => !m)}
-                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${navEditMode ? "border-sky-400 bg-sky-900/80 text-sky-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                    onClick={() => isOnFarmMap ? setNavEditMode(m => !m) : setCityNavEditMode(m => !m)}
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${(isOnFarmMap ? navEditMode : cityNavEditMode) ? "border-sky-400 bg-sky-900/80 text-sky-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
                   >
-                    🖱️ {navEditMode ? "Zakończ etykiety" : "Edytuj etykiety"}
+                    🖱️ {(isOnFarmMap ? navEditMode : cityNavEditMode) ? "Zakończ etykiety" : "Edytuj etykiety"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setHitboxEditMode(m => !m)}
-                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${hitboxEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                    onClick={() => isOnFarmMap ? setHitboxEditMode(m => !m) : setCityHitboxEditMode(m => !m)}
+                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${(isOnFarmMap ? hitboxEditMode : cityHitboxEditMode) ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
                   >
-                    🎯 {hitboxEditMode ? "Zakończ hitboxy" : "Edytuj hitboxy"}
+                    🎯 {(isOnFarmMap ? hitboxEditMode : cityHitboxEditMode) ? "Zakończ hitboxy" : "Edytuj hitboxy"}
                   </button>
                 </div>
               )}
@@ -3088,65 +3154,125 @@ export default function Page() {
 
                   {currentMap === "city" && (
                     <>
+                      {/* ── Hitboxy ── */}
                       <button
                         type="button"
                         onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "14%", top: "60%", width: "14%", height: "22%" }}
+                        style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
                         title="Na farmę"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
-                          Na farmę
-                        </span>
-                      </button>
-
+                      />
                       <button
                         type="button"
                         onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "12%", top: "20%", width: "16%", height: "38%" }}
+                        style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
                         title="Sklep"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
-                          Sklep
-                        </span>
-                      </button>
-
+                      />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_market")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "38%", top: "22%", width: "16%", height: "34%" }}
+                        style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
                         title="Targ"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
-                          Targ
-                        </span>
-                      </button>
-
+                      />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_bank")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "80%", top: "25%", width: "14%", height: "36%" }}
+                        style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
                         title="Bank"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
-                          Bank
-                        </span>
-                      </button>
-
+                      />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_townhall")}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left: "62%", top: "0%", width: "22%", height: "46%" }}
+                        style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
                         title="Ratusz"
-                      >
-                        <span className="absolute bottom-[-28px] left-1/2 -translate-x-1/2 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl">
-                          Ratusz
-                        </span>
-                      </button>
+                      />
+                      {/* ── Etykiety ── */}
+                      {([
+                        {id:"naFarme", name:"Na farmę"},
+                        {id:"sklep",   name:"Sklep"},
+                        {id:"targ",    name:"Targ"},
+                        {id:"bank",    name:"Bank"},
+                        {id:"ratusz",  name:"Ratusz"},
+                      ] as Array<{id:string,name:string}>).map(b => {
+                        const lp = cityLabelPos[b.id];
+                        return (
+                          <span key={b.id} className="pointer-events-none absolute rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl -translate-x-1/2" style={{left:`${lp.left}%`,top:`${lp.top}%`}}>
+                            {b.name}
+                          </span>
+                        );
+                      })}
+
+                      {/* ══ EDYTOR ETYKIET MIASTA ══ */}
+                      {cityNavEditMode && (
+                        <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
+                          {([
+                            {id:"naFarme", name:"Na farmę"},
+                            {id:"sklep",   name:"Sklep"},
+                            {id:"targ",    name:"Targ"},
+                            {id:"bank",    name:"Bank"},
+                            {id:"ratusz",  name:"Ratusz"},
+                          ] as Array<{id:string,name:string}>).map(b => {
+                            const lp = cityLabelPos[b.id];
+                            return (
+                              <div key={`cle${b.id}`}
+                                className="absolute cursor-move pointer-events-auto select-none"
+                                style={{ left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", border:"2px dashed #38bdf8", background:"rgba(56,189,248,0.18)", borderRadius:8, padding:"2px 4px", userSelect:"none" }}
+                                onMouseDown={e => { e.preventDefault(); cityLabelDragRef.current = {id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }}
+                              >
+                                <span className="block text-[9px] font-black text-sky-200 whitespace-nowrap leading-none text-center" style={{background:"rgba(0,0,0,0.7)",padding:"1px 3px",borderRadius:4}}>
+                                  {b.name}<br/>
+                                  <span className="text-sky-400">{lp.left.toFixed(1)}% {lp.top.toFixed(1)}%</span>
+                                </span>
+                              </div>
+                            );
+                          })}
+                          <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
+                            <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet (miasto):</div>
+                            {Object.entries(cityLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ══ EDYTOR HITBOXÓW MIASTA ══ */}
+                      {cityHitboxEditMode && (
+                        <div className="absolute inset-0 pointer-events-none" style={{zIndex:57}}>
+                          {([
+                            {id:"naFarme", name:"Na farmę"},
+                            {id:"sklep",   name:"Sklep"},
+                            {id:"targ",    name:"Targ"},
+                            {id:"bank",    name:"Bank"},
+                            {id:"ratusz",  name:"Ratusz"},
+                          ] as Array<{id:string,name:string}>).map(b => {
+                            const hp = cityHitboxPos[b.id];
+                            return (
+                              <div key={`che${b.id}`}
+                                className="absolute cursor-move pointer-events-auto select-none"
+                                style={{ left:`${hp.left}%`, top:`${hp.top}%`, width:`${hp.width}%`, height:`${hp.height}%`, border:"2px dashed #f97316", background:"rgba(249,115,22,0.15)", borderRadius:4, userSelect:"none", boxSizing:"border-box" }}
+                                onMouseDown={e => { e.preventDefault(); cityHitboxDragRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                              >
+                                <span className="block text-[9px] font-black text-orange-200 whitespace-nowrap leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 4px",borderRadius:3,display:"inline-block"}}>
+                                  {b.name} · {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% · {hp.width.toFixed(1)}×{hp.height.toFixed(1)}
+                                </span>
+                                <div
+                                  className="absolute bottom-0 right-0 cursor-se-resize pointer-events-auto"
+                                  style={{width:14,height:14,background:"#f97316",borderRadius:"3px 0 3px 0"}}
+                                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); cityHitboxDragRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                                />
+                              </div>
+                            );
+                          })}
+                          <div className="absolute bottom-2 left-2 rounded-xl border border-orange-600 bg-black/90 p-2 text-[10px] text-orange-200 max-w-[270px] pointer-events-auto" style={{zIndex:60}}>
+                            <div className="font-black text-orange-400 mb-1">📋 Pozycje hitboxów (miasto):</div>
+                            {Object.entries(cityHitboxPos).map(([id,hp]) => (
+                              <div key={id}>{id}: {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% {hp.width.toFixed(1)}%×{hp.height.toFixed(1)}%</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 
@@ -3474,6 +3600,8 @@ export default function Page() {
                                 </button>
                                 <button
                                   type="button"
+                                  onMouseEnter={() => setHoveredSickle(true)}
+                                  onMouseLeave={() => setHoveredSickle(false)}
                                   onClick={() => {
                                     setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
                                     setSelectedSeedId(null);
@@ -3590,7 +3718,7 @@ export default function Page() {
                               {/* Puste słoiki */}
                               {hiveData.empty_jars > 0 && (
                                 <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_empty.png" alt="Słoik" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <div className="flex-1">
                                     <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
                                     <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
@@ -3601,7 +3729,7 @@ export default function Page() {
                               {/* Słoiki z miodem */}
                               {hiveData.honey_jars > 0 && (
                                 <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_honey.png" alt="Miód" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <div className="flex-1">
                                     <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
                                     <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
@@ -3612,7 +3740,7 @@ export default function Page() {
                               {/* Strój pszczelarza */}
                               {hiveData.suit_durability > 0 && (
                                 <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                                  <img src="/beekeeper_suit.png" alt="Strój" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <div className="flex-1">
                                     <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
                                     <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
@@ -4291,7 +4419,7 @@ export default function Page() {
                             const qty = shopCart[crop.id] ?? 0;
                             return (
                               <div key={crop.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-4 py-2">
-                                <img src={crop.spritePath} alt={crop.name} className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} />
+                                <img src={crop.spritePath} alt={crop.name} className="h-[60px] w-[60px] object-contain" style={{imageRendering:"pixelated"}} />
                                 <div className="flex-1">
                                   <p className="font-bold text-[#f9e7b2]">{crop.name}</p>
                                   <p className="text-xs text-[#8b6a3e]">{price.toFixed(2)} 💰 / szt.</p>
@@ -4321,7 +4449,7 @@ export default function Page() {
                             const canAfford = displayMoney >= item.price;
                             return (
                               <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                                <img src={item.img} alt={item.label} className="w-14 h-14 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                <img src={item.img} alt={item.label} className="w-[84px] h-[84px] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                 <div className="flex-1">
                                   <p className="font-black text-[#f9e7b2]">{item.label}</p>
                                   <p className="text-xs text-[#8b6a3e]">{item.desc}</p>
@@ -4461,7 +4589,7 @@ export default function Page() {
                       <div className="flex flex-col gap-2 mt-1">
                         {hiveData.empty_jars > 0 && (
                           <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_empty.png" alt="Słoik" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                             <div className="flex-1">
                               <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
                               <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
@@ -4471,7 +4599,7 @@ export default function Page() {
                         )}
                         {hiveData.honey_jars > 0 && (
                           <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_honey.png" alt="Miód" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                             <div className="flex-1">
                               <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
                               <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
@@ -4481,7 +4609,7 @@ export default function Page() {
                         )}
                         {hiveData.suit_durability > 0 && (
                           <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                            <img src="/beekeeper_suit.png" alt="Strój" className="w-9 h-9 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                            <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                             <div className="flex-1">
                               <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
                               <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
@@ -5601,6 +5729,20 @@ export default function Page() {
           )}
         </div>
       </div>
+    {/* Tooltip sierpa podążający za kursorem */}
+      {hoveredSickle && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
+          <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
+          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(playerStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({playerStats.zrecznosc}/100)</p>
+          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(playerStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({playerStats.szczescie}/100)</p>
+        </div>
+      )}
     {/* Tooltip konewki podążający za kursorem */}
       {hoveredWateringCan && (
         <div
