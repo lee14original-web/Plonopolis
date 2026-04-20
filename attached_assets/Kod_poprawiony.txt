@@ -1769,6 +1769,12 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showStodolaModal]);
   React.useEffect(() => {
+    if (!showShopModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowShopModal(false); setShopCart({}); setShopError(""); } };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showShopModal]);
+  React.useEffect(() => {
     if (!showUlModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowUlModal(false); };
     window.addEventListener("keydown", handler);
