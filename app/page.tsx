@@ -1095,14 +1095,22 @@ export default function Page() {
     const _migratedInv = parseSeedInventory(source.seed_inventory);
     setSeedInventory(_migratedInv);
     const _rawHive = source.hive_data as Record<string,unknown> | null | undefined;
-    setHiveData({
-      level:            typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
-      bees_progress:    typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
-      honey_start:      typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null,
-      suit_durability:  typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
-      empty_jars:       typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
-      honey_jars:       typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
-    });
+    const _hiveSavedStart = typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null;
+    const _hiveNow = Date.now();
+    const _needsHiveStart = _hiveSavedStart === null && !!source.id;
+    const _hiveStart = _needsHiveStart ? _hiveNow : _hiveSavedStart;
+    const _parsedHive: HiveData = {
+      level:           typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
+      bees_progress:   typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
+      honey_start:     _hiveStart,
+      suit_durability: typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
+      empty_jars:      typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
+      honey_jars:      typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
+    };
+    setHiveData(_parsedHive);
+    if (_needsHiveStart) {
+      void supabase.from("profiles").update({ hive_data: _parsedHive }).eq("id", source.id!);
+    }
     if (_needsMigration && source.id) {
       void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
     }
@@ -1761,13 +1769,6 @@ export default function Page() {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [showUlModal]);
-  React.useEffect(() => {
-    if (!showUlModal || !profile?.id || hiveData.honey_start !== null) return;
-    const now = Date.now();
-    const newHive = { ...hiveData, honey_start: now };
-    setHiveData(newHive);
-    void supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
   }, [showUlModal]);
 
   useEffect(() => {
@@ -4641,33 +4642,23 @@ export default function Page() {
               if (!profile?.id) return;
               const add = Math.min(n, beesNeeded - beesProgress);
               if (add <= 0) return;
-              const newBees = beesProgress + add;
-              const newHive: HiveData = { ...hiveData, bees_progress: newBees };
-              if (newBees >= beesNeeded && hlvl < 5) {
-                newHive.level = hlvl + 1;
-                newHive.bees_progress = 0;
-              }
-              const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
-              if (!error) setHiveData(newHive);
+              const { data, error } = await supabase.rpc("add_hive_bees", { p_user_id: profile.id, p_amount: add });
+              if (!error && data?.ok) setHiveData(data.hive_data as HiveData);
             };
             const collectHoney = async () => {
-              if (!profile?.id || !canCollect) return;
-              const collected = Math.min(honeyAvailable, hiveData.empty_jars);
-              const chance = HIVE_SUCCESS_CHANCE[hlvl] ?? 0.9;
-              const success = Math.random() < chance;
-              const newHive: HiveData = {
-                ...hiveData,
-                honey_jars: success ? hiveData.honey_jars + collected : hiveData.honey_jars,
-                empty_jars: hiveData.empty_jars - collected,
-                suit_durability: Math.max(0, hiveData.suit_durability - collected),
-                honey_start: hiveNow,
-              };
-              const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
-              if (!error) {
-                setHiveData(newHive);
-                if (success) setMessage({ type:"success", title:`Zebrano ${collected} słoiki miodu! 🍯`, text:"" });
-                else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
+              if (!profile?.id) return;
+              const { data, error } = await supabase.rpc("collect_honey", { p_user_id: profile.id });
+              if (error || !data?.ok) {
+                const msg = data?.error === "no_honey" ? "Poczekaj — miód jeszcze nie jest gotowy!"
+                          : data?.error === "no_jars"  ? "Brak pustych słoików!"
+                          : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
+                          : "Błąd zbierania miodu — spróbuj ponownie.";
+                setMessage({ type:"error", title: msg, text:"" });
+                return;
               }
+              setHiveData(data.hive_data as HiveData);
+              if (data.success) setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯`, text:"" });
+              else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
             };
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -4772,40 +4763,22 @@ export default function Page() {
             const owned = hiveData.honey_jars;
             const clampedQty = Math.min(ladaSellQty, owned);
             const totalValue = clampedQty * jarPrice;
-            const sellAll = async () => {
-              if (!profile?.id || owned <= 0 || ladaSelling) return;
+            const doSell = async (qty: number) => {
+              if (!profile?.id || qty <= 0 || ladaSelling) return;
               setLadaSelling(true);
-              const earned = owned * jarPrice;
-              const newMoney = Math.round((displayMoney + earned) * 100) / 100;
-              const newHive: HiveData = { ...hiveData, honey_jars: 0 };
-              const { error } = await supabase.from("profiles").update({ money: newMoney, hive_data: newHive }).eq("id", profile.id);
-              if (!error) {
-                setHiveData(newHive);
+              const { data, error } = await supabase.rpc("sell_honey", { p_user_id: profile.id, p_qty: qty });
+              if (!error && data?.ok) {
+                setHiveData(data.hive_data as HiveData);
                 await loadProfile(profile.id);
-                setMessage({ type:"success", title:`Sprzedano ${owned} słoiki za ${(earned).toFixed(2)} zł! 💰`, text:"" });
+                setMessage({ type:"success", title:`Sprzedano ${data.sold} ${data.sold === 1 ? "słoik" : data.sold < 5 ? "słoiki" : "słoików"} za ${Number(data.earned).toFixed(2)} zł! 💰`, text:"" });
                 setShowLadaModal(false);
               } else {
                 setMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", text:"" });
               }
               setLadaSelling(false);
             };
-            const sellQtyFn = async () => {
-              if (!profile?.id || clampedQty <= 0 || ladaSelling) return;
-              setLadaSelling(true);
-              const earned = clampedQty * jarPrice;
-              const newMoney = Math.round((displayMoney + earned) * 100) / 100;
-              const newHive: HiveData = { ...hiveData, honey_jars: owned - clampedQty };
-              const { error } = await supabase.from("profiles").update({ money: newMoney, hive_data: newHive }).eq("id", profile.id);
-              if (!error) {
-                setHiveData(newHive);
-                await loadProfile(profile.id);
-                setMessage({ type:"success", title:`Sprzedano ${clampedQty} słoiki za ${(earned).toFixed(2)} zł! 💰`, text:"" });
-                setShowLadaModal(false);
-              } else {
-                setMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", text:"" });
-              }
-              setLadaSelling(false);
-            };
+            const sellAll   = async () => doSell(owned);
+            const sellQtyFn = async () => doSell(clampedQty);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
                 <div className="relative flex w-full max-w-[520px] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5">
