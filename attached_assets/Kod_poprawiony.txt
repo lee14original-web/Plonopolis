@@ -1095,14 +1095,22 @@ export default function Page() {
     const _migratedInv = parseSeedInventory(source.seed_inventory);
     setSeedInventory(_migratedInv);
     const _rawHive = source.hive_data as Record<string,unknown> | null | undefined;
-    setHiveData({
-      level:            typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
-      bees_progress:    typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
-      honey_start:      typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null,
-      suit_durability:  typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
-      empty_jars:       typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
-      honey_jars:       typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
-    });
+    const _hiveSavedStart = typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null;
+    const _hiveNow = Date.now();
+    const _needsHiveStart = _hiveSavedStart === null && !!source.id;
+    const _hiveStart = _needsHiveStart ? _hiveNow : _hiveSavedStart;
+    const _parsedHive: HiveData = {
+      level:           typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
+      bees_progress:   typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
+      honey_start:     _hiveStart,
+      suit_durability: typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
+      empty_jars:      typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
+      honey_jars:      typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
+    };
+    setHiveData(_parsedHive);
+    if (_needsHiveStart) {
+      void supabase.from("profiles").update({ hive_data: _parsedHive }).eq("id", source.id!);
+    }
     if (_needsMigration && source.id) {
       void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
     }
@@ -1761,13 +1769,6 @@ export default function Page() {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
     return () => clearInterval(t);
-  }, [showUlModal]);
-  React.useEffect(() => {
-    if (!showUlModal || !profile?.id || hiveData.honey_start !== null) return;
-    const now = Date.now();
-    const newHive = { ...hiveData, honey_start: now };
-    setHiveData(newHive);
-    void supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
   }, [showUlModal]);
 
   useEffect(() => {
