@@ -1013,18 +1013,18 @@ export default function Page() {
   const [cityNavEditMode, setCityNavEditMode] = React.useState(false);
   const [cityHitboxEditMode, setCityHitboxEditMode] = React.useState(false);
   const [cityHitboxPos, setCityHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
-    naFarme: {left:14.0, top:60.0, width:14.0, height:22.0},
-    sklep:   {left:12.0, top:20.0, width:16.0, height:38.0},
-    targ:    {left:38.0, top:22.0, width:16.0, height:34.0},
-    bank:    {left:80.0, top:25.0, width:14.0, height:36.0},
-    ratusz:  {left:62.0, top:0.0,  width:22.0, height:46.0},
+    naFarme: {left:8.8,  top:71.5, width:25.4, height:24.0},
+    sklep:   {left:6.7,  top:37.8, width:25.9, height:30.4},
+    targ:    {left:35.5, top:45.4, width:25.6, height:22.0},
+    bank:    {left:81.8, top:47.9, width:10.9, height:23.9},
+    ratusz:  {left:64.7, top:8.4,  width:15.7, height:49.8},
   });
   const [cityLabelPos, setCityLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    naFarme: {left:21.0, top:83.0},
-    sklep:   {left:20.0, top:59.0},
-    targ:    {left:46.0, top:57.0},
-    bank:    {left:87.0, top:62.0},
-    ratusz:  {left:73.0, top:47.0},
+    naFarme: {left:20.9, top:81.8},
+    sklep:   {left:27.5, top:56.8},
+    targ:    {left:47.6, top:54.2},
+    bank:    {left:87.4, top:62.8},
+    ratusz:  {left:73.2, top:40.2},
   });
   const cityHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   const cityLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
