@@ -4390,7 +4390,7 @@ export default function Page() {
                               <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-5">
                                 <div className="flex items-center justify-between">
                                   <span className="flex items-center gap-2 text-base font-bold text-[#f9e7b2]">
-                                    <img src={def.img} alt={def.label} className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
+                                    <img src={def.img} alt={def.label} className="w-32 h-32 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
                                     <span style={{display:"none"}}>{def.icon}</span>
                                     {def.label}
                                   </span>
