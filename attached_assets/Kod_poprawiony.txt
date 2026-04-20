@@ -36,6 +36,7 @@ type Profile = {
   equipment?: string[] | null;
   blocked_users?: string[] | null;
   unlocked_epic_avatars?: number[] | null;
+  hive_data?: Record<string, unknown> | null;
 };
 
 type Message = {
@@ -182,6 +183,20 @@ const STATS_DEFS = [
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
 const DEFAULT_STATS: PlayerStatsMap = { wiedza:0, zrecznosc:0, zaradnosc:0, sadownik:0, opieka:0, szczescie:0 };
+
+interface HiveData {
+  level: number;
+  bees_progress: number;
+  honey_start: number | null;
+  suit_durability: number;
+  empty_jars: number;
+  honey_jars: number;
+}
+const DEFAULT_HIVE_DATA: HiveData = { level:1, bees_progress:0, honey_start:null, suit_durability:0, empty_jars:0, honey_jars:0 };
+const HIVE_MAX_HONEY     = [0, 8, 10, 12, 14, 16];
+const HIVE_UPGRADE_BEES  = [0, 20, 30, 40, 50];
+const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
+const HONEY_MS_PER_PT    = 3_600_000;
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -914,6 +929,9 @@ export default function Page() {
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
+  const [showUlModal, setShowUlModal] = React.useState(false);
+  const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
+  const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [navEditMode, setNavEditMode] = React.useState(false);
@@ -987,7 +1005,7 @@ export default function Page() {
   }, []);
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
-  const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa">("nasiona");
+  const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
@@ -1072,6 +1090,15 @@ export default function Page() {
     });
     const _migratedInv = parseSeedInventory(source.seed_inventory);
     setSeedInventory(_migratedInv);
+    const _rawHive = source.hive_data as Record<string,unknown> | null | undefined;
+    setHiveData({
+      level:            typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
+      bees_progress:    typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
+      honey_start:      typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null,
+      suit_durability:  typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
+      empty_jars:       typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
+      honey_jars:       typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
+    });
     if (_needsMigration && source.id) {
       void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
     }
@@ -1242,13 +1269,14 @@ export default function Page() {
 
     const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
+    const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
     if (plot.watered) {
       const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.006) / 100;
       const waterMult = Math.max(0.5, 1 - zaradnoscBonus);
-      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult);
+      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult);
     }
 
-    return Math.round(crop.growthTimeMs * wiedzaMult);
+    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult);
   }
 
   function getGrowthProgress(plotId: number) {
@@ -1719,6 +1747,24 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showStodolaModal]);
+  React.useEffect(() => {
+    if (!showUlModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowUlModal(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showUlModal]);
+  React.useEffect(() => {
+    if (!showUlModal) return;
+    const t = setInterval(() => setHiveNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [showUlModal]);
+  React.useEffect(() => {
+    if (!showUlModal || !profile?.id || hiveData.honey_start !== null) return;
+    const now = Date.now();
+    const newHive = { ...hiveData, honey_start: now };
+    setHiveData(newHive);
+    void supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
+  }, [showUlModal]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2884,10 +2930,11 @@ export default function Page() {
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
-                      {/* Ul — bez akcji */}
+                      {/* Ul */}
                       <button
                         type="button"
                         title="Ul"
+                        onClick={() => setShowUlModal(true)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
                       />
@@ -4147,13 +4194,13 @@ export default function Page() {
                 <div className="flex w-44 shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
                   <div className="flex flex-col gap-2 p-5 pt-14">
                     <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
-                    {(["nasiona","zwierzeta","drzewa"] as const).map(tab => (
+                    {(["nasiona","zwierzeta","drzewa","przedmioty"] as const).map(tab => (
                       <button key={tab} onClick={() => setShopTab(tab)}
                         className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
                           shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                         }`}>
-                        {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : "🌳"}
-                        {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}
+                        {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : tab === "drzewa" ? "🌳" : "🧰"}
+                        {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : tab === "drzewa" ? "Drzewa" : "Przedmioty"}
                       </button>
                     ))}
                   </div>
@@ -4193,6 +4240,48 @@ export default function Page() {
                         </div>
                       </div>
                     )}
+                    {shopTab === "przedmioty" && (() => {
+                      const SHOP_ITEMS = [
+                        { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/beekeeper_suit.png", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
+                        { id:"jar_empty_1",    label:"Słoik × 1",         img:"/jar_empty.png",      desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
+                        { id:"jar_empty_8",    label:"Słoik × 8",         img:"/jar_empty.png",      desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
+                        { id:"jar_empty_15",   label:"Słoik × 15",        img:"/jar_empty.png",      desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
+                      ];
+                      return (
+                        <div className="flex flex-col gap-3 p-4 overflow-y-auto">
+                          {SHOP_ITEMS.map(item => {
+                            const canAfford = displayMoney >= item.price;
+                            return (
+                              <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                                <img src={item.img} alt={item.label} className="w-14 h-14 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                <div className="flex-1">
+                                  <p className="font-black text-[#f9e7b2]">{item.label}</p>
+                                  <p className="text-xs text-[#8b6a3e]">{item.desc}</p>
+                                  <p className="mt-1 text-sm font-bold text-yellow-300">{item.price.toFixed(2)} 💰</p>
+                                </div>
+                                <button
+                                  disabled={!canAfford || !profile?.id}
+                                  onClick={() => {
+                                    if (!profile?.id || !canAfford) return;
+                                    void (async () => {
+                                      const newHive: HiveData = { ...hiveData };
+                                      if (item.type === "suit") newHive.suit_durability = hiveData.suit_durability + 100;
+                                      else newHive.empty_jars = hiveData.empty_jars + item.qty;
+                                      const { error } = await supabase.from("profiles").update({
+                                        money: Math.round((displayMoney - item.price) * 100) / 100,
+                                        hive_data: newHive,
+                                      }).eq("id", profile.id);
+                                      if (!error) { setHiveData(newHive); await loadProfile(profile.id); }
+                                    })();
+                                  }}
+                                  className={`rounded-xl px-4 py-2 text-sm font-black transition ${canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                                >Kup</button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     {(shopTab === "zwierzeta" || shopTab === "drzewa") && (
                       <div className="flex h-full items-center justify-center">
                         <div className="text-center">
@@ -4525,6 +4614,153 @@ export default function Page() {
               </div>
             </div>
           )}
+
+          {showUlModal && (() => {
+            const hlvl = hiveData.level;
+            const maxHoney = HIVE_MAX_HONEY[hlvl] ?? 16;
+            const elapsed = hiveData.honey_start != null ? Math.max(0, hiveNow - hiveData.honey_start) : 0;
+            const honeyAvailable = hiveData.honey_start != null ? Math.min(Math.floor(elapsed / HONEY_MS_PER_PT), maxHoney) : 0;
+            const msToNext = HONEY_MS_PER_PT - (elapsed % HONEY_MS_PER_PT);
+            const secToNext = Math.ceil(msToNext / 1000);
+            const hh = Math.floor(secToNext / 3600);
+            const mm = Math.floor((secToNext % 3600) / 60);
+            const ss = secToNext % 60;
+            const timerStr = `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
+            const beesNeeded = HIVE_UPGRADE_BEES[hlvl] ?? 50;
+            const beesProgress = Math.min(hiveData.bees_progress, beesNeeded);
+            const canCollect = honeyAvailable > 0 && hiveData.empty_jars > 0 && hiveData.suit_durability > 0;
+            const suitPct = Math.round((hiveData.suit_durability / 100) * 100);
+            const hiveBonusPct = hlvl * 2;
+            const hiveImg = `/ul_${hlvl}.png`;
+            const addBees = async (n: number) => {
+              if (!profile?.id) return;
+              const add = Math.min(n, beesNeeded - beesProgress);
+              if (add <= 0) return;
+              const newBees = beesProgress + add;
+              const newHive: HiveData = { ...hiveData, bees_progress: newBees };
+              if (newBees >= beesNeeded && hlvl < 5) {
+                newHive.level = hlvl + 1;
+                newHive.bees_progress = 0;
+              }
+              const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
+              if (!error) setHiveData(newHive);
+            };
+            const collectHoney = async () => {
+              if (!profile?.id || !canCollect) return;
+              const collected = Math.min(honeyAvailable, hiveData.empty_jars);
+              const chance = HIVE_SUCCESS_CHANCE[hlvl] ?? 0.9;
+              const success = Math.random() < chance;
+              const newHive: HiveData = {
+                ...hiveData,
+                honey_jars: success ? hiveData.honey_jars + collected : hiveData.honey_jars,
+                empty_jars: hiveData.empty_jars - collected,
+                suit_durability: Math.max(0, hiveData.suit_durability - collected),
+                honey_start: hiveNow,
+              };
+              const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
+              if (!error) {
+                setHiveData(newHive);
+                if (success) addMessage({ type:"success", title:`Zebrano ${collected} słoiki miodu! 🍯`, body:"" });
+                else addMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", body:"" });
+              }
+            };
+            return (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                <div className="relative flex w-full max-w-[650px] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5">
+                  <button onClick={() => setShowUlModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                  {/* Header */}
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🍯</span>
+                    <div>
+                      <h2 className="text-2xl font-black text-[#f9e7b2]">Ul — poziom {hlvl}</h2>
+                      <p className="text-sm text-amber-400/80">Pszczoły przyspieszają wzrost o {hiveBonusPct}%</p>
+                    </div>
+                  </div>
+                  {/* Obraz ula */}
+                  <div className="flex justify-center">
+                    <img src={hiveImg} alt={`Ul poziom ${hlvl}`} className="h-36 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }} />
+                  </div>
+                  {/* Miód */}
+                  <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-[#dfcfab] font-bold">🍯 Miód</span>
+                      <span className="text-amber-300 font-black">{honeyAvailable} / {maxHoney}</span>
+                    </div>
+                    <div className="h-3 rounded-full bg-black/40 border border-amber-700/30 overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all" style={{ width:`${maxHoney > 0 ? (honeyAvailable/maxHoney*100) : 0}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
+                  </div>
+                  {/* Zasoby */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
+                      <img src="/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                      <div>
+                        <p className="text-xs text-[#8b6a3e]">Puste słoiki</p>
+                        <p className="font-black text-[#f9e7b2]">{hiveData.empty_jars}</p>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
+                      <img src="/jar_honey.png" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                      <div>
+                        <p className="text-xs text-[#8b6a3e]">Słoiki z miodem</p>
+                        <p className="font-black text-[#f9e7b2]">{hiveData.honey_jars}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Strój pszczelarza */}
+                  <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <img src="/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-[#dfcfab]">Strój pszczelarza</span>
+                          <span className={hiveData.suit_durability > 0 ? "text-green-400" : "text-red-400"}>{hiveData.suit_durability}/100</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-black/40 border border-[#8b6a3e]/30 overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width:`${suitPct}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Przycisk zbioru */}
+                  <button
+                    disabled={!canCollect}
+                    onClick={() => { void collectHoney(); }}
+                    className={`w-full rounded-xl py-3 text-sm font-black transition ${canCollect ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                  >
+                    {!canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
+                  </button>
+                  {/* Ulepszanie ula */}
+                  {hlvl < 5 && (
+                    <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
+                      <p className="text-sm font-bold text-[#dfcfab] mb-2">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
+                      <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3">
+                        <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width:`${beesNeeded > 0 ? (beesProgress/beesNeeded*100) : 0}%` }} />
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        {[1,5,10].map(n => (
+                          <button key={n} disabled={beesProgress >= beesNeeded} onClick={() => { void addBees(n); }}
+                            className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40 disabled:cursor-not-allowed">
+                            +{n} 🐝
+                          </button>
+                        ))}
+                        <button disabled={beesProgress >= beesNeeded} onClick={() => { void addBees(beesNeeded - beesProgress); }}
+                          className="rounded-lg border border-amber-500/60 bg-amber-700/20 px-4 py-2 text-xs font-bold text-yellow-200 hover:bg-amber-700/30 disabled:opacity-40 disabled:cursor-not-allowed">
+                          MAX 🐝
+                        </button>
+                      </div>
+                      {beesProgress >= beesNeeded && <p className="mt-2 text-xs text-green-400 font-bold">✅ Ul gotowy do ulepszenia!</p>}
+                    </div>
+                  )}
+                  {hlvl >= 5 && <p className="text-center text-sm text-amber-300 font-bold">✨ Ul osiągnął maksymalny poziom!</p>}
+                  <button onClick={() => setShowUlModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
+                    ✕ Zamknij (Esc)
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {showStodolaModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
