@@ -172,13 +172,13 @@ const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
 
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", desc: "Rośliny rosną szybciej",         rate: 0.005  },
-  { key: "zrecznosc", label: "Zręczność", icon: "🎯", desc: "Szansa na podwójny zbiór",       rate: 0.004  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
-  { key: "sadownik",  label: "Sadownik",  icon: "🌳", desc: "Większy zysk z drzew",           rate: 0.005  },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", desc: "Większy zysk ze zwierząt",       rate: 0.005  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", desc: "Szansa na bonusowy drop",         rate: 0.0025 },
-] as const;
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej",              rate: 0.005  },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Szansa na podwójny zbiór",            rate: 0.004  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Większy zysk z drzew",               rate: 0.005  },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Większy zysk ze zwierząt",            rate: 0.005  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Szansa na bonusowy drop",             rate: 0.0025 },
+];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
 const DEFAULT_STATS: PlayerStatsMap = { wiedza:0, zrecznosc:0, zaradnosc:0, sadownik:0, opieka:0, szczescie:0 };
@@ -3330,7 +3330,10 @@ export default function Page() {
                       <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
                         {avatarSkin >= 0
                           ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          : <span className="text-5xl">👤</span>}
+                          : <span className="flex flex-col items-center justify-center gap-0.5 animate-pulse">
+                              <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
+                              <span className="text-[#c9952f] text-[10px] font-bold">(kliknij Dom)</span>
+                            </span>}
                       </div>
                       <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                       <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
@@ -4344,7 +4347,10 @@ export default function Page() {
                           className="flex h-56 w-56 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
                           {avatarSkin >= 0
                             ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                            : <span className="text-9xl">❓</span>}
+                            : <span className="flex flex-col items-center justify-center gap-1 animate-pulse">
+                                <span className="text-[#f9e7b2] text-xl font-black leading-tight text-center">Wybierz Avatar</span>
+                                <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                              </span>}
                         </button>
                         <div className="text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
@@ -4383,7 +4389,11 @@ export default function Page() {
                             return (
                               <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-5">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-base font-bold text-[#f9e7b2]">{def.icon} {def.label}</span>
+                                  <span className="flex items-center gap-2 text-base font-bold text-[#f9e7b2]">
+                                    <img src={def.img} alt={def.label} className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
+                                    <span style={{display:"none"}}>{def.icon}</span>
+                                    {def.label}
+                                  </span>
                                   <span className="text-sm text-[#8b6a3e]">{val}/100</span>
                                 </div>
                                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-black/40">
