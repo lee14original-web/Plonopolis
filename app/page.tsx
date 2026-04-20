@@ -4782,10 +4782,10 @@ export default function Page() {
               if (!error) {
                 setHiveData(newHive);
                 await loadProfile(profile.id);
-                addMessage({ type:"success", title:`Sprzedano ${owned} słoiki za ${(earned).toFixed(2)} zł! 💰`, body:"" });
+                setMessage({ type:"success", title:`Sprzedano ${owned} słoiki za ${(earned).toFixed(2)} zł! 💰`, text:"" });
                 setShowLadaModal(false);
               } else {
-                addMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", body:"" });
+                setMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", text:"" });
               }
               setLadaSelling(false);
             };
@@ -4799,10 +4799,10 @@ export default function Page() {
               if (!error) {
                 setHiveData(newHive);
                 await loadProfile(profile.id);
-                addMessage({ type:"success", title:`Sprzedano ${clampedQty} słoiki za ${(earned).toFixed(2)} zł! 💰`, body:"" });
+                setMessage({ type:"success", title:`Sprzedano ${clampedQty} słoiki za ${(earned).toFixed(2)} zł! 💰`, text:"" });
                 setShowLadaModal(false);
               } else {
-                addMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", body:"" });
+                setMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", text:"" });
               }
               setLadaSelling(false);
             };
