@@ -4113,7 +4113,7 @@ export default function Page() {
                         )}
                         {filtered.map(msg => (
                           <div key={msg.id}
-                            className={`relative rounded-2xl border p-5 transition ${msg.type === "system" ? "border-red-800/70 bg-[rgba(70,5,10,0.75)]" : selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                            className={`relative rounded-2xl border p-5 transition ${msg.type === "system" ? "border-green-800/70 bg-[rgba(5,45,15,0.75)]" : selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
 
                             {/* Checkbox zaznaczania */}
                             {msg.type !== "system" && (
@@ -4132,7 +4132,7 @@ export default function Page() {
                             {(msg.type === "received" || msg.type === "system") && (<>
                               <div className="mb-2 flex items-center gap-3">
                                 {msg.type === "system" ? (
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-700/70 bg-red-950/60 text-xl">🛡️</span>
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8b6a3e]/50 bg-black/30 text-xl">🔧</span>
                                 ) : (
                                   <img
                                     src={ALL_SKINS[msg.from_avatar_skin ?? 0] ?? ALL_SKINS[0]}
