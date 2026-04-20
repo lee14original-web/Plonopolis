@@ -1769,6 +1769,12 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showStodolaModal]);
   React.useEffect(() => {
+    if (!showShopModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowShopModal(false); setShopCart({}); setShopError(""); } };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showShopModal]);
+  React.useEffect(() => {
     if (!showUlModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowUlModal(false); };
     window.addEventListener("keydown", handler);
@@ -4250,18 +4256,18 @@ export default function Page() {
           {/* ═══ SHOP MODAL ═══ */}
           {showShopModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[90vh] w-full max-w-[1170px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+              <div className="relative flex h-[90vh] w-full max-w-[1500px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
                 <button onClick={() => { setShowShopModal(false); setShopCart({}); setShopError(""); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
                 {/* Sidebar — kategorie sklepu */}
-                <div className="flex w-44 shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
-                  <div className="flex flex-col gap-2 p-5 pt-14">
-                    <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
+                <div className="flex w-[308px] shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
+                  <div className="flex flex-col gap-3 p-6 pt-14">
+                    <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
                     {(["nasiona","zwierzeta","drzewa","przedmioty"] as const).map(tab => (
                       <button key={tab} onClick={() => setShopTab(tab)}
-                        className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition ${
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
                           shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                         }`}>
-                        {tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : tab === "drzewa" ? "🌳" : "🧰"}
+                        <span className="text-2xl leading-none">{tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : tab === "drzewa" ? "🌳" : "🧰"}</span>
                         {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : tab === "drzewa" ? "Drzewa" : "Przedmioty"}
                       </button>
                     ))}
