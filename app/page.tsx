@@ -2726,17 +2726,25 @@ export default function Page() {
 
   async function deleteMessage(msgId: string) {
     if (!confirm("Usunąć tę wiadomość?")) return;
+    const { error } = await supabase.from("messages").delete().eq("id", msgId);
+    if (error) {
+      setMessage({ type: "error", title: "Błąd usuwania", text: "Nie udało się usunąć wiadomości." });
+      return;
+    }
     setGameMessages(prev => prev.filter(m => m.id !== msgId));
     setSelectedMsgIds(prev => { const n = new Set(prev); n.delete(msgId); return n; });
-    await supabase.from("messages").delete().eq("id", msgId);
   }
 
   async function deleteSelectedMessages(ids: string[]) {
     if (ids.length === 0) return;
     if (!confirm(`Usunąć ${ids.length} zaznaczon${ids.length === 1 ? "ą" : ids.length < 5 ? "e" : "ych"} wiadomość${ids.length === 1 ? "" : ids.length < 5 ? "i" : "i"}?`)) return;
+    const { error } = await supabase.from("messages").delete().in("id", ids);
+    if (error) {
+      setMessage({ type: "error", title: "Błąd usuwania", text: "Nie udało się usunąć zaznaczonych wiadomości." });
+      return;
+    }
     setGameMessages(prev => prev.filter(m => !ids.includes(m.id)));
     setSelectedMsgIds(new Set());
-    await supabase.from("messages").delete().in("id", ids);
   }
 
   async function blockUser(fromUserId: string) {
