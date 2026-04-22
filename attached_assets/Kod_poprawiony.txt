@@ -2270,7 +2270,19 @@ export default function Page() {
 
   async function handleResetAccount() {
     if (!profile?.id) return;
-    if (!confirm("UWAGA: Zresetuje CAŁE konto do stanu startowego. Kontynuować?")) return;
+    if (!confirm(
+      "⚠️ RESET KONTA — co zostanie zresetowane:\n" +
+      "• Poziom, XP, pieniądze\n" +
+      "• Uprawy i nasiona\n" +
+      "• Statystyki i punkty umiejętności\n" +
+      "• Avatar i dom\n\n" +
+      "✅ Co NIE zostanie zresetowane:\n" +
+      "• Ul i pszczoły\n" +
+      "• Słoiki i strój pszczelarza\n" +
+      "• Ekwipunek (odzież)\n\n" +
+      "Kontynuować?"
+    )) return;
+    if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować konto?")) return;
     const xpNeeded = getXpForLevel(1);
     const { error } = await supabase.from("profiles").update({
       level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
