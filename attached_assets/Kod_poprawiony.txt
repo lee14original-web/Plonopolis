@@ -199,6 +199,44 @@ const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
 const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 
+// ═══ EKWIPUNEK POSTACI ═══
+type EquipSlot = "dlonie" | "nogi" | "glowa";
+type ItemRarity = "zwykly" | "rzadki" | "epicki" | "legendarny";
+interface CharEquipItem {
+  id: string; name: string; slot: EquipSlot; rarity: ItemRarity; icon: string; effect: string;
+}
+type CharEquipped = Record<EquipSlot, string | null>;
+const RARITY_STYLE: Record<ItemRarity,{border:string;text:string;label:string}> = {
+  zwykly:     { border:"#6b7280", text:"#9ca3af", label:"Zwykły"     },
+  rzadki:     { border:"#d1d5db", text:"#e5e7eb", label:"Rzadki"     },
+  epicki:     { border:"#4ade80", text:"#4ade80", label:"Epicki"      },
+  legendarny: { border:"#fbbf24", text:"#fbbf24", label:"Legendarny"  },
+};
+const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
+  // DŁONIE
+  { id:"rekawice_zw", name:"Robocze rękawice",  slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+3% szybkości zbiorów" },
+  { id:"rekawice_rz", name:"Skórzane rękawice", slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+7% szybkości zbiorów" },
+  { id:"rekawice_ep", name:"Rękawice mistrza",  slot:"dlonie", rarity:"epicki",     icon:"🧤", effect:"+15% szybkości zbiorów · +5% jakości" },
+  { id:"rekawice_le", name:"Złote rękawice",    slot:"dlonie", rarity:"legendarny", icon:"🧤", effect:"+25% szybkości zbiorów · +12% jakości" },
+  // NOGI
+  { id:"buty_zw", name:"Robocze buty",    slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+3% szybkości gry" },
+  { id:"buty_rz", name:"Skórzane buty",   slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+7% szybkości gry" },
+  { id:"buty_ep", name:"Buty szybkości",  slot:"nogi", rarity:"epicki",     icon:"👢", effect:"+15% szybkości gry · -5% czasu wzrostu" },
+  { id:"buty_le", name:"Złote buty",      slot:"nogi", rarity:"legendarny", icon:"👢", effect:"+25% szybkości gry · -10% czasu wzrostu" },
+  // GŁOWA
+  { id:"kapelusz_zw", name:"Słomkowy kapelusz", slot:"glowa", rarity:"zwykly",     icon:"🪖", effect:"+3% XP" },
+  { id:"kapelusz_rz", name:"Czapka farmera",    slot:"glowa", rarity:"rzadki",     icon:"🪖", effect:"+7% XP" },
+  { id:"kapelusz_ep", name:"Kapelusz stratega", slot:"glowa", rarity:"epicki",     icon:"🪖", effect:"+15% XP · +5% złota" },
+  { id:"kapelusz_le", name:"Złota korona",      slot:"glowa", rarity:"legendarny", icon:"👑", effect:"+25% XP · +15% złota" },
+];
+const EQUIP_SLOT_META: Record<EquipSlot,{label:string;icon:string;desc:string}> = {
+  dlonie: { label:"Dłonie", icon:"🧤", desc:"Rękawice, narzędzia, przedmioty robocze" },
+  nogi:   { label:"Nogi",   icon:"👢", desc:"Tempo i szybkość gry" },
+  glowa:  { label:"Głowa",  icon:"🪖", desc:"Strategia i inteligencja" },
+};
+const DEFAULT_CHAR_EQUIPPED: CharEquipped = { dlonie:null, nogi:null, glowa:null };
+const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
+
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
   return Math.round(eff * rate * 1000) / 10;
@@ -1073,8 +1111,13 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
-    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
+    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"ekwipunek">("uprawy");
     const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
+  const [charEquipped, setCharEquipped] = React.useState<CharEquipped>(() => {
+    try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? (JSON.parse(s) as CharEquipped) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
+  });
+  const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
+  const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -3576,16 +3619,16 @@ export default function Page() {
                           </button>
                         </div>
 
-                        {/* Zakładki Uprawy / Przedmioty */}
+                        {/* Zakładki Uprawy / Przedmioty / Ekwipunek */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty"] as const).map(tab => (
+                            {(["uprawy","przedmioty","ekwipunek"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
                                 onClick={() => setBackpackTab(tab)}
                                 className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                               >
-                                {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                                {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "⚔️ Ekwip."}
                               </button>
                             ))}
                           </div>
@@ -3777,6 +3820,73 @@ export default function Page() {
                                   <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {/* ZAKŁADKA: EKWIPUNEK */}
+                          {backpackTab === "ekwipunek" && (
+                            <div className="mt-2 flex flex-col gap-2">
+                              {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
+                                const meta = EQUIP_SLOT_META[slot];
+                                const equippedId = charEquipped[slot];
+                                const equippedItem = equippedId ? CHAR_EQUIP_ITEMS.find(i => i.id === equippedId) : null;
+                                const rs = equippedItem ? RARITY_STYLE[equippedItem.rarity] : null;
+                                const isPickingThis = equippingSlot === slot;
+                                return (
+                                  <div key={slot}>
+                                    {/* Slot card */}
+                                    <div
+                                      className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
+                                      style={{ borderColor: rs ? rs.border : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
+                                      onClick={() => setEquippingSlot(isPickingThis ? null : slot)}
+                                    >
+                                      <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] uppercase tracking-widest" style={{ color: rs ? rs.text : "#8b6a3e" }}>
+                                          {meta.label} {rs ? `· ${RARITY_STYLE[equippedItem!.rarity].label}` : "· Pusty"}
+                                        </p>
+                                        <p className="text-xs font-bold text-[#f9e7b2] truncate">
+                                          {equippedItem ? equippedItem.name : meta.desc}
+                                        </p>
+                                        {equippedItem && <p className="text-[10px] text-[#dfcfab] mt-0.5">{equippedItem.effect}</p>}
+                                      </div>
+                                      {equippedItem && (
+                                        <button
+                                          type="button"
+                                          onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                          className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition"
+                                        >Zdejmij</button>
+                                      )}
+                                      <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
+                                    </div>
+                                    {/* Lista przedmiotów do założenia */}
+                                    {isPickingThis && (
+                                      <div className="mt-1 ml-2 flex flex-col gap-1">
+                                        {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
+                                          const ir = RARITY_STYLE[item.rarity];
+                                          const isOn = charEquipped[slot] === item.id;
+                                          return (
+                                            <button
+                                              key={item.id}
+                                              type="button"
+                                              onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); }}
+                                              className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition hover:bg-white/5"
+                                              style={{ borderColor: ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
+                                            >
+                                              <span className="text-lg">{item.icon}</span>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-bold truncate" style={{ color: ir.text }}>{item.name}</p>
+                                                <p className="text-[10px] text-[#9ca3af]">{item.effect}</p>
+                                              </div>
+                                              {isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                       </div>
@@ -4542,10 +4652,10 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty"] as const).map(tab => (
+                      {(["uprawy","przedmioty","ekwipunek"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                          {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "⚔️ Ekwip."}
                         </button>
                       ))}
                     </div>
@@ -4645,6 +4755,70 @@ export default function Page() {
                             <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {/* ZAKŁADKA: EKWIPUNEK (miasto) */}
+                    {backpackTab === "ekwipunek" && (
+                      <div className="mt-2 flex flex-col gap-2">
+                        {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
+                          const meta = EQUIP_SLOT_META[slot];
+                          const equippedId = charEquipped[slot];
+                          const equippedItem = equippedId ? CHAR_EQUIP_ITEMS.find(i => i.id === equippedId) : null;
+                          const rs = equippedItem ? RARITY_STYLE[equippedItem.rarity] : null;
+                          const isPickingThis = equippingSlot === slot;
+                          return (
+                            <div key={slot}>
+                              <div
+                                className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
+                                style={{ borderColor: rs ? rs.border : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
+                                onClick={() => setEquippingSlot(isPickingThis ? null : slot)}
+                              >
+                                <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] uppercase tracking-widest" style={{ color: rs ? rs.text : "#8b6a3e" }}>
+                                    {meta.label} {rs ? `· ${RARITY_STYLE[equippedItem!.rarity].label}` : "· Pusty"}
+                                  </p>
+                                  <p className="text-xs font-bold text-[#f9e7b2] truncate">
+                                    {equippedItem ? equippedItem.name : meta.desc}
+                                  </p>
+                                  {equippedItem && <p className="text-[10px] text-[#dfcfab] mt-0.5">{equippedItem.effect}</p>}
+                                </div>
+                                {equippedItem && (
+                                  <button
+                                    type="button"
+                                    onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                    className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition"
+                                  >Zdejmij</button>
+                                )}
+                                <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
+                              </div>
+                              {isPickingThis && (
+                                <div className="mt-1 ml-2 flex flex-col gap-1">
+                                  {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
+                                    const ir = RARITY_STYLE[item.rarity];
+                                    const isOn = charEquipped[slot] === item.id;
+                                    return (
+                                      <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); }}
+                                        className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition hover:bg-white/5"
+                                        style={{ borderColor: ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
+                                      >
+                                        <span className="text-lg">{item.icon}</span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-bold truncate" style={{ color: ir.text }}>{item.name}</p>
+                                          <p className="text-[10px] text-[#9ca3af]">{item.effect}</p>
+                                        </div>
+                                        {isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
