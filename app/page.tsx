@@ -201,54 +201,69 @@ const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 
 // ═══ EKWIPUNEK POSTACI ═══
 type EquipSlot = "dlonie" | "nogi" | "glowa";
-type ItemRarity = "zwykly" | "rzadki" | "epicki" | "legendarny";
+interface EquipBonus { base: number; label: string; flat?: boolean; }
 interface CharEquipItem {
-  id: string; name: string; slot: EquipSlot; rarity: ItemRarity; icon: string; effect: string; unlockLevel: number;
+  id: string; name: string; slot: EquipSlot; icon: string; unlockLevel: number;
+  bonuses: EquipBonus[];
 }
-type CharEquipped = Record<EquipSlot, string | null>;
-const RARITY_STYLE: Record<ItemRarity,{border:string;text:string;label:string}> = {
-  zwykly:     { border:"#6b7280", text:"#9ca3af", label:"Zwykły"     },
-  rzadki:     { border:"#d1d5db", text:"#e5e7eb", label:"Rzadki"     },
-  epicki:     { border:"#4ade80", text:"#4ade80", label:"Epicki"      },
-  legendarny: { border:"#fbbf24", text:"#fbbf24", label:"Legendarny"  },
-};
+type CharEquipped = Record<EquipSlot, {id:string;upg:number}|null>;
+const UPGRADE_COST   = [0,100,250,500,1000,2500,5000,10000,25000,50000,100000];
+const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
+const UPG_COLOR = ["#6b7280","#9ca3af","#9ca3af","#9ca3af","#4ade80","#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#fbbf24"];
+function upgBonusStr(base: number, upg: number, flat?: boolean): string {
+  const val = flat ? base + upg : parseFloat((base * (1 + 0.15 * upg)).toFixed(2));
+  return val % 1 === 0 ? val.toString() : val.toFixed(2);
+}
+function bonusLine(bonuses: EquipBonus[], upg: number): string {
+  return bonuses.map(b => `+${upgBonusStr(b.base, upg, b.flat)}${b.label}`).join(" · ");
+}
 const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
-  // DŁONIE (LVL 1–25)
-  { id:"d1",  name:"Spracowane Rękawice",        slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+2% speed zbioru",                      unlockLevel:1  },
-  { id:"d2",  name:"Rękawice Rolnika",            slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+3% speed zbioru",                      unlockLevel:3  },
-  { id:"d3",  name:"Łopata Ogrodnika",            slot:"dlonie", rarity:"zwykly",     icon:"🌿", effect:"+4% speed sadzenia",                    unlockLevel:5  },
-  { id:"d4",  name:"Rękawice Urodzaju",           slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+2% szansy na dodatkowy plon",          unlockLevel:7  },
-  { id:"d5",  name:"Sekator Sadu",                slot:"dlonie", rarity:"rzadki",     icon:"✂️", effect:"+5% zysku z drzew",                    unlockLevel:10 },
-  { id:"d6",  name:"Rękawice Zbieracza",          slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+5% speed zbioru",                      unlockLevel:12 },
-  { id:"d7",  name:"Rękawice Hodowcy",            slot:"dlonie", rarity:"epicki",     icon:"🧤", effect:"-5% czasu zwierząt",                    unlockLevel:15 },
-  { id:"d8",  name:"Złoty Sekator",               slot:"dlonie", rarity:"epicki",     icon:"✂️", effect:"+8% zysku z drzew",                    unlockLevel:18 },
-  { id:"d9",  name:"Rękawice Pszczelarza",        slot:"dlonie", rarity:"epicki",     icon:"🐝", effect:"-20% zużycia stroju pszczelarza",       unlockLevel:20 },
-  { id:"d10", name:"Rękawice Obfitości",          slot:"dlonie", rarity:"legendarny", icon:"🧤", effect:"+4% szansy na dodatkowy plon",          unlockLevel:22 },
-  { id:"d11", name:"Mistyczne Rękawice Farmera",  slot:"dlonie", rarity:"legendarny", icon:"✨", effect:"+8% speed zbioru · +2% double harvest", unlockLevel:25 },
-  // NOGI (LVL 1–25)
-  { id:"n1",  name:"Stare Kalosze",               slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+1% speed upraw",            unlockLevel:1  },
-  { id:"n2",  name:"Kalosze Rolnika",             slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+2% speed upraw",            unlockLevel:4  },
-  { id:"n3",  name:"Buty Polowe",                 slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+3% efektywności wody",      unlockLevel:6  },
-  { id:"n4",  name:"Buty Zbieracza",              slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+2% speed zbioru",           unlockLevel:8  },
-  { id:"n5",  name:"Skórzane Buty Farmera",       slot:"nogi", rarity:"rzadki",     icon:"🥾", effect:"+3% speed upraw",            unlockLevel:10 },
-  { id:"n6",  name:"Buty Błotne",                 slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+8% efektu podlewania",      unlockLevel:13 },
-  { id:"n7",  name:"Ostrogi Hodowcy",             slot:"nogi", rarity:"epicki",     icon:"⚡", effect:"+5% reward zwierząt",        unlockLevel:15 },
-  { id:"n8",  name:"Szybkie Kalosze",             slot:"nogi", rarity:"epicki",     icon:"👢", effect:"+5% speed upraw",            unlockLevel:17 },
-  { id:"n9",  name:"Buty Sadownika",              slot:"nogi", rarity:"epicki",     icon:"🥾", effect:"+6% bonusu drzew",           unlockLevel:20 },
-  { id:"n10", name:"Buty Zaradności",             slot:"nogi", rarity:"legendarny", icon:"👢", effect:"+12% efektu podlewania",     unlockLevel:23 },
-  { id:"n11", name:"Legendarne Kalosze Plonów",   slot:"nogi", rarity:"legendarny", icon:"👑", effect:"+8% speed upraw",            unlockLevel:25 },
-  // GŁOWA (LVL 1–25)
-  { id:"g1",  name:"Słomkowy Kapelusz",           slot:"glowa", rarity:"zwykly",     icon:"👒", effect:"+3% EXP z upraw",                      unlockLevel:1  },
-  { id:"g2",  name:"Kapelusz Rolnika",            slot:"glowa", rarity:"zwykly",     icon:"👒", effect:"+5% EXP z upraw",                      unlockLevel:3  },
-  { id:"g3",  name:"Czapka Pomocnika",            slot:"glowa", rarity:"zwykly",     icon:"🎩", effect:"+2 pkt Wiedzy",                        unlockLevel:5  },
-  { id:"g4",  name:"Kapelusz Pogody",             slot:"glowa", rarity:"rzadki",     icon:"🎩", effect:"+3% speed upraw",                      unlockLevel:7  },
-  { id:"g5",  name:"Kapelusz Pszczelarza",        slot:"glowa", rarity:"rzadki",     icon:"🐝", effect:"+10% produkcji miodu",                 unlockLevel:10 },
-  { id:"g6",  name:"Kapelusz Stratega",           slot:"glowa", rarity:"rzadki",     icon:"🎩", effect:"+3 pkt Wiedzy",                        unlockLevel:12 },
-  { id:"g7",  name:"Czapka Szczęścia",            slot:"glowa", rarity:"epicki",     icon:"🍀", effect:"+3% bonus drop chance",               unlockLevel:15 },
-  { id:"g8",  name:"Kapelusz Hodowcy",            slot:"glowa", rarity:"epicki",     icon:"🎩", effect:"+5% reward zwierząt",                  unlockLevel:18 },
-  { id:"g9",  name:"Korona Sadownika",            slot:"glowa", rarity:"epicki",     icon:"👑", effect:"+8% zysku z drzew",                    unlockLevel:20 },
-  { id:"g10", name:"Hełm Obfitych Plonów",        slot:"glowa", rarity:"legendarny", icon:"⛑️", effect:"+5% EXP · +2% extra harvest",         unlockLevel:22 },
-  { id:"g11", name:"Kapelusz Mistrza Farmy",      slot:"glowa", rarity:"legendarny", icon:"🎓", effect:"+5 pkt Wiedzy · +5% EXP",             unlockLevel:25 },
+  // ─── DŁONIE (LVL 1–25, jeden per poziom) ───
+  { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:"% speed zbioru"}] },
+  { id:"d2",  name:"Rękawice Siewcy",         slot:"dlonie", icon:"🧤", unlockLevel:2,  bonuses:[{base:1,  label:"% speed sadzenia"}] },
+  { id:"d3",  name:"Rękawice Rolnika",        slot:"dlonie", icon:"🧤", unlockLevel:3,  bonuses:[{base:2,  label:"% speed zbioru"}] },
+  { id:"d4",  name:"Grabie Ogrodnika",        slot:"dlonie", icon:"🌿", unlockLevel:4,  bonuses:[{base:1,  label:"% speed upraw"}] },
+  { id:"d5",  name:"Rękawice Ziemi",          slot:"dlonie", icon:"🧤", unlockLevel:5,  bonuses:[{base:2,  label:"% efekt kompostu"}] },
+  { id:"d6",  name:"Łopata Polowa",           slot:"dlonie", icon:"🌿", unlockLevel:6,  bonuses:[{base:2,  label:"% speed sadzenia"}] },
+  { id:"d7",  name:"Rękawice Urodzaju",       slot:"dlonie", icon:"🧤", unlockLevel:7,  bonuses:[{base:1,  label:"% extra harvest"}] },
+  { id:"d8",  name:"Kosz Zbieracza",          slot:"dlonie", icon:"🧺", unlockLevel:8,  bonuses:[{base:2,  label:"% speed zbioru"}] },
+  { id:"d9",  name:"Motyka Rolna",            slot:"dlonie", icon:"⛏️", unlockLevel:9,  bonuses:[{base:2,  label:"% speed upraw"}] },
+  { id:"d10", name:"Sekator Sadu",            slot:"dlonie", icon:"✂️", unlockLevel:10, bonuses:[{base:3,  label:"% speed drzew"}] },
+  { id:"d11", name:"Rękawice Farmera",        slot:"dlonie", icon:"🧤", unlockLevel:11, bonuses:[{base:2,  label:"% EXP z upraw"}] },
+  { id:"d12", name:"Rękawice Zbiorów",        slot:"dlonie", icon:"🧤", unlockLevel:12, bonuses:[{base:1,  label:"% extra harvest"}] },
+  { id:"d13", name:"Narzędzia Sadownika",     slot:"dlonie", icon:"🔧", unlockLevel:13, bonuses:[{base:4,  label:"% speed drzew"}] },
+  { id:"d14", name:"Rękawice Nawadniania",    slot:"dlonie", icon:"🧤", unlockLevel:14, bonuses:[{base:3,  label:"% efekt wody"}] },
+  { id:"d15", name:"Rękawice Hodowcy",        slot:"dlonie", icon:"🧤", unlockLevel:15, bonuses:[{base:3,  label:"% reward zwierząt"}] },
+  { id:"d16", name:"Srebrny Sekator",         slot:"dlonie", icon:"✂️", unlockLevel:16, bonuses:[{base:5,  label:"% speed drzew"}] },
+  { id:"d17", name:"Rękawice Plonów",         slot:"dlonie", icon:"🧤", unlockLevel:17, bonuses:[{base:2,  label:"% extra harvest"}] },
+  { id:"d18", name:"Widły Farmera",           slot:"dlonie", icon:"🌿", unlockLevel:18, bonuses:[{base:4,  label:"% EXP z upraw"}] },
+  { id:"d19", name:"Narzędzia Mistrza",       slot:"dlonie", icon:"🔧", unlockLevel:19, bonuses:[{base:3,  label:"% speed zbioru"}] },
+  { id:"d20", name:"Rękawice Pszczelarza",    slot:"dlonie", icon:"🐝", unlockLevel:20, bonuses:[{base:20, label:"% zużycia stroju"}] },
+  { id:"d21", name:"Motyka Obfitości",        slot:"dlonie", icon:"⛏️", unlockLevel:21, bonuses:[{base:2,  label:"% extra harvest"}] },
+  { id:"d22", name:"Rękawice Żniwiarza",      slot:"dlonie", icon:"🧤", unlockLevel:22, bonuses:[{base:4,  label:"% speed zbioru"}] },
+  { id:"d23", name:"Sekator Premium",         slot:"dlonie", icon:"✂️", unlockLevel:23, bonuses:[{base:6,  label:"% speed drzew"}] },
+  { id:"d24", name:"Rękawice Natury",         slot:"dlonie", icon:"🧤", unlockLevel:24, bonuses:[{base:3,  label:"% speed upraw"}] },
+  { id:"d25", name:"Mistyczne Dłonie Farmy",  slot:"dlonie", icon:"✨", unlockLevel:25, bonuses:[{base:3, label:"% speed zbioru"},{base:2,label:"% extra harvest"}] },
+  // ─── NOGI (LVL 1–30) ───
+  { id:"n1",  name:"Stare Kalosze",           slot:"nogi", icon:"👢", unlockLevel:1,  bonuses:[{base:2,  label:"% speed upraw"}] },
+  { id:"n2",  name:"Kalosze Rolnika",         slot:"nogi", icon:"👢", unlockLevel:3,  bonuses:[{base:3,  label:"% speed upraw"}] },
+  { id:"n3",  name:"Buty Polowe",             slot:"nogi", icon:"👢", unlockLevel:6,  bonuses:[{base:5,  label:"% efekt podlewania"}] },
+  { id:"n4",  name:"Buty Zbieracza",          slot:"nogi", icon:"👢", unlockLevel:9,  bonuses:[{base:4,  label:"% speed zbioru"}] },
+  { id:"n5",  name:"Buty Błotne",             slot:"nogi", icon:"👢", unlockLevel:12, bonuses:[{base:8,  label:"% efekt podlewania"}] },
+  { id:"n6",  name:"Ostrogi Hodowcy",         slot:"nogi", icon:"⚡", unlockLevel:15, bonuses:[{base:6,  label:"% reward zwierząt"}] },
+  { id:"n7",  name:"Szybkie Kalosze",         slot:"nogi", icon:"👢", unlockLevel:18, bonuses:[{base:6,  label:"% speed upraw"}] },
+  { id:"n8",  name:"Buty Sadownika",          slot:"nogi", icon:"🥾", unlockLevel:21, bonuses:[{base:8,  label:"% speed drzew"}] },
+  { id:"n9",  name:"Buty Zaradności",         slot:"nogi", icon:"👢", unlockLevel:24, bonuses:[{base:10, label:"% efekt podlewania"}] },
+  { id:"n10", name:"Buty Burzy",              slot:"nogi", icon:"⚡", unlockLevel:27, bonuses:[{base:8, label:"% speed upraw"},{base:4,label:"% speed zbioru"}] },
+  { id:"n11", name:"Legendarne Kalosze",      slot:"nogi", icon:"👑", unlockLevel:30, bonuses:[{base:10, label:"% speed upraw"}] },
+  // ─── GŁOWA (LVL 1–30) ───
+  { id:"g1",  name:"Słomkowy Kapelusz",       slot:"glowa", icon:"👒", unlockLevel:1,  bonuses:[{base:5,  label:"% EXP z upraw"}] },
+  { id:"g2",  name:"Kapelusz Rolnika",        slot:"glowa", icon:"👒", unlockLevel:5,  bonuses:[{base:5,  label:"% EXP z upraw"},{base:3,label:"% speed upraw"}] },
+  { id:"g3",  name:"Kapelusz Pszczelarza",    slot:"glowa", icon:"🐝", unlockLevel:10, bonuses:[{base:10, label:"% produkcji miodu"},{base:5,label:"% speed upraw"}] },
+  { id:"g4",  name:"Czapka Szczęścia",        slot:"glowa", icon:"🍀", unlockLevel:15, bonuses:[{base:5, label:"% bonus drop"},{base:3,label:"% extra harvest"},{base:5,label:"% EXP"}] },
+  { id:"g5",  name:"Korona Sadownika",        slot:"glowa", icon:"👑", unlockLevel:20, bonuses:[{base:10,label:"% speed drzew"},{base:5,label:"% reward zwierząt"},{base:5,label:"% speed upraw"}] },
+  { id:"g6",  name:"Kapelusz Mistrza Farmy",  slot:"glowa", icon:"🎓", unlockLevel:25, bonuses:[{base:5,label:" pkt Wiedzy",flat:true},{base:10,label:"% EXP"},{base:5,label:"% speed upraw"},{base:3,label:"% extra harvest"}] },
+  { id:"g7",  name:"Korona Plonopolis",       slot:"glowa", icon:"👑", unlockLevel:30, bonuses:[{base:8,label:"% speed upraw"},{base:8,label:"% speed drzew"},{base:8,label:"% reward zwierząt"},{base:5,label:"% extra harvest"}] },
 ];
 const EQUIP_SLOT_META: Record<EquipSlot,{label:string;icon:string;desc:string}> = {
   dlonie: { label:"Dłonie", icon:"🧤", desc:"Rękawice, narzędzia, przedmioty robocze" },
@@ -256,6 +271,18 @@ const EQUIP_SLOT_META: Record<EquipSlot,{label:string;icon:string;desc:string}> 
   glowa:  { label:"Głowa",  icon:"🪖", desc:"Strategia i inteligencja" },
 };
 const DEFAULT_CHAR_EQUIPPED: CharEquipped = { dlonie:null, nogi:null, glowa:null };
+function migrateCharEquipped(raw: unknown): CharEquipped {
+  const def = { ...DEFAULT_CHAR_EQUIPPED };
+  if (!raw || typeof raw !== "object") return def;
+  const r = raw as Record<string,unknown>;
+  const parseSlot = (v: unknown): {id:string;upg:number}|null => {
+    if (!v) return null;
+    if (typeof v === "string") return { id: v, upg: 0 }; // stary format
+    if (typeof v === "object" && v !== null && "id" in v) return { id: (v as {id:string;upg:number}).id, upg: (v as {id:string;upg:number}).upg ?? 0 };
+    return null;
+  };
+  return { dlonie: parseSlot(r.dlonie), nogi: parseSlot(r.nogi), glowa: parseSlot(r.glowa) };
+}
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 
 function calcStatEffect(val: number, rate: number): number {
@@ -1135,7 +1162,7 @@ export default function Page() {
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"ekwipunek">("uprawy");
     const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
   const [charEquipped, setCharEquipped] = React.useState<CharEquipped>(() => {
-    try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? (JSON.parse(s) as CharEquipped) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
+    try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
   });
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
@@ -3861,60 +3888,86 @@ export default function Page() {
                             <div className="mt-2 flex flex-col gap-2">
                               {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
                                 const meta = EQUIP_SLOT_META[slot];
-                                const equippedId = charEquipped[slot];
-                                const equippedItem = equippedId ? CHAR_EQUIP_ITEMS.find(i => i.id === equippedId) : null;
-                                const rs = equippedItem ? RARITY_STYLE[equippedItem.rarity] : null;
+                                const eqData = charEquipped[slot];
+                                const equippedItem = eqData ? CHAR_EQUIP_ITEMS.find(i => i.id === eqData.id) : null;
+                                const upg = eqData?.upg ?? 0;
+                                const upgCol = UPG_COLOR[upg] ?? "#6b7280";
                                 const isPickingThis = equippingSlot === slot;
                                 return (
                                   <div key={slot}>
                                     {/* Slot card */}
-                                    <div
-                                      className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
-                                      style={{ borderColor: rs ? rs.border : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
-                                      onClick={() => setEquippingSlot(isPickingThis ? null : slot)}
-                                    >
+                                    <div className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
+                                      style={{ borderColor: eqData ? upgCol : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
+                                      onClick={() => setEquippingSlot(isPickingThis ? null : slot)}>
                                       <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-[11px] uppercase tracking-widest" style={{ color: rs ? rs.text : "#8b6a3e" }}>
-                                          {meta.label} {rs ? `· ${RARITY_STYLE[equippedItem!.rarity].label}` : "· Pusty"}
-                                        </p>
-                                        <p className="text-xs font-bold text-[#f9e7b2] truncate">
-                                          {equippedItem ? equippedItem.name : meta.desc}
-                                        </p>
-                                        {equippedItem && <p className="text-[10px] text-[#dfcfab] mt-0.5">{equippedItem.effect}</p>}
+                                        <div className="flex items-center gap-1.5">
+                                          <p className="text-[11px] uppercase tracking-widest" style={{ color: eqData ? upgCol : "#8b6a3e" }}>{meta.label}</p>
+                                          {eqData
+                                            ? <span className="text-[11px] font-black px-1.5 rounded" style={{ background: upgCol+"33", color: upgCol }}>+{upg}</span>
+                                            : <span className="text-[11px] text-[#8b6a3e]">· Pusty</span>}
+                                        </div>
+                                        <p className="text-xs font-bold text-[#f9e7b2] truncate">{equippedItem ? equippedItem.name : meta.desc}</p>
+                                        {equippedItem && eqData && (
+                                          <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(equippedItem.bonuses, upg)}</p>
+                                        )}
                                       </div>
-                                      {equippedItem && (
-                                        <button
-                                          type="button"
-                                          onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
-                                          className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition"
-                                        >Zdejmij</button>
-                                      )}
+                                      {eqData && <button type="button" onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }} className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition">Zdejmij</button>}
                                       <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
                                     </div>
-                                    {/* Lista przedmiotów do założenia */}
+                                    {/* Panel ulepszania */}
+                                    {equippedItem && eqData && !isPickingThis && (
+                                      <div className="mt-1 ml-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div>
+                                            <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Ulepszenie</p>
+                                            {upg < 10
+                                              ? <p className="text-xs font-bold text-[#f9e7b2]">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                              : <p className="text-xs font-black" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                          </div>
+                                          {upg < 10 && (
+                                            <button type="button"
+                                              onClick={async () => {
+                                                const nextU = upg+1; const cost = UPGRADE_COST[nextU];
+                                                if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                                                const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
+                                                if (me) return;
+                                                const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                                                let fu: number;
+                                                if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                                                else if (upg <= 6) { fu = upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${upg}.` }); }
+                                                else { fu = upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                                                saveCharEquipped({ ...charEquipped, [slot]: { id: eqData.id, upg: fu } });
+                                                await loadProfile(profile!.id);
+                                              }}
+                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-900/40 whitespace-nowrap">
+                                              ⚒ Ulepsz · {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                            </button>
+                                          )}
+                                        </div>
+                                        {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400 mt-1">⚠ Fail: item cofa się do +{upg-1}</p>}
+                                      </div>
+                                    )}
+                                    {/* Lista itemów */}
                                     {isPickingThis && (
                                       <div className="mt-1 ml-2 flex flex-col gap-1">
                                         {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                          const ir = RARITY_STYLE[item.rarity];
-                                          const isOn = charEquipped[slot] === item.id;
+                                          const isOn = charEquipped[slot]?.id === item.id;
                                           const locked = (profile?.level ?? 0) < item.unlockLevel;
+                                          const curUpg = isOn ? (charEquipped[slot]?.upg ?? 0) : 0;
                                           return (
-                                            <button
-                                              key={item.id}
-                                              type="button"
-                                              disabled={locked}
-                                              onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); } }}
+                                            <button key={item.id} type="button" disabled={locked}
+                                              onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(null); } }}
                                               className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
-                                              style={{ borderColor: locked ? "#374151" : ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
-                                            >
+                                              style={{ borderColor: locked ? "#374151" : isOn ? UPG_COLOR[curUpg] : "#8b6a3e", background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}>
                                               <span className="text-lg">{locked ? "🔒" : item.icon}</span>
                                               <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : ir.text }}>{item.name}</p>
-                                                <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>{locked ? `Odblokuj na lvl ${item.unlockLevel}` : item.effect}</p>
+                                                <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : isOn ? UPG_COLOR[curUpg] : "#d1d5db" }}>{item.name}</p>
+                                                <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>
+                                                  {locked ? `Odblokuj na lvl ${item.unlockLevel}` : bonusLine(item.bonuses, 0)}
+                                                </p>
                                               </div>
-                                              {!locked && isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
-                                              {!locked && !isOn && <span className="text-[10px]" style={{ color: ir.text }}>{RARITY_STYLE[item.rarity].label}</span>}
+                                              {!locked && isOn && <span className="text-[10px] font-black" style={{ color: UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
                                             </button>
                                           );
                                         })}
@@ -4798,58 +4851,86 @@ export default function Page() {
                       <div className="mt-2 flex flex-col gap-2">
                         {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
                           const meta = EQUIP_SLOT_META[slot];
-                          const equippedId = charEquipped[slot];
-                          const equippedItem = equippedId ? CHAR_EQUIP_ITEMS.find(i => i.id === equippedId) : null;
-                          const rs = equippedItem ? RARITY_STYLE[equippedItem.rarity] : null;
+                          const eqData = charEquipped[slot];
+                          const equippedItem = eqData ? CHAR_EQUIP_ITEMS.find(i => i.id === eqData.id) : null;
+                          const upg = eqData?.upg ?? 0;
+                          const upgCol = UPG_COLOR[upg] ?? "#6b7280";
                           const isPickingThis = equippingSlot === slot;
                           return (
                             <div key={slot}>
-                              <div
-                                className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
-                                style={{ borderColor: rs ? rs.border : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
-                                onClick={() => setEquippingSlot(isPickingThis ? null : slot)}
-                              >
+                              {/* Slot card */}
+                              <div className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
+                                style={{ borderColor: eqData ? upgCol : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
+                                onClick={() => setEquippingSlot(isPickingThis ? null : slot)}>
                                 <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] uppercase tracking-widest" style={{ color: rs ? rs.text : "#8b6a3e" }}>
-                                    {meta.label} {rs ? `· ${RARITY_STYLE[equippedItem!.rarity].label}` : "· Pusty"}
-                                  </p>
-                                  <p className="text-xs font-bold text-[#f9e7b2] truncate">
-                                    {equippedItem ? equippedItem.name : meta.desc}
-                                  </p>
-                                  {equippedItem && <p className="text-[10px] text-[#dfcfab] mt-0.5">{equippedItem.effect}</p>}
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-[11px] uppercase tracking-widest" style={{ color: eqData ? upgCol : "#8b6a3e" }}>{meta.label}</p>
+                                    {eqData
+                                      ? <span className="text-[11px] font-black px-1.5 rounded" style={{ background: upgCol+"33", color: upgCol }}>+{upg}</span>
+                                      : <span className="text-[11px] text-[#8b6a3e]">· Pusty</span>}
+                                  </div>
+                                  <p className="text-xs font-bold text-[#f9e7b2] truncate">{equippedItem ? equippedItem.name : meta.desc}</p>
+                                  {equippedItem && eqData && (
+                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(equippedItem.bonuses, upg)}</p>
+                                  )}
                                 </div>
-                                {equippedItem && (
-                                  <button
-                                    type="button"
-                                    onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
-                                    className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition"
-                                  >Zdejmij</button>
-                                )}
+                                {eqData && <button type="button" onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }} className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition">Zdejmij</button>}
                                 <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
                               </div>
+                              {/* Panel ulepszania */}
+                              {equippedItem && eqData && !isPickingThis && (
+                                <div className="mt-1 ml-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                      <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Ulepszenie</p>
+                                      {upg < 10
+                                        ? <p className="text-xs font-bold text-[#f9e7b2]">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                        : <p className="text-xs font-black" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                    </div>
+                                    {upg < 10 && (
+                                      <button type="button"
+                                        onClick={async () => {
+                                          const nextU = upg+1; const cost = UPGRADE_COST[nextU];
+                                          if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                                          const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
+                                          if (me) return;
+                                          const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                                          let fu: number;
+                                          if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                                          else if (upg <= 6) { fu = upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${upg}.` }); }
+                                          else { fu = upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                                          saveCharEquipped({ ...charEquipped, [slot]: { id: eqData.id, upg: fu } });
+                                          await loadProfile(profile!.id);
+                                        }}
+                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-900/40 whitespace-nowrap">
+                                        ⚒ Ulepsz · {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                      </button>
+                                    )}
+                                  </div>
+                                  {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400 mt-1">⚠ Fail: item cofa się do +{upg-1}</p>}
+                                </div>
+                              )}
+                              {/* Lista itemów */}
                               {isPickingThis && (
                                 <div className="mt-1 ml-2 flex flex-col gap-1">
                                   {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                    const ir = RARITY_STYLE[item.rarity];
-                                    const isOn = charEquipped[slot] === item.id;
+                                    const isOn = charEquipped[slot]?.id === item.id;
                                     const locked = (profile?.level ?? 0) < item.unlockLevel;
+                                    const curUpg = isOn ? (charEquipped[slot]?.upg ?? 0) : 0;
                                     return (
-                                      <button
-                                        key={item.id}
-                                        type="button"
-                                        disabled={locked}
-                                        onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); } }}
+                                      <button key={item.id} type="button" disabled={locked}
+                                        onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(null); } }}
                                         className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
-                                        style={{ borderColor: locked ? "#374151" : ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
-                                      >
+                                        style={{ borderColor: locked ? "#374151" : isOn ? UPG_COLOR[curUpg] : "#8b6a3e", background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}>
                                         <span className="text-lg">{locked ? "🔒" : item.icon}</span>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : ir.text }}>{item.name}</p>
-                                          <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>{locked ? `Odblokuj na lvl ${item.unlockLevel}` : item.effect}</p>
+                                          <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : isOn ? UPG_COLOR[curUpg] : "#d1d5db" }}>{item.name}</p>
+                                          <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>
+                                            {locked ? `Odblokuj na lvl ${item.unlockLevel}` : bonusLine(item.bonuses, 0)}
+                                          </p>
                                         </div>
-                                        {!locked && isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
-                                        {!locked && !isOn && <span className="text-[10px]" style={{ color: ir.text }}>{RARITY_STYLE[item.rarity].label}</span>}
+                                        {!locked && isOn && <span className="text-[10px] font-black" style={{ color: UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
                                       </button>
                                     );
                                   })}
