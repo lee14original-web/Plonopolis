@@ -57,12 +57,11 @@ BEGIN
   -- Losowość po stronie serwera
   v_success   := random() < v_chance_arr[v_level];
 
-  -- honey_start: cofamy czas o tyle, ile miodu NIE zebraliśmy (bo nie mieliśmy słoików)
-  -- Dzięki temu nagromadzony miód ponad zebrane nie przepada
+  -- honey_start: przesuwamy start o zebrane godziny — zachowuje ułamkowy postęp kolejnej godziny
   v_new_hive := jsonb_build_object(
     'level',           v_level,
     'bees_progress',   v_bees_progress,
-    'honey_start',     v_now_ms - (v_honey_avail - v_collected)::bigint * v_ms_per_pt,
+    'honey_start',     v_honey_start + v_collected::bigint * v_ms_per_pt,
     'suit_durability', GREATEST(0, v_suit - v_collected),
     'empty_jars',      v_empty_jars - v_collected,
     'honey_jars',      CASE WHEN v_success THEN v_honey_jars + v_collected ELSE v_honey_jars END

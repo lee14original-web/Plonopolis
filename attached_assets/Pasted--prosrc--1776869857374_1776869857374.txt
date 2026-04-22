@@ -1,0 +1,67 @@
+| prosrc                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 
+DECLARE
+  v_hive            jsonb;
+  v_level           int;
+  v_honey_start     bigint;
+  v_suit            int;
+  v_empty_jars      int;
+  v_honey_jars      int;
+  v_bees_progress   int;
+  v_now_ms          bigint;
+  v_elapsed_ms      bigint;
+  v_honey_avail     int;
+  v_max_honey       int;
+  v_ms_per_pt       bigint := 3600000;
+  v_collected       int;
+  v_success         boolean;
+  v_max_arr         int[]   := ARRAY[0, 8, 10, 12, 14, 16];
+  v_chance_arr      float[] := ARRAY[0, 0.90, 0.80, 0.70, 0.60, 0.50];
+  v_new_hive        jsonb;
+BEGIN
+  SELECT hive_data INTO v_hive
+  FROM profiles WHERE id = p_user_id FOR UPDATE;
+
+  IF v_hive IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_hive');
+  END IF;
+
+  v_level         := COALESCE((v_hive->>'level')::int, 1);
+  v_honey_start   := (v_hive->>'honey_start')::bigint;
+  v_suit          := COALESCE((v_hive->>'suit_durability')::int, 0);
+  v_empty_jars    := COALESCE((v_hive->>'empty_jars')::int, 0);
+  v_honey_jars    := COALESCE((v_hive->>'honey_jars')::int, 0);
+  v_bees_progress := COALESCE((v_hive->>'bees_progress')::int, 0);
+
+  v_now_ms      := EXTRACT(EPOCH FROM NOW())::bigint * 1000;
+  v_elapsed_ms  := GREATEST(0, v_now_ms - COALESCE(v_honey_start, v_now_ms));
+  v_max_honey   := v_max_arr[v_level];
+  v_honey_avail := LEAST((v_elapsed_ms / v_ms_per_pt)::int, v_max_honey);
+
+  IF v_honey_avail <= 0 THEN RETURN jsonb_build_object('ok', false, 'error', 'no_honey'); END IF;
+  IF v_empty_jars  <= 0 THEN RETURN jsonb_build_object('ok', false, 'error', 'no_jars');  END IF;
+  IF v_suit        <= 0 THEN RETURN jsonb_build_object('ok', false, 'error', 'no_suit');  END IF;
+
+  v_collected := LEAST(v_honey_avail, v_empty_jars);
+  v_success   := random() < v_chance_arr[v_level];
+
+  v_new_hive := jsonb_build_object(
+    'level',           v_level,
+    'bees_progress',   v_bees_progress,
+    'honey_start',     v_now_ms - (v_honey_avail - v_collected)::bigint * v_ms_per_pt,
+    'suit_durability', GREATEST(0, v_suit - v_collected),
+    'empty_jars',      v_empty_jars - v_collected,
+    'honey_jars',      CASE WHEN v_success THEN v_honey_jars + v_collected ELSE v_honey_jars END
+  );
+
+  UPDATE profiles SET hive_data = v_new_hive WHERE id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'ok',        true,
+    'success',   v_success,
+    'collected', v_collected,
+    'hive_data', v_new_hive
+  );
+END;
+ |
