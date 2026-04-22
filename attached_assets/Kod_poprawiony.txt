@@ -284,6 +284,7 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
   return { dlonie: parseSlot(r.dlonie), nogi: parseSlot(r.nogi), glowa: parseSlot(r.glowa) };
 }
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
+const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -1167,7 +1168,21 @@ export default function Page() {
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
+  const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>(() => {
+    try { const s = localStorage.getItem(ITEM_UPG_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
+  const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); try { localStorage.setItem(ITEM_UPG_KEY, JSON.stringify(reg)); } catch { /* ignore */ } };
+  const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
+  React.useEffect(() => {
+    const merged: Record<string,number> = { ...itemUpgRegistry };
+    let changed = false;
+    (["dlonie","nogi","glowa"] as EquipSlot[]).forEach(slot => {
+      const eq = charEquipped[slot];
+      if (eq && eq.upg > 0 && (merged[eq.id] ?? 0) < eq.upg) { merged[eq.id] = eq.upg; changed = true; }
+    });
+    if (changed) saveItemUpg(merged);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -4917,6 +4932,7 @@ export default function Page() {
                       else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
                       else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
                       saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
+                      saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
                       await loadProfile(profile.id);
                     };
                     return (
@@ -4951,7 +4967,7 @@ export default function Page() {
                                     const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
                                     if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
                                     const existing = charEquipped[slot];
-                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: 0 } });
+                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: getItemUpg(di.id) } });
                                     setDraggedItemId(null);
                                   }}
                                   onClick={() => setEquippingSlot(isSel ? null : slot)}
@@ -5014,22 +5030,23 @@ export default function Page() {
                                 {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
                                   const isOn = charEquipped[slot]?.id === item.id;
                                   const locked = (profile?.level??0) < item.unlockLevel;
-                                  const curUpg = isOn ? (charEquipped[slot]?.upg??0) : 0;
+                                  const regUpg = getItemUpg(item.id);
+                                  const curUpg = isOn ? (charEquipped[slot]?.upg ?? regUpg) : regUpg;
                                   const isDragging = draggedItemId === item.id;
                                   return (
                                     <div key={item.id}
                                       draggable={!locked}
                                       onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
                                       onDragEnd={() => setDraggedItemId(null)}
-                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(isOn ? null : slot); }}
+                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: getItemUpg(item.id) } }); setEquippingSlot(isOn ? null : slot); }}
                                       className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
                                       style={{ borderColor:locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background:isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
                                       <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
                                       <div className="flex-1 min-w-0">
                                         <p className="text-[10px] font-bold truncate" style={{ color:locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
-                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses,0)}</p>
+                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses, curUpg)}</p>
                                       </div>
-                                      {!locked && isOn && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
+                                      {!locked && curUpg > 0 && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>{isOn?"✓ ":""} +{curUpg}</span>}
                                     </div>
                                   );
                                 })}
