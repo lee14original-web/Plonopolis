@@ -203,7 +203,7 @@ const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 type EquipSlot = "dlonie" | "nogi" | "glowa";
 type ItemRarity = "zwykly" | "rzadki" | "epicki" | "legendarny";
 interface CharEquipItem {
-  id: string; name: string; slot: EquipSlot; rarity: ItemRarity; icon: string; effect: string;
+  id: string; name: string; slot: EquipSlot; rarity: ItemRarity; icon: string; effect: string; unlockLevel: number;
 }
 type CharEquipped = Record<EquipSlot, string | null>;
 const RARITY_STYLE: Record<ItemRarity,{border:string;text:string;label:string}> = {
@@ -213,21 +213,42 @@ const RARITY_STYLE: Record<ItemRarity,{border:string;text:string;label:string}> 
   legendarny: { border:"#fbbf24", text:"#fbbf24", label:"Legendarny"  },
 };
 const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
-  // DŁONIE
-  { id:"rekawice_zw", name:"Robocze rękawice",  slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+3% szybkości zbiorów" },
-  { id:"rekawice_rz", name:"Skórzane rękawice", slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+7% szybkości zbiorów" },
-  { id:"rekawice_ep", name:"Rękawice mistrza",  slot:"dlonie", rarity:"epicki",     icon:"🧤", effect:"+15% szybkości zbiorów · +5% jakości" },
-  { id:"rekawice_le", name:"Złote rękawice",    slot:"dlonie", rarity:"legendarny", icon:"🧤", effect:"+25% szybkości zbiorów · +12% jakości" },
-  // NOGI
-  { id:"buty_zw", name:"Robocze buty",    slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+3% szybkości gry" },
-  { id:"buty_rz", name:"Skórzane buty",   slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+7% szybkości gry" },
-  { id:"buty_ep", name:"Buty szybkości",  slot:"nogi", rarity:"epicki",     icon:"👢", effect:"+15% szybkości gry · -5% czasu wzrostu" },
-  { id:"buty_le", name:"Złote buty",      slot:"nogi", rarity:"legendarny", icon:"👢", effect:"+25% szybkości gry · -10% czasu wzrostu" },
-  // GŁOWA
-  { id:"kapelusz_zw", name:"Słomkowy kapelusz", slot:"glowa", rarity:"zwykly",     icon:"🪖", effect:"+3% XP" },
-  { id:"kapelusz_rz", name:"Czapka farmera",    slot:"glowa", rarity:"rzadki",     icon:"🪖", effect:"+7% XP" },
-  { id:"kapelusz_ep", name:"Kapelusz stratega", slot:"glowa", rarity:"epicki",     icon:"🪖", effect:"+15% XP · +5% złota" },
-  { id:"kapelusz_le", name:"Złota korona",      slot:"glowa", rarity:"legendarny", icon:"👑", effect:"+25% XP · +15% złota" },
+  // DŁONIE (LVL 1–25)
+  { id:"d1",  name:"Spracowane Rękawice",        slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+2% speed zbioru",                      unlockLevel:1  },
+  { id:"d2",  name:"Rękawice Rolnika",            slot:"dlonie", rarity:"zwykly",     icon:"🧤", effect:"+3% speed zbioru",                      unlockLevel:3  },
+  { id:"d3",  name:"Łopata Ogrodnika",            slot:"dlonie", rarity:"zwykly",     icon:"🌿", effect:"+4% speed sadzenia",                    unlockLevel:5  },
+  { id:"d4",  name:"Rękawice Urodzaju",           slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+2% szansy na dodatkowy plon",          unlockLevel:7  },
+  { id:"d5",  name:"Sekator Sadu",                slot:"dlonie", rarity:"rzadki",     icon:"✂️", effect:"+5% zysku z drzew",                    unlockLevel:10 },
+  { id:"d6",  name:"Rękawice Zbieracza",          slot:"dlonie", rarity:"rzadki",     icon:"🧤", effect:"+5% speed zbioru",                      unlockLevel:12 },
+  { id:"d7",  name:"Rękawice Hodowcy",            slot:"dlonie", rarity:"epicki",     icon:"🧤", effect:"-5% czasu zwierząt",                    unlockLevel:15 },
+  { id:"d8",  name:"Złoty Sekator",               slot:"dlonie", rarity:"epicki",     icon:"✂️", effect:"+8% zysku z drzew",                    unlockLevel:18 },
+  { id:"d9",  name:"Rękawice Pszczelarza",        slot:"dlonie", rarity:"epicki",     icon:"🐝", effect:"-20% zużycia stroju pszczelarza",       unlockLevel:20 },
+  { id:"d10", name:"Rękawice Obfitości",          slot:"dlonie", rarity:"legendarny", icon:"🧤", effect:"+4% szansy na dodatkowy plon",          unlockLevel:22 },
+  { id:"d11", name:"Mistyczne Rękawice Farmera",  slot:"dlonie", rarity:"legendarny", icon:"✨", effect:"+8% speed zbioru · +2% double harvest", unlockLevel:25 },
+  // NOGI (LVL 1–25)
+  { id:"n1",  name:"Stare Kalosze",               slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+1% speed upraw",            unlockLevel:1  },
+  { id:"n2",  name:"Kalosze Rolnika",             slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+2% speed upraw",            unlockLevel:4  },
+  { id:"n3",  name:"Buty Polowe",                 slot:"nogi", rarity:"zwykly",     icon:"👢", effect:"+3% efektywności wody",      unlockLevel:6  },
+  { id:"n4",  name:"Buty Zbieracza",              slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+2% speed zbioru",           unlockLevel:8  },
+  { id:"n5",  name:"Skórzane Buty Farmera",       slot:"nogi", rarity:"rzadki",     icon:"🥾", effect:"+3% speed upraw",            unlockLevel:10 },
+  { id:"n6",  name:"Buty Błotne",                 slot:"nogi", rarity:"rzadki",     icon:"👢", effect:"+8% efektu podlewania",      unlockLevel:13 },
+  { id:"n7",  name:"Ostrogi Hodowcy",             slot:"nogi", rarity:"epicki",     icon:"⚡", effect:"+5% reward zwierząt",        unlockLevel:15 },
+  { id:"n8",  name:"Szybkie Kalosze",             slot:"nogi", rarity:"epicki",     icon:"👢", effect:"+5% speed upraw",            unlockLevel:17 },
+  { id:"n9",  name:"Buty Sadownika",              slot:"nogi", rarity:"epicki",     icon:"🥾", effect:"+6% bonusu drzew",           unlockLevel:20 },
+  { id:"n10", name:"Buty Zaradności",             slot:"nogi", rarity:"legendarny", icon:"👢", effect:"+12% efektu podlewania",     unlockLevel:23 },
+  { id:"n11", name:"Legendarne Kalosze Plonów",   slot:"nogi", rarity:"legendarny", icon:"👑", effect:"+8% speed upraw",            unlockLevel:25 },
+  // GŁOWA (LVL 1–25)
+  { id:"g1",  name:"Słomkowy Kapelusz",           slot:"glowa", rarity:"zwykly",     icon:"👒", effect:"+3% EXP z upraw",                      unlockLevel:1  },
+  { id:"g2",  name:"Kapelusz Rolnika",            slot:"glowa", rarity:"zwykly",     icon:"👒", effect:"+5% EXP z upraw",                      unlockLevel:3  },
+  { id:"g3",  name:"Czapka Pomocnika",            slot:"glowa", rarity:"zwykly",     icon:"🎩", effect:"+2 pkt Wiedzy",                        unlockLevel:5  },
+  { id:"g4",  name:"Kapelusz Pogody",             slot:"glowa", rarity:"rzadki",     icon:"🎩", effect:"+3% speed upraw",                      unlockLevel:7  },
+  { id:"g5",  name:"Kapelusz Pszczelarza",        slot:"glowa", rarity:"rzadki",     icon:"🐝", effect:"+10% produkcji miodu",                 unlockLevel:10 },
+  { id:"g6",  name:"Kapelusz Stratega",           slot:"glowa", rarity:"rzadki",     icon:"🎩", effect:"+3 pkt Wiedzy",                        unlockLevel:12 },
+  { id:"g7",  name:"Czapka Szczęścia",            slot:"glowa", rarity:"epicki",     icon:"🍀", effect:"+3% bonus drop chance",               unlockLevel:15 },
+  { id:"g8",  name:"Kapelusz Hodowcy",            slot:"glowa", rarity:"epicki",     icon:"🎩", effect:"+5% reward zwierząt",                  unlockLevel:18 },
+  { id:"g9",  name:"Korona Sadownika",            slot:"glowa", rarity:"epicki",     icon:"👑", effect:"+8% zysku z drzew",                    unlockLevel:20 },
+  { id:"g10", name:"Hełm Obfitych Plonów",        slot:"glowa", rarity:"legendarny", icon:"⛑️", effect:"+5% EXP · +2% extra harvest",         unlockLevel:22 },
+  { id:"g11", name:"Kapelusz Mistrza Farmy",      slot:"glowa", rarity:"legendarny", icon:"🎓", effect:"+5 pkt Wiedzy · +5% EXP",             unlockLevel:25 },
 ];
 const EQUIP_SLOT_META: Record<EquipSlot,{label:string;icon:string;desc:string}> = {
   dlonie: { label:"Dłonie", icon:"🧤", desc:"Rękawice, narzędzia, przedmioty robocze" },
@@ -3865,20 +3886,23 @@ export default function Page() {
                                         {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
                                           const ir = RARITY_STYLE[item.rarity];
                                           const isOn = charEquipped[slot] === item.id;
+                                          const locked = (profile?.level ?? 0) < item.unlockLevel;
                                           return (
                                             <button
                                               key={item.id}
                                               type="button"
-                                              onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); }}
-                                              className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition hover:bg-white/5"
-                                              style={{ borderColor: ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
+                                              disabled={locked}
+                                              onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); } }}
+                                              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
+                                              style={{ borderColor: locked ? "#374151" : ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
                                             >
-                                              <span className="text-lg">{item.icon}</span>
+                                              <span className="text-lg">{locked ? "🔒" : item.icon}</span>
                                               <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold truncate" style={{ color: ir.text }}>{item.name}</p>
-                                                <p className="text-[10px] text-[#9ca3af]">{item.effect}</p>
+                                                <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : ir.text }}>{item.name}</p>
+                                                <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>{locked ? `Odblokuj na lvl ${item.unlockLevel}` : item.effect}</p>
                                               </div>
-                                              {isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                              {!locked && isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                              {!locked && !isOn && <span className="text-[10px]" style={{ color: ir.text }}>{RARITY_STYLE[item.rarity].label}</span>}
                                             </button>
                                           );
                                         })}
@@ -4797,20 +4821,23 @@ export default function Page() {
                                   {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
                                     const ir = RARITY_STYLE[item.rarity];
                                     const isOn = charEquipped[slot] === item.id;
+                                    const locked = (profile?.level ?? 0) < item.unlockLevel;
                                     return (
                                       <button
                                         key={item.id}
                                         type="button"
-                                        onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); }}
-                                        className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition hover:bg-white/5"
-                                        style={{ borderColor: ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
+                                        disabled={locked}
+                                        onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : item.id }); setEquippingSlot(null); } }}
+                                        className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
+                                        style={{ borderColor: locked ? "#374151" : ir.border, background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}
                                       >
-                                        <span className="text-lg">{item.icon}</span>
+                                        <span className="text-lg">{locked ? "🔒" : item.icon}</span>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-bold truncate" style={{ color: ir.text }}>{item.name}</p>
-                                          <p className="text-[10px] text-[#9ca3af]">{item.effect}</p>
+                                          <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : ir.text }}>{item.name}</p>
+                                          <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>{locked ? `Odblokuj na lvl ${item.unlockLevel}` : item.effect}</p>
                                         </div>
-                                        {isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                        {!locked && isOn && <span className="text-[10px] text-green-400 font-bold">✓ Założony</span>}
+                                        {!locked && !isOn && <span className="text-[10px]" style={{ color: ir.text }}>{RARITY_STYLE[item.rarity].label}</span>}
                                       </button>
                                     );
                                   })}
