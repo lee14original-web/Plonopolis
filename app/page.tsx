@@ -4943,7 +4943,7 @@ export default function Page() {
                           <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:1536, height:1024, background:"rgba(10,6,2,0.6)" }}>
                             <img src="/ekwip_postac.png" alt="Postać" draggable={false}
                               className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
-                            {(["glowa","dlonie","nogi"]).map(slot => {
+                            {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
                               const box = SLOT_BOX[slot];
                               const eqD = charEquipped[slot];
                               const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
@@ -5023,7 +5023,7 @@ export default function Page() {
                           })()}
                           {/* Lista itemów */}
                           <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
-                          {(["dlonie","nogi","glowa"]).map(slot => (
+                          {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
                             <div key={slot}>
                               <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
                               <div className="flex flex-col gap-0.5">
