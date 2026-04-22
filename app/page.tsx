@@ -284,6 +284,7 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
   return { dlonie: parseSlot(r.dlonie), nogi: parseSlot(r.nogi), glowa: parseSlot(r.glowa) };
 }
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
+const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -1159,7 +1160,7 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
-    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"ekwipunek">("uprawy");
+    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
     const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
   const [charEquipped, setCharEquipped] = React.useState<CharEquipped>(() => {
     try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
@@ -1167,7 +1168,21 @@ export default function Page() {
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
+  const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>(() => {
+    try { const s = localStorage.getItem(ITEM_UPG_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
+  const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); try { localStorage.setItem(ITEM_UPG_KEY, JSON.stringify(reg)); } catch { /* ignore */ } };
+  const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
+  React.useEffect(() => {
+    const merged: Record<string,number> = { ...itemUpgRegistry };
+    let changed = false;
+    (["dlonie","nogi","glowa"] as EquipSlot[]).forEach(slot => {
+      const eq = charEquipped[slot];
+      if (eq && eq.upg > 0 && (merged[eq.id] ?? 0) < eq.upg) { merged[eq.id] = eq.upg; changed = true; }
+    });
+    if (changed) saveItemUpg(merged);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
@@ -3681,16 +3696,16 @@ export default function Page() {
                           </button>
                         </div>
 
-                        {/* Zakładki Uprawy / Przedmioty / Ekwipunek */}
+                        {/* Zakładki Uprawy / Przedmioty */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty","ekwipunek"] as const).map(tab => (
+                            {(["uprawy","przedmioty"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
                                 onClick={() => setBackpackTab(tab)}
                                 className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                               >
-                                {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "⚔️ Ekwip."}
+                                {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
                               </button>
                             ))}
                           </div>
@@ -3885,146 +3900,6 @@ export default function Page() {
                             </div>
                           )}
 
-                          {/* ZAKŁADKA: EKWIPUNEK */}
-                          {backpackTab === "ekwipunek" && (() => {
-                            // ── HITBOXY (px) — dostosuj do swojej grafiki ──
-                            const SLOT_BOX: Record<EquipSlot,{top:number;left:number;width:number;height:number}> = {
-                              glowa:  { top:8,   left:62,  width:76,  height:82  },
-                              dlonie: { top:145, left:8,   width:60,  height:90  },
-                              nogi:   { top:215, left:55,  width:92,  height:120 },
-                            };
-                            const handleUpg = async (slot: EquipSlot, eqD: {id:string;upg:number}) => {
-                              const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
-                              if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
-                              const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
-                              if (me) return;
-                              const ok = Math.random() < UPGRADE_CHANCE[nextU];
-                              let fu: number;
-                              if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                              else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
-                              else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
-                              saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
-                              await loadProfile(profile!.id);
-                            };
-                            return (
-                              <div className="mt-2 flex flex-col gap-3">
-                                {/* ── Grafika postaci z hitboxami ── */}
-                                {/* Umieść grafikę w public/ekwip_postac.png */}
-                                <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:200, height:340, background:"rgba(10,6,2,0.6)" }}>
-                                  <img src="/ekwip_postac.png" alt="Postać" draggable={false}
-                                    className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
-                                  {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
-                                    const box = SLOT_BOX[slot];
-                                    const eqD = charEquipped[slot];
-                                    const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
-                                    const upg = eqD?.upg ?? 0;
-                                    const uc = UPG_COLOR[upg] ?? "#6b7280";
-                                    const isOver = dragOverSlot === slot;
-                                    const isSel = equippingSlot === slot;
-                                    return (
-                                      <div key={slot}
-                                        className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
-                                        style={{
-                                          top:box.top, left:box.left, width:box.width, height:box.height,
-                                          border: `2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
-                                          background: isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
-                                        }}
-                                        onDragOver={e => { e.preventDefault(); setDragOverSlot(slot); }}
-                                        onDragLeave={() => setDragOverSlot(null)}
-                                        onDrop={e => {
-                                          e.preventDefault(); setDragOverSlot(null);
-                                          if (!draggedItemId) return;
-                                          const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
-                                          if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
-                                          const existing = charEquipped[slot];
-                                          saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: existing?.id === di.id ? (existing?.upg??0) : 0 } });
-                                          setDraggedItemId(null);
-                                        }}
-                                        onClick={() => setEquippingSlot(isSel ? null : slot)}
-                                      >
-                                        {eItem ? (
-                                          <>
-                                            <span className="text-xl leading-none">{eItem.icon}</span>
-                                            <span className="text-[9px] font-black mt-0.5" style={{ color: uc }}>+{upg}</span>
-                                            <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
-                                          </>
-                                        ) : (
-                                          <span className="text-[9px] text-[#8b6a3e] text-center">{EQUIP_SLOT_META[slot].icon}{"\n"}{EQUIP_SLOT_META[slot].label}</span>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                {/* ── Panel ulepszania wybranego slotu ── */}
-                                {equippingSlot && charEquipped[equippingSlot] && (() => {
-                                  const slot = equippingSlot!;
-                                  const eqD = charEquipped[slot]!;
-                                  const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
-                                  if (!eItem) return null;
-                                  const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
-                                  return (
-                                    <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="text-base">{eItem.icon}</span>
-                                            <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
-                                            <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
-                                          </div>
-                                          <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
-                                          {upg < 10
-                                            ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
-                                            : <p className="text-[11px] font-black mt-1" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
-                                          {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
-                                        </div>
-                                        <div className="flex flex-col gap-1 shrink-0">
-                                          {upg < 10 && (
-                                            <button type="button" onClick={() => handleUpg(slot, eqD)}
-                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                              ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
-                                            </button>
-                                          )}
-                                          <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
-                                            className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                                {/* ── Lista itemów (przeciągaj na postać lub kliknij) ── */}
-                                <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
-                                {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
-                                  <div key={slot}>
-                                    <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
-                                    <div className="flex flex-col gap-0.5">
-                                      {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                        const isOn = charEquipped[slot]?.id === item.id;
-                                        const locked = (profile?.level??0) < item.unlockLevel;
-                                        const curUpg = isOn ? (charEquipped[slot]?.upg??0) : 0;
-                                        const isDragging = draggedItemId === item.id;
-                                        return (
-                                          <div key={item.id}
-                                            draggable={!locked}
-                                            onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
-                                            onDragEnd={() => setDraggedItemId(null)}
-                                            onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(isOn ? null : slot); }}
-                                            className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
-                                            style={{ borderColor: locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background: isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
-                                            <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
-                                            <div className="flex-1 min-w-0">
-                                              <p className="text-[10px] font-bold truncate" style={{ color: locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
-                                              <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses,0)}</p>
-                                            </div>
-                                            {!locked && isOn && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })()}
                       </div>
                     </div>
                   </div>
@@ -4788,10 +4663,10 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty","ekwipunek"] as const).map(tab => (
+                      {(["uprawy","przedmioty"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "⚔️ Ekwip."}
+                          {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
                         </button>
                       ))}
                     </div>
@@ -4893,141 +4768,6 @@ export default function Page() {
                         )}
                       </div>
                     )}
-                    {/* ZAKŁADKA: EKWIPUNEK (miasto) */}
-                    {backpackTab === "ekwipunek" && (() => {
-                      const SLOT_BOX: Record<EquipSlot,{top:number;left:number;width:number;height:number}> = {
-                        glowa:  { top:8,   left:62,  width:76,  height:82  },
-                        dlonie: { top:145, left:8,   width:60,  height:90  },
-                        nogi:   { top:215, left:55,  width:92,  height:120 },
-                      };
-                      const handleUpg = async (slot: EquipSlot, eqD: {id:string;upg:number}) => {
-                        const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
-                        if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
-                        const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
-                        if (me) return;
-                        const ok = Math.random() < UPGRADE_CHANCE[nextU];
-                        let fu: number;
-                        if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                        else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
-                        else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
-                        saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
-                        await loadProfile(profile!.id);
-                      };
-                      return (
-                        <div className="mt-2 flex flex-col gap-3">
-                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:200, height:340, background:"rgba(10,6,2,0.6)" }}>
-                            <img src="/ekwip_postac.png" alt="Postać" draggable={false}
-                              className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
-                            {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
-                              const box = SLOT_BOX[slot];
-                              const eqD = charEquipped[slot];
-                              const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
-                              const upg = eqD?.upg ?? 0;
-                              const uc = UPG_COLOR[upg] ?? "#6b7280";
-                              const isOver = dragOverSlot === slot;
-                              const isSel = equippingSlot === slot;
-                              return (
-                                <div key={slot}
-                                  className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
-                                  style={{
-                                    top:box.top, left:box.left, width:box.width, height:box.height,
-                                    border:`2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
-                                    background:isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
-                                  }}
-                                  onDragOver={e => { e.preventDefault(); setDragOverSlot(slot); }}
-                                  onDragLeave={() => setDragOverSlot(null)}
-                                  onDrop={e => {
-                                    e.preventDefault(); setDragOverSlot(null);
-                                    if (!draggedItemId) return;
-                                    const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
-                                    if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
-                                    const existing = charEquipped[slot];
-                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: 0 } });
-                                    setDraggedItemId(null);
-                                  }}
-                                  onClick={() => setEquippingSlot(isSel ? null : slot)}
-                                >
-                                  {eItem ? (
-                                    <>
-                                      <span className="text-xl leading-none">{eItem.icon}</span>
-                                      <span className="text-[9px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
-                                      <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
-                                    </>
-                                  ) : (
-                                    <span className="text-[9px] text-[#8b6a3e] text-center">{EQUIP_SLOT_META[slot].icon}{"\n"}{EQUIP_SLOT_META[slot].label}</span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                          {equippingSlot && charEquipped[equippingSlot] && (() => {
-                            const slot = equippingSlot!;
-                            const eqD = charEquipped[slot]!;
-                            const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
-                            if (!eItem) return null;
-                            const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
-                            return (
-                              <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-base">{eItem.icon}</span>
-                                      <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
-                                      <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
-                                    </div>
-                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
-                                    {upg < 10
-                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
-                                      : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
-                                    {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
-                                  </div>
-                                  <div className="flex flex-col gap-1 shrink-0">
-                                    {upg < 10 && (
-                                      <button type="button" onClick={() => handleUpg(slot, eqD)}
-                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                        ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
-                                      </button>
-                                    )}
-                                    <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
-                                      className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                          <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
-                          {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
-                            <div key={slot}>
-                              <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
-                              <div className="flex flex-col gap-0.5">
-                                {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                  const isOn = charEquipped[slot]?.id === item.id;
-                                  const locked = (profile?.level??0) < item.unlockLevel;
-                                  const curUpg = isOn ? (charEquipped[slot]?.upg??0) : 0;
-                                  const isDragging = draggedItemId === item.id;
-                                  return (
-                                    <div key={item.id}
-                                      draggable={!locked}
-                                      onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
-                                      onDragEnd={() => setDraggedItemId(null)}
-                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(isOn ? null : slot); }}
-                                      className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
-                                      style={{ borderColor:locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background:isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
-                                      <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold truncate" style={{ color:locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
-                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses,0)}</p>
-                                      </div>
-                                      {!locked && isOn && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
                   </div>
                 </div>
               </div>
@@ -5175,72 +4915,148 @@ export default function Page() {
 
                   {/* ════ KOSMETYKA ════ */}
                   {/* ════ EKWIPUNEK ════ */}
-                  {domTab === "eq" && (
-                    <div>
-                      <p className="mb-2 text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
-                      <p className="mb-7 text-sm text-[#8b6a3e]">Sloty na narzędzia i przedmioty. Slot 1 jest darmowy. Pozostałe wymagają odblokowania.</p>
-                      <div className="grid grid-cols-7 gap-5">
-                        {Array.from({ length: 7 }).map((_, i) => {
-                          const slotNum = i + 1;
-                          const isUnlocked = slotNum <= equipmentSlots;
-                          const cost = EQ_SLOT_COSTS[i];
-                          const canAfford = displayMoney >= cost;
-                          const item = equipment[i] ?? null;
-                          return (
-                            <div key={i} className="flex flex-col items-center gap-2">
-                              <button
-                                disabled={!isUnlocked}
-                                onClick={() => {
-                                  if (!isUnlocked && slotNum === equipmentSlots + 1 && canAfford && profile?.id) {
-                                    void (async () => {
-                                      const { error } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
-                                      if (!error) {
-                                        const ns = equipmentSlots + 1;
-                                        setEquipmentSlots(ns);
-                                        saveHouseData(profile.id, ns, equipment);
-                                        await loadProfile(profile.id);
-                                      }
-                                    })();
-                                  }
-                                }}
-                                className={`relative flex h-36 w-full flex-col items-center justify-center rounded-2xl border-2 transition ${
-                                  isUnlocked
-                                    ? item ? "border-yellow-400/60 bg-yellow-900/10" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.6)] hover:bg-[rgba(30,18,10,0.8)]"
-                                    : slotNum === equipmentSlots + 1
-                                      ? canAfford ? "border-green-500/60 bg-green-950/30 hover:bg-green-950/50 cursor-pointer" : "border-[#8b6a3e]/30 bg-black/20 cursor-not-allowed opacity-60"
-                                      : "border-[#8b6a3e]/20 bg-black/10 cursor-not-allowed opacity-40"
-                                }`}
-                              >
-                                {isUnlocked ? (
-                                  item ? (
-                                    <span className="text-5xl">{item}</span>
+                  {domTab === "eq" && (() => {
+                    const SLOT_BOX = {
+                      glowa:  { top:8,   left:62,  width:76,  height:82  },
+                      dlonie: { top:145, left:8,   width:60,  height:90  },
+                      nogi:   { top:215, left:55,  width:92,  height:120 },
+                    };
+                    const handleUpg = async (slot, eqD) => {
+                      const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
+                      if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                      const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                      if (me) return;
+                      const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                      let fu;
+                      if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                      else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
+                      else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                      saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
+                      saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
+                      await loadProfile(profile.id);
+                    };
+                    return (
+                      <div>
+                        <p className="mb-3 text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
+                        <div className="flex flex-col gap-3">
+                          {/* Grafika postaci z hitboxami — plik: public/ekwip_postac.png */}
+                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:1536, height:1024, background:"rgba(10,6,2,0.6)" }}>
+                            <img src="/ekwip_postac.png" alt="Postać" draggable={false}
+                              className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
+                            {(["glowa","dlonie","nogi"]).map(slot => {
+                              const box = SLOT_BOX[slot];
+                              const eqD = charEquipped[slot];
+                              const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
+                              const upg = eqD?.upg ?? 0;
+                              const uc = UPG_COLOR[upg] ?? "#6b7280";
+                              const isOver = dragOverSlot === slot;
+                              const isSel = equippingSlot === slot;
+                              return (
+                                <div key={slot}
+                                  className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
+                                  style={{
+                                    top:box.top, left:box.left, width:box.width, height:box.height,
+                                    border:`2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
+                                    background:isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
+                                  }}
+                                  onDragOver={e => { e.preventDefault(); setDragOverSlot(slot); }}
+                                  onDragLeave={() => setDragOverSlot(null)}
+                                  onDrop={e => {
+                                    e.preventDefault(); setDragOverSlot(null);
+                                    if (!draggedItemId) return;
+                                    const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
+                                    if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
+                                    const existing = charEquipped[slot];
+                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: getItemUpg(di.id) } });
+                                    setDraggedItemId(null);
+                                  }}
+                                  onClick={() => setEquippingSlot(isSel ? null : slot)}
+                                >
+                                  {eItem ? (
+                                    <>
+                                      <span className="text-xl leading-none">{eItem.icon}</span>
+                                      <span className="text-[9px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
+                                      <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                    </>
                                   ) : (
-                                    <span className="text-4xl opacity-30">＋</span>
-                                  )
-                                ) : (
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className="text-3xl">🔒</span>
-                                    {slotNum === equipmentSlots + 1 && (
-                                      <span className={`text-xs font-bold ${canAfford ? "text-green-300" : "text-[#8b6a3e]"}`}>
-                                        {cost.toLocaleString("pl-PL")} 💰
-                                      </span>
-                                    )}
+                                    <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* Panel ulepszania wybranego slotu */}
+                          {equippingSlot && charEquipped[equippingSlot] && (() => {
+                            const slot = equippingSlot;
+                            const eqD = charEquipped[slot];
+                            const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
+                            if (!eItem) return null;
+                            const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
+                            return (
+                              <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-base">{eItem.icon}</span>
+                                      <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
+                                      <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
+                                    </div>
+                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
+                                    {upg < 10
+                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                      : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                    {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
                                   </div>
-                                )}
-                              </button>
-                              <span className={`text-xs font-bold ${isUnlocked ? "text-[#8b6a3e]" : "text-[#8b6a3e]/40"}`}>
-                                Slot {slotNum}{slotNum === 1 ? " (darmowy)" : ""}
-                              </span>
+                                  <div className="flex flex-col gap-1 shrink-0">
+                                    {upg < 10 && (
+                                      <button type="button" onClick={() => handleUpg(slot, eqD)}
+                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
+                                        ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                      </button>
+                                    )}
+                                    <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                      className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                          {/* Lista itemów */}
+                          <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
+                          {(["dlonie","nogi","glowa"]).map(slot => (
+                            <div key={slot}>
+                              <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
+                              <div className="flex flex-col gap-0.5">
+                                {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
+                                  const isOn = charEquipped[slot]?.id === item.id;
+                                  const locked = (profile?.level??0) < item.unlockLevel;
+                                  const regUpg = getItemUpg(item.id);
+                                  const curUpg = isOn ? (charEquipped[slot]?.upg ?? regUpg) : regUpg;
+                                  const isDragging = draggedItemId === item.id;
+                                  return (
+                                    <div key={item.id}
+                                      draggable={!locked}
+                                      onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
+                                      onDragEnd={() => setDraggedItemId(null)}
+                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: getItemUpg(item.id) } }); setEquippingSlot(isOn ? null : slot); }}
+                                      className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
+                                      style={{ borderColor:locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background:isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
+                                      <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold truncate" style={{ color:locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
+                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses, curUpg)}</p>
+                                      </div>
+                                      {!locked && curUpg > 0 && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>{isOn?"✓ ":""} +{curUpg}</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                      <div className="mt-9 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-6">
-                        <p className="mb-3 text-sm font-black text-[#f9e7b2]">📦 Itemy gracza</p>
-                        <p className="text-sm text-[#8b6a3e] opacity-70">Przedmioty zostaną dodane wkrótce. Sloty są gotowe.</p>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                 </div>
               </div>
