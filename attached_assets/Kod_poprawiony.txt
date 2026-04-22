@@ -1165,6 +1165,8 @@ export default function Page() {
     try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
   });
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
+  const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
+  const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
@@ -3884,100 +3886,145 @@ export default function Page() {
                           )}
 
                           {/* ZAKŁADKA: EKWIPUNEK */}
-                          {backpackTab === "ekwipunek" && (
-                            <div className="mt-2 flex flex-col gap-2">
-                              {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
-                                const meta = EQUIP_SLOT_META[slot];
-                                const eqData = charEquipped[slot];
-                                const equippedItem = eqData ? CHAR_EQUIP_ITEMS.find(i => i.id === eqData.id) : null;
-                                const upg = eqData?.upg ?? 0;
-                                const upgCol = UPG_COLOR[upg] ?? "#6b7280";
-                                const isPickingThis = equippingSlot === slot;
-                                return (
-                                  <div key={slot}>
-                                    {/* Slot card */}
-                                    <div className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
-                                      style={{ borderColor: eqData ? upgCol : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
-                                      onClick={() => setEquippingSlot(isPickingThis ? null : slot)}>
-                                      <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                          <p className="text-[11px] uppercase tracking-widest" style={{ color: eqData ? upgCol : "#8b6a3e" }}>{meta.label}</p>
-                                          {eqData
-                                            ? <span className="text-[11px] font-black px-1.5 rounded" style={{ background: upgCol+"33", color: upgCol }}>+{upg}</span>
-                                            : <span className="text-[11px] text-[#8b6a3e]">· Pusty</span>}
-                                        </div>
-                                        <p className="text-xs font-bold text-[#f9e7b2] truncate">{equippedItem ? equippedItem.name : meta.desc}</p>
-                                        {equippedItem && eqData && (
-                                          <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(equippedItem.bonuses, upg)}</p>
+                          {backpackTab === "ekwipunek" && (() => {
+                            // ── HITBOXY (px) — dostosuj do swojej grafiki ──
+                            const SLOT_BOX: Record<EquipSlot,{top:number;left:number;width:number;height:number}> = {
+                              glowa:  { top:8,   left:62,  width:76,  height:82  },
+                              dlonie: { top:145, left:8,   width:60,  height:90  },
+                              nogi:   { top:215, left:55,  width:92,  height:120 },
+                            };
+                            const handleUpg = async (slot: EquipSlot, eqD: {id:string;upg:number}) => {
+                              const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
+                              if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                              const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
+                              if (me) return;
+                              const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                              let fu: number;
+                              if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                              else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
+                              else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                              saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
+                              await loadProfile(profile!.id);
+                            };
+                            return (
+                              <div className="mt-2 flex flex-col gap-3">
+                                {/* ── Grafika postaci z hitboxami ── */}
+                                {/* Umieść grafikę w public/ekwip_postac.png */}
+                                <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:200, height:340, background:"rgba(10,6,2,0.6)" }}>
+                                  <img src="/ekwip_postac.png" alt="Postać" draggable={false}
+                                    className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
+                                  {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
+                                    const box = SLOT_BOX[slot];
+                                    const eqD = charEquipped[slot];
+                                    const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
+                                    const upg = eqD?.upg ?? 0;
+                                    const uc = UPG_COLOR[upg] ?? "#6b7280";
+                                    const isOver = dragOverSlot === slot;
+                                    const isSel = equippingSlot === slot;
+                                    return (
+                                      <div key={slot}
+                                        className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
+                                        style={{
+                                          top:box.top, left:box.left, width:box.width, height:box.height,
+                                          border: `2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
+                                          background: isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
+                                        }}
+                                        onDragOver={e => { e.preventDefault(); setDragOverSlot(slot); }}
+                                        onDragLeave={() => setDragOverSlot(null)}
+                                        onDrop={e => {
+                                          e.preventDefault(); setDragOverSlot(null);
+                                          if (!draggedItemId) return;
+                                          const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
+                                          if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
+                                          const existing = charEquipped[slot];
+                                          saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: existing?.id === di.id ? (existing?.upg??0) : 0 } });
+                                          setDraggedItemId(null);
+                                        }}
+                                        onClick={() => setEquippingSlot(isSel ? null : slot)}
+                                      >
+                                        {eItem ? (
+                                          <>
+                                            <span className="text-xl leading-none">{eItem.icon}</span>
+                                            <span className="text-[9px] font-black mt-0.5" style={{ color: uc }}>+{upg}</span>
+                                            <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                          </>
+                                        ) : (
+                                          <span className="text-[9px] text-[#8b6a3e] text-center">{EQUIP_SLOT_META[slot].icon}{"\n"}{EQUIP_SLOT_META[slot].label}</span>
                                         )}
                                       </div>
-                                      {eqData && <button type="button" onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }} className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition">Zdejmij</button>}
-                                      <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
-                                    </div>
-                                    {/* Panel ulepszania */}
-                                    {equippedItem && eqData && !isPickingThis && (
-                                      <div className="mt-1 ml-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                        <div className="flex items-center justify-between gap-2">
-                                          <div>
-                                            <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Ulepszenie</p>
-                                            {upg < 10
-                                              ? <p className="text-xs font-bold text-[#f9e7b2]">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
-                                              : <p className="text-xs font-black" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                    );
+                                  })}
+                                </div>
+                                {/* ── Panel ulepszania wybranego slotu ── */}
+                                {equippingSlot && charEquipped[equippingSlot] && (() => {
+                                  const slot = equippingSlot!;
+                                  const eqD = charEquipped[slot]!;
+                                  const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
+                                  if (!eItem) return null;
+                                  const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
+                                  return (
+                                    <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="text-base">{eItem.icon}</span>
+                                            <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
+                                            <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
                                           </div>
+                                          <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
+                                          {upg < 10
+                                            ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                            : <p className="text-[11px] font-black mt-1" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                          {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
+                                        </div>
+                                        <div className="flex flex-col gap-1 shrink-0">
                                           {upg < 10 && (
-                                            <button type="button"
-                                              onClick={async () => {
-                                                const nextU = upg+1; const cost = UPGRADE_COST[nextU];
-                                                if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
-                                                const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
-                                                if (me) return;
-                                                const ok = Math.random() < UPGRADE_CHANCE[nextU];
-                                                let fu: number;
-                                                if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                                                else if (upg <= 6) { fu = upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${upg}.` }); }
-                                                else { fu = upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
-                                                saveCharEquipped({ ...charEquipped, [slot]: { id: eqData.id, upg: fu } });
-                                                await loadProfile(profile!.id);
-                                              }}
-                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-900/40 whitespace-nowrap">
-                                              ⚒ Ulepsz · {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                            <button type="button" onClick={() => handleUpg(slot, eqD)}
+                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
+                                              ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
                                             </button>
                                           )}
+                                          <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                            className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
                                         </div>
-                                        {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400 mt-1">⚠ Fail: item cofa się do +{upg-1}</p>}
                                       </div>
-                                    )}
-                                    {/* Lista itemów */}
-                                    {isPickingThis && (
-                                      <div className="mt-1 ml-2 flex flex-col gap-1">
-                                        {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                          const isOn = charEquipped[slot]?.id === item.id;
-                                          const locked = (profile?.level ?? 0) < item.unlockLevel;
-                                          const curUpg = isOn ? (charEquipped[slot]?.upg ?? 0) : 0;
-                                          return (
-                                            <button key={item.id} type="button" disabled={locked}
-                                              onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(null); } }}
-                                              className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
-                                              style={{ borderColor: locked ? "#374151" : isOn ? UPG_COLOR[curUpg] : "#8b6a3e", background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}>
-                                              <span className="text-lg">{locked ? "🔒" : item.icon}</span>
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : isOn ? UPG_COLOR[curUpg] : "#d1d5db" }}>{item.name}</p>
-                                                <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>
-                                                  {locked ? `Odblokuj na lvl ${item.unlockLevel}` : bonusLine(item.bonuses, 0)}
-                                                </p>
-                                              </div>
-                                              {!locked && isOn && <span className="text-[10px] font-black" style={{ color: UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
+                                    </div>
+                                  );
+                                })()}
+                                {/* ── Lista itemów (przeciągaj na postać lub kliknij) ── */}
+                                <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
+                                {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
+                                  <div key={slot}>
+                                    <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
+                                    <div className="flex flex-col gap-0.5">
+                                      {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
+                                        const isOn = charEquipped[slot]?.id === item.id;
+                                        const locked = (profile?.level??0) < item.unlockLevel;
+                                        const curUpg = isOn ? (charEquipped[slot]?.upg??0) : 0;
+                                        const isDragging = draggedItemId === item.id;
+                                        return (
+                                          <div key={item.id}
+                                            draggable={!locked}
+                                            onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
+                                            onDragEnd={() => setDraggedItemId(null)}
+                                            onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(isOn ? null : slot); }}
+                                            className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
+                                            style={{ borderColor: locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background: isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
+                                            <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-[10px] font-bold truncate" style={{ color: locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
+                                              <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses,0)}</p>
+                                            </div>
+                                            {!locked && isOn && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                                ))}
+                              </div>
+                            );
+                          })()}
                       </div>
                     </div>
                   </div>
@@ -4847,100 +4894,140 @@ export default function Page() {
                       </div>
                     )}
                     {/* ZAKŁADKA: EKWIPUNEK (miasto) */}
-                    {backpackTab === "ekwipunek" && (
-                      <div className="mt-2 flex flex-col gap-2">
-                        {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => {
-                          const meta = EQUIP_SLOT_META[slot];
-                          const eqData = charEquipped[slot];
-                          const equippedItem = eqData ? CHAR_EQUIP_ITEMS.find(i => i.id === eqData.id) : null;
-                          const upg = eqData?.upg ?? 0;
-                          const upgCol = UPG_COLOR[upg] ?? "#6b7280";
-                          const isPickingThis = equippingSlot === slot;
-                          return (
-                            <div key={slot}>
-                              {/* Slot card */}
-                              <div className="flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer transition hover:bg-white/5"
-                                style={{ borderColor: eqData ? upgCol : "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
-                                onClick={() => setEquippingSlot(isPickingThis ? null : slot)}>
-                                <span className="text-2xl">{equippedItem ? equippedItem.icon : meta.icon}</span>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-[11px] uppercase tracking-widest" style={{ color: eqData ? upgCol : "#8b6a3e" }}>{meta.label}</p>
-                                    {eqData
-                                      ? <span className="text-[11px] font-black px-1.5 rounded" style={{ background: upgCol+"33", color: upgCol }}>+{upg}</span>
-                                      : <span className="text-[11px] text-[#8b6a3e]">· Pusty</span>}
-                                  </div>
-                                  <p className="text-xs font-bold text-[#f9e7b2] truncate">{equippedItem ? equippedItem.name : meta.desc}</p>
-                                  {equippedItem && eqData && (
-                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(equippedItem.bonuses, upg)}</p>
+                    {backpackTab === "ekwipunek" && (() => {
+                      const SLOT_BOX: Record<EquipSlot,{top:number;left:number;width:number;height:number}> = {
+                        glowa:  { top:8,   left:62,  width:76,  height:82  },
+                        dlonie: { top:145, left:8,   width:60,  height:90  },
+                        nogi:   { top:215, left:55,  width:92,  height:120 },
+                      };
+                      const handleUpg = async (slot: EquipSlot, eqD: {id:string;upg:number}) => {
+                        const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
+                        if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                        const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
+                        if (me) return;
+                        const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                        let fu: number;
+                        if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                        else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
+                        else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                        saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
+                        await loadProfile(profile!.id);
+                      };
+                      return (
+                        <div className="mt-2 flex flex-col gap-3">
+                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:200, height:340, background:"rgba(10,6,2,0.6)" }}>
+                            <img src="/ekwip_postac.png" alt="Postać" draggable={false}
+                              className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
+                            {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
+                              const box = SLOT_BOX[slot];
+                              const eqD = charEquipped[slot];
+                              const eItem = eqD ? CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id) : null;
+                              const upg = eqD?.upg ?? 0;
+                              const uc = UPG_COLOR[upg] ?? "#6b7280";
+                              const isOver = dragOverSlot === slot;
+                              const isSel = equippingSlot === slot;
+                              return (
+                                <div key={slot}
+                                  className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
+                                  style={{
+                                    top:box.top, left:box.left, width:box.width, height:box.height,
+                                    border:`2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
+                                    background:isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
+                                  }}
+                                  onDragOver={e => { e.preventDefault(); setDragOverSlot(slot); }}
+                                  onDragLeave={() => setDragOverSlot(null)}
+                                  onDrop={e => {
+                                    e.preventDefault(); setDragOverSlot(null);
+                                    if (!draggedItemId) return;
+                                    const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
+                                    if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
+                                    const existing = charEquipped[slot];
+                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: 0 } });
+                                    setDraggedItemId(null);
+                                  }}
+                                  onClick={() => setEquippingSlot(isSel ? null : slot)}
+                                >
+                                  {eItem ? (
+                                    <>
+                                      <span className="text-xl leading-none">{eItem.icon}</span>
+                                      <span className="text-[9px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
+                                      <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-[9px] text-[#8b6a3e] text-center">{EQUIP_SLOT_META[slot].icon}{"\n"}{EQUIP_SLOT_META[slot].label}</span>
                                   )}
                                 </div>
-                                {eqData && <button type="button" onClick={e => { e.stopPropagation(); saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }} className="rounded-full border border-red-500/50 px-2 py-0.5 text-[10px] text-red-400 hover:bg-red-900/30 transition">Zdejmij</button>}
-                                <span className="text-[#8b6a3e] text-xs">{isPickingThis ? "▲" : "▼"}</span>
-                              </div>
-                              {/* Panel ulepszania */}
-                              {equippedItem && eqData && !isPickingThis && (
-                                <div className="mt-1 ml-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div>
-                                      <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Ulepszenie</p>
-                                      {upg < 10
-                                        ? <p className="text-xs font-bold text-[#f9e7b2]">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
-                                        : <p className="text-xs font-black" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                              );
+                            })}
+                          </div>
+                          {equippingSlot && charEquipped[equippingSlot] && (() => {
+                            const slot = equippingSlot!;
+                            const eqD = charEquipped[slot]!;
+                            const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
+                            if (!eItem) return null;
+                            const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
+                            return (
+                              <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-base">{eItem.icon}</span>
+                                      <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
+                                      <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
                                     </div>
+                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
+                                    {upg < 10
+                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                      : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                    {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
+                                  </div>
+                                  <div className="flex flex-col gap-1 shrink-0">
                                     {upg < 10 && (
-                                      <button type="button"
-                                        onClick={async () => {
-                                          const nextU = upg+1; const cost = UPGRADE_COST[nextU];
-                                          if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
-                                          const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
-                                          if (me) return;
-                                          const ok = Math.random() < UPGRADE_CHANCE[nextU];
-                                          let fu: number;
-                                          if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                                          else if (upg <= 6) { fu = upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${upg}.` }); }
-                                          else { fu = upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
-                                          saveCharEquipped({ ...charEquipped, [slot]: { id: eqData.id, upg: fu } });
-                                          await loadProfile(profile!.id);
-                                        }}
-                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-900/40 whitespace-nowrap">
-                                        ⚒ Ulepsz · {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                      <button type="button" onClick={() => handleUpg(slot, eqD)}
+                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
+                                        ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
                                       </button>
                                     )}
+                                    <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                      className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
                                   </div>
-                                  {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400 mt-1">⚠ Fail: item cofa się do +{upg-1}</p>}
                                 </div>
-                              )}
-                              {/* Lista itemów */}
-                              {isPickingThis && (
-                                <div className="mt-1 ml-2 flex flex-col gap-1">
-                                  {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                    const isOn = charEquipped[slot]?.id === item.id;
-                                    const locked = (profile?.level ?? 0) < item.unlockLevel;
-                                    const curUpg = isOn ? (charEquipped[slot]?.upg ?? 0) : 0;
-                                    return (
-                                      <button key={item.id} type="button" disabled={locked}
-                                        onClick={() => { if (!locked) { saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(null); } }}
-                                        className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-left transition ${locked ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"}`}
-                                        style={{ borderColor: locked ? "#374151" : isOn ? UPG_COLOR[curUpg] : "#8b6a3e", background: isOn ? "rgba(60,40,5,0.4)" : "rgba(10,6,2,0.5)" }}>
-                                        <span className="text-lg">{locked ? "🔒" : item.icon}</span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-bold truncate" style={{ color: locked ? "#6b7280" : isOn ? UPG_COLOR[curUpg] : "#d1d5db" }}>{item.name}</p>
-                                          <p className="text-[10px]" style={{ color: locked ? "#4b5563" : "#9ca3af" }}>
-                                            {locked ? `Odblokuj na lvl ${item.unlockLevel}` : bonusLine(item.bonuses, 0)}
-                                          </p>
-                                        </div>
-                                        {!locked && isOn && <span className="text-[10px] font-black" style={{ color: UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                              </div>
+                            );
+                          })()}
+                          <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
+                          {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
+                            <div key={slot}>
+                              <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
+                              <div className="flex flex-col gap-0.5">
+                                {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
+                                  const isOn = charEquipped[slot]?.id === item.id;
+                                  const locked = (profile?.level??0) < item.unlockLevel;
+                                  const curUpg = isOn ? (charEquipped[slot]?.upg??0) : 0;
+                                  const isDragging = draggedItemId === item.id;
+                                  return (
+                                    <div key={item.id}
+                                      draggable={!locked}
+                                      onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
+                                      onDragEnd={() => setDraggedItemId(null)}
+                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: 0 } }); setEquippingSlot(isOn ? null : slot); }}
+                                      className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
+                                      style={{ borderColor:locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background:isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
+                                      <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold truncate" style={{ color:locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
+                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses,0)}</p>
+                                      </div>
+                                      {!locked && isOn && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>+{curUpg} ✓</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
