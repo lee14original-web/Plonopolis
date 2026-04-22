@@ -4924,7 +4924,7 @@ export default function Page() {
                         <p className="mb-3 text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
                         <div className="flex flex-col gap-3">
                           {/* Grafika postaci z hitboxami — plik: public/ekwip_postac.png */}
-                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:200, height:340, background:"rgba(10,6,2,0.6)" }}>
+                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:1536, height:1024, background:"rgba(10,6,2,0.6)" }}>
                             <img src="/ekwip_postac.png" alt="Postać" draggable={false}
                               className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
                             {(["glowa","dlonie","nogi"]).map(slot => {
