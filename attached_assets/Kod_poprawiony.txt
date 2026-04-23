@@ -5231,7 +5231,7 @@ export default function Page() {
                               ))}
                             </div>
                             {/* Siatka kwadratowych slotów */}
-                            <div className="grid grid-cols-5 gap-2">
+                            <div className="grid grid-cols-5 gap-2" style={{overflow:"visible"}}>
                               {CHAR_EQUIP_ITEMS
                                 .filter(i => !eqFilter || i.slot === eqFilter)
                                 .sort((a,b) => a.unlockLevel - b.unlockLevel)
@@ -5250,8 +5250,7 @@ export default function Page() {
                                       onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
                                       onDragEnd={() => setDraggedItemId(null)}
                                       onClick={() => { if (locked) return; const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
-                                      title={locked ? `Odblokowanie: lvl ${item.unlockLevel}` : item.name}
-                                      className={`relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${locked?"opacity-40 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
+                                      className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${locked?"opacity-40 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
                                       style={{ borderColor:isOn?uc:locked?"#374151":"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
                                       <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
                                       <span className="text-2xl leading-none">{locked?"🔒":item.icon}</span>
@@ -5260,6 +5259,16 @@ export default function Page() {
                                       </span>
                                       {!locked && isOn && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
                                       {!locked && !isOn && curUpg>0 && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
+                                      {/* Tooltip */}
+                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
+                                        <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
+                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[sl].label} · wymagany lvl <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                        <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                        <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, curUpg)}</p>
+                                        {curUpg > 0 && <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{curUpg}</p>}
+                                        {locked && <p className="text-[10px] text-red-400 font-bold">🔒 Zablokowane do lvl {item.unlockLevel}</p>}
+                                        {!locked && isOn && <p className="text-[10px] text-green-400 font-bold">✓ Założone</p>}
+                                      </div>
                                     </div>
                                   );
                                 })}
