@@ -207,6 +207,12 @@ interface CharEquipItem {
   bonuses: EquipBonus[];
 }
 type CharEquipped = Record<EquipSlot, {id:string;upg:number}|null>;
+type BarnAnimalState = { owned:number; slots:number; hunger:number; lastFedAt:number; storage:number; prodStart:number; };
+type BarnState = Record<string,BarnAnimalState>;
+type BarnItems = Record<string,number>;
+interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; }
+interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
+interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
 const UPGRADE_COST   = [0,100,250,500,1000,2500,5000,10000,25000,50000,100000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
 const UPG_COLOR = ["#6b7280","#9ca3af","#9ca3af","#9ca3af","#4ade80","#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#fbbf24"];
@@ -291,6 +297,80 @@ const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,heigh
   dlonie: { top:38, left:5,  width:22, height:28 },
   nogi:   { top:62, left:30, width:40, height:35 },
 };
+const BARN_STATE_KEY = "plonopolis_barn";
+const BARN_ITEMS_KEY = "plonopolis_barn_items";
+const HUNGER_DECAY_PER_MS = 4 / (60 * 60 * 1000); // 4 pkt/h → 0 po ~25h
+function barnSlotCosts(buyPrice: number, upgrades: number): number[] {
+  const r: number[] = []; let c = Math.round(buyPrice * 0.17);
+  for (let i = 0; i < upgrades; i++) { r.push(c); c = Math.round(c * 1.6); } return r;
+}
+const ANIMAL_ITEMS: AnimalItemDef[] = [
+  { id:"jajko",           name:"Jajko",           icon:"🥚", sellPrice:40   },
+  { id:"futro_krolika",   name:"Futro Królika",    icon:"🐇", sellPrice:80   },
+  { id:"mleko",           name:"Mleko",            icon:"🥛", sellPrice:140  },
+  { id:"piora",           name:"Pióra",            icon:"🪶", sellPrice:220  },
+  { id:"welna",           name:"Wełna",            icon:"🧶", sellPrice:320  },
+  { id:"nawoz_naturalny", name:"Nawóz Naturalny",  icon:"💩", sellPrice:450  },
+  { id:"mleko_kozie",     name:"Mleko Kozie",      icon:"🥛", sellPrice:650  },
+  { id:"duze_piora",      name:"Duże Pióra",       icon:"🪶", sellPrice:900  },
+  { id:"energia_robocza", name:"Energia Robocza",  icon:"⚡", sellPrice:1400 },
+  { id:"rogi_byka",       name:"Rogi Byka",        icon:"🦴", sellPrice:2500 },
+];
+const ANIMALS: AnimalDef[] = [
+  { id:"kura",   name:"Kura",    icon:"🐔", unlockLevel:3,  prodMs:4*3600000,  itemId:"jajko",           storageMax:6, startSlots:2, maxSlots:12, buyPrice:600,
+    slotUpgCosts:[100,160,260,420,670,1070,1710,2740,4380,7000],
+    feed:[{cropId:"carrot",name:"Marchew",icon:"🥕",points:10},{cropId:"potato",name:"Ziemniak",icon:"🥔",points:15}] },
+  { id:"krolik", name:"Królik",  icon:"🐇", unlockLevel:5,  prodMs:8*3600000,  itemId:"futro_krolika",   storageMax:5, startSlots:2, maxSlots:10, buyPrice:1800,
+    slotUpgCosts:barnSlotCosts(1800,8),
+    feed:[{cropId:"carrot",name:"Marchew",icon:"🥕",points:12},{cropId:"lettuce",name:"Sałata",icon:"🥬",points:18}] },
+  { id:"krowa",  name:"Krowa",   icon:"🐄", unlockLevel:7,  prodMs:12*3600000, itemId:"mleko",           storageMax:4, startSlots:1, maxSlots:8,  buyPrice:4500,
+    slotUpgCosts:barnSlotCosts(4500,7),
+    feed:[{cropId:"lettuce",name:"Sałata",icon:"🥬",points:15},{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:30}] },
+  { id:"kaczka", name:"Kaczka",  icon:"🦆", unlockLevel:9,  prodMs:16*3600000, itemId:"piora",           storageMax:4, startSlots:1, maxSlots:8,  buyPrice:9000,
+    slotUpgCosts:barnSlotCosts(9000,7),
+    feed:[{cropId:"radish",name:"Rzodkiewka",icon:"🌱",points:15},{cropId:"sunflower",name:"Słonecznik",icon:"🌻",points:35}] },
+  { id:"owca",   name:"Owca",    icon:"🐑", unlockLevel:11, prodMs:20*3600000, itemId:"welna",           storageMax:3, startSlots:1, maxSlots:6,  buyPrice:18000,
+    slotUpgCosts:barnSlotCosts(18000,5),
+    feed:[{cropId:"cabbage",name:"Kapusta",icon:"🥦",points:20},{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:35}] },
+  { id:"swinia", name:"Świnia",  icon:"🐖", unlockLevel:13, prodMs:24*3600000, itemId:"nawoz_naturalny", storageMax:3, startSlots:1, maxSlots:5,  buyPrice:35000,
+    slotUpgCosts:barnSlotCosts(35000,4),
+    feed:[{cropId:"tomato",name:"Pomidor",icon:"🍅",points:20},{cropId:"pumpkin",name:"Dynia",icon:"🎃",points:40}] },
+  { id:"koza",   name:"Koza",    icon:"🐐", unlockLevel:15, prodMs:30*3600000, itemId:"mleko_kozie",     storageMax:2, startSlots:1, maxSlots:4,  buyPrice:65000,
+    slotUpgCosts:barnSlotCosts(65000,3),
+    feed:[{cropId:"grape",name:"Winogrono",icon:"🍇",points:40},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:60}] },
+  { id:"indyk",  name:"Indyk",   icon:"🦃", unlockLevel:17, prodMs:36*3600000, itemId:"duze_piora",      storageMax:2, startSlots:1, maxSlots:4,  buyPrice:120000,
+    slotUpgCosts:barnSlotCosts(120000,3),
+    feed:[{cropId:"sunflower",name:"Słonecznik",icon:"🌻",points:35},{cropId:"chili",name:"Papryczka chili",icon:"🌶️",points:50}] },
+  { id:"kon",    name:"Koń",     icon:"🐎", unlockLevel:20, prodMs:48*3600000, itemId:"energia_robocza", storageMax:2, startSlots:1, maxSlots:3,  buyPrice:250000,
+    slotUpgCosts:barnSlotCosts(250000,2),
+    feed:[{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:50},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:70}] },
+  { id:"byk",    name:"Byk",     icon:"🐂", unlockLevel:25, prodMs:72*3600000, itemId:"rogi_byka",       storageMax:1, startSlots:1, maxSlots:2,  buyPrice:600000,
+    slotUpgCosts:[25000],
+    feed:[{cropId:"pumpkin",name:"Dynia",icon:"🎃",points:50},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:80}] },
+];
+function defaultBarnState(): BarnState {
+  const s: BarnState = {};
+  ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 }; });
+  return s;
+}
+function barnCurrentHunger(st: BarnAnimalState): number {
+  if (!st.lastFedAt) return 50;
+  return Math.max(0, Math.min(100, st.hunger - (Date.now() - st.lastFedAt) * HUNGER_DECAY_PER_MS));
+}
+function barnHungerStatus(h: number): { label:string; color:string; speedMod:number } {
+  if (h >= 80) return { label:"Najedzone 😊", color:"#4ade80", speedMod:-0.10 };
+  if (h >= 50) return { label:"Normalne",     color:"#f9e7b2", speedMod:0     };
+  if (h >= 20) return { label:"Głodne 😟",    color:"#fbbf24", speedMod:0.15  };
+  return               { label:"Wygłodzone 😵",color:"#ef4444", speedMod:0.30  };
+}
+function barnEffProdMs(a: AnimalDef, h: number): number {
+  return Math.round(a.prodMs * (1 + barnHungerStatus(h).speedMod));
+}
+function barnFmtMs(ms: number): string {
+  if (ms <= 0) return "Gotowe!";
+  const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000);
+  return h > 0 ? `${h}h ${m}m ${s}s` : m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -1187,6 +1267,41 @@ export default function Page() {
   const saveSlotBox = (v: Record<string,{top:number,left:number,width:number,height:number}>) => {
     setSlotBoxCustom(v); try { localStorage.setItem(SLOT_BOX_KEY, JSON.stringify(v)); } catch { /* ignore */ }
   };
+  const [barnNow, setBarnNow] = React.useState(Date.now());
+  const [barnState, setBarnState_] = React.useState<BarnState>(() => {
+    try { const s = localStorage.getItem(BARN_STATE_KEY); const parsed = s ? JSON.parse(s) : {}; return { ...defaultBarnState(), ...parsed }; } catch { return defaultBarnState(); }
+  });
+  const [barnItems, setBarnItems_] = React.useState<BarnItems>(() => {
+    try { const s = localStorage.getItem(BARN_ITEMS_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
+  const saveBarnState = (next: BarnState) => { setBarnState_(next); try { localStorage.setItem(BARN_STATE_KEY, JSON.stringify(next)); } catch {} };
+  const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); try { localStorage.setItem(BARN_ITEMS_KEY, JSON.stringify(next)); } catch {} };
+  React.useEffect(() => {
+    const t = setInterval(() => setBarnNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  React.useEffect(() => {
+    let changed = false;
+    const next: BarnState = {};
+    ANIMALS.forEach(a => {
+      const st = barnState[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 };
+      if (st.owned === 0) { next[a.id] = st; return; }
+      let ns = { ...st };
+      if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
+      if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[a.id] = ns; return; }
+      const h = barnCurrentHunger(ns);
+      const effMs = barnEffProdMs(a, h);
+      if (barnNow - ns.prodStart >= effMs) {
+        const canAdd = Math.min(ns.owned, a.storageMax - ns.storage);
+        ns.storage = ns.storage + canAdd;
+        ns.prodStart = ns.storage < a.storageMax ? barnNow : 0;
+        changed = true;
+      }
+      next[a.id] = ns;
+    });
+    if (changed) saveBarnState(next);
+  }, [barnNow]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const merged: Record<string,number> = { ...itemUpgRegistry };
     let changed = false;
@@ -5370,28 +5485,335 @@ export default function Page() {
             );
           })()}
 
-          {showStodolaModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-              <div className="relative flex w-full max-w-[700px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl">
-                <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
-                <div className="mb-6 flex items-center gap-4">
-                  <span className="text-5xl">🏚️</span>
-                  <div>
-                    <h2 className="text-2xl font-black text-[#f9e7b2]">Stodoła</h2>
-                    <p className="text-sm text-[#8b6a3e]">Twoja farma · magazyn i zasoby</p>
+          {showStodolaModal && (() => {
+            const lvl = profile?.level ?? 0;
+            const handleBuyAnimal = async (a: AnimalDef) => {
+              const st = barnState[a.id];
+              if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
+              if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
+              const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
+              if (error) return;
+              saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+              await loadProfile(profile.id);
+              setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
+            };
+            const handleBuySlot = async (a: AnimalDef) => {
+              const st = barnState[a.id];
+              const upg = st.slots - a.startSlots;
+              if (upg >= a.slotUpgCosts.length) { setMessage({type:"info",title:"Maks!",text:`Maksymalna liczba slotów dla ${a.name}.`}); return; }
+              const cost = a.slotUpgCosts[upg];
+              if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
+              const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile.id);
+              if (error) return;
+              saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
+              await loadProfile(profile.id);
+              setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
+            };
+            const handleFeed = (a: AnimalDef, f: AnimalFeedDef) => {
+              const have = seedInventory[f.cropId] ?? 0;
+              if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${f.name} (${f.icon}).`}); return; }
+              const st = barnState[a.id];
+              const curH = barnCurrentHunger(st);
+              const newH = Math.min(100, curH + f.points);
+              setSeedInventory((prev: Record<string,number>) => ({...prev, [f.cropId]: have - 1}));
+              saveBarnState({...barnState, [a.id]: {...st, hunger: newH, lastFedAt: Date.now()}});
+              setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${f.points} sytości → ${Math.round(newH)}%`});
+            };
+            const handleCollect = (a: AnimalDef) => {
+              const st = barnState[a.id];
+              if (st.storage === 0) return;
+              const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+              const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + st.storage};
+              saveBarnItems(newItems);
+              saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
+              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${st.storage} ${item.name}`});
+            };
+            const handleCollectAll = () => {
+              let changed = false; const newItems = {...barnItems}; const newState = {...barnState};
+              ANIMALS.forEach(a => {
+                const st = barnState[a.id];
+                if (st.storage > 0) {
+                  newItems[a.itemId] = (newItems[a.itemId]??0) + st.storage;
+                  newState[a.id] = {...st, storage:0, prodStart: barnNow};
+                  changed = true;
+                }
+              });
+              if (!changed) return;
+              saveBarnItems(newItems); saveBarnState(newState);
+              setMessage({type:"success",title:"Odebrano wszystko!",text:"Produkty trafiły do schowka."});
+            };
+            const handleSellAll = async () => {
+              const total = Object.entries(barnItems).reduce((sum,[id,cnt]) => {
+                const item = ANIMAL_ITEMS.find(i => i.id === id);
+                return sum + (item ? item.sellPrice * cnt : 0);
+              }, 0);
+              if (total === 0) return;
+              const {error} = await supabase.from("profiles").update({money: displayMoney + total}).eq("id", profile.id);
+              if (error) return;
+              saveBarnItems({}); await loadProfile(profile.id);
+              setMessage({type:"success",title:"Sprzedano!",text:`+${total.toLocaleString()} 💰`});
+            };
+            const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
+            const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
+            return (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+                <div className="relative flex h-[92vh] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+                  <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+
+                  {/* ─ Sidebar ─ */}
+                  <div className="flex w-[220px] shrink-0 flex-col gap-1 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
+                    <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#8b6a3e]">🏚️ Zagroda</p>
+                    <button onClick={() => setSelectedAnimal(null)}
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                      📋 Przegląd
+                    </button>
+                    <div className="my-1 border-t border-[#8b6a3e]/20" />
+                    {ANIMALS.map(a => {
+                      const locked = lvl < a.unlockLevel;
+                      const st = barnState[a.id];
+                      const hasAnimals = st.owned > 0;
+                      const hasProd = st.storage > 0;
+                      return (
+                        <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
+                          disabled={locked}
+                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                          <span>{a.icon}</span>
+                          <span className="flex-1 truncate">{a.name}</span>
+                          {locked && <span className="text-[9px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
+                          {!locked && hasProd && <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />}
+                          {!locked && hasAnimals && !hasProd && <span className="text-[9px] text-[#8b6a3e]">{st.owned}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* ─ Główna treść ─ */}
+                  <div className="flex-1 overflow-y-auto p-6 pt-5 text-[#dfcfab]">
+
+                    {/* ══ SCHOWEK NA PRODUKTY ══ */}
+                    {Object.keys(barnItems).some(k => (barnItems[k]??0) > 0) && (
+                      <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Schowek produktów</p>
+                          <button onClick={handleSellAll} className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40">
+                            💰 Sprzedaj wszystko
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {ANIMAL_ITEMS.filter(i => (barnItems[i.id]??0) > 0).map(i => (
+                            <div key={i.id} className="flex items-center gap-1.5 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-2 py-1">
+                              <span className="text-base">{i.icon}</span>
+                              <span className="text-xs font-bold text-[#f9e7b2]">{barnItems[i.id]}</span>
+                              <span className="text-[10px] text-[#8b6a3e]">{i.name}</span>
+                              <span className="text-[10px] text-amber-400">· {(i.sellPrice * barnItems[i.id]).toLocaleString()} 💰</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ══ PRZEGLĄD ══ */}
+                    {!selA && (
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
+                          {totalStorage > 0 && (
+                            <button onClick={handleCollectAll} className="rounded-xl border border-green-500/60 bg-green-900/20 px-3 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
+                              ✅ Odbierz wszystko
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+                          {ANIMALS.filter(a => lvl >= a.unlockLevel).map(a => {
+                            const st = barnState[a.id];
+                            const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+                            const h = barnCurrentHunger(st);
+                            const hs = barnHungerStatus(h);
+                            const effMs = barnEffProdMs(a, h);
+                            const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
+                            const pct = st.prodStart > 0 ? Math.min(100, ((barnNow - st.prodStart) / effMs) * 100) : 0;
+                            return (
+                              <div key={a.id} onClick={() => setSelectedAnimal(a.id)}
+                                className="cursor-pointer rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3 hover:border-[#d4a64f]/60 transition">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-2xl">{a.icon}</span>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-black text-[#f9e7b2]">{a.name}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
+                                  </div>
+                                  {st.storage > 0 && <span className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">{st.storage}/{a.storageMax}</span>}
+                                </div>
+                                {st.owned > 0 && (
+                                  <>
+                                    <div className="h-1.5 w-full rounded-full bg-black/40 mb-1">
+                                      <div className="h-full rounded-full bg-amber-400 transition-all" style={{width:`${pct}%`}} />
+                                    </div>
+                                    <div className="flex justify-between text-[9px] text-[#6b7280]">
+                                      <span style={{color:hs.color}}>{hs.label.split(" ")[0]} {Math.round(h)}%</span>
+                                      <span>{st.storage >= a.storageMax ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {st.owned === 0 && <p className="text-[10px] text-[#6b7280] text-center py-1">Kup {a.name.toLowerCase()} za {a.buyPrice.toLocaleString()} 💰</p>}
+                              </div>
+                            );
+                          })}
+                          {ANIMALS.filter(a => lvl < a.unlockLevel).length > 0 && (
+                            <div className="rounded-xl border border-[#374151]/40 bg-black/10 p-3 opacity-50 col-span-2 xl:col-span-1">
+                              <p className="text-xs text-[#6b7280] text-center">
+                                🔒 {ANIMALS.filter(a => lvl < a.unlockLevel).map(a => `${a.icon} LVL${a.unlockLevel}`).join(" · ")}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ══ KARTA ZWIERZĘCIA ══ */}
+                    {selA && (() => {
+                      const a = selA;
+                      const st = barnState[a.id];
+                      const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+                      const h = barnCurrentHunger(st);
+                      const hs = barnHungerStatus(h);
+                      const effMs = barnEffProdMs(a, h);
+                      const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
+                      const pct = st.prodStart > 0 ? Math.min(100, ((barnNow - st.prodStart) / effMs) * 100) : 0;
+                      const storageFull = st.storage >= a.storageMax;
+                      const nextUpg = st.slots - a.startSlots;
+                      const upgCost = nextUpg < a.slotUpgCosts.length ? a.slotUpgCosts[nextUpg] : null;
+                      return (
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <button onClick={() => setSelectedAnimal(null)} className="text-[#8b6a3e] hover:text-[#f9e7b2] text-sm transition">← Powrót</button>
+                            <span className="text-3xl">{a.icon}</span>
+                            <div>
+                              <p className="text-xl font-black text-[#f9e7b2]">{a.name}</p>
+                              <p className="text-xs text-[#8b6a3e]">Produkuje: {item.icon} {item.name} · co {a.prodMs/3600000}h · sprzedaż: {item.sellPrice.toLocaleString()} 💰/szt</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Lewa kolumna */}
+                            <div className="flex flex-col gap-3">
+                              {/* Status produkcji */}
+                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📊 Produkcja</p>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-2xl">{item.icon}</span>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {st.storage} / {a.storageMax}</p>
+                                  </div>
+                                </div>
+                                {st.owned > 0 && (
+                                  <>
+                                    <div className="h-2 w-full rounded-full bg-black/40 mb-1">
+                                      <div className="h-full rounded-full transition-all" style={{width:`${pct}%`, background: storageFull?"#6b7280":"#f59e0b"}} />
+                                    </div>
+                                    <p className="text-xs text-center" style={{color: storageFull?"#6b7280":remaining===0?"#4ade80":"#f9e7b2"}}>
+                                      {storageFull ? "📦 Storage pełny — odbierz produkty" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe do odbioru!"}
+                                    </p>
+                                  </>
+                                )}
+                                {st.owned === 0 && <p className="text-xs text-[#6b7280] text-center">Brak zwierząt — kup pierwsze!</p>}
+                                {st.storage > 0 && (
+                                  <button onClick={() => handleCollect(a)} className="mt-2 w-full rounded-xl border border-green-500/60 bg-green-900/20 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
+                                    ✅ Odbierz ({st.storage} {item.icon})
+                                  </button>
+                                )}
+                              </div>
+                              {/* Głód */}
+                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🌿 Głód</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <div className="h-3 flex-1 rounded-full bg-black/40">
+                                    <div className="h-full rounded-full transition-all" style={{width:`${h}%`, background:hs.color}} />
+                                  </div>
+                                  <span className="text-xs font-bold" style={{color:hs.color}}>{Math.round(h)}%</span>
+                                </div>
+                                <p className="text-[11px] font-bold mb-2" style={{color:hs.color}}>{hs.label}{hs.speedMod!==0 ? ` (${hs.speedMod > 0 ? "+" : ""}${Math.round(hs.speedMod*100)}% czas prod.)` : ""}</p>
+                                <p className="text-[10px] text-[#8b6a3e] mb-2">Karma:</p>
+                                <div className="flex flex-col gap-1.5">
+                                  {a.feed.map(f => {
+                                    const have = seedInventory[f.cropId] ?? 0;
+                                    return (
+                                      <button key={f.cropId} onClick={() => handleFeed(a, f)}
+                                        disabled={have < 1}
+                                        className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs font-bold transition ${have < 1 ? "opacity-40 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20"}`}>
+                                        <span className="text-base">{f.icon}</span>
+                                        <span className="flex-1">{f.name}</span>
+                                        <span className="text-green-400">+{f.points}</span>
+                                        <span className="text-[#6b7280] ml-1">({have} szt)</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                            {/* Prawa kolumna */}
+                            <div className="flex flex-col gap-3">
+                              {/* Kup zwierzę */}
+                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-3">🛒 Kup zwierzę</p>
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Zajmuje 1 slot</p>
+                                  </div>
+                                  <span className="text-sm font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
+                                </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="h-2 flex-1 rounded-full bg-black/40">
+                                    <div className="h-full rounded-full bg-amber-600/60 transition-all" style={{width:`${st.slots > 0 ? (st.owned/st.slots*100) : 0}%`}} />
+                                  </div>
+                                  <span className="text-xs text-[#8b6a3e]">{st.owned}/{st.slots}</span>
+                                </div>
+                                <button onClick={() => handleBuyAnimal(a)}
+                                  disabled={st.owned >= st.slots || displayMoney < a.buyPrice}
+                                  className={`w-full rounded-xl border py-2 text-sm font-bold transition ${st.owned >= st.slots ? "opacity-40 cursor-not-allowed border-[#374151] text-[#6b7280]" : displayMoney < a.buyPrice ? "opacity-50 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-amber-500/60 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40"}`}>
+                                  {st.owned >= st.slots ? "Brak miejsca" : `Kup ${a.name.toLowerCase()}`}
+                                </button>
+                              </div>
+                              {/* Ulepszenia slotów */}
+                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🏗️ Sloty stodoły</p>
+                                <p className="text-sm font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
+                                <div className="flex gap-1 flex-wrap mb-3">
+                                  {Array.from({length: a.maxSlots}).map((_, i) => (
+                                    <div key={i} className={`h-3 w-3 rounded-sm border ${i < st.slots ? "border-amber-400 bg-amber-400/30" : "border-[#374151] bg-black/20"}`} />
+                                  ))}
+                                </div>
+                                {upgCost !== null ? (
+                                  <button onClick={() => handleBuySlot(a)}
+                                    disabled={displayMoney < upgCost}
+                                    className={`w-full rounded-xl border py-2 text-sm font-bold transition ${displayMoney < upgCost ? "opacity-50 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-[#8b6a3e]/60 bg-black/30 text-[#dfcfab] hover:border-amber-400/60 hover:text-amber-200"}`}>
+                                    Kup slot · {upgCost.toLocaleString()} 💰
+                                  </button>
+                                ) : (
+                                  <p className="text-xs text-center text-[#4ade80] font-bold">✦ Maks sloty odblokowane ✦</p>
+                                )}
+                              </div>
+                              {/* Tabela produkcji */}
+                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3">
+                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📈 Info</p>
+                                <div className="flex flex-col gap-1 text-[11px] text-[#dfcfab]">
+                                  <div className="flex justify-between"><span>Produkuje</span><span className="font-bold">{item.icon} {item.name}</span></div>
+                                  <div className="flex justify-between"><span>Czas (normalne)</span><span className="font-bold">{a.prodMs/3600000}h</span></div>
+                                  <div className="flex justify-between"><span>Storage max</span><span className="font-bold">{a.storageMax} szt</span></div>
+                                  <div className="flex justify-between"><span>Cena sprzedaży</span><span className="font-bold text-amber-400">{item.sellPrice.toLocaleString()} 💰</span></div>
+                                  <div className="flex justify-between"><span>Cena zwierzęcia</span><span className="font-bold">{a.buyPrice.toLocaleString()} 💰</span></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="rounded-2xl border border-[#8b6a3e]/30 bg-black/30 p-6 text-center">
-                  <span className="text-4xl">🌾</span>
-                  <p className="mt-3 text-base font-bold text-[#f3e6c8]">Stodoła jest w budowie</p>
-                  <p className="mt-1 text-sm text-[#8b6a3e]">Wkrótce znajdziesz tutaj magazyn plonów, siano, narzędzia i zwierzęta.</p>
-                </div>
-                <button onClick={() => setShowStodolaModal(false)} className="mt-6 w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
-                  ✕ Zamknij (Esc)
-                </button>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {showSkinModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
