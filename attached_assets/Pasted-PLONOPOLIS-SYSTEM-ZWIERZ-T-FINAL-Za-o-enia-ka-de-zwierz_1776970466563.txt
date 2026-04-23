@@ -1,0 +1,311 @@
+PLONOPOLIS — SYSTEM ZWIERZĄT (FINAL)
+
+Założenia:
+
+każde zwierzę produkuje item
+itemy mają zastosowanie:
+sprzedaż
+crafting
+gildia
+ulepszenia
+rosnący czas produkcji = lepszy value
+
+| LVL | Zwierzę   | Produkuje       | Czas produkcji | Ilość | Typ          |
+| --: | --------- | --------------- | -------------: | ----: | ------------ |
+|   3 | 🐔 Kura   | Jajko           |         20 min |     1 | early/basic  |
+|   5 | 🐇 Królik | Futro Królika   |         30 min |     1 | crafting     |
+|   7 | 🐄 Krowa  | Mleko           |         45 min |     1 | economy      |
+|   9 | 🦆 Kaczka | Pióra           |         50 min |     2 | guild/craft  |
+|  11 | 🐑 Owca   | Wełna           |         60 min |     1 | crafting     |
+|  13 | 🐖 Świnia | Nawóz Naturalny |         75 min |     1 | kompost      |
+|  15 | 🐐 Koza   | Mleko Kozie     |         90 min |     1 | high-tier    |
+|  17 | 🦃 Indyk  | Duże Pióra      |        100 min |     2 | upgrade mats |
+|  20 | 🐎 Koń    | Energia Robocza |        150 min |     1 | buff item    |
+|  25 | 🐂 Byk    | Rogi Byka       |        180 min |     1 | endgame      |
+
+
+| Item               | Źródło | Zastosowanie        |
+| ------------------ | ------ | ------------------- |
+| 🥚 Jajko           | Kura   | sprzedaż / questy   |
+| 🐇 Futro Królika   | Królik | crafting rękawic    |
+| 🥛 Mleko           | Krowa  | crafting / sprzedaż |
+| 🪶 Pióra           | Kaczka | gildia / upgrade    |
+| 🧶 Wełna           | Owca   | stroje / crafting   |
+| 💩 Nawóz Naturalny | Świnia | kompost boost       |
+| 🥛 Mleko Kozie     | Koza   | high-tier crafting  |
+| 🪶 Duże Pióra      | Indyk  | ulepszanie itemów   |
+| ⚡ Energia Robocza  | Koń    | temporary buff      |
+| 🦴 Rogi Byka       | Byk    | endgame crafting    |
+
+Energia Robocza Po użyciu:
++10% speed upraw przez 15min
+
+Rogi Byka
+
+Materiały do:
++8/+9/+10 ulepszeń itemów
+
+
+| LVL | Zwierzę   | Produkuje       | Czas produkcji | Drop |
+| --: | --------- | --------------- | -------------: | ---: |
+|   3 | 🐔 Kura   | Jajko           |             4h |    1 |
+|   5 | 🐇 Królik | Futro Królika   |             8h |    1 |
+|   7 | 🐄 Krowa  | Mleko           |            12h |    1 |
+|   9 | 🦆 Kaczka | Pióra           |            16h |    1 |
+|  11 | 🐑 Owca   | Wełna           |            20h |    1 |
+|  13 | 🐖 Świnia | Nawóz Naturalny |            24h |    1 |
+|  15 | 🐐 Koza   | Mleko Kozie     |            30h |    1 |
+|  17 | 🦃 Indyk  | Duże Pióra      |            36h |    1 |
+|  20 | 🐎 Koń    | Energia Robocza |            48h |    1 |
+|  25 | 🐂 Byk    | Rogi Byka       |            72h |    1 |
+
+itemy zwierząt MUSZĄ być wartościowe.
+
+Np:
+
+Item	Powinien być
+Jajko	tani
+Wełna	średnia wartość
+Rogi Byka	bardzo drogie
+
+Dodaj:
+
+📦 storage
+
+żeby produkcja nie przepadała
+
+przykład
+Zwierzę	Max storage
+kura	3
+krowa	2
+koń	2
+byk	1
+
+
+SYSTEM GŁODU
+
+Każde zwierzę ma:
+
+Głód: 0–100%
+Stan zwierzęcia
+Głód	Status	Efekt
+80–100%	Najedzone	+10% speed produkcji
+50–79%	Normalne	brak bonusu
+20–49%	Głodne	-15% speed
+0–19%	Wygłodzone	-30% speed
+
+
+KARMIENIE (na bazie upraw)
+🐔 Kura
+
+Preferuje:
+
+Marchew
+Ziemniak
+Karma	Punkty sytości
+🥕 Marchew	+10
+🥔 Ziemniak	+15
+🐇 Królik
+Karma	Punkty
+🥕 Marchew	+12
+🥬 Sałata	+18
+🐄 Krowa
+Karma	Punkty
+🥬 Sałata	+15
+🌾 Rzepak	+30
+🦆 Kaczka
+Karma	Punkty
+🌱 Rzodkiewka	+15
+🌻 Słonecznik	+35
+🐑 Owca
+Karma	Punkty
+🥦 Kapusta	+20
+🌾 Rzepak	+35
+🐖 Świnia
+Karma	Punkty
+🍅 Pomidor	+20
+🎃 Dynia	+40
+🐐 Koza
+Karma	Punkty
+🍇 Winogrono	+40
+🌿 Szparagi	+60
+🦃 Indyk
+Karma	Punkty
+🌻 Słonecznik	+35
+🌶️ Chili	+50
+🐎 Koń
+Karma	Punkty
+🌾 Rzepak	+50
+🌿 Szparagi	+70
+🐂 Byk
+Karma	Punkty
+🎃 Dynia	+50
+🌿 Szparagi	+80
+
+Storage
+Zwierzę	Max storage
+🐔 Kura	6
+🐇 Królik	5
+🐄 Krowa	4
+🦆 Kaczka	4
+🐑 Owca	3
+🐖 Świnia	3
+🐐 Koza	2
+🦃 Indyk	2
+🐎 Koń	2
+🐂 Byk	1
+przykład
+Byk:
+1/1
+
+👉 pełny = przestaje produkować
+
+
+UI ZAGRODY
+🐄 KARTA ZWIERZĘCIA
+🐄 Krowa
+
+Produkuje:
+🥛 Mleko
+
+Czas produkcji:
+12h
+
+Postęp:
+08:22:10 / 12h
+
+Storage:
+2 / 4
+
+Głód:
+72%
+
+Status:
+Najedzona (+10% speed)
+
+Karma:
+🥬 Sałata (+15)
+🌾 Rzepak (+30)
+
+[ Nakarm ]
+[ Odbierz ]
+
+GŁÓWNY WIDOK ZAGRODY
+🐔 Kury (3)
+🐄 Krowy (2)
+🐑 Owce (1)
+
+[ Odbierz wszystko ]
+[ Nakarm wszystko ]
+
+Założenia
+
+Im dłuższy czas:
+
+tym większa wartość
+Item	Czas	Cena
+🥚 Jajko	4h	40
+🐇 Futro Królika	8h	80
+🥛 Mleko	12h	140
+🪶 Pióra	16h	220
+🧶 Wełna	20h	320
+💩 Nawóz Naturalny	24h	450
+🥛 Mleko Kozie	30h	650
+🪶 Duże Pióra	36h	900
+⚡ Energia Robocza	48h	1400
+🦴 Rogi Byka	72h	2500
+
+
+
+Założenie
+
+Każde zwierzę ma:
+
+limit miejsc w stodole
+
+Na start:
+
+mało slotów
+trzeba ulepszać
+
+
+STARTOWE LIMITY
+Zwierzę	Start max
+🐔 Kura	2
+🐇 Królik	2
+🐄 Krowa	1
+🦆 Kaczka	1
+🐑 Owca	1
+🐖 Świnia	1
+🐐 Koza	1
+🦃 Indyk	1
+🐎 Koń	1
+🐂 Byk	1
+
+Każde ulepszenie:
+
++1 slot dla konkretnego zwierzęcia
+
+MAX SLOTY
+Zwierzę	Max
+🐔 Kura	12
+🐇 Królik	10
+🐄 Krowa	8
+🦆 Kaczka	8
+🐑 Owca	6
+🐖 Świnia	5
+🐐 Koza	4
+🦃 Indyk	4
+🐎 Koń	3
+🐂 Byk	2
+
+PRZYKŁAD — KURA
+Upgrade	Max kur	Koszt
+start	2	—
+lvl 1	3	100
+lvl 2	4	160
+lvl 3	5	260
+lvl 4	6	420
+lvl 5	7	670
+lvl 6	8	1070
+lvl 7	9	1710
+lvl 8	10	2740
+lvl 9	11	4380
+lvl 10	12	7000
+
+
+PRZYKŁAD — BYK
+Upgrade	Max byków	Koszt
+start	1	—
+lvl 1	2	25000
+
+
+UI ZAGRODY
+🐄 panel
+🐄 Krowa
+
+Posiadasz:
+3 / 5
+
+Produkcja:
+🥛 Mleko
+
+Czas:
+12h
+
+[ Kup slot ]
+Koszt: 2500
+
+
+| LVL | Zwierzę   | Produkt            | Czas | Wartość itemu | Cena zwierzęcia |
+| --: | --------- | ------------------ | ---: | ------------: | --------------: |
+|   3 | 🐔 Kura   | 🥚 Jajko           |   4h |            40 |             600 |
+|   5 | 🐇 Królik | 🐇 Futro Królika   |   8h |            80 |            1800 |
+|   7 | 🐄 Krowa  | 🥛 Mleko           |  12h |           140 |            4500 |
+|   9 | 🦆 Kaczka | 🪶 Pióra           |  16h |           220 |            9000 |
+|  11 | 🐑 Owca   | 🧶 Wełna           |  20h |           320 |           18000 |
+|  13 | 🐖 Świnia | 💩 Nawóz Naturalny |  24h |           450 |           35000 |
+|  15 | 🐐 Koza   | 🥛 Mleko Kozie     |  30h |           650 |           65000 |
+|  17 | 🦃 Indyk  | 🪶 Duże Pióra      |  36h |           900 |          120000 |
+|  20 | 🐎 Koń    | ⚡ Energia Robocza  |  48h |          1400 |          250000 |
+|  25 | 🐂 Byk    | 🦴 Rogi Byka       |  72h |          2500 |          600000 |
