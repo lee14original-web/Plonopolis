@@ -5509,15 +5509,15 @@ export default function Page() {
               await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
-            const handleFeed = (a: AnimalDef, f: AnimalFeedDef) => {
-              const have = seedInventory[f.cropId] ?? 0;
-              if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${f.name} (${f.icon}).`}); return; }
+            const handleFeed = (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
+              const have = seedInventory[cropKey] ?? 0;
+              if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${cropName} (${cropIcon}).`}); return; }
               const st = barnState[a.id];
               const curH = barnCurrentHunger(st);
-              const newH = Math.min(100, curH + f.points);
-              setSeedInventory((prev: Record<string,number>) => ({...prev, [f.cropId]: have - 1}));
+              const newH = Math.min(100, curH + points);
+              setSeedInventory((prev: Record<string,number>) => ({...prev, [cropKey]: have - 1}));
               saveBarnState({...barnState, [a.id]: {...st, hunger: newH, lastFedAt: Date.now()}});
-              setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${f.points} sytości → ${Math.round(newH)}%`});
+              setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
               const st = barnState[a.id];
@@ -5732,19 +5732,32 @@ export default function Page() {
                                   <span className="text-xs font-bold" style={{color:hs.color}}>{Math.round(h)}%</span>
                                 </div>
                                 <p className="text-[11px] font-bold mb-2" style={{color:hs.color}}>{hs.label}{hs.speedMod!==0 ? ` (${hs.speedMod > 0 ? "+" : ""}${Math.round(hs.speedMod*100)}% czas prod.)` : ""}</p>
-                                <p className="text-[10px] text-[#8b6a3e] mb-2">Karma:</p>
-                                <div className="flex flex-col gap-1.5">
+                                <p className="text-[10px] text-[#8b6a3e] mb-2">Karma (zepsute nie nadają się!):</p>
+                                <div className="flex flex-col gap-1">
                                   {a.feed.map(f => {
-                                    const have = seedInventory[f.cropId] ?? 0;
+                                    const variants: {key:string; label:string; qIcon:string; pts:number; color:string}[] = [
+                                      {key:`${f.cropId}_good`,      label:`${f.name}`,          qIcon:"",   pts:f.points,                   color:"#dfcfab"},
+                                      {key:`${f.cropId}_epic`,      label:`${f.name} Epicka`,   qIcon:"⭐", pts:Math.round(f.points*1.5),    color:"#4ade80"},
+                                      {key:`${f.cropId}_legendary`, label:`${f.name} Legendarna`,qIcon:"🌟",pts:f.points*2,                  color:"#f59e0b"},
+                                    ];
                                     return (
-                                      <button key={f.cropId} onClick={() => handleFeed(a, f)}
-                                        disabled={have < 1}
-                                        className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-xs font-bold transition ${have < 1 ? "opacity-40 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20"}`}>
-                                        <span className="text-base">{f.icon}</span>
-                                        <span className="flex-1">{f.name}</span>
-                                        <span className="text-green-400">+{f.points}</span>
-                                        <span className="text-[#6b7280] ml-1">({have} szt)</span>
-                                      </button>
+                                      <div key={f.cropId}>
+                                        <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest mt-1 mb-0.5">{f.icon} {f.name}</p>
+                                        {variants.map(v => {
+                                          const have = seedInventory[v.key] ?? 0;
+                                          const canUse = have > 0;
+                                          return (
+                                            <button key={v.key} onClick={() => handleFeed(a, v.key, v.pts, v.label, f.icon)}
+                                              disabled={!canUse}
+                                              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-[11px] font-bold transition mb-0.5 ${!canUse ? "opacity-30 cursor-not-allowed border-[#2d2010] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20 cursor-pointer"}`}>
+                                              <span>{f.icon}{v.qIcon}</span>
+                                              <span className="flex-1 text-left" style={{color: canUse ? v.color : undefined}}>{v.label}</span>
+                                              <span className="text-green-400 text-[10px]">+{v.pts}</span>
+                                              <span className="text-[#6b7280] text-[9px]">{have} szt</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
                                     );
                                   })}
                                 </div>
