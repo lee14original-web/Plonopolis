@@ -285,6 +285,12 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
 }
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
+const SLOT_BOX_KEY   = "plonopolis_slot_box";
+const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
+  glowa:  { top:5,  left:35, width:30, height:22 },
+  dlonie: { top:38, left:5,  width:22, height:28 },
+  nogi:   { top:62, left:30, width:40, height:35 },
+};
 
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
@@ -1174,6 +1180,13 @@ export default function Page() {
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
   const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); try { localStorage.setItem(ITEM_UPG_KEY, JSON.stringify(reg)); } catch { /* ignore */ } };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
+  const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>(() => {
+    try { const s = localStorage.getItem(SLOT_BOX_KEY); return s ? JSON.parse(s) : { ...DEFAULT_SLOT_BOX }; } catch { return { ...DEFAULT_SLOT_BOX }; }
+  });
+  const [editSlotBox, setEditSlotBox] = React.useState(false);
+  const saveSlotBox = (v: Record<string,{top:number,left:number,width:number,height:number}>) => {
+    setSlotBoxCustom(v); try { localStorage.setItem(SLOT_BOX_KEY, JSON.stringify(v)); } catch { /* ignore */ }
+  };
   React.useEffect(() => {
     const merged: Record<string,number> = { ...itemUpgRegistry };
     let changed = false;
@@ -4916,11 +4929,7 @@ export default function Page() {
                   {/* ════ KOSMETYKA ════ */}
                   {/* ════ EKWIPUNEK ════ */}
                   {domTab === "eq" && (() => {
-                    const SLOT_BOX = {
-                      glowa:  { top:8,   left:62,  width:76,  height:82  },
-                      dlonie: { top:145, left:8,   width:60,  height:90  },
-                      nogi:   { top:215, left:55,  width:92,  height:120 },
-                    };
+                    const SLOT_BOX = slotBoxCustom;
                     const handleUpg = async (slot, eqD) => {
                       const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
                       if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
@@ -4937,10 +4946,62 @@ export default function Page() {
                     };
                     return (
                       <div>
-                        <p className="mb-3 text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
+                        {/* Tytuł + przycisk edycji hitboxów */}
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
+                          <button
+                            onClick={() => setEditSlotBox(v => !v)}
+                            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${editSlotBox ? "border-orange-400 bg-orange-900/50 text-orange-300" : "border-[#8b6a3e]/60 bg-black/30 text-[#dfcfab] hover:border-orange-400/60 hover:text-orange-200"}`}>
+                            🎯 {editSlotBox ? "Zakończ edycję" : "Edytuj hitboxy"}
+                          </button>
+                        </div>
+
+                        {/* Panel edycji hitboxów */}
+                        {editSlotBox && (
+                          <div className="mb-3 rounded-xl border border-orange-400/40 bg-orange-950/30 p-3">
+                            <p className="text-[10px] text-orange-300 uppercase tracking-widest mb-2">📐 Pozycje hitboxów (wartości w %)</p>
+                            <div className="flex flex-wrap gap-4">
+                              {(["glowa","dlonie","nogi"] as EquipSlot[]).map(sl => {
+                                const b = slotBoxCustom[sl];
+                                const lbl = { glowa:"👑 Głowa", dlonie:"🧤 Dłonie", nogi:"👢 Nogi" }[sl];
+                                const upd = (field: string, val: string) => {
+                                  const num = parseFloat(val);
+                                  if (isNaN(num)) return;
+                                  saveSlotBox({ ...slotBoxCustom, [sl]: { ...slotBoxCustom[sl], [field]: num } });
+                                };
+                                return (
+                                  <div key={sl} className="flex flex-col gap-1 min-w-[160px]">
+                                    <p className="text-[11px] font-black text-orange-200">{lbl}</p>
+                                    {(["top","left","width","height"] as const).map(field => (
+                                      <div key={field} className="flex items-center gap-2">
+                                        <span className="text-[10px] text-[#8b6a3e] w-12">{field}</span>
+                                        <input
+                                          type="number" step="0.5" min="0" max="100"
+                                          defaultValue={b[field]}
+                                          onBlur={e => upd(field, e.target.value)}
+                                          onKeyDown={e => { if (e.key === "Enter") upd(field, (e.target as HTMLInputElement).value); }}
+                                          className="w-20 rounded border border-orange-400/40 bg-black/40 px-2 py-0.5 text-[11px] text-orange-100 outline-none focus:border-orange-400"
+                                        />
+                                        <span className="text-[10px] text-[#6b7280]">%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="mt-2 flex gap-2">
+                              <button onClick={() => saveSlotBox({ ...DEFAULT_SLOT_BOX })}
+                                className="rounded-lg border border-[#8b6a3e]/50 px-3 py-1 text-[10px] text-[#dfcfab] hover:bg-white/5">
+                                ↺ Resetuj domyślne
+                              </button>
+                              <p className="text-[9px] text-[#6b7280] self-center">Zmiany zapisywane natychmiast. Enter lub kliknij poza pole.</p>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex flex-col gap-3">
                           {/* Grafika postaci z hitboxami — plik: public/ekwip_postac.png */}
-                          <div className="relative mx-auto rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ width:1536, height:1024, background:"rgba(10,6,2,0.6)" }}>
+                          <div className="relative w-full rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ aspectRatio:"1536/1024", background:"rgba(10,6,2,0.6)" }}>
                             <img src="/ekwip_postac.png" alt="Postać" draggable={false}
                               className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
                             {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
@@ -4955,7 +5016,7 @@ export default function Page() {
                                 <div key={slot}
                                   className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
                                   style={{
-                                    top:box.top, left:box.left, width:box.width, height:box.height,
+                                    top:`${box.top}%`, left:`${box.left}%`, width:`${box.width}%`, height:`${box.height}%`,
                                     border:`2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
                                     background:isOver?"rgba(251,191,36,0.18)":isSel?"rgba(255,255,255,0.08)":eqD?"rgba(60,40,5,0.55)":"rgba(0,0,0,0.35)",
                                   }}
