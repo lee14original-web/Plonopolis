@@ -1,5 +1,52 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "V5l-3xY-aetB5m_wLtQWy"
+uri = "file://artifacts/mockup-sandbox/public/ul_1.png"
+type = "image"
+title = "hive level 1"
+
+[[generated]]
+id = "k8OhJltuA0MejsU27yT7t"
+uri = "file://artifacts/mockup-sandbox/public/ul_2.png"
+type = "image"
+title = "hive level 2"
+
+[[generated]]
+id = "zRogT2ppnH3F5T2fK0uiG"
+uri = "file://artifacts/mockup-sandbox/public/ul_3.png"
+type = "image"
+title = "hive level 3"
+
+[[generated]]
+id = "xXLMX6AMOFXpao6voISja"
+uri = "file://artifacts/mockup-sandbox/public/ul_4.png"
+type = "image"
+title = "hive level 4"
+
+[[generated]]
+id = "t5so2wPaAW2-eX0OY6dJB"
+uri = "file://artifacts/mockup-sandbox/public/ul_5.png"
+type = "image"
+title = "hive level 5"
+
+[[generated]]
+id = "W8iL4ujEQ7SNR0GCoTujv"
+uri = "file://artifacts/mockup-sandbox/public/jar_empty.png"
+type = "image"
+title = "empty glass jar"
+
+[[generated]]
+id = "SGQEXcO8P_yqc6fLQ2zIv"
+uri = "file://artifacts/mockup-sandbox/public/jar_honey.png"
+type = "image"
+title = "honey jar"
+
+[[generated]]
+id = "G7WYw86S_moh4UeMwyG8o"
+uri = "file://artifacts/mockup-sandbox/public/beekeeper_suit.png"
+type = "image"
+title = "beekeeper suit"
 
 [[outputs]]
 id = "TqOBc58_UcpgIvwnjHuOY"
