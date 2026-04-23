@@ -177,7 +177,7 @@ const STATS_DEFS = [
   { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Szansa na podwójny zbiór",            rate: 0.004  },
   { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
   { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Większy zysk z drzew",               rate: 0.005  },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Większy zysk ze zwierząt",            rate: 0.005  },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Zwierzęta wolniej głodnieją · szansa na bonus",  rate: 0.003  },
   { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Szansa na bonusowy drop",             rate: 0.0025 },
 ];
 type StatKey = typeof STATS_DEFS[number]["key"];
@@ -353,9 +353,11 @@ function defaultBarnState(): BarnState {
   ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 }; });
   return s;
 }
-function barnCurrentHunger(st: BarnAnimalState): number {
+function barnCurrentHunger(st: BarnAnimalState, opiekaPts: number = 0): number {
   if (!st.lastFedAt) return 50;
-  return Math.max(0, Math.min(100, st.hunger - (Date.now() - st.lastFedAt) * HUNGER_DECAY_PER_MS));
+  const reduction = Math.min(0.90, opiekaPts * 0.003); // -0.3%/pkt, max -90%
+  const decayRate = HUNGER_DECAY_PER_MS * (1 - reduction);
+  return Math.max(0, Math.min(100, st.hunger - (Date.now() - st.lastFedAt) * decayRate));
 }
 function barnHungerStatus(h: number): { label:string; color:string; speedMod:number } {
   if (h >= 80) return { label:"Najedzone 😊", color:"#4ade80", speedMod:-0.10 };
@@ -1284,23 +1286,35 @@ export default function Page() {
   React.useEffect(() => {
     let changed = false;
     const next: BarnState = {};
+    const opiekaPts = playerStats?.opieka ?? 0;
+    const bonusChance = opiekaPts * 0.0015; // +0.15%/pkt
+    const bonusMessages: string[] = [];
     ANIMALS.forEach(a => {
       const st = barnState[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 };
       if (st.owned === 0) { next[a.id] = st; return; }
       let ns = { ...st };
       if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
       if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[a.id] = ns; return; }
-      const h = barnCurrentHunger(ns);
+      const h = barnCurrentHunger(ns, opiekaPts);
       const effMs = barnEffProdMs(a, h);
       if (barnNow - ns.prodStart >= effMs) {
         const canAdd = Math.min(ns.owned, a.storageMax - ns.storage);
-        ns.storage = ns.storage + canAdd;
+        let bonus = 0;
+        if (bonusChance > 0 && ns.storage + canAdd < a.storageMax && Math.random() < bonusChance) {
+          bonus = 1;
+          const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
+          if (item) bonusMessages.push(`${a.icon} ${a.name} wyprodukowała dodatkowe ${item.name}! ${item.icon}`);
+        }
+        ns.storage = Math.min(a.storageMax, ns.storage + canAdd + bonus);
         ns.prodStart = ns.storage < a.storageMax ? barnNow : 0;
         changed = true;
       }
       next[a.id] = ns;
     });
     if (changed) saveBarnState(next);
+    if (bonusMessages.length > 0) {
+      setMessage({ type:"success", title:"🐄 Bonus Opieki!", text: bonusMessages.join(" · ") });
+    }
   }, [barnNow]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const merged: Record<string,number> = { ...itemUpgRegistry };
@@ -4988,8 +5002,15 @@ export default function Page() {
                                 <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-black/40">
                                   <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
                                 </div>
+                                {def.key === "opieka" && val > 0 && (
+                                  <div className="mt-2 rounded-lg border border-green-500/20 bg-green-950/20 px-3 py-1.5 flex flex-col gap-0.5">
+                                    <p className="text-[11px] text-green-300 font-bold">🐄 Efekty Opieki przy {val} pkt:</p>
+                                    <p className="text-[11px] text-[#dfcfab]">🌿 Głód spada wolniej o <span className="font-bold text-green-300">{Math.min(90, val * 0.3).toFixed(1)}%</span></p>
+                                    <p className="text-[11px] text-[#dfcfab]">📦 Szansa na bonus produkt: <span className="font-bold text-yellow-300">+{(val * 0.15).toFixed(1)}%</span></p>
+                                  </div>
+                                )}
                                 <div className="mt-3 flex items-center justify-between">
-                                  <span className="text-sm opacity-70">{def.desc} (+{eff.toFixed(1)}%)</span>
+                                  <span className="text-sm opacity-70">{def.desc}</span>
                                   <button disabled={!canUp2}
                                     onClick={() => {
                                       if (!profile?.id) return;
@@ -5487,6 +5508,9 @@ export default function Page() {
 
           {showStodolaModal && (() => {
             const lvl = profile?.level ?? 0;
+            const opiekaPts = playerStats?.opieka ?? 0;
+            const bonusChancePct = (opiekaPts * 0.15).toFixed(1);
+            const hungerReducePct = (opiekaPts * 0.3).toFixed(1);
             const handleBuyAnimal = async (a: AnimalDef) => {
               const st = barnState[a.id];
               if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
@@ -5509,14 +5533,17 @@ export default function Page() {
               await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
-            const handleFeed = (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
+            const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
               const have = seedInventory[cropKey] ?? 0;
               if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${cropName} (${cropIcon}).`}); return; }
+              if (!profile?.id) return;
               const st = barnState[a.id];
-              const curH = barnCurrentHunger(st);
+              const curH = barnCurrentHunger(st, opiekaPts);
               const newH = Math.min(100, curH + points);
-              setSeedInventory((prev: Record<string,number>) => ({...prev, [cropKey]: have - 1}));
+              const newInv: Record<string,number> = { ...seedInventory, [cropKey]: have - 1 };
+              setSeedInventory(newInv);
               saveBarnState({...barnState, [a.id]: {...st, hunger: newH, lastFedAt: Date.now()}});
+              await supabase.from("profiles").update({ seed_inventory: serializeSeedInventory(newInv) }).eq("id", profile.id);
               setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
@@ -5590,7 +5617,19 @@ export default function Page() {
                   {/* ─ Główna treść ─ */}
                   <div className="flex-1 overflow-y-auto p-6 pt-5 text-[#dfcfab]">
 
-                    {/* ══ SCHOWEK NA PRODUKTY ══ */}
+                    {/* ══ EFEKT OPIEKI ══ */}
+                  {opiekaPts > 0 && (
+                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-950/20 px-4 py-2">
+                      <span className="text-lg">🐄</span>
+                      <div className="flex-1 flex flex-wrap gap-x-4 gap-y-0.5">
+                        <p className="text-[11px] font-bold text-green-300">Opieka ({opiekaPts} pkt) aktywna</p>
+                        <p className="text-[11px] text-[#dfcfab]">🌿 Głód wolniej spada o <span className="font-bold text-green-300">{hungerReducePct}%</span></p>
+                        <p className="text-[11px] text-[#dfcfab]">📦 Szansa na bonus produkt: <span className="font-bold text-yellow-300">+{bonusChancePct}%</span></p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ══ SCHOWEK NA PRODUKTY ══ */}
                     {Object.keys(barnItems).some(k => (barnItems[k]??0) > 0) && (
                       <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
                         <div className="flex items-center justify-between mb-2">
@@ -5627,7 +5666,7 @@ export default function Page() {
                           {ANIMALS.filter(a => lvl >= a.unlockLevel).map(a => {
                             const st = barnState[a.id];
                             const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-                            const h = barnCurrentHunger(st);
+                            const h = barnCurrentHunger(st, opiekaPts);
                             const hs = barnHungerStatus(h);
                             const effMs = barnEffProdMs(a, h);
                             const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
@@ -5674,7 +5713,7 @@ export default function Page() {
                       const a = selA;
                       const st = barnState[a.id];
                       const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-                      const h = barnCurrentHunger(st);
+                      const h = barnCurrentHunger(st, opiekaPts);
                       const hs = barnHungerStatus(h);
                       const effMs = barnEffProdMs(a, h);
                       const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
@@ -5747,7 +5786,7 @@ export default function Page() {
                                           const have = seedInventory[v.key] ?? 0;
                                           const canUse = have > 0;
                                           return (
-                                            <button key={v.key} onClick={() => handleFeed(a, v.key, v.pts, v.label, f.icon)}
+                                            <button key={v.key} onClick={() => void handleFeed(a, v.key, v.pts, v.label, f.icon)}
                                               disabled={!canUse}
                                               className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-[11px] font-bold transition mb-0.5 ${!canUse ? "opacity-30 cursor-not-allowed border-[#2d2010] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20 cursor-pointer"}`}>
                                               <span>{f.icon}{v.qIcon}</span>
