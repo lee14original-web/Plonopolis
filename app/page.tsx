@@ -293,9 +293,9 @@ const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
-  glowa:  { top:5,  left:35, width:30, height:22 },
-  dlonie: { top:38, left:5,  width:22, height:28 },
-  nogi:   { top:62, left:30, width:40, height:35 },
+  glowa:  { top:32, left:7.5, width:22.5, height:31 },
+  dlonie: { top:32, left:39, width:22, height:31 },
+  nogi:   { top:32, left:70, width:22, height:31 },
 };
 const BARN_STATE_KEY = "plonopolis_barn";
 const BARN_ITEMS_KEY = "plonopolis_barn_items";
