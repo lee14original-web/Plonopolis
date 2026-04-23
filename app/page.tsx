@@ -1254,6 +1254,7 @@ export default function Page() {
     try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
   });
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
+  const [eqFilter, setEqFilter] = React.useState<EquipSlot | "">("");
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
   const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>(() => {
@@ -5167,7 +5168,7 @@ export default function Page() {
                                     saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: getItemUpg(di.id) } });
                                     setDraggedItemId(null);
                                   }}
-                                  onClick={() => setEquippingSlot(isSel ? null : slot)}
+                                  onClick={() => { const next = isSel ? null : slot; setEquippingSlot(next); if (next) setEqFilter(next); }}
                                 >
                                   {eItem ? (
                                     <>
@@ -5218,38 +5219,52 @@ export default function Page() {
                               </div>
                             );
                           })()}
-                          {/* Lista itemów */}
-                          <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest">Przeciągnij na postać lub kliknij:</p>
-                          {(["dlonie","nogi","glowa"] as EquipSlot[]).map(slot => (
-                            <div key={slot}>
-                              <p className="text-[10px] text-[#8b6a3e] uppercase tracking-widest mb-0.5">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</p>
-                              <div className="flex flex-col gap-0.5">
-                                {CHAR_EQUIP_ITEMS.filter(i => i.slot === slot).map(item => {
-                                  const isOn = charEquipped[slot]?.id === item.id;
+                          {/* Lista itemów — filtry + siatka */}
+                          <div>
+                            {/* Tabs filtrów */}
+                            <div className="flex gap-1.5 mb-3 flex-wrap">
+                              {([["","Wszystkie","⚔️"],["glowa","Głowa","👑"],["dlonie","Dłonie","🧤"],["nogi","Nogi","👢"]] as [EquipSlot|"",string,string][]).map(([val,lbl,ico]) => (
+                                <button key={val} onClick={() => setEqFilter(val)}
+                                  className={`flex items-center gap-1 rounded-lg border px-3 py-1 text-[11px] font-bold transition ${eqFilter===val?"border-yellow-400/70 bg-yellow-500/15 text-yellow-200":"border-[#8b6a3e]/50 bg-black/20 text-[#dfcfab] hover:border-[#8b6a3e] hover:bg-white/5"}`}>
+                                  {ico} {lbl}
+                                </button>
+                              ))}
+                            </div>
+                            {/* Siatka kwadratowych slotów */}
+                            <div className="grid grid-cols-5 gap-2">
+                              {CHAR_EQUIP_ITEMS
+                                .filter(i => !eqFilter || i.slot === eqFilter)
+                                .sort((a,b) => a.unlockLevel - b.unlockLevel)
+                                .map(item => {
+                                  const sl = item.slot;
+                                  const isOn = charEquipped[sl]?.id === item.id;
                                   const locked = (profile?.level??0) < item.unlockLevel;
                                   const regUpg = getItemUpg(item.id);
-                                  const curUpg = isOn ? (charEquipped[slot]?.upg ?? regUpg) : regUpg;
+                                  const curUpg = isOn ? (charEquipped[sl]?.upg ?? regUpg) : regUpg;
+                                  const uc = curUpg > 0 ? (UPG_COLOR[curUpg]??"#6b7280") : locked ? "#374151" : "#8b6a3e";
                                   const isDragging = draggedItemId === item.id;
+                                  const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[sl];
                                   return (
                                     <div key={item.id}
                                       draggable={!locked}
                                       onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
                                       onDragEnd={() => setDraggedItemId(null)}
-                                      onClick={() => { if (locked) return; saveCharEquipped({ ...charEquipped, [slot]: isOn ? null : { id: item.id, upg: getItemUpg(item.id) } }); setEquippingSlot(isOn ? null : slot); }}
-                                      className={`flex items-center gap-2 rounded-lg border px-2 py-1 transition ${locked?"opacity-50 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-grab hover:bg-white/5"}`}
-                                      style={{ borderColor:locked?"#374151":isOn?UPG_COLOR[curUpg]:"#8b6a3e", background:isOn?"rgba(60,40,5,0.4)":"rgba(10,6,2,0.5)" }}>
-                                      <span className="text-base leading-none">{locked?"🔒":item.icon}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold truncate" style={{ color:locked?"#6b7280":isOn?UPG_COLOR[curUpg]:"#d1d5db" }}>{item.name}</p>
-                                        <p className="text-[9px] text-[#6b7280]">{locked?`lvl ${item.unlockLevel}`:bonusLine(item.bonuses, curUpg)}</p>
-                                      </div>
-                                      {!locked && curUpg > 0 && <span className="text-[9px] font-black" style={{ color:UPG_COLOR[curUpg] }}>{isOn?"✓ ":""} +{curUpg}</span>}
+                                      onClick={() => { if (locked) return; const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
+                                      title={locked ? `Odblokowanie: lvl ${item.unlockLevel}` : item.name}
+                                      className={`relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${locked?"opacity-40 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
+                                      style={{ borderColor:isOn?uc:locked?"#374151":"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
+                                      <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
+                                      <span className="text-2xl leading-none">{locked?"🔒":item.icon}</span>
+                                      <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:isOn?uc:"#9ca3af"}}>
+                                        {locked ? `lvl ${item.unlockLevel}` : item.name.split(" ")[0]}
+                                      </span>
+                                      {!locked && isOn && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
+                                      {!locked && !isOn && curUpg>0 && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
                                     </div>
                                   );
                                 })}
-                              </div>
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
                     );
