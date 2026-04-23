@@ -5231,7 +5231,7 @@ export default function Page() {
                               ))}
                             </div>
                             {/* Siatka kwadratowych slotów */}
-                            <div className="grid grid-cols-5 gap-2" style={{overflow:"visible"}}>
+                            <div className="grid grid-cols-5 gap-2">
                               {CHAR_EQUIP_ITEMS
                                 .filter(i => !eqFilter || i.slot === eqFilter)
                                 .sort((a,b) => a.unlockLevel - b.unlockLevel)
