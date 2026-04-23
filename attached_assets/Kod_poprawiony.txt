@@ -5173,8 +5173,8 @@ export default function Page() {
                                   {eItem ? (
                                     <>
                                       <span className="text-xl leading-none">{eItem.icon}</span>
-                                      <span className="text-[9px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
-                                      <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                      <span className="text-[30px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
+                                      <span className="text-[40px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
                                     </>
                                   ) : (
                                     <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
@@ -5231,7 +5231,7 @@ export default function Page() {
                               ))}
                             </div>
                             {/* Siatka kwadratowych slotów */}
-                            <div className="grid grid-cols-5 gap-2" style={{overflow:"visible"}}>
+                            <div className="grid grid-cols-5 gap-2">
                               {CHAR_EQUIP_ITEMS
                                 .filter(i => !eqFilter || i.slot === eqFilter)
                                 .sort((a,b) => a.unlockLevel - b.unlockLevel)
