@@ -5533,14 +5533,17 @@ export default function Page() {
               await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
-            const handleFeed = (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
+            const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
               const have = seedInventory[cropKey] ?? 0;
               if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${cropName} (${cropIcon}).`}); return; }
+              if (!profile?.id) return;
               const st = barnState[a.id];
               const curH = barnCurrentHunger(st, opiekaPts);
               const newH = Math.min(100, curH + points);
-              setSeedInventory((prev: Record<string,number>) => ({...prev, [cropKey]: have - 1}));
+              const newInv: Record<string,number> = { ...seedInventory, [cropKey]: have - 1 };
+              setSeedInventory(newInv);
               saveBarnState({...barnState, [a.id]: {...st, hunger: newH, lastFedAt: Date.now()}});
+              await supabase.from("profiles").update({ seed_inventory: serializeSeedInventory(newInv) }).eq("id", profile.id);
               setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
@@ -5783,7 +5786,7 @@ export default function Page() {
                                           const have = seedInventory[v.key] ?? 0;
                                           const canUse = have > 0;
                                           return (
-                                            <button key={v.key} onClick={() => handleFeed(a, v.key, v.pts, v.label, f.icon)}
+                                            <button key={v.key} onClick={() => void handleFeed(a, v.key, v.pts, v.label, f.icon)}
                                               disabled={!canUse}
                                               className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-[11px] font-bold transition mb-0.5 ${!canUse ? "opacity-30 cursor-not-allowed border-[#2d2010] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20 cursor-pointer"}`}>
                                               <span>{f.icon}{v.qIcon}</span>
