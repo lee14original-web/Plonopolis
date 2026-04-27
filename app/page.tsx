@@ -96,11 +96,14 @@ type Crop = {
   legendarySpritePath?: string;
 };
 
+type CompostType = "growth"|"yield"|"exp";
+type CompostBonus = { type: CompostType; value: number };
 type PlotCropState = {
   cropId: string | null;
   plantedAt: number | null;
   watered: boolean;
   plantedQuality?: string | null;
+  compostBonus?: CompostBonus | null;
 };
 
 type SeedInventory = Record<string, number>;
@@ -223,6 +226,22 @@ function upgBonusStr(base: number, upg: number, flat?: boolean): string {
 function bonusLine(bonuses: EquipBonus[], upg: number): string {
   return bonuses.map(b => `+${upgBonusStr(b.base, upg, b.flat)}${b.label}`).join(" · ");
 }
+
+// ─── KOMPOST ───
+const KOMPOST_MAX = 10;
+const COMPOST_DEFS: Record<CompostType, { id:string; name:string; icon:string; desc:string; effectLabel:string; bonusValues:number[]; bonusLabel:(v:number)=>string }> = {
+  growth: { id:"compost_growth", name:"Kompost Wzrostu",  icon:"⚡", desc:"Przyspiesza wzrost upraw",   effectLabel:"⚡ Szybszy wzrost",   bonusValues:[5,10,15],  bonusLabel:(v)=>`-${v}% czasu wzrostu` },
+  yield:  { id:"compost_yield",  name:"Kompost Urodzaju", icon:"🌾", desc:"Zwiększa plon przy zbiorze", effectLabel:"🌾 Większy plon",     bonusValues:[1,2,3],    bonusLabel:(v)=>`+${v} sztuk plonu` },
+  exp:    { id:"compost_exp",    name:"Kompost Nauki",    icon:"⭐", desc:"Daje więcej EXP przy zbiorze", effectLabel:"⭐ Więcej EXP",     bonusValues:[10,20,30], bonusLabel:(v)=>`+${v}% EXP` },
+};
+function isCompostKey(key: string) { return key.startsWith("compost_"); }
+function compostTypeFromKey(key: string): CompostType | null {
+  if (key === "compost_growth") return "growth";
+  if (key === "compost_yield") return "yield";
+  if (key === "compost_exp") return "exp";
+  return null;
+}
+
 const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   // ─── DŁONIE (LVL 1–25, jeden per poziom) ───
   { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:"% speed zbioru"}] },
@@ -291,6 +310,8 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
 }
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
+const OWNED_EQ_KEY   = "plonopolis_owned_eq";
+const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
   glowa:  { top:32, left:7.5, width:22.5, height:31 },
@@ -889,6 +910,15 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
     if (!Number.isInteger(plotId) || plotId < 1 || plotId > MAX_FIELDS) continue;
 
     const item = rawValue as Partial<PlotCropState> | null;
+    let _compostBonus: CompostBonus | null = null;
+    if (item && (item as { compostBonus?: unknown }).compostBonus && typeof (item as { compostBonus?: unknown }).compostBonus === "object") {
+      const cb = (item as { compostBonus: { type?: unknown; value?: unknown } }).compostBonus;
+      const ct = cb.type;
+      const cv = cb.value;
+      if ((ct === "growth" || ct === "yield" || ct === "exp") && typeof cv === "number" && cv > 0) {
+        _compostBonus = { type: ct as CompostType, value: cv };
+      }
+    }
     parsedEntries.push([
       plotId,
       {
@@ -896,6 +926,7 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
         plantedAt: typeof item?.plantedAt === "number" ? item.plantedAt : null,
         watered: Boolean(item?.watered),
         plantedQuality: typeof item?.plantedQuality === "string" ? item.plantedQuality : null,
+        compostBonus: _compostBonus,
       },
     ] as const);
   }
@@ -913,6 +944,8 @@ function serializePlotCrops(value: Record<number, PlotCropState>) {
           cropId: plot.cropId,
           plantedAt: plot.plantedAt,
           watered: Boolean(plot.watered),
+          plantedQuality: plot.plantedQuality ?? null,
+          compostBonus: plot.compostBonus ?? null,
         },
       ])
   );
@@ -1263,6 +1296,19 @@ export default function Page() {
   const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
   const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); try { localStorage.setItem(ITEM_UPG_KEY, JSON.stringify(reg)); } catch { /* ignore */ } };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
+  // ─── Ekwipunek: zdobyte przedmioty (gracz musi je zdobyć by je mieć) ───
+  const [ownedEqItems, setOwnedEqItems] = React.useState<Record<string, true>>(() => {
+    try { const s = localStorage.getItem(OWNED_EQ_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); try { localStorage.setItem(OWNED_EQ_KEY, JSON.stringify(next)); } catch {} };
+  // ─── Kompostownik ───
+  const [kompostCharges, setKompostCharges] = React.useState<number>(() => {
+    try { const s = localStorage.getItem(KOMPOST_KEY); const n = Number(s); return Number.isFinite(n) ? Math.max(0, Math.min(KOMPOST_MAX, n)) : 0; } catch { return 0; }
+  });
+  const saveKompostCharges = (n: number) => { const v = Math.max(0, Math.min(KOMPOST_MAX, n)); setKompostCharges(v); try { localStorage.setItem(KOMPOST_KEY, String(v)); } catch {} };
+  const [showKompostModal, setShowKompostModal] = React.useState(false);
+  const [kompostReward, setKompostReward] = React.useState<{ kind:"item"|"compost"; itemId?: string; itemName?: string; itemIcon?: string; compostType?: CompostType } | null>(null);
+  const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
   const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>(() => {
     try { const s = localStorage.getItem(SLOT_BOX_KEY); return s ? JSON.parse(s) : { ...DEFAULT_SLOT_BOX }; } catch { return { ...DEFAULT_SLOT_BOX }; }
   });
@@ -1320,11 +1366,17 @@ export default function Page() {
   React.useEffect(() => {
     const merged: Record<string,number> = { ...itemUpgRegistry };
     let changed = false;
+    const ownedNext: Record<string, true> = { ...ownedEqItems };
+    let ownedChanged = false;
     (["dlonie","nogi","glowa"] as EquipSlot[]).forEach(slot => {
       const eq = charEquipped[slot];
-      if (eq && eq.upg > 0 && (merged[eq.id] ?? 0) < eq.upg) { merged[eq.id] = eq.upg; changed = true; }
+      if (eq) {
+        if (eq.upg > 0 && (merged[eq.id] ?? 0) < eq.upg) { merged[eq.id] = eq.upg; changed = true; }
+        if (!ownedNext[eq.id]) { ownedNext[eq.id] = true; ownedChanged = true; }
+      }
     });
     if (changed) saveItemUpg(merged);
+    if (ownedChanged) saveOwnedEqItems(ownedNext);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
@@ -1593,13 +1645,17 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
+    // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu
+    const compostMult = (plot.compostBonus?.type === "growth")
+      ? Math.max(0.1, 1 - (plot.compostBonus.value / 100))
+      : 1;
     if (plot.watered) {
       const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.006) / 100;
       const waterMult = Math.max(0.5, 1 - zaradnoscBonus);
-      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult);
+      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult * compostMult);
     }
 
-    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult);
+    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult * compostMult);
   }
 
   function getGrowthProgress(plotId: number) {
@@ -2563,6 +2619,92 @@ export default function Page() {
     await handleUnlockPlot(plotToBuy);
   }
 
+  // ─── KOMPOSTOWNIK: aplikacja kompostu na pole ───
+  async function applyCompostToPlot(plotId: number, compostKey: string) {
+    const t = compostTypeFromKey(compostKey);
+    if (!t) return;
+    if (!profile?.id) return;
+    if ((seedInventory[compostKey] ?? 0) <= 0) {
+      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
+      return;
+    }
+    const plot = getPlotCrop(plotId);
+    if (!plot.cropId) {
+      setMessage({ type:"info", title:"Puste pole", text:"Najpierw posadź uprawę, zanim użyjesz kompostu." });
+      return;
+    }
+    if (plot.compostBonus) {
+      setMessage({ type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost." });
+      return;
+    }
+    const def = COMPOST_DEFS[t];
+    const value = def.bonusValues[Math.floor(Math.random() * def.bonusValues.length)];
+    const nextPlot: PlotCropState = { ...plot, compostBonus: { type: t, value } };
+    const nextPlots = { ...plotCrops, [plotId]: nextPlot };
+    setPlotCrops(nextPlots);
+    // Update inventory
+    const nextInv = { ...seedInventory };
+    nextInv[compostKey] = (nextInv[compostKey] ?? 0) - 1;
+    if (nextInv[compostKey] <= 0) delete nextInv[compostKey];
+    setSeedInventory(nextInv);
+    // Persist
+    await supabase.from("profiles").update({
+      plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+      seed_inventory: nextInv,
+    }).eq("id", profile.id);
+    // Notice
+    setCompostNotice({ type: t, value, plotId });
+    setTimeout(() => setCompostNotice(null), 5000);
+  }
+
+  // ─── KOMPOSTOWNIK: wrzuć uprawę → +1 ładowania ───
+  async function depositCropToCompost(seedKey: string) {
+    if ((seedInventory[seedKey] ?? 0) <= 0) return;
+    if (kompostCharges >= KOMPOST_MAX) return;
+    const nextInv = { ...seedInventory };
+    nextInv[seedKey] = (nextInv[seedKey] ?? 0) - 1;
+    if (nextInv[seedKey] <= 0) delete nextInv[seedKey];
+    setSeedInventory(nextInv);
+    saveKompostCharges(kompostCharges + 1);
+    if (profile?.id) {
+      await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+    }
+  }
+
+  // ─── KOMPOSTOWNIK: zbierz nagrodę przy 10/10 ───
+  function claimKompostReward() {
+    if (kompostCharges < KOMPOST_MAX) return;
+    const roll = Math.random() * 100;
+    // 10% — losowy przedmiot ekwipunku ≤ poziom gracza, którego gracz JESZCZE nie ma
+    if (roll < 10) {
+      const playerLvl = profile?.level ?? 1;
+      const candidates = CHAR_EQUIP_ITEMS.filter(i => i.unlockLevel <= playerLvl && !ownedEqItems[i.id]);
+      if (candidates.length > 0) {
+        const item = candidates[Math.floor(Math.random() * candidates.length)];
+        const ownedNext = { ...ownedEqItems, [item.id]: true as const };
+        saveOwnedEqItems(ownedNext);
+        setKompostReward({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+        saveKompostCharges(0);
+        return;
+      }
+      // Fallback: jeśli gracz ma już wszystko ze swojego poziomu — daj losowy kompost
+    }
+    // 40% Wzrost / 25% Urodzaj / 25% Nauka  (lub fallback z 10% gdy nic do zdobycia)
+    let compostType: CompostType;
+    const r2 = Math.random() * 90; // 90 = 40+25+25
+    if (r2 < 40) compostType = "growth";
+    else if (r2 < 65) compostType = "yield";
+    else compostType = "exp";
+    const def = COMPOST_DEFS[compostType];
+    const nextInv = { ...seedInventory, [def.id]: (seedInventory[def.id] ?? 0) + 1 };
+    setSeedInventory(nextInv);
+    if (profile?.id) {
+      void supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+    }
+    setKompostReward({ kind:"compost", compostType });
+    saveKompostCharges(0);
+  }
+
   async function handleHarvestPlot(plotId: number) {
     if (!profile) return;
 
@@ -2687,6 +2829,16 @@ export default function Page() {
       }, 0);
     }
 
+    // ─── Bonus z kompostu (zapisany na polu) ───
+    const _compostBonusOnPlot = plot.compostBonus ?? null;
+    let _compostExtraYield = 0;
+    if (_compostBonusOnPlot?.type === "yield") {
+      _compostExtraYield = _compostBonusOnPlot.value;
+      const _bonusKey = getQualityKey(crop.id, "good");
+      nextInventory[_bonusKey] = (nextInventory[_bonusKey] ?? 0) + _compostExtraYield;
+      _totalYield += _compostExtraYield;
+    }
+
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
     // Natychmiast nadpisz seedInventory wersją z kluczami jakości (po migracji)
@@ -2706,6 +2858,31 @@ export default function Page() {
       } else {
         actualExp = Math.max(0, (rpcProf.xp ?? 0) - prevXp);
       }
+    }
+
+    // ─── Bonus EXP z kompostu Nauki ───
+    let _compostExtraExp = 0;
+    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0 && profile?.id) {
+      _compostExtraExp = Math.round(actualExp * (_compostBonusOnPlot.value / 100));
+      if (_compostExtraExp > 0) {
+        const _newXp = (rpcProf?.xp ?? 0) + _compostExtraExp;
+        const _xpToNext = (rpcProf?.xp_to_next_level ?? 100);
+        // Bezpieczne nadpisanie tylko jeśli nie wywoła levelup
+        if (_newXp < _xpToNext) {
+          await supabase.from("profiles").update({ xp: _newXp }).eq("id", profile.id);
+          setProfile(p => p ? { ...p, xp: _newXp } : p);
+          actualExp += _compostExtraExp;
+        } else {
+          // Levelup case: pomijamy bonus (lub można byłoby wywołać RPC dla levelup)
+          _compostExtraExp = 0;
+        }
+      }
+    }
+
+    // ─── Powiadomienie o aktywacji kompostu ───
+    if (_compostBonusOnPlot) {
+      setCompostNotice({ type: _compostBonusOnPlot.type, value: _compostBonusOnPlot.value, plotId });
+      setTimeout(() => setCompostNotice(null), 5000);
     }
 
     // Dodaj do logu zbiorów
@@ -3306,10 +3483,11 @@ export default function Page() {
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
-                      {/* Kompostownik — bez akcji */}
+                      {/* Kompostownik */}
                       <button
                         type="button"
                         title="Kompostownik"
+                        onClick={() => setShowKompostModal(true)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
@@ -3907,7 +4085,7 @@ export default function Page() {
                               </div>
 
                               <div className="mt-3">
-                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0).length === 0 ? (
+                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !isCompostKey(k)).length === 0 ? (
                                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                                     Plecak jest pusty.
                                   </div>
@@ -3915,7 +4093,7 @@ export default function Page() {
                                   <div className="grid grid-cols-4 gap-2">
                                     {(() => {
                                       const raw = (Object.entries(seedInventory).filter(
-                                        ([k, amount]) => Number(amount) > 0
+                                        ([k, amount]) => Number(amount) > 0 && !isCompostKey(k)
                                       ) as Array<[string, number]>);
                                       const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
                                         const { baseCropId: _aCrop, quality: _aQ } = parseQualityKey(aId);
@@ -4033,11 +4211,40 @@ export default function Page() {
                                   </div>
                                 </div>
                               )}
-                              {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && (
+                              {/* Kompost — przeciągalny na pola */}
+                              {(["compost_growth","compost_yield","compost_exp"] as const).map(cid => {
+                                const cnt = seedInventory[cid] ?? 0;
+                                if (cnt <= 0) return null;
+                                const t = compostTypeFromKey(cid)!;
+                                const def = COMPOST_DEFS[t];
+                                return (
+                                  <div key={cid}
+                                    draggable
+                                    onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                                    onDragEnd={() => setDraggedSeedId(null)}
+                                    className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                                    <span className="text-3xl">{def.icon}</span>
+                                    <div className="flex-1">
+                                      <p className="text-xs font-bold text-emerald-200">{def.name}</p>
+                                      <p className="text-[10px] text-emerald-400/80">{def.desc}</p>
+                                    </div>
+                                    <span className="text-base font-black text-emerald-300">×{cnt}</span>
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                      <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                        <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
+                                        <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
+                                        <p className="text-[10px] text-emerald-400 mt-1">Możliwy bonus: {def.bonusValues.map(v=>def.bonusLabel(v)).join(" / ")}</p>
+                                        <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !(["compost_growth","compost_yield","compost_exp"].some(k => (seedInventory[k] ?? 0) > 0)) && (
                                 <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
                                   <p className="text-2xl mb-2">🎒</p>
                                   <p>Brak przedmiotów.</p>
-                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
+                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
                                 </div>
                               )}
                             </div>
@@ -4826,11 +5033,11 @@ export default function Page() {
                   </div>
                   <div className="flex-1 overflow-y-auto p-3">
                     {backpackTab === "uprawy" && (
-                      Object.entries(seedInventory).filter(([,amt]) => Number(amt) > 0).length === 0
+                      Object.entries(seedInventory).filter(([k,amt]) => Number(amt) > 0 && !isCompostKey(k)).length === 0
                         ? <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>
                         : <div className="grid grid-cols-3 gap-2">
                             {(() => {
-                              const raw = Object.entries(seedInventory).filter(([,amt]) => Number(amt) > 0) as Array<[string,number]>;
+                              const raw = Object.entries(seedInventory).filter(([k,amt]) => Number(amt) > 0 && !isCompostKey(k)) as Array<[string,number]>;
                               return [...raw].sort(([aId,aAmt],[bId,bAmt]) => {
                                 const {baseCropId:_aC,quality:_aQ}=parseQualityKey(aId);
                                 const {baseCropId:_bC,quality:_bQ}=parseQualityKey(bId);
@@ -4902,11 +5109,40 @@ export default function Page() {
                             </div>
                           </div>
                         )}
-                        {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && (
+                        {/* Kompost — przeciągalny na pola */}
+                        {(["compost_growth","compost_yield","compost_exp"] as const).map(cid => {
+                          const cnt = seedInventory[cid] ?? 0;
+                          if (cnt <= 0) return null;
+                          const t = compostTypeFromKey(cid)!;
+                          const def = COMPOST_DEFS[t];
+                          return (
+                            <div key={cid}
+                              draggable
+                              onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                              onDragEnd={() => setDraggedSeedId(null)}
+                              className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                              <span className="text-3xl">{def.icon}</span>
+                              <div className="flex-1">
+                                <p className="text-xs font-bold text-emerald-200">{def.name}</p>
+                                <p className="text-[10px] text-emerald-400/80">{def.desc}</p>
+                              </div>
+                              <span className="text-base font-black text-emerald-300">×{cnt}</span>
+                              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                  <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
+                                  <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
+                                  <p className="text-[10px] text-emerald-400 mt-1">Możliwy bonus: {def.bonusValues.map(v=>def.bonusLabel(v)).join(" / ")}</p>
+                                  <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !(["compost_growth","compost_yield","compost_exp"].some(k => (seedInventory[k] ?? 0) > 0)) && (
                           <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
                             <p className="text-2xl mb-2">🎒</p>
                             <p>Brak przedmiotów.</p>
-                            <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie.</p>
+                            <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
                           </div>
                         )}
                       </div>
@@ -5173,8 +5409,8 @@ export default function Page() {
                                   {eItem ? (
                                     <>
                                       <span className="text-xl leading-none">{eItem.icon}</span>
-                                      <span className="text-[9px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
-                                      <span className="text-[8px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                      <span className="text-[30px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
+                                      <span className="text-[40px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
                                     </>
                                   ) : (
                                     <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
@@ -5232,46 +5468,56 @@ export default function Page() {
                             </div>
                             {/* Siatka kwadratowych slotów */}
                             <div className="grid grid-cols-5 gap-2">
-                              {CHAR_EQUIP_ITEMS
-                                .filter(i => !eqFilter || i.slot === eqFilter)
-                                .sort((a,b) => a.unlockLevel - b.unlockLevel)
-                                .map(item => {
+                              {(() => {
+                                const ownedList = CHAR_EQUIP_ITEMS
+                                  .filter(i => !eqFilter || i.slot === eqFilter)
+                                  .filter(i => ownedEqItems[i.id])
+                                  .sort((a,b) => a.unlockLevel - b.unlockLevel);
+                                if (ownedList.length === 0) {
+                                  return (
+                                    <div className="col-span-5 rounded-xl border border-dashed border-[#8b6a3e]/50 bg-black/20 p-6 text-center">
+                                      <p className="text-3xl mb-2 opacity-60">🎒</p>
+                                      <p className="text-sm font-bold text-[#dfcfab]">Brak zdobytych przedmiotów</p>
+                                      <p className="text-[11px] text-[#8b6a3e] mt-1">Zdobądź przedmioty w Kompostowniku — jest 10% szans na losowy item z Twojego poziomu lub niższego.</p>
+                                    </div>
+                                  );
+                                }
+                                return ownedList.map(item => {
                                   const sl = item.slot;
                                   const isOn = charEquipped[sl]?.id === item.id;
-                                  const locked = (profile?.level??0) < item.unlockLevel;
                                   const regUpg = getItemUpg(item.id);
                                   const curUpg = isOn ? (charEquipped[sl]?.upg ?? regUpg) : regUpg;
-                                  const uc = curUpg > 0 ? (UPG_COLOR[curUpg]??"#6b7280") : locked ? "#374151" : "#8b6a3e";
+                                  const uc = curUpg > 0 ? (UPG_COLOR[curUpg]??"#6b7280") : "#8b6a3e";
                                   const isDragging = draggedItemId === item.id;
                                   const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[sl];
                                   return (
                                     <div key={item.id}
-                                      draggable={!locked}
-                                      onDragStart={() => { if (!locked) setDraggedItemId(item.id); }}
+                                      draggable
+                                      onDragStart={() => setDraggedItemId(item.id)}
                                       onDragEnd={() => setDraggedItemId(null)}
-                                      onClick={() => { if (locked) return; const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
-                                      className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${locked?"opacity-40 cursor-not-allowed":isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
-                                      style={{ borderColor:isOn?uc:locked?"#374151":"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
+                                      onClick={() => { const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
+                                      className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
+                                      style={{ borderColor:isOn?uc:"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
                                       <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
-                                      <span className="text-2xl leading-none">{locked?"🔒":item.icon}</span>
+                                      <span className="text-2xl leading-none">{item.icon}</span>
                                       <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:isOn?uc:"#9ca3af"}}>
-                                        {locked ? `lvl ${item.unlockLevel}` : item.name.split(" ")[0]}
+                                        {item.name.split(" ")[0]}
                                       </span>
-                                      {!locked && isOn && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
-                                      {!locked && !isOn && curUpg>0 && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
+                                      {isOn && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
+                                      {!isOn && curUpg>0 && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
                                       {/* Tooltip */}
                                       <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
                                         <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
-                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[sl].label} · wymagany lvl <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[sl].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
                                         <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
                                         <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, curUpg)}</p>
                                         {curUpg > 0 && <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{curUpg}</p>}
-                                        {locked && <p className="text-[10px] text-red-400 font-bold">🔒 Zablokowane do lvl {item.unlockLevel}</p>}
-                                        {!locked && isOn && <p className="text-[10px] text-green-400 font-bold">✓ Założone</p>}
+                                        {isOn && <p className="text-[10px] text-green-400 font-bold">✓ Założone</p>}
                                       </div>
                                     </div>
                                   );
-                                })}
+                                });
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -5279,6 +5525,154 @@ export default function Page() {
                     );
                   })()}
 
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ KOMPOSTOWNIK MODAL ═══ */}
+          {showKompostModal && (
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+              <div className="relative w-full max-w-[860px] max-h-[92vh] overflow-hidden rounded-[28px] border border-emerald-700/60 bg-[rgba(10,18,12,0.98)] shadow-2xl flex flex-col">
+                <button onClick={() => { setShowKompostModal(false); setKompostReward(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-700/60 bg-black/40 text-emerald-200 transition hover:border-red-400/60 hover:text-red-300">✕</button>
+
+                <div className="px-6 pt-6 pb-3 border-b border-emerald-800/40">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl">🌿</span>
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-black text-emerald-200">Kompostownik</h2>
+                      <p className="text-xs text-emerald-400/70 mt-0.5">Wrzuć 10 upraw — losuj nagrodę: kompost, doświadczenie lub przedmiot</p>
+                    </div>
+                  </div>
+                  {/* Pasek ładowania */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-emerald-300">Ładowania</span>
+                      <span className="font-black text-emerald-200">{kompostCharges} / {KOMPOST_MAX}</span>
+                    </div>
+                    <div className="h-3 rounded-full bg-emerald-950/60 border border-emerald-800/50 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all" style={{ width: `${(kompostCharges / KOMPOST_MAX) * 100}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {kompostReward ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-4">
+                      <div className="text-7xl animate-bounce">
+                        {kompostReward.kind === "item"
+                          ? kompostReward.itemIcon
+                          : kompostReward.compostType ? COMPOST_DEFS[kompostReward.compostType].icon : "🎁"}
+                      </div>
+                      <p className="text-3xl font-black text-emerald-200 text-center">
+                        {kompostReward.kind === "item"
+                          ? `Zdobyłeś: ${kompostReward.itemName}!`
+                          : kompostReward.compostType ? `Zdobyłeś: ${COMPOST_DEFS[kompostReward.compostType].name}!` : "Zdobyłeś nagrodę!"}
+                      </p>
+                      <p className="text-sm text-emerald-400/80 text-center max-w-md">
+                        {kompostReward.kind === "item"
+                          ? "Nowy przedmiot trafił do Twojego ekwipunku."
+                          : kompostReward.compostType ? `${COMPOST_DEFS[kompostReward.compostType].desc} — przeciągnij na pole z uprawą.` : ""}
+                      </p>
+                      <button
+                        onClick={() => setKompostReward(null)}
+                        className="mt-3 rounded-2xl border border-emerald-500 bg-emerald-700/50 px-6 py-2 text-sm font-black text-emerald-100 hover:bg-emerald-600/60 hover:scale-105 transition">
+                        Zamknij
+                      </button>
+                    </div>
+                  ) : kompostCharges >= KOMPOST_MAX ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-4">
+                      <div className="text-6xl animate-pulse">🎁</div>
+                      <p className="text-xl font-black text-emerald-200">Kompostownik gotowy!</p>
+                      <p className="text-sm text-emerald-400/80 text-center max-w-md">
+                        Wszystkie 10 ładowań uzbierane. Kliknij, aby losować nagrodę.
+                      </p>
+                      <button
+                        onClick={claimKompostReward}
+                        className="rounded-2xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-3 text-base font-black text-white hover:scale-105 transition shadow-lg shadow-emerald-500/30">
+                        🎲 Zbierz nagrodę
+                      </button>
+                      <p className="text-[11px] text-emerald-400/60 text-center max-w-sm">
+                        Szansa: 10% przedmiot · 40% kompost wzrostu · 25% kompost urodzaju · 25% kompost nauki
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-emerald-400/80 mb-3">Kliknij uprawę, aby ją wrzucić do kompostownika ({KOMPOST_MAX - kompostCharges} pozostało):</p>
+                      {(() => {
+                        const cropEntries = (Object.entries(seedInventory).filter(
+                          ([k, amt]) => Number(amt) > 0 && !isCompostKey(k)
+                        ) as Array<[string, number]>);
+                        if (cropEntries.length === 0) {
+                          return (
+                            <div className="rounded-2xl border border-dashed border-emerald-800/50 bg-black/20 p-8 text-center">
+                              <p className="text-4xl mb-3">🥕</p>
+                              <p className="text-sm font-bold text-emerald-200">Brak upraw do kompostowania</p>
+                              <p className="text-[11px] text-emerald-400/70 mt-1">Najpierw zbierz coś z pola.</p>
+                            </div>
+                          );
+                        }
+                        const sorted = [...cropEntries].sort(([aId], [bId]) => {
+                          const a = parseQualityKey(aId);
+                          const b = parseQualityKey(bId);
+                          const aLv = CROPS.find(c => c.id === a.baseCropId)?.unlockLevel ?? 999;
+                          const bLv = CROPS.find(c => c.id === b.baseCropId)?.unlockLevel ?? 999;
+                          return aLv !== bLv ? aLv - bLv : (a.quality ?? "").localeCompare(b.quality ?? "");
+                        });
+                        return (
+                          <div className="grid grid-cols-5 gap-2">
+                            {sorted.map(([seedKey, amount]) => {
+                              const { baseCropId, quality } = parseQualityKey(seedKey);
+                              const crop = CROPS.find(c => c.id === baseCropId);
+                              if (!crop) return null;
+                              const qDef = quality ? CROP_QUALITY_DEFS[quality] : null;
+                              const sprite = quality === "epic" && crop.epicSpritePath ? crop.epicSpritePath
+                                : quality === "rotten" && crop.rottenSpritePath ? crop.rottenSpritePath
+                                : quality === "legendary" && crop.legendarySpritePath ? crop.legendarySpritePath
+                                : crop.spritePath;
+                              return (
+                                <button
+                                  key={seedKey}
+                                  onClick={() => void depositCropToCompost(seedKey)}
+                                  disabled={kompostCharges >= KOMPOST_MAX}
+                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-emerald-800/60 bg-emerald-950/40 hover:border-emerald-400 hover:bg-emerald-900/50 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2"
+                                  style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
+                                  {sprite ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={sprite} alt={crop.name} className="w-10 h-10 object-contain" />
+                                  ) : (
+                                    <span className="text-3xl">🌱</span>
+                                  )}
+                                  <span className="mt-1 text-[10px] font-bold text-emerald-200 truncate w-full text-center">{crop.name}</span>
+                                  {qDef && <span className="text-[9px] font-black" style={{ color: qDef.borderColor }}>{qDef.label}</span>}
+                                  <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-emerald-200">×{amount}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-3 border-t border-emerald-800/40 text-center">
+                  <p className="text-[11px] text-emerald-500/70">
+                    Rodzaje kompostu: ⚡ Wzrost (-5/10/15% czasu) · 🌾 Urodzaj (+1/2/3 plon) · ⭐ Nauka (+10/20/30% EXP)
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ POWIADOMIENIE KOMPOSTU ═══ */}
+          {compostNotice && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[400] animate-fade-in">
+              <div className="rounded-2xl border border-emerald-500/60 bg-[rgba(10,30,15,0.97)] px-5 py-3 shadow-2xl shadow-emerald-500/30 flex items-center gap-3">
+                <span className="text-3xl">🌿</span>
+                <div>
+                  <p className="text-sm font-black text-emerald-200">Kompost aktywowany!</p>
+                  <p className="text-xs text-emerald-300/90">{compostNotice}</p>
                 </div>
               </div>
             </div>
@@ -6102,7 +6496,7 @@ export default function Page() {
                             key={plotId}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
-                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ void handlePlantFromSelectedSeed(plotId, draggedSeedId); setDraggedSeedId(null); }}}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onClick={() => {
                               setSelectedPlotId(plotId);
 
