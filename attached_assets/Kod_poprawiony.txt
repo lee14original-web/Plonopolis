@@ -5725,9 +5725,10 @@ export default function Page() {
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {/* Sticky controls — pasek ilości + filtr (NIE scrolluje się z uprawami) */}
+                  <div className="px-6 pt-3 pb-2 border-b border-emerald-800/30 bg-[rgba(8,16,10,0.85)]">
                     {/* Wybór ilości */}
-                    <div className="mb-3">
+                    <div className="mb-2">
                       <p className="text-[11px] text-emerald-400/80 mb-1">Ilość przy kliknięciu:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {QTY_OPTIONS.map(q => (
@@ -5741,7 +5742,7 @@ export default function Page() {
                       </div>
                     </div>
                     {/* Filtr jakości */}
-                    <div className="mb-3">
+                    <div>
                       <p className="text-[11px] text-emerald-400/80 mb-1">Filtruj uprawy:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {FILTER_OPTIONS.map(f => (
@@ -5755,7 +5756,9 @@ export default function Page() {
                         ))}
                       </div>
                     </div>
+                  </div>
 
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
                     {/* Siatka upraw */}
                     {(() => {
                       let cropEntries = (Object.entries(seedInventory).filter(
