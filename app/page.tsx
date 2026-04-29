@@ -1351,6 +1351,7 @@ export default function Page() {
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
     | { kind:"compost"; compostType: CompostType; value: number };
   const [kompostRewards, setKompostRewards] = React.useState<KompostRewardEntry[] | null>(null);
+  const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
@@ -5795,37 +5796,60 @@ export default function Page() {
                                 const r = g.entry;
                                 if (r.kind === "item") {
                                   const it = CHAR_EQUIP_ITEMS.find(x => x.id === r.itemId);
+                                  const tipNode = (
+                                    <>
+                                      <p className="text-xs font-black text-amber-200">🎁 Przedmiot ekwipunku</p>
+                                      <p className="text-[11px] font-bold text-amber-100">{r.itemIcon} {r.itemName}</p>
+                                      {it && <p className="text-[10px] text-amber-300/80">Poziom: {it.unlockLevel} · Slot: {EQUIP_SLOT_META[it.slot]?.label}</p>}
+                                      {it && <p className="text-[10px] text-cyan-300">{bonusLine(it.bonuses, 0)}</p>}
+                                      <p className="text-[10px] text-emerald-300 mt-1">✓ Trafił do Twojego ekwipunku</p>
+                                    </>
+                                  );
+                                  const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
+                                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                    setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: "#fbbf24" });
+                                  };
                                   return (
-                                    <div key={i} className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-amber-400/70 bg-amber-950/40 p-2 shadow-lg shadow-amber-500/20">
+                                    <div
+                                      key={i}
+                                      onMouseEnter={showTip}
+                                      onMouseMove={showTip}
+                                      onMouseLeave={() => setKompostHoverTip(null)}
+                                      className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-amber-400/70 bg-amber-950/40 p-2 shadow-lg shadow-amber-500/20 hover:border-amber-300 transition cursor-help">
                                       <span className="text-3xl">{r.itemIcon}</span>
                                       <span className="mt-1 text-[10px] font-black text-amber-200 truncate w-full text-center">{r.itemName}</span>
                                       {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-amber-700 px-1 text-[10px] font-black text-white">×{g.count}</span>}
-                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 hidden group-hover:flex flex-col gap-1 min-w-[200px] rounded-xl border border-amber-500/70 bg-[rgba(20,14,4,0.98)] px-3 py-2 shadow-2xl text-left">
-                                        <p className="text-xs font-black text-amber-200">🎁 Przedmiot ekwipunku</p>
-                                        <p className="text-[11px] font-bold text-amber-100">{r.itemIcon} {r.itemName}</p>
-                                        {it && <p className="text-[10px] text-amber-300/80">Poziom: {it.unlockLevel} · Slot: {EQUIP_SLOT_META[it.slot]?.label}</p>}
-                                        {it && <p className="text-[10px] text-cyan-300">{bonusLine(it.bonuses, 0)}</p>}
-                                        <p className="text-[10px] text-emerald-300 mt-1">✓ Trafił do Twojego ekwipunku</p>
-                                      </div>
                                     </div>
                                   );
                                 }
                                 const def = COMPOST_DEFS[r.compostType];
                                 const tierIdx = def.bonusValues.indexOf(r.value);
                                 const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                const tipNode = (
+                                  <>
+                                    <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
+                                    <p className="text-[10px] text-emerald-300/80">{def.desc}</p>
+                                    <p className="text-[11px] font-black mt-1" style={{ color: tierColor }}>Tier: {def.tierName(r.value)}</p>
+                                    <p className="text-[11px] font-black" style={{ color: tierColor }}>Bonus: {def.bonusLabel(r.value)}</p>
+                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą w plecaku</p>
+                                  </>
+                                );
+                                const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
+                                  const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                  setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tierColor });
+                                };
                                 return (
-                                  <div key={i} className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 bg-emerald-950/40 p-2 shadow-lg" style={{ borderColor: tierColor }}>
+                                  <div
+                                    key={i}
+                                    onMouseEnter={showTip}
+                                    onMouseMove={showTip}
+                                    onMouseLeave={() => setKompostHoverTip(null)}
+                                    className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 bg-emerald-950/40 p-2 shadow-lg hover:brightness-110 transition cursor-help"
+                                    style={{ borderColor: tierColor }}>
                                     <span className="text-3xl">{def.icon}</span>
                                     <span className="mt-1 text-[9px] font-black text-emerald-200 truncate w-full text-center">{def.name.replace("Kompost ","")}</span>
                                     <span className="text-[9px] font-black" style={{ color: tierColor }}>{def.tierName(r.value)}</span>
                                     {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-emerald-700 px-1 text-[10px] font-black text-white">×{g.count}</span>}
-                                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 hidden group-hover:flex flex-col gap-1 min-w-[200px] rounded-xl border border-emerald-500/70 bg-[rgba(8,18,12,0.98)] px-3 py-2 shadow-2xl text-left">
-                                      <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
-                                      <p className="text-[10px] text-emerald-300/80">{def.desc}</p>
-                                      <p className="text-[11px] font-black mt-1" style={{ color: tierColor }}>Tier: {def.tierName(r.value)}</p>
-                                      <p className="text-[11px] font-black" style={{ color: tierColor }}>Bonus: {def.bonusLabel(r.value)}</p>
-                                      <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą w plecaku</p>
-                                    </div>
                                   </div>
                                 );
                               })}
@@ -5835,12 +5859,33 @@ export default function Page() {
                       </div>
                       <div className="px-6 py-3 border-t border-emerald-800/40 flex justify-center">
                         <button
-                          onClick={() => setKompostRewards(null)}
+                          onClick={() => { setKompostRewards(null); setKompostHoverTip(null); }}
                           className="rounded-2xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-2 text-sm font-black text-white hover:scale-105 transition shadow-lg shadow-emerald-500/30">
                           Świetnie!
                         </button>
                       </div>
                     </div>
+                    {/* Fixed-position tooltip — poza overflow-hidden panelu */}
+                    {kompostHoverTip && (() => {
+                      const TIP_W = 240;
+                      const TIP_H_EST = 130;
+                      const margin = 10;
+                      const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+                      const vh = typeof window !== "undefined" ? window.innerHeight : 720;
+                      let left = kompostHoverTip.x - TIP_W / 2;
+                      left = Math.max(margin, Math.min(vw - TIP_W - margin, left));
+                      let top = kompostHoverTip.y - TIP_H_EST - 12;
+                      const placeBelow = top < margin;
+                      if (placeBelow) top = kompostHoverTip.y + 70;
+                      top = Math.max(margin, Math.min(vh - TIP_H_EST - margin, top));
+                      return (
+                        <div
+                          className="pointer-events-none fixed z-[9999] flex flex-col gap-1 rounded-xl border-2 px-3 py-2 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
+                          style={{ left, top, width: TIP_W, borderColor: kompostHoverTip.color }}>
+                          {kompostHoverTip.node}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
