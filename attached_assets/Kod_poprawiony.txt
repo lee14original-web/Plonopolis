@@ -2724,8 +2724,11 @@ export default function Page() {
     // Update inventory
     const nextInv = { ...seedInventory };
     nextInv[compostKey] = (nextInv[compostKey] ?? 0) - 1;
-    if (nextInv[compostKey] <= 0) delete nextInv[compostKey];
+    const ranOut = nextInv[compostKey] <= 0;
+    if (ranOut) delete nextInv[compostKey];
     setSeedInventory(nextInv);
+    // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
+    if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
     // Persist
     await supabase.from("profiles").update({
       plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
@@ -4329,16 +4332,22 @@ export default function Page() {
                                   const value = compostValueFromKey(cid);
                                   const tierIdx = def.bonusValues.indexOf(value);
                                   const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                  const isSel = selectedSeedId === cid;
                                   return (
                                     <div key={cid}
                                       draggable
                                       onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                       onDragEnd={() => setDraggedSeedId(null)}
-                                      className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                      className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
+                                      style={isSel
+                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
                                       <span className="text-3xl">{def.icon}</span>
                                       <div className="flex-1">
                                         <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
                                         <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
+                                        {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY · klik w pole = nałóż</p>}
                                       </div>
                                       <span className="text-base font-black text-emerald-300">×{cnt}</span>
                                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -4346,7 +4355,7 @@ export default function Page() {
                                           <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
                                           <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
                                           <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
                                         </div>
                                       </div>
                                     </div>
@@ -5249,16 +5258,22 @@ export default function Page() {
                             const value = compostValueFromKey(cid);
                             const tierIdx = def.bonusValues.indexOf(value);
                             const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                            const isSel = selectedSeedId === cid;
                             return (
                               <div key={cid}
                                 draggable
                                 onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                 onDragEnd={() => setDraggedSeedId(null)}
-                                className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                                onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
+                                style={isSel
+                                  ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                  : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
                                 <span className="text-3xl">{def.icon}</span>
                                 <div className="flex-1">
                                   <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
                                   <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
+                                  {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY</p>}
                                 </div>
                                 <span className="text-base font-black text-emerald-300">×{cnt}</span>
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -5266,7 +5281,7 @@ export default function Page() {
                                     <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
                                     <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
                                     <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
                                   </div>
                                 </div>
                               </div>
@@ -6839,6 +6854,11 @@ export default function Page() {
 
                               if (selectedTool === "sickle") {
                                 void handleHarvestPlot(plotId);
+                                return;
+                              }
+
+                              if (selectedSeedId && isCompostKey(selectedSeedId)) {
+                                void applyCompostToPlot(plotId, selectedSeedId);
                                 return;
                               }
 
