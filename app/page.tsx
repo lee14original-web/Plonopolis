@@ -335,6 +335,7 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 const OWNED_EQ_KEY   = "plonopolis_owned_eq";
+const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
@@ -1356,6 +1357,13 @@ export default function Page() {
     try { const s = localStorage.getItem(OWNED_EQ_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); try { localStorage.setItem(OWNED_EQ_KEY, JSON.stringify(next)); } catch {} };
+  // ─── Ekwipunek Dodatkowy: nadmiarowe duplikaty (przyszłość: handel/ulepszenia/sprzedaż) ───
+  type ExtraEqEntry = { uid: string; id: string; upg: number };
+  const [extraEqItems, setExtraEqItems] = React.useState<ExtraEqEntry[]>(() => {
+    try { const s = localStorage.getItem(EXTRA_EQ_KEY); const p = s ? JSON.parse(s) : []; return Array.isArray(p) ? p : []; } catch { return []; }
+  });
+  const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); try { localStorage.setItem(EXTRA_EQ_KEY, JSON.stringify(next)); } catch {} };
+  const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
   const KOMPOST_HARD_CAP = 9999;
   const [kompostCharges, setKompostCharges] = React.useState<number>(() => {
@@ -2724,8 +2732,11 @@ export default function Page() {
     // Update inventory
     const nextInv = { ...seedInventory };
     nextInv[compostKey] = (nextInv[compostKey] ?? 0) - 1;
-    if (nextInv[compostKey] <= 0) delete nextInv[compostKey];
+    const ranOut = nextInv[compostKey] <= 0;
+    if (ranOut) delete nextInv[compostKey];
     setSeedInventory(nextInv);
+    // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
+    if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
     // Persist
     await supabase.from("profiles").update({
       plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
@@ -2761,18 +2772,35 @@ export default function Page() {
     const rewards: KompostRewardEntry[] = [];
     let inv = { ...seedInventory };
     let owned = { ...ownedEqItems };
+    let upgReg = { ...itemUpgRegistry };
+    let extras = [...extraEqItems];
     for (let i = 0; i < rewardsCount; i++) {
       const roll = Math.random() * 100;
-      // 10% — losowy nieposiadany przedmiot ekwipunku ≤ poziom gracza
+      // 10% — losowy przedmiot ekwipunku ≤ poziom gracza (duplikaty → Ekwipunek Dodatkowy)
       if (roll < 10) {
-        const candidates = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl && !owned[it.id]);
+        const candidates = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
         if (candidates.length > 0) {
           const item = candidates[Math.floor(Math.random() * candidates.length)];
-          owned = { ...owned, [item.id]: true as const };
+          if (!owned[item.id]) {
+            // Pierwszy raz — wpada do głównego ekwipunku z upg 0
+            owned = { ...owned, [item.id]: true as const };
+          } else {
+            // Duplikat — porównujemy ulepszenia (nowy ma upg 0 — świeży z kompostu)
+            const newUpg = 0;
+            const curUpg = upgReg[item.id] ?? 0;
+            if (newUpg > curUpg) {
+              // Nowy lepszy → zamieniamy: stary leci do Ekwipunku Dodatkowego
+              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: curUpg }];
+              upgReg = { ...upgReg, [item.id]: newUpg };
+            } else {
+              // Nowy ≤ aktualny → nowy do Ekwipunku Dodatkowego (stary zostaje w głównym)
+              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: newUpg }];
+            }
+          }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
           continue;
         }
-        // Fallback: brak nieposiadanych przedmiotów → losuj kompost
+        // Fallback: brak przedmiotów dla tego poziomu → losuj kompost
       }
       // 40% Wzrost / 25% Urodzaj / 25% Nauka (z 90 = 40+25+25)
       let compostType: CompostType;
@@ -2789,6 +2817,8 @@ export default function Page() {
     }
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
+    saveItemUpg(upgReg);
+    saveExtraEqItems(extras);
     saveKompostCharges(kompostCharges - rewardsCount * KOMPOST_PER_REWARD);
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
@@ -4329,16 +4359,22 @@ export default function Page() {
                                   const value = compostValueFromKey(cid);
                                   const tierIdx = def.bonusValues.indexOf(value);
                                   const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                  const isSel = selectedSeedId === cid;
                                   return (
                                     <div key={cid}
                                       draggable
                                       onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                       onDragEnd={() => setDraggedSeedId(null)}
-                                      className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                      className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
+                                      style={isSel
+                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
                                       <span className="text-3xl">{def.icon}</span>
                                       <div className="flex-1">
                                         <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
                                         <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
+                                        {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY · klik w pole = nałóż</p>}
                                       </div>
                                       <span className="text-base font-black text-emerald-300">×{cnt}</span>
                                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -4346,7 +4382,7 @@ export default function Page() {
                                           <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
                                           <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
                                           <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
                                         </div>
                                       </div>
                                     </div>
@@ -5249,16 +5285,22 @@ export default function Page() {
                             const value = compostValueFromKey(cid);
                             const tierIdx = def.bonusValues.indexOf(value);
                             const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                            const isSel = selectedSeedId === cid;
                             return (
                               <div key={cid}
                                 draggable
                                 onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                 onDragEnd={() => setDraggedSeedId(null)}
-                                className="group relative flex items-center gap-3 rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-3 py-2 cursor-grab active:cursor-grabbing hover:border-emerald-400/60 transition">
+                                onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
+                                style={isSel
+                                  ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                  : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
                                 <span className="text-3xl">{def.icon}</span>
                                 <div className="flex-1">
                                   <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
                                   <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
+                                  {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY</p>}
                                 </div>
                                 <span className="text-base font-black text-emerald-300">×{cnt}</span>
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -5266,7 +5308,7 @@ export default function Page() {
                                     <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
                                     <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
                                     <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą</p>
+                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
                                   </div>
                                 </div>
                               </div>
@@ -5654,6 +5696,50 @@ export default function Page() {
                               })()}
                             </div>
                           </div>
+
+                          {/* ═══ EKWIPUNEK DODATKOWY (duplikaty) ═══ */}
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Ekwipunek Dodatkowy</p>
+                              <p className="text-[10px] text-[#8b6a3e]/80">{extraEqItems.length} {extraEqItems.length === 1 ? "przedmiot" : extraEqItems.length < 5 ? "przedmioty" : "przedmiotów"}</p>
+                            </div>
+                            {extraEqItems.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-[#8b6a3e]/40 bg-black/15 p-4 text-center">
+                                <p className="text-[11px] text-[#8b6a3e]">Tutaj trafiają duplikaty przedmiotów. Lepsze ulepszenie zostaje w głównym ekwipunku, słabsze (lub równe) wpada tutaj.</p>
+                                <p className="text-[10px] text-[#6b7280] mt-1">W przyszłości będziesz mógł je sprzedać lub ulepszyć dla zarobku.</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-5 gap-2">
+                                {extraEqItems.map(entry => {
+                                  const item = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
+                                  if (!item) return null;
+                                  const uc = entry.upg > 0 ? (UPG_COLOR[entry.upg] ?? "#6b7280") : "#8b6a3e";
+                                  const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[item.slot];
+                                  return (
+                                    <div key={entry.uid}
+                                      className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none"
+                                      style={{ borderColor:"#8b6a3e", background:"rgba(10,6,2,0.55)", opacity:0.92 }}>
+                                      <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
+                                      <span className="text-2xl leading-none">{item.icon}</span>
+                                      <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:"#9ca3af"}}>
+                                        {item.name.split(" ")[0]}
+                                      </span>
+                                      <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
+                                      {/* Tooltip */}
+                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
+                                        <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
+                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[item.slot].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                        <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                        <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, entry.upg)}</p>
+                                        <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{entry.upg}</p>
+                                        <p className="text-[10px] text-[#8b6a3e]/80 italic">📦 Duplikat — wkrótce: handel / sprzedaż</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -5710,9 +5796,10 @@ export default function Page() {
                     )}
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                  {/* Sticky controls — pasek ilości + filtr (NIE scrolluje się z uprawami) */}
+                  <div className="px-6 pt-3 pb-2 border-b border-emerald-800/30 bg-[rgba(8,16,10,0.85)]">
                     {/* Wybór ilości */}
-                    <div className="mb-3">
+                    <div className="mb-2">
                       <p className="text-[11px] text-emerald-400/80 mb-1">Ilość przy kliknięciu:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {QTY_OPTIONS.map(q => (
@@ -5726,7 +5813,7 @@ export default function Page() {
                       </div>
                     </div>
                     {/* Filtr jakości */}
-                    <div className="mb-3">
+                    <div>
                       <p className="text-[11px] text-emerald-400/80 mb-1">Filtruj uprawy:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {FILTER_OPTIONS.map(f => (
@@ -5740,7 +5827,9 @@ export default function Page() {
                         ))}
                       </div>
                     </div>
+                  </div>
 
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
                     {/* Siatka upraw */}
                     {(() => {
                       let cropEntries = (Object.entries(seedInventory).filter(
@@ -6086,10 +6175,10 @@ export default function Page() {
 
           {showLadaModal && (() => {
             const jarPrice = HONEY_JAR_PRICE[hiveData.level] ?? 8;
-            const owned = hiveData.honey_jars;
-            const clampedQty = Math.min(ladaSellQty, owned);
-            const totalValue = clampedQty * jarPrice;
-            const doSell = async (qty: number) => {
+            const honeyOwned = hiveData.honey_jars;
+            const clampedHoneyQty = Math.min(ladaSellQty, honeyOwned);
+            const honeyTotal = clampedHoneyQty * jarPrice;
+            const sellHoney = async (qty: number) => {
               if (!profile?.id || qty <= 0 || ladaSelling) return;
               setLadaSelling(true);
               const { data, error } = await supabase.rpc("sell_honey", { p_user_id: profile.id, p_qty: qty });
@@ -6097,97 +6186,171 @@ export default function Page() {
                 setHiveData(data.hive_data as HiveData);
                 await loadProfile(profile.id);
                 setMessage({ type:"success", title:`Sprzedano ${data.sold} ${data.sold === 1 ? "słoik" : data.sold < 5 ? "słoiki" : "słoików"} za ${Number(data.earned).toFixed(2)} zł! 💰`, text:"" });
-                setShowLadaModal(false);
               } else {
                 setMessage({ type:"error", title:"Błąd sprzedaży — spróbuj ponownie.", text:"" });
               }
               setLadaSelling(false);
             };
-            const sellAll   = async () => doSell(owned);
-            const sellQtyFn = async () => doSell(clampedQty);
+            // Sprzedaż produktów ze zwierząt (te same dane co w stodole — barnItems)
+            const sellAnimalItem = async (itemId: string, qty: number) => {
+              if (!profile?.id || qty <= 0 || barnSelling) return;
+              const have = barnItems[itemId] ?? 0;
+              const realQty = Math.min(qty, have);
+              if (realQty <= 0) return;
+              const item = ANIMAL_ITEMS.find(i => i.id === itemId);
+              if (!item) return;
+              setBarnSelling(itemId);
+              const earned = item.sellPrice * realQty;
+              const { error } = await supabase.from("profiles").update({ money: displayMoney + earned }).eq("id", profile.id);
+              if (error) { setBarnSelling(null); setMessage({type:"error",title:"Błąd sprzedaży",text:error.message}); return; }
+              const newItems = { ...barnItems };
+              newItems[itemId] = have - realQty;
+              if (newItems[itemId] <= 0) delete newItems[itemId];
+              saveBarnItems(newItems);
+              setBarnSellQtys(q => ({ ...q, [itemId]: 1 }));
+              await loadProfile(profile.id);
+              setBarnSelling(null);
+              setMessage({type:"success",title:`${item.icon} Sprzedano!`,text:`+${earned.toLocaleString()} 💰 (${realQty} ${item.name})`});
+            };
+            const animalItemsToSell = ANIMAL_ITEMS.filter(i => (barnItems[i.id] ?? 0) > 0);
+            const hasAnythingToSell = honeyOwned > 0 || animalItemsToSell.length > 0;
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="relative flex w-full max-w-[520px] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5">
-                  <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl">🛒</span>
-                    <div>
-                      <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
-                      <p className="text-sm text-amber-400/80">Sprzedaj słoiki miodu</p>
+                <div className="relative flex w-full max-w-[640px] max-h-[92vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                  <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+
+                  {/* Nagłówek (stały) */}
+                  <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
+                    <div className="flex items-center gap-4">
+                      <span className="text-4xl">🛒</span>
+                      <div>
+                        <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
+                        <p className="text-sm text-amber-400/80">Sprzedaj produkty z ula i zagrody</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4 flex items-center gap-4">
-                    <img src="/jar_honey.png" alt="Słoik miodu" className="w-14 h-14 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                    <div className="flex-1">
-                      <p className="text-sm text-[#8b6a3e]">Posiadane słoiki z miodem</p>
-                      <p className="text-3xl font-black text-[#f9e7b2]">{owned}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-[#8b6a3e]">Cena za słoik</p>
-                      <p className="text-xl font-black text-amber-400">{jarPrice} zł</p>
-                      <p className="text-xs text-[#8b6a3e] mt-1">Poziom ula {hiveData.level}</p>
-                    </div>
-                  </div>
-                  {owned === 0 ? (
-                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4 text-center">
-                      <p className="text-[#8b6a3e] text-sm">Nie masz żadnych słoików z miodem do sprzedania.</p>
-                      <p className="text-xs text-[#8b6a3e]/60 mt-1">Zbierz miód w Ulu, a potem wróć tutaj!</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4">
-                        <p className="text-sm font-bold text-[#dfcfab] mb-3">Sprzedaj wybraną ilość</p>
-                        <div className="flex items-center gap-3">
+
+                  {/* Lista do sprzedaży (scrollowalna) */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                    {!hasAnythingToSell && (
+                      <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-6 text-center">
+                        <p className="text-3xl mb-2">🪹</p>
+                        <p className="text-[#dfcfab] text-sm font-bold">Nie masz nic do sprzedania.</p>
+                        <p className="text-xs text-[#8b6a3e]/80 mt-1">Zbierz miód w Ulu lub produkty w Stodole, a potem wróć tutaj!</p>
+                      </div>
+                    )}
+
+                    {/* Karta miodu (jak dotychczas — własny qty/sell) */}
+                    {honeyOwned > 0 && (
+                      <div className="rounded-xl border border-amber-600/40 bg-black/30 p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <img src="/jar_honey.png" alt="Słoik miodu" className="w-12 h-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                          <div className="flex-1">
+                            <p className="text-base font-black text-[#f9e7b2]">Słoiki z miodem</p>
+                            <p className="text-[11px] text-[#8b6a3e]">Posiadasz: <span className="font-bold text-[#dfcfab]">{honeyOwned}</span> · Cena: <span className="font-bold text-amber-400">{jarPrice} zł</span> · Poziom ula {hiveData.level}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 mb-2">
                           <button
                             onClick={() => setLadaSellQty(q => Math.max(1, q - 1))}
-                            disabled={ladaSellQty <= 1}
-                            className="w-9 h-9 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-lg hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={ladaSellQty <= 1 || ladaSelling}
+                            className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
                           >−</button>
                           <input
                             type="number"
                             min={1}
-                            max={owned}
+                            max={honeyOwned}
                             value={ladaSellQty}
                             onChange={e => {
                               const v = parseInt(e.target.value, 10);
-                              if (!isNaN(v)) setLadaSellQty(Math.max(1, Math.min(owned, v)));
+                              if (!isNaN(v)) setLadaSellQty(Math.max(1, Math.min(honeyOwned, v)));
                             }}
-                            className="flex-1 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-lg py-1 outline-none focus:border-amber-500"
+                            disabled={ladaSelling}
+                            className="flex-1 min-w-0 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-base py-1 outline-none focus:border-amber-500 disabled:opacity-50"
                           />
                           <button
-                            onClick={() => setLadaSellQty(q => Math.min(owned, q + 1))}
-                            disabled={ladaSellQty >= owned}
-                            className="w-9 h-9 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-lg hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            onClick={() => setLadaSellQty(q => Math.min(honeyOwned, q + 1))}
+                            disabled={ladaSellQty >= honeyOwned || ladaSelling}
+                            className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
                           >+</button>
                           <button
-                            onClick={() => setLadaSellQty(owned)}
-                            className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-800/30"
+                            onClick={() => setLadaSellQty(honeyOwned)}
+                            disabled={ladaSelling}
+                            className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40"
                           >MAX</button>
                         </div>
-                        <div className="mt-3 flex justify-between items-center">
-                          <span className="text-sm text-[#8b6a3e]">Wartość:</span>
-                          <span className="text-lg font-black text-amber-300">{totalValue.toFixed(2)} zł 💰</span>
-                        </div>
                         <button
-                          onClick={() => { void sellQtyFn(); }}
-                          disabled={clampedQty <= 0 || ladaSelling}
-                          className="mt-3 w-full rounded-xl py-3 text-sm font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                          onClick={() => { void sellHoney(clampedHoneyQty); }}
+                          disabled={clampedHoneyQty <= 0 || ladaSelling}
+                          className="w-full rounded-xl py-2.5 text-sm font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {ladaSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${clampedQty} ${clampedQty === 1 ? "słoik" : clampedQty < 5 ? "słoiki" : "słoików"} za ${totalValue.toFixed(2)} zł`}
+                          {ladaSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${clampedHoneyQty} za ${honeyTotal.toFixed(2)} zł`}
                         </button>
                       </div>
-                      <button
-                        onClick={() => { void sellAll(); }}
-                        disabled={owned <= 0 || ladaSelling}
-                        className="w-full rounded-xl py-3 text-sm font-black transition border border-green-500/60 bg-green-900/20 text-green-300 hover:bg-green-800/30 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {ladaSelling ? "⏳ Sprzedaję..." : `💰 Sprzedaj wszystko (${owned} słoików) za ${(owned * jarPrice).toFixed(2)} zł`}
-                      </button>
-                    </>
-                  )}
-                  <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
-                    ✕ Zamknij
-                  </button>
+                    )}
+
+                    {/* Karty produktów ze zwierząt — analogicznie jak miód */}
+                    {animalItemsToSell.map(i => {
+                      const have = barnItems[i.id] ?? 0;
+                      const qty = Math.min(barnSellQtys[i.id] ?? 1, have);
+                      const value = qty * i.sellPrice;
+                      const isSelling = barnSelling === i.id;
+                      return (
+                        <div key={i.id} className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-3xl">{i.icon}</span>
+                            <div className="flex-1">
+                              <p className="text-base font-black text-[#f9e7b2]">{i.name}</p>
+                              <p className="text-[11px] text-[#8b6a3e]">Posiadasz: <span className="font-bold text-[#dfcfab]">{have}</span> · Cena: <span className="font-bold text-amber-400">{i.sellPrice.toLocaleString()} 💰</span></p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <button
+                              onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, (q[i.id] ?? 1) - 1) }))}
+                              disabled={qty <= 1 || isSelling}
+                              className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >−</button>
+                            <input
+                              type="number"
+                              min={1}
+                              max={have}
+                              value={qty}
+                              onChange={e => {
+                                const v = parseInt(e.target.value, 10);
+                                if (!isNaN(v)) setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, Math.min(have, v)) }));
+                              }}
+                              disabled={isSelling}
+                              className="flex-1 min-w-0 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-base py-1 outline-none focus:border-amber-500 disabled:opacity-50"
+                            />
+                            <button
+                              onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.min(have, (q[i.id] ?? 1) + 1) }))}
+                              disabled={qty >= have || isSelling}
+                              className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >+</button>
+                            <button
+                              onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: have }))}
+                              disabled={isSelling}
+                              className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40"
+                            >MAX</button>
+                          </div>
+                          <button
+                            onClick={() => { void sellAnimalItem(i.id, qty); }}
+                            disabled={qty <= 0 || isSelling}
+                            className="w-full rounded-xl py-2.5 text-sm font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {isSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${qty} za ${value.toLocaleString()} 💰`}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Stopka (stała) */}
+                  <div className="border-t border-amber-700/30 p-4">
+                    <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-2.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
+                      ✕ Zamknij
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -6259,28 +6422,7 @@ export default function Page() {
               });
               if (!changed) return;
               saveBarnItems(newItems); saveBarnState(newState);
-              setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów do schowka.`});
-            };
-            // Sprzedaż pojedynczego surowca z wybraną ilością (jak w Ladzie)
-            const sellBarnItem = async (itemId: string, qty: number) => {
-              if (!profile?.id || qty <= 0 || barnSelling) return;
-              const have = barnItems[itemId] ?? 0;
-              const realQty = Math.min(qty, have);
-              if (realQty <= 0) return;
-              const item = ANIMAL_ITEMS.find(i => i.id === itemId);
-              if (!item) return;
-              setBarnSelling(itemId);
-              const earned = item.sellPrice * realQty;
-              const { error } = await supabase.from("profiles").update({ money: displayMoney + earned }).eq("id", profile.id);
-              if (error) { setBarnSelling(null); setMessage({type:"error",title:"Błąd sprzedaży",text:error.message}); return; }
-              const newItems = { ...barnItems };
-              newItems[itemId] = have - realQty;
-              if (newItems[itemId] <= 0) delete newItems[itemId];
-              saveBarnItems(newItems);
-              setBarnSellQtys(q => ({ ...q, [itemId]: 1 }));
-              await loadProfile(profile.id);
-              setBarnSelling(null);
-              setMessage({type:"success",title:`${item.icon} Sprzedano!`,text:`+${earned.toLocaleString()} 💰 (${realQty} ${item.name})`});
+              setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów. Sprzedaj je w Ladzie dla klientów.`});
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
             const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
@@ -6330,71 +6472,6 @@ export default function Page() {
                       </div>
                     </div>
                   )}
-
-                  {/* ══ SCHOWEK NA PRODUKTY (sprzedaż per surowiec, jak w Ladzie) ══ */}
-                    {Object.keys(barnItems).some(k => (barnItems[k]??0) > 0) && (
-                      <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Schowek — sprzedaż surowców</p>
-                          <p className="text-[10px] text-[#8b6a3e]/80">Wybierz ilość i sprzedaj</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {ANIMAL_ITEMS.filter(i => (barnItems[i.id]??0) > 0).map(i => {
-                            const have = barnItems[i.id] ?? 0;
-                            const qty = Math.min(barnSellQtys[i.id] ?? 1, have);
-                            const value = qty * i.sellPrice;
-                            const isSelling = barnSelling === i.id;
-                            return (
-                              <div key={i.id} className="rounded-xl border border-[#8b6a3e]/30 bg-black/30 p-3">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-2xl">{i.icon}</span>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-black text-[#f9e7b2]">{i.name}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Posiadasz: <span className="font-bold text-[#dfcfab]">{have}</span> · Cena: <span className="font-bold text-amber-400">{i.sellPrice.toLocaleString()} 💰</span></p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                  <button
-                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, (q[i.id] ?? 1) - 1) }))}
-                                    disabled={qty <= 1 || isSelling}
-                                    className="w-7 h-7 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-sm hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >−</button>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={have}
-                                    value={qty}
-                                    onChange={e => {
-                                      const v = parseInt(e.target.value, 10);
-                                      if (!isNaN(v)) setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, Math.min(have, v)) }));
-                                    }}
-                                    disabled={isSelling}
-                                    className="flex-1 min-w-0 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-sm py-1 outline-none focus:border-amber-500 disabled:opacity-50"
-                                  />
-                                  <button
-                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.min(have, (q[i.id] ?? 1) + 1) }))}
-                                    disabled={qty >= have || isSelling}
-                                    className="w-7 h-7 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-sm hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >+</button>
-                                  <button
-                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: have }))}
-                                    disabled={isSelling}
-                                    className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-2 py-1 text-[10px] font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40"
-                                  >MAX</button>
-                                </div>
-                                <button
-                                  onClick={() => { void sellBarnItem(i.id, qty); }}
-                                  disabled={qty <= 0 || isSelling}
-                                  className="w-full rounded-xl py-2 text-xs font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  {isSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${qty} za ${value.toLocaleString()} 💰`}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
 
                     {/* ══ PRZEGLĄD ══ */}
                     {!selA && (
@@ -6842,6 +6919,11 @@ export default function Page() {
                                 return;
                               }
 
+                              if (selectedSeedId && isCompostKey(selectedSeedId)) {
+                                void applyCompostToPlot(plotId, selectedSeedId);
+                                return;
+                              }
+
                               if (selectedSeedId) {
                                 handlePlantFromSelectedSeed(plotId);
                                 return;
@@ -6918,6 +7000,38 @@ export default function Page() {
                                         imageRendering: "pixelated",
                                       }}
                                     />
+                                  );
+                                })()}
+
+                                {/* Ikona aktywnego kompostu — duża na środku gdy puste, mała w rogu gdy posadzone */}
+                                {(() => {
+                                  const _cb = getPlotCrop(plotId).compostBonus;
+                                  if (!_cb) return null;
+                                  const _def = COMPOST_DEFS[_cb.type];
+                                  const _tIdx = _def.bonusValues.indexOf(_cb.value);
+                                  const _tColor = _tIdx === 0 ? "#9ca3af" : _tIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                  const _hasCrop = !!getPlotCrop(plotId).cropId;
+                                  if (_hasCrop) {
+                                    // Mała badge w lewym górnym rogu (żeby nie kolidowała z 💧 po prawej)
+                                    return (
+                                      <div
+                                        className="pointer-events-none absolute left-1 top-1 z-10 flex items-center gap-0.5 rounded-full px-1 py-0.5 text-[12px] font-black shadow-lg"
+                                        style={{ background: `${_tColor}33`, border: `1px solid ${_tColor}`, color: _tColor }}>
+                                        <span>{_def.icon}</span>
+                                      </div>
+                                    );
+                                  }
+                                  // Duża centralna ikona na pustym polu
+                                  return (
+                                    <div
+                                      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                                      style={{ filter: `drop-shadow(0 0 8px ${_tColor}cc)` }}>
+                                      <span className="text-4xl md:text-5xl">{_def.icon}</span>
+                                      <span className="mt-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider md:text-[10px]"
+                                        style={{ background: "rgba(0,0,0,0.6)", color: _tColor, border: `1px solid ${_tColor}88` }}>
+                                        {_def.tierName(_cb.value)}
+                                      </span>
+                                    </div>
                                   );
                                 })()}
 
