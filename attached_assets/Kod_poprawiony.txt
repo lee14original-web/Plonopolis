@@ -1343,6 +1343,7 @@ export default function Page() {
     try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
   });
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
+  const [selectedExtraUid, setSelectedExtraUid] = React.useState<string | null>(null);
   const [eqFilter, setEqFilter] = React.useState<EquipSlot | "">("");
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
@@ -5698,6 +5699,34 @@ export default function Page() {
                           </div>
 
                           {/* ═══ EKWIPUNEK DODATKOWY (duplikaty) ═══ */}
+                          {(() => {
+                            const handleUpgExtra = async (entry: ExtraEqEntry) => {
+                              const nextU = entry.upg + 1;
+                              const cost = UPGRADE_COST[nextU];
+                              if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                              if (!profile?.id) return;
+                              const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                              if (me) return;
+                              const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                              let fu: number;
+                              if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
+                              else if (entry.upg <= 6) { fu = entry.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${entry.upg}.` }); }
+                              else { fu = entry.upg - 1; setMessage({ type:"error", title:`⬇ Item cofa się do +${entry.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                              saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: fu } : e));
+                              await loadProfile(profile.id);
+                            };
+                            const handleSwapExtra = (entry: ExtraEqEntry) => {
+                              const mainUpg = itemUpgRegistry[entry.id] ?? 0;
+                              if (mainUpg === entry.upg) return;
+                              saveItemUpg({ ...itemUpgRegistry, [entry.id]: entry.upg });
+                              saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: mainUpg } : e));
+                              const it = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
+                              if (it && charEquipped[it.slot]?.id === entry.id) {
+                                saveCharEquipped({ ...charEquipped, [it.slot]: { id: entry.id, upg: entry.upg } });
+                              }
+                              setMessage({ type:"success", title:"🔄 Zamieniono!", text:`Główny: +${entry.upg} ↔ Dodatkowy: +${mainUpg}` });
+                            };
+                            return (
                           <div className="mt-2">
                             <div className="flex items-center justify-between mb-2">
                               <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Ekwipunek Dodatkowy</p>
@@ -5706,40 +5735,93 @@ export default function Page() {
                             {extraEqItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-[#8b6a3e]/40 bg-black/15 p-4 text-center">
                                 <p className="text-[11px] text-[#8b6a3e]">Tutaj trafiają duplikaty przedmiotów. Lepsze ulepszenie zostaje w głównym ekwipunku, słabsze (lub równe) wpada tutaj.</p>
-                                <p className="text-[10px] text-[#6b7280] mt-1">W przyszłości będziesz mógł je sprzedać lub ulepszyć dla zarobku.</p>
+                                <p className="text-[10px] text-[#6b7280] mt-1">Kliknij przedmiot, by go ulepszyć lub zamienić ze sztuką w głównym ekwipunku.</p>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-5 gap-2">
-                                {extraEqItems.map(entry => {
+                              <>
+                                {/* Panel akcji wybranego duplikatu */}
+                                {selectedExtraUid && (() => {
+                                  const entry = extraEqItems.find(e => e.uid === selectedExtraUid);
+                                  if (!entry) return null;
                                   const item = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
                                   if (!item) return null;
-                                  const uc = entry.upg > 0 ? (UPG_COLOR[entry.upg] ?? "#6b7280") : "#8b6a3e";
-                                  const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[item.slot];
+                                  const upg = entry.upg;
+                                  const uc = upg > 0 ? (UPG_COLOR[upg] ?? "#6b7280") : "#8b6a3e";
+                                  const mainUpg = itemUpgRegistry[item.id] ?? 0;
                                   return (
-                                    <div key={entry.uid}
-                                      className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none"
-                                      style={{ borderColor:"#8b6a3e", background:"rgba(10,6,2,0.55)", opacity:0.92 }}>
-                                      <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
-                                      <span className="text-2xl leading-none">{item.icon}</span>
-                                      <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:"#9ca3af"}}>
-                                        {item.name.split(" ")[0]}
-                                      </span>
-                                      <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
-                                      {/* Tooltip */}
-                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
-                                        <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
-                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[item.slot].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
-                                        <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
-                                        <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, entry.upg)}</p>
-                                        <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{entry.upg}</p>
-                                        <p className="text-[10px] text-[#8b6a3e]/80 italic">📦 Duplikat — wkrótce: handel / sprzedaż</p>
+                                    <div className="mb-2 rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-base">{item.icon}</span>
+                                            <p className="text-xs font-bold text-[#f9e7b2] truncate">{item.name}</p>
+                                            <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
+                                            <span className="text-[10px] text-[#8b6a3e]">vs główny: <span className="font-black text-[#dfcfab]">+{mainUpg}</span></span>
+                                          </div>
+                                          <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(item.bonuses, upg)}</p>
+                                          {upg < 10
+                                            ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                            : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
+                                          {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
+                                        </div>
+                                        <div className="flex flex-col gap-1 shrink-0">
+                                          {upg < 10 && (
+                                            <button type="button" onClick={() => handleUpgExtra(entry)}
+                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
+                                              ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                            </button>
+                                          )}
+                                          <button type="button" onClick={() => handleSwapExtra(entry)}
+                                            disabled={mainUpg === upg}
+                                            title={mainUpg === upg ? "Identyczne ulepszenia — zamiana bez efektu" : "Przenieś do głównego ekwipunku"}
+                                            className="rounded-xl border border-cyan-500/60 bg-cyan-900/20 px-2 py-1 text-[10px] font-bold text-cyan-300 hover:bg-cyan-900/40 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                                            🔄 Zamień (+{mainUpg})
+                                          </button>
+                                          <button type="button" onClick={() => setSelectedExtraUid(null)}
+                                            className="rounded-xl border border-[#8b6a3e]/50 px-2 py-1 text-[10px] text-[#dfcfab] hover:bg-white/5">
+                                            Zamknij
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   );
-                                })}
-                              </div>
+                                })()}
+                                <div className="grid grid-cols-5 gap-2">
+                                  {extraEqItems.map(entry => {
+                                    const item = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
+                                    if (!item) return null;
+                                    const uc = entry.upg > 0 ? (UPG_COLOR[entry.upg] ?? "#6b7280") : "#8b6a3e";
+                                    const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[item.slot];
+                                    const isSel = selectedExtraUid === entry.uid;
+                                    return (
+                                      <div key={entry.uid}
+                                        onClick={() => setSelectedExtraUid(isSel ? null : entry.uid)}
+                                        className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none cursor-pointer hover:brightness-125"
+                                        style={{ borderColor: isSel ? "#fbbf24" : "#8b6a3e", background: isSel ? "rgba(60,40,5,0.55)" : "rgba(10,6,2,0.55)", boxShadow: isSel ? "0 0 8px rgba(251,191,36,0.55)" : "none", opacity: isSel ? 1 : 0.92 }}>
+                                        <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
+                                        <span className="text-2xl leading-none">{item.icon}</span>
+                                        <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color: isSel ? "#f9e7b2" : "#9ca3af"}}>
+                                          {item.name.split(" ")[0]}
+                                        </span>
+                                        <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
+                                        {/* Tooltip */}
+                                        <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
+                                          <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
+                                          <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[item.slot].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                          <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                          <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, entry.upg)}</p>
+                                          <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{entry.upg}</p>
+                                          <p className="text-[10px] text-[#8b6a3e]/80 italic">Kliknij, by ulepszyć lub zamienić</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
                             )}
                           </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
