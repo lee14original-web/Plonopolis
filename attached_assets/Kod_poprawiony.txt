@@ -217,19 +217,23 @@ interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number;
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
-const UPGRADE_COST   = [0,100,250,500,1200,3000,7000,15000,35000,75000,150000];
+const UPGRADE_COST   = [0,50,100,250,500,1200,2500,5000,10000,20000,40000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
 // ─── Mnożnik ceny zależny od poziomu odblokowania itemu (tier T1..T9) ───
 function getItemTierMultiplier(unlockLevel: number): number {
-  if (unlockLevel <= 3)  return 1;    // T1
-  if (unlockLevel <= 6)  return 1.5;  // T2
-  if (unlockLevel <= 9)  return 2;    // T3
-  if (unlockLevel <= 12) return 3;    // T4
-  if (unlockLevel <= 15) return 4;    // T5
-  if (unlockLevel <= 18) return 5;    // T6
-  if (unlockLevel <= 21) return 7;    // T7
-  if (unlockLevel <= 25) return 10;   // T8
-  return 15;                          // T9 (26-30)
+  if (unlockLevel <= 3)  return 1;     // T1
+  if (unlockLevel <= 6)  return 1.3;   // T2
+  if (unlockLevel <= 9)  return 1.6;   // T3
+  if (unlockLevel <= 12) return 2;     // T4
+  if (unlockLevel <= 15) return 2.5;   // T5
+  if (unlockLevel <= 18) return 3;     // T6
+  if (unlockLevel <= 21) return 4;     // T7
+  if (unlockLevel <= 25) return 5;     // T8
+  return 7;                            // T9 (26-30)
+}
+// ─── Mnożnik slotu (Głowa = ×1.3, Dłonie/Nogi = ×1) ───
+function getSlotMultiplier(slot?: string): number {
+  return slot === "glowa" ? 1.3 : 1;
 }
 function getItemTierLabel(unlockLevel: number): string {
   if (unlockLevel <= 3)  return "T1";
@@ -242,12 +246,13 @@ function getItemTierLabel(unlockLevel: number): string {
   if (unlockLevel <= 25) return "T8";
   return "T9";
 }
-// Finalny koszt = bazowy × mnożnik tieru
+// Finalny koszt = bazowy × mnożnik tieru × mnożnik slotu (Głowa ×1.3)
 function getUpgradeCost(itemId: string, targetUpg: number): number {
   if (targetUpg < 1 || targetUpg > 10) return 0;
   const item = CHAR_EQUIP_ITEMS.find(i => i.id === itemId);
-  const mult = item ? getItemTierMultiplier(item.unlockLevel) : 1;
-  return Math.round(UPGRADE_COST[targetUpg] * mult);
+  const tierMult = item ? getItemTierMultiplier(item.unlockLevel) : 1;
+  const slotMult = getSlotMultiplier(item?.slot);
+  return Math.round(UPGRADE_COST[targetUpg] * tierMult * slotMult);
 }
 // ─── Materiały ze zwierząt: M1..M10 → ID przedmiotu zwierzęcego ───
 const TIER_MATERIAL: Record<number,string> = {
