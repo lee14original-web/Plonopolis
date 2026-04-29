@@ -216,8 +216,39 @@ type BarnItems = Record<string,number>;
 interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; }
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
-const UPGRADE_COST   = [0,100,250,500,1000,2500,5000,10000,25000,50000,100000];
+// ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
+const UPGRADE_COST   = [0,100,250,500,1200,3000,7000,15000,35000,75000,150000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
+// ─── Mnożnik ceny zależny od poziomu odblokowania itemu (tier T1..T9) ───
+function getItemTierMultiplier(unlockLevel: number): number {
+  if (unlockLevel <= 3)  return 1;    // T1
+  if (unlockLevel <= 6)  return 1.5;  // T2
+  if (unlockLevel <= 9)  return 2;    // T3
+  if (unlockLevel <= 12) return 3;    // T4
+  if (unlockLevel <= 15) return 4;    // T5
+  if (unlockLevel <= 18) return 5;    // T6
+  if (unlockLevel <= 21) return 7;    // T7
+  if (unlockLevel <= 25) return 10;   // T8
+  return 15;                          // T9 (26-30)
+}
+function getItemTierLabel(unlockLevel: number): string {
+  if (unlockLevel <= 3)  return "T1";
+  if (unlockLevel <= 6)  return "T2";
+  if (unlockLevel <= 9)  return "T3";
+  if (unlockLevel <= 12) return "T4";
+  if (unlockLevel <= 15) return "T5";
+  if (unlockLevel <= 18) return "T6";
+  if (unlockLevel <= 21) return "T7";
+  if (unlockLevel <= 25) return "T8";
+  return "T9";
+}
+// Finalny koszt = bazowy × mnożnik tieru
+function getUpgradeCost(itemId: string, targetUpg: number): number {
+  if (targetUpg < 1 || targetUpg > 10) return 0;
+  const item = CHAR_EQUIP_ITEMS.find(i => i.id === itemId);
+  const mult = item ? getItemTierMultiplier(item.unlockLevel) : 1;
+  return Math.round(UPGRADE_COST[targetUpg] * mult);
+}
 const UPG_COLOR = ["#6b7280","#9ca3af","#9ca3af","#9ca3af","#4ade80","#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#fbbf24"];
 function upgBonusStr(base: number, upg: number, flat?: boolean): string {
   const val = flat ? base + upg : parseFloat((base * (1 + 0.15 * upg)).toFixed(2));
@@ -5496,7 +5527,7 @@ export default function Page() {
                   {domTab === "eq" && (() => {
                     const SLOT_BOX = slotBoxCustom;
                     const handleUpg = async (slot, eqD) => {
-                      const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
+                      const nextU = eqD.upg+1; const cost = getUpgradeCost(eqD.id, nextU);
                       if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
                       const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
                       if (me) return;
@@ -5637,7 +5668,7 @@ export default function Page() {
                                     {upg < 10 && (
                                       <button type="button" onClick={() => handleUpg(slot, eqD)}
                                         className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                        ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                        ⚒ {getUpgradeCost(eqD.id, upg+1).toLocaleString()} 💰
                                       </button>
                                     )}
                                     <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
@@ -5723,7 +5754,7 @@ export default function Page() {
                               : extraEqItems;
                             const handleUpgExtra = async (entry: ExtraEqEntry) => {
                               const nextU = entry.upg + 1;
-                              const cost = UPGRADE_COST[nextU];
+                              const cost = getUpgradeCost(entry.id, nextU);
                               if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
                               if (!profile?.id) return;
                               const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
@@ -5794,7 +5825,7 @@ export default function Page() {
                                           {upg < 10 && (
                                             <button type="button" onClick={() => handleUpgExtra(entry)}
                                               className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                              ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                              ⚒ {getUpgradeCost(entry.id, upg+1).toLocaleString()} 💰
                                             </button>
                                           )}
                                           <button type="button" onClick={() => handleSwapExtra(entry)}
