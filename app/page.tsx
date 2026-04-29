@@ -1321,7 +1321,23 @@ export default function Page() {
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
-    const [backpackSort, setBackpackSort] = React.useState<"standardowe"|"duzo"|"malo">("standardowe");
+    type BackpackQualityFilter = "rotten"|"good"|"epic"|"legendary"|"all";
+    const [backpackSort, setBackpackSort] = React.useState<BackpackQualityFilter>(() => {
+      if (typeof window === "undefined") return "good";
+      const saved = window.localStorage.getItem("plonopolis_backpack_filter");
+      if (saved === "rotten" || saved === "good" || saved === "epic" || saved === "legendary" || saved === "all") return saved;
+      return "good";
+    });
+    React.useEffect(() => {
+      if (typeof window !== "undefined") window.localStorage.setItem("plonopolis_backpack_filter", backpackSort);
+    }, [backpackSort]);
+    const BACKPACK_FILTER_OPTS: Array<{id: BackpackQualityFilter; label: string; short: string; color: string}> = [
+      { id:"rotten",    label:"Popsute",    short:"Pop",  color:"#9aa57a" },
+      { id:"good",      label:"Standardowe",short:"Std",  color:"#dfcfab" },
+      { id:"epic",      label:"Epickie",    short:"Epic", color:"#a78bfa" },
+      { id:"legendary", label:"Legendarne", short:"Leg",  color:"#fbbf24" },
+      { id:"all",       label:"Wszystkie",  short:"Wsz",  color:"#dfcfab" },
+    ];
   const [charEquipped, setCharEquipped] = React.useState<CharEquipped>(() => {
     try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
   });
@@ -4146,50 +4162,59 @@ export default function Page() {
                               <div className="mt-3 flex items-center gap-2">
                                 <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
                                 <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                                  {(["standardowe","duzo","malo"] as const).map(s => (
+                                  {BACKPACK_FILTER_OPTS.map(opt => (
                                     <button
-                                      key={s}
+                                      key={opt.id}
                                       type="button"
-                                      onClick={() => setBackpackSort(s)}
-                                      className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
+                                      onClick={() => setBackpackSort(opt.id)}
+                                      className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.05em] transition ${backpackSort === opt.id ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "hover:bg-white/5"}`}
+                                      style={backpackSort === opt.id ? undefined : { color: opt.color }}
                                     >
-                                      {s === "standardowe" ? "Standardowe" : s === "duzo" ? "Dużo" : "Mało"}
+                                      {opt.label}
                                     </button>
                                   ))}
                                 </div>
                               </div>
 
                               <div className="mt-3">
-                                {Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !isCompostKey(k)).length === 0 ? (
-                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
-                                    Plecak jest pusty.
-                                  </div>
-                                ) : (
-                                  <div className="grid grid-cols-4 gap-2">
-                                    {(() => {
-                                      const raw = (Object.entries(seedInventory).filter(
-                                        ([k, amount]) => Number(amount) > 0 && !isCompostKey(k)
-                                      ) as Array<[string, number]>);
-                                      const sorted = [...raw].sort(([aId, aAmt], [bId, bAmt]) => {
-                                        const { baseCropId: _aCrop, quality: _aQ } = parseQualityKey(aId);
-                                        const { baseCropId: _bCrop, quality: _bQ } = parseQualityKey(bId);
-                                        const aLv = CROPS.find(c => c.id === _aCrop)?.unlockLevel ?? 999;
-                                        const bLv = CROPS.find(c => c.id === _bCrop)?.unlockLevel ?? 999;
-                                        if (backpackSort === "standardowe") {
-                                            const _qOrder: Record<string,number> = {rotten:0,good:1,epic:2,legendary:3};
-                                            const aqo = _qOrder[_aQ ?? "good"] ?? 1;
-                                            const bqo = _qOrder[_bQ ?? "good"] ?? 1;
-                                            return aLv !== bLv ? aLv - bLv : aqo - bqo;
-                                          }
-                                        if (backpackSort === "duzo") return Number(bAmt) - Number(aAmt);
-                                        if (backpackSort === "malo") { const diff = Number(aAmt) - Number(bAmt); return diff !== 0 ? diff : aLv - bLv; }
-                                        // epickie: epic first (by level), then rest by level
-                                        const aEpic = _aQ === "epic" ? 0 : 1;
-                                        const bEpic = _bQ === "epic" ? 0 : 1;
-                                        if (aEpic !== bEpic) return aEpic - bEpic;
-                                        return aLv - bLv;
+                                {(() => {
+                                  const allCrops = (Object.entries(seedInventory).filter(
+                                    ([k, amount]) => Number(amount) > 0 && !isCompostKey(k)
+                                  ) as Array<[string, number]>);
+                                  const filtered = backpackSort === "all"
+                                    ? allCrops
+                                    : allCrops.filter(([k]) => {
+                                        const q = parseQualityKey(k).quality ?? "good";
+                                        return q === backpackSort;
                                       });
-                                      return sorted.map(([seedId, amount]) => {
+                                  if (allCrops.length === 0) {
+                                    return (
+                                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                        Plecak jest pusty.
+                                      </div>
+                                    );
+                                  }
+                                  if (filtered.length === 0) {
+                                    const fLabel = BACKPACK_FILTER_OPTS.find(o => o.id === backpackSort)?.label ?? "";
+                                    return (
+                                      <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                        Brak upraw o jakości „{fLabel}". Zmień filtr powyżej.
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="grid grid-cols-4 gap-2">
+                                      {(() => {
+                                        const sorted = [...filtered].sort(([aId], [bId]) => {
+                                          const { baseCropId: _aCrop, quality: _aQ } = parseQualityKey(aId);
+                                          const { baseCropId: _bCrop, quality: _bQ } = parseQualityKey(bId);
+                                          const aLv = CROPS.find(c => c.id === _aCrop)?.unlockLevel ?? 999;
+                                          const bLv = CROPS.find(c => c.id === _bCrop)?.unlockLevel ?? 999;
+                                          if (aLv !== bLv) return aLv - bLv;
+                                          const _qOrder: Record<string,number> = {rotten:0,good:1,epic:2,legendary:3};
+                                          return (_qOrder[_aQ ?? "good"] ?? 1) - (_qOrder[_bQ ?? "good"] ?? 1);
+                                        });
+                                        return sorted.map(([seedId, amount]) => {
                                         const { baseCropId: _bCropId, quality: _bQuality } = parseQualityKey(seedId);
                                           const crop = CROPS.find((item) => item.id === _bCropId);
                                           const _qDef2 = _bQuality ? CROP_QUALITY_DEFS[_bQuality] : null;
@@ -4233,9 +4258,10 @@ export default function Page() {
                                           </button>
                                         );
                                       });
-                                    })()}
-                                  </div>
-                                )}
+                                      })()}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </>
                           )}
@@ -5108,32 +5134,42 @@ export default function Page() {
                     </div>
                     {backpackTab === "uprawy" && (
                       <div className="mt-2 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                        {(["standardowe","duzo","malo"] as const).map(s => (
-                          <button key={s} type="button" onClick={() => setBackpackSort(s)}
-                            className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.1em] transition ${backpackSort === s ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                            {s === "standardowe" ? "Std" : s === "duzo" ? "Dużo" : "Mało"}
+                        {BACKPACK_FILTER_OPTS.map(opt => (
+                          <button key={opt.id} type="button" onClick={() => setBackpackSort(opt.id)}
+                            title={opt.label}
+                            className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.05em] transition ${backpackSort === opt.id ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "hover:bg-white/5"}`}
+                            style={backpackSort === opt.id ? undefined : { color: opt.color }}>
+                            {opt.short}
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 overflow-y-auto p-3">
-                    {backpackTab === "uprawy" && (
-                      Object.entries(seedInventory).filter(([k,amt]) => Number(amt) > 0 && !isCompostKey(k)).length === 0
-                        ? <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>
-                        : <div className="grid grid-cols-3 gap-2">
-                            {(() => {
-                              const raw = Object.entries(seedInventory).filter(([k,amt]) => Number(amt) > 0 && !isCompostKey(k)) as Array<[string,number]>;
-                              return [...raw].sort(([aId,aAmt],[bId,bAmt]) => {
-                                const {baseCropId:_aC,quality:_aQ}=parseQualityKey(aId);
-                                const {baseCropId:_bC,quality:_bQ}=parseQualityKey(bId);
-                                const aLv=CROPS.find(c=>c.id===_aC)?.unlockLevel??999;
-                                const bLv=CROPS.find(c=>c.id===_bC)?.unlockLevel??999;
-                                if(backpackSort==="standardowe"){const qo:Record<string,number>={rotten:0,good:1,epic:2,legendary:3};return aLv!==bLv?aLv-bLv:(qo[_aQ??"good"]??1)-(qo[_bQ??"good"]??1);}
-                                if(backpackSort==="duzo")return Number(bAmt)-Number(aAmt);
-                                if(backpackSort==="malo"){const d=Number(aAmt)-Number(bAmt);return d!==0?d:aLv-bLv;}
-                                return aLv-bLv;
-                              }).map(([seedId,amount]) => {
+                    {backpackTab === "uprawy" && (() => {
+                      const allCrops = Object.entries(seedInventory).filter(([k,amt]) => Number(amt) > 0 && !isCompostKey(k)) as Array<[string,number]>;
+                      const filtered = backpackSort === "all"
+                        ? allCrops
+                        : allCrops.filter(([k]) => (parseQualityKey(k).quality ?? "good") === backpackSort);
+                      if (allCrops.length === 0) {
+                        return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
+                      }
+                      if (filtered.length === 0) {
+                        const fLabel = BACKPACK_FILTER_OPTS.find(o => o.id === backpackSort)?.label ?? "";
+                        return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Brak upraw „{fLabel}".</div>;
+                      }
+                      return (
+                        <div className="grid grid-cols-3 gap-2">
+                          {(() => {
+                            return [...filtered].sort(([aId],[bId]) => {
+                              const {baseCropId:_aC,quality:_aQ}=parseQualityKey(aId);
+                              const {baseCropId:_bC,quality:_bQ}=parseQualityKey(bId);
+                              const aLv=CROPS.find(c=>c.id===_aC)?.unlockLevel??999;
+                              const bLv=CROPS.find(c=>c.id===_bC)?.unlockLevel??999;
+                              if (aLv !== bLv) return aLv - bLv;
+                              const qo:Record<string,number>={rotten:0,good:1,epic:2,legendary:3};
+                              return (qo[_aQ??"good"]??1)-(qo[_bQ??"good"]??1);
+                            }).map(([seedId,amount]) => {
                                 const {baseCropId:_bc,quality:_bq}=parseQualityKey(seedId);
                                 const crop=CROPS.find(c=>c.id===_bc);
                                 if(!crop)return null;
@@ -5150,9 +5186,10 @@ export default function Page() {
                                   </button>
                                 );
                               });
-                            })()}
-                          </div>
-                    )}
+                          })()}
+                        </div>
+                      );
+                    })()}
                     {backpackTab === "przedmioty" && (
                       <div className="flex flex-col gap-2 mt-1">
                         {hiveData.empty_jars > 0 && (
