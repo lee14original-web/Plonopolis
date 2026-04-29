@@ -1179,6 +1179,9 @@ export default function Page() {
   const [showLadaModal, setShowLadaModal] = React.useState(false);
   const [ladaSellQty, setLadaSellQty] = React.useState(1);
   const [ladaSelling, setLadaSelling] = React.useState(false);
+  // Schowek stodoły: ilość do sprzedaży per itemId + flaga "sprzedawanie"
+  const [barnSellQtys, setBarnSellQtys] = React.useState<Record<string, number>>({});
+  const [barnSelling, setBarnSelling] = React.useState<string | null>(null);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -1387,14 +1390,14 @@ export default function Page() {
       const h = barnCurrentHunger(ns, opiekaPts);
       const effMs = barnEffProdMs(a, h);
       if (barnNow - ns.prodStart >= effMs) {
-        const canAdd = Math.min(ns.owned, a.storageMax - ns.storage);
-        let bonus = 0;
-        if (bonusChance > 0 && ns.storage + canAdd < a.storageMax && Math.random() < bonusChance) {
-          bonus = 1;
+        // 1 cykl = 1 jednostka storage. Przy odbiorze: storage * owned sztuk produktu.
+        let cyclesToAdd = 1;
+        if (bonusChance > 0 && ns.storage + cyclesToAdd < a.storageMax && Math.random() < bonusChance) {
+          cyclesToAdd += 1;
           const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
-          if (item) bonusMessages.push(`${a.icon} ${a.name} wyprodukowała dodatkowe ${item.name}! ${item.icon}`);
+          if (item) bonusMessages.push(`${a.icon} ${a.name} dała dodatkowy cykl ${item.name}! ${item.icon}`);
         }
-        ns.storage = Math.min(a.storageMax, ns.storage + canAdd + bonus);
+        ns.storage = Math.min(a.storageMax, ns.storage + cyclesToAdd);
         ns.prodStart = ns.storage < a.storageMax ? barnNow : 0;
         changed = true;
       }
@@ -6150,37 +6153,52 @@ export default function Page() {
             };
             const handleCollect = (a: AnimalDef) => {
               const st = barnState[a.id];
-              if (st.storage === 0) return;
+              if (st.storage === 0 || st.owned === 0) return;
               const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-              const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + st.storage};
+              // 1 cykl storage = owned sztuk produktu
+              const collected = st.storage * st.owned;
+              const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + collected};
               saveBarnItems(newItems);
               saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
-              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${st.storage} ${item.name}`});
+              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})`});
             };
             const handleCollectAll = () => {
               let changed = false; const newItems = {...barnItems}; const newState = {...barnState};
+              let totalItems = 0;
               ANIMALS.forEach(a => {
                 const st = barnState[a.id];
-                if (st.storage > 0) {
-                  newItems[a.itemId] = (newItems[a.itemId]??0) + st.storage;
+                if (st.storage > 0 && st.owned > 0) {
+                  const collected = st.storage * st.owned;
+                  newItems[a.itemId] = (newItems[a.itemId]??0) + collected;
                   newState[a.id] = {...st, storage:0, prodStart: barnNow};
+                  totalItems += collected;
                   changed = true;
                 }
               });
               if (!changed) return;
               saveBarnItems(newItems); saveBarnState(newState);
-              setMessage({type:"success",title:"Odebrano wszystko!",text:"Produkty trafiły do schowka."});
+              setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów do schowka.`});
             };
-            const handleSellAll = async () => {
-              const total = Object.entries(barnItems).reduce((sum,[id,cnt]) => {
-                const item = ANIMAL_ITEMS.find(i => i.id === id);
-                return sum + (item ? item.sellPrice * cnt : 0);
-              }, 0);
-              if (total === 0) return;
-              const {error} = await supabase.from("profiles").update({money: displayMoney + total}).eq("id", profile.id);
-              if (error) return;
-              saveBarnItems({}); await loadProfile(profile.id);
-              setMessage({type:"success",title:"Sprzedano!",text:`+${total.toLocaleString()} 💰`});
+            // Sprzedaż pojedynczego surowca z wybraną ilością (jak w Ladzie)
+            const sellBarnItem = async (itemId: string, qty: number) => {
+              if (!profile?.id || qty <= 0 || barnSelling) return;
+              const have = barnItems[itemId] ?? 0;
+              const realQty = Math.min(qty, have);
+              if (realQty <= 0) return;
+              const item = ANIMAL_ITEMS.find(i => i.id === itemId);
+              if (!item) return;
+              setBarnSelling(itemId);
+              const earned = item.sellPrice * realQty;
+              const { error } = await supabase.from("profiles").update({ money: displayMoney + earned }).eq("id", profile.id);
+              if (error) { setBarnSelling(null); setMessage({type:"error",title:"Błąd sprzedaży",text:error.message}); return; }
+              const newItems = { ...barnItems };
+              newItems[itemId] = have - realQty;
+              if (newItems[itemId] <= 0) delete newItems[itemId];
+              saveBarnItems(newItems);
+              setBarnSellQtys(q => ({ ...q, [itemId]: 1 }));
+              await loadProfile(profile.id);
+              setBarnSelling(null);
+              setMessage({type:"success",title:`${item.icon} Sprzedano!`,text:`+${earned.toLocaleString()} 💰 (${realQty} ${item.name})`});
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
             const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
@@ -6231,24 +6249,67 @@ export default function Page() {
                     </div>
                   )}
 
-                  {/* ══ SCHOWEK NA PRODUKTY ══ */}
+                  {/* ══ SCHOWEK NA PRODUKTY (sprzedaż per surowiec, jak w Ladzie) ══ */}
                     {Object.keys(barnItems).some(k => (barnItems[k]??0) > 0) && (
                       <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Schowek produktów</p>
-                          <button onClick={handleSellAll} className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40">
-                            💰 Sprzedaj wszystko
-                          </button>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Schowek — sprzedaż surowców</p>
+                          <p className="text-[10px] text-[#8b6a3e]/80">Wybierz ilość i sprzedaj</p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {ANIMAL_ITEMS.filter(i => (barnItems[i.id]??0) > 0).map(i => (
-                            <div key={i.id} className="flex items-center gap-1.5 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-2 py-1">
-                              <span className="text-base">{i.icon}</span>
-                              <span className="text-xs font-bold text-[#f9e7b2]">{barnItems[i.id]}</span>
-                              <span className="text-[10px] text-[#8b6a3e]">{i.name}</span>
-                              <span className="text-[10px] text-amber-400">· {(i.sellPrice * barnItems[i.id]).toLocaleString()} 💰</span>
-                            </div>
-                          ))}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {ANIMAL_ITEMS.filter(i => (barnItems[i.id]??0) > 0).map(i => {
+                            const have = barnItems[i.id] ?? 0;
+                            const qty = Math.min(barnSellQtys[i.id] ?? 1, have);
+                            const value = qty * i.sellPrice;
+                            const isSelling = barnSelling === i.id;
+                            return (
+                              <div key={i.id} className="rounded-xl border border-[#8b6a3e]/30 bg-black/30 p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-2xl">{i.icon}</span>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-black text-[#f9e7b2]">{i.name}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Posiadasz: <span className="font-bold text-[#dfcfab]">{have}</span> · Cena: <span className="font-bold text-amber-400">{i.sellPrice.toLocaleString()} 💰</span></p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <button
+                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, (q[i.id] ?? 1) - 1) }))}
+                                    disabled={qty <= 1 || isSelling}
+                                    className="w-7 h-7 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-sm hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >−</button>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={have}
+                                    value={qty}
+                                    onChange={e => {
+                                      const v = parseInt(e.target.value, 10);
+                                      if (!isNaN(v)) setBarnSellQtys(q => ({ ...q, [i.id]: Math.max(1, Math.min(have, v)) }));
+                                    }}
+                                    disabled={isSelling}
+                                    className="flex-1 min-w-0 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-sm py-1 outline-none focus:border-amber-500 disabled:opacity-50"
+                                  />
+                                  <button
+                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: Math.min(have, (q[i.id] ?? 1) + 1) }))}
+                                    disabled={qty >= have || isSelling}
+                                    className="w-7 h-7 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-sm hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >+</button>
+                                  <button
+                                    onClick={() => setBarnSellQtys(q => ({ ...q, [i.id]: have }))}
+                                    disabled={isSelling}
+                                    className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-2 py-1 text-[10px] font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40"
+                                  >MAX</button>
+                                </div>
+                                <button
+                                  onClick={() => { void sellBarnItem(i.id, qty); }}
+                                  disabled={qty <= 0 || isSelling}
+                                  className="w-full rounded-xl py-2 text-xs font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {isSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${qty} za ${value.toLocaleString()} 💰`}
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -6282,7 +6343,7 @@ export default function Page() {
                                     <p className="text-sm font-black text-[#f9e7b2]">{a.name}</p>
                                     <p className="text-[10px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {st.storage > 0 && <span className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">{st.storage}/{a.storageMax}</span>}
+                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -6343,7 +6404,8 @@ export default function Page() {
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
                                     <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {st.storage} / {a.storageMax}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {st.storage} / {a.storageMax} cykli {st.storage > 0 && st.owned > 0 && <span className="text-green-300">(= {st.storage * st.owned} {item.icon})</span>}</p>
+                                    <p className="text-[9px] text-[#6b7280]">1 cykl = {st.owned} {item.name} ({st.owned} {st.owned === 1 ? "zwierzę" : "zwierząt"})</p>
                                   </div>
                                 </div>
                                 {st.owned > 0 && (
@@ -6357,9 +6419,9 @@ export default function Page() {
                                   </>
                                 )}
                                 {st.owned === 0 && <p className="text-xs text-[#6b7280] text-center">Brak zwierząt — kup pierwsze!</p>}
-                                {st.storage > 0 && (
+                                {st.storage > 0 && st.owned > 0 && (
                                   <button onClick={() => handleCollect(a)} className="mt-2 w-full rounded-xl border border-green-500/60 bg-green-900/20 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
-                                    ✅ Odbierz ({st.storage} {item.icon})
+                                    ✅ Odbierz {st.storage * st.owned} {item.icon} ({st.storage} cykli × {st.owned})
                                   </button>
                                 )}
                               </div>
