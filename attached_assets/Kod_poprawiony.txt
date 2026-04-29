@@ -335,6 +335,7 @@ function migrateCharEquipped(raw: unknown): CharEquipped {
 const CHAR_EQUIP_KEY = "plonopolis_char_equipped";
 const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 const OWNED_EQ_KEY   = "plonopolis_owned_eq";
+const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
@@ -1356,6 +1357,13 @@ export default function Page() {
     try { const s = localStorage.getItem(OWNED_EQ_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
   });
   const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); try { localStorage.setItem(OWNED_EQ_KEY, JSON.stringify(next)); } catch {} };
+  // ─── Ekwipunek Dodatkowy: nadmiarowe duplikaty (przyszłość: handel/ulepszenia/sprzedaż) ───
+  type ExtraEqEntry = { uid: string; id: string; upg: number };
+  const [extraEqItems, setExtraEqItems] = React.useState<ExtraEqEntry[]>(() => {
+    try { const s = localStorage.getItem(EXTRA_EQ_KEY); const p = s ? JSON.parse(s) : []; return Array.isArray(p) ? p : []; } catch { return []; }
+  });
+  const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); try { localStorage.setItem(EXTRA_EQ_KEY, JSON.stringify(next)); } catch {} };
+  const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
   const KOMPOST_HARD_CAP = 9999;
   const [kompostCharges, setKompostCharges] = React.useState<number>(() => {
@@ -2764,18 +2772,35 @@ export default function Page() {
     const rewards: KompostRewardEntry[] = [];
     let inv = { ...seedInventory };
     let owned = { ...ownedEqItems };
+    let upgReg = { ...itemUpgRegistry };
+    let extras = [...extraEqItems];
     for (let i = 0; i < rewardsCount; i++) {
       const roll = Math.random() * 100;
-      // 10% — losowy nieposiadany przedmiot ekwipunku ≤ poziom gracza
+      // 10% — losowy przedmiot ekwipunku ≤ poziom gracza (duplikaty → Ekwipunek Dodatkowy)
       if (roll < 10) {
-        const candidates = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl && !owned[it.id]);
+        const candidates = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
         if (candidates.length > 0) {
           const item = candidates[Math.floor(Math.random() * candidates.length)];
-          owned = { ...owned, [item.id]: true as const };
+          if (!owned[item.id]) {
+            // Pierwszy raz — wpada do głównego ekwipunku z upg 0
+            owned = { ...owned, [item.id]: true as const };
+          } else {
+            // Duplikat — porównujemy ulepszenia (nowy ma upg 0 — świeży z kompostu)
+            const newUpg = 0;
+            const curUpg = upgReg[item.id] ?? 0;
+            if (newUpg > curUpg) {
+              // Nowy lepszy → zamieniamy: stary leci do Ekwipunku Dodatkowego
+              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: curUpg }];
+              upgReg = { ...upgReg, [item.id]: newUpg };
+            } else {
+              // Nowy ≤ aktualny → nowy do Ekwipunku Dodatkowego (stary zostaje w głównym)
+              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: newUpg }];
+            }
+          }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
           continue;
         }
-        // Fallback: brak nieposiadanych przedmiotów → losuj kompost
+        // Fallback: brak przedmiotów dla tego poziomu → losuj kompost
       }
       // 40% Wzrost / 25% Urodzaj / 25% Nauka (z 90 = 40+25+25)
       let compostType: CompostType;
@@ -2792,6 +2817,8 @@ export default function Page() {
     }
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
+    saveItemUpg(upgReg);
+    saveExtraEqItems(extras);
     saveKompostCharges(kompostCharges - rewardsCount * KOMPOST_PER_REWARD);
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
@@ -5668,6 +5695,50 @@ export default function Page() {
                                 });
                               })()}
                             </div>
+                          </div>
+
+                          {/* ═══ EKWIPUNEK DODATKOWY (duplikaty) ═══ */}
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Ekwipunek Dodatkowy</p>
+                              <p className="text-[10px] text-[#8b6a3e]/80">{extraEqItems.length} {extraEqItems.length === 1 ? "przedmiot" : extraEqItems.length < 5 ? "przedmioty" : "przedmiotów"}</p>
+                            </div>
+                            {extraEqItems.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-[#8b6a3e]/40 bg-black/15 p-4 text-center">
+                                <p className="text-[11px] text-[#8b6a3e]">Tutaj trafiają duplikaty przedmiotów. Lepsze ulepszenie zostaje w głównym ekwipunku, słabsze (lub równe) wpada tutaj.</p>
+                                <p className="text-[10px] text-[#6b7280] mt-1">W przyszłości będziesz mógł je sprzedać lub ulepszyć dla zarobku.</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-5 gap-2">
+                                {extraEqItems.map(entry => {
+                                  const item = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
+                                  if (!item) return null;
+                                  const uc = entry.upg > 0 ? (UPG_COLOR[entry.upg] ?? "#6b7280") : "#8b6a3e";
+                                  const slotIcon = ({glowa:"👑",dlonie:"🧤",nogi:"👢"} as Record<string,string>)[item.slot];
+                                  return (
+                                    <div key={entry.uid}
+                                      className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none"
+                                      style={{ borderColor:"#8b6a3e", background:"rgba(10,6,2,0.55)", opacity:0.92 }}>
+                                      <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
+                                      <span className="text-2xl leading-none">{item.icon}</span>
+                                      <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:"#9ca3af"}}>
+                                        {item.name.split(" ")[0]}
+                                      </span>
+                                      <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
+                                      {/* Tooltip */}
+                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[170px] max-w-[220px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl text-left">
+                                        <p className="text-[12px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
+                                        <p className="text-[10px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[item.slot].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                        <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                        <p className="text-[11px] text-cyan-300 font-bold">{bonusLine(item.bonuses, entry.upg)}</p>
+                                        <p className="text-[10px] font-black" style={{color:uc}}>Ulepszenie: +{entry.upg}</p>
+                                        <p className="text-[10px] text-[#8b6a3e]/80 italic">📦 Duplikat — wkrótce: handel / sprzedaż</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
