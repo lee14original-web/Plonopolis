@@ -1376,6 +1376,21 @@ export default function Page() {
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
     | { kind:"compost"; compostType: CompostType; value: number };
   const [kompostRewards, setKompostRewards] = React.useState<KompostRewardEntry[] | null>(null);
+  // ESC zamyka modal kompostownika (najpierw panel nagród, potem cały modal)
+  React.useEffect(() => {
+    if (!showKompostModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      if (kompostRewards) {
+        setKompostRewards(null);
+      } else {
+        setShowKompostModal(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showKompostModal, kompostRewards]);
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
