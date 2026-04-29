@@ -963,10 +963,15 @@ function parseSeedInventory(value: unknown): SeedInventory {
   const merged: Record<string, number> = {};
 
   for (const [seedId, amount] of Object.entries(value as Record<string, unknown>)) {
-    const { baseCropId, quality } = parseQualityKey(seedId);
-    if (!CROPS.some((crop) => crop.id === baseCropId)) continue;
     const safeAmount = Math.floor(Number(amount));
     if (!Number.isFinite(safeAmount) || safeAmount <= 0) continue;
+    // Kompost — zachowujemy klucze 1:1
+    if (isCompostKey(seedId)) {
+      merged[seedId] = (merged[seedId] ?? 0) + safeAmount;
+      continue;
+    }
+    const { baseCropId, quality } = parseQualityKey(seedId);
+    if (!CROPS.some((crop) => crop.id === baseCropId)) continue;
     // Migracja: stary klucz bez jakości (np. "carrot") → "carrot_good"
     const normalizedKey = quality === null ? `${seedId}_good` : seedId;
     merged[normalizedKey] = (merged[normalizedKey] ?? 0) + safeAmount;
