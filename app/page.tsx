@@ -5715,6 +5715,12 @@ export default function Page() {
 
                           {/* ═══ EKWIPUNEK DODATKOWY (duplikaty) ═══ */}
                           {(() => {
+                            const visibleExtras = eqFilter
+                              ? extraEqItems.filter(e => {
+                                  const it = CHAR_EQUIP_ITEMS.find(i => i.id === e.id);
+                                  return it && it.slot === eqFilter;
+                                })
+                              : extraEqItems;
                             const handleUpgExtra = async (entry: ExtraEqEntry) => {
                               const nextU = entry.upg + 1;
                               const cost = UPGRADE_COST[nextU];
@@ -5744,13 +5750,18 @@ export default function Page() {
                             return (
                           <div className="mt-2">
                             <div className="flex items-center justify-between mb-2">
-                              <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Ekwipunek Dodatkowy</p>
-                              <p className="text-[10px] text-[#8b6a3e]/80">{extraEqItems.length} {extraEqItems.length === 1 ? "przedmiot" : extraEqItems.length < 5 ? "przedmioty" : "przedmiotów"}</p>
+                              <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e]">📦 Ekwipunek Dodatkowy{eqFilter && <span className="ml-1 text-[#dfcfab]/70">· {({glowa:"👑 Głowa",dlonie:"🧤 Dłonie",nogi:"👢 Nogi"} as Record<string,string>)[eqFilter]}</span>}</p>
+                              <p className="text-[10px] text-[#8b6a3e]/80">{visibleExtras.length}{eqFilter ? ` / ${extraEqItems.length}` : ""} {visibleExtras.length === 1 ? "przedmiot" : visibleExtras.length < 5 ? "przedmioty" : "przedmiotów"}</p>
                             </div>
                             {extraEqItems.length === 0 ? (
                               <div className="rounded-xl border border-dashed border-[#8b6a3e]/40 bg-black/15 p-4 text-center">
                                 <p className="text-[11px] text-[#8b6a3e]">Tutaj trafiają duplikaty przedmiotów. Lepsze ulepszenie zostaje w głównym ekwipunku, słabsze (lub równe) wpada tutaj.</p>
                                 <p className="text-[10px] text-[#6b7280] mt-1">Kliknij przedmiot, by go ulepszyć lub zamienić ze sztuką w głównym ekwipunku.</p>
+                              </div>
+                            ) : visibleExtras.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-[#8b6a3e]/40 bg-black/15 p-4 text-center">
+                                <p className="text-[11px] text-[#8b6a3e]">Brak duplikatów dla wybranego slotu.</p>
+                                <p className="text-[10px] text-[#6b7280] mt-1">Wybierz „Wszystkie" w filtrze powyżej, by zobaczyć całość.</p>
                               </div>
                             ) : (
                               <>
@@ -5802,7 +5813,7 @@ export default function Page() {
                                   );
                                 })()}
                                 <div className="grid grid-cols-5 gap-2">
-                                  {extraEqItems.map(entry => {
+                                  {visibleExtras.map(entry => {
                                     const item = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
                                     if (!item) return null;
                                     const uc = entry.upg > 0 ? (UPG_COLOR[entry.upg] ?? "#6b7280") : "#8b6a3e";
