@@ -1382,6 +1382,9 @@ export default function Page() {
   // Schowek stodoły: ilość do sprzedaży per itemId + flaga "sprzedawanie"
   const [barnSellQtys, setBarnSellQtys] = React.useState<Record<string, number>>({});
   const [barnSelling, setBarnSelling] = React.useState<string | null>(null);
+  // Lada — sprzedaż owoców z sadu (klucz: `${fruitId}_${quality}`)
+  const [ladaFruitQtys, setLadaFruitQtys] = React.useState<Record<string, number>>({});
+  const [ladaFruitSelling, setLadaFruitSelling] = React.useState<string | null>(null);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -6898,7 +6901,39 @@ export default function Page() {
               setMessage({type:"success",title:`${item.icon} Sprzedano!`,text:`+${earned.toLocaleString()} 💰 (${realQty} ${item.name})`});
             };
             const animalItemsToSell = ANIMAL_ITEMS.filter(i => (barnItems[i.id] ?? 0) > 0);
-            const hasAnythingToSell = honeyOwned > 0 || animalItemsToSell.length > 0;
+            // Owoce z sadu - per (fruitId, quality)
+            const fruitEntriesToSell = Object.entries(fruitInventory)
+              .filter(([,c]) => Number(c) > 0)
+              .map(([k,c]) => {
+                const lastUnd = k.lastIndexOf("_");
+                const fruitId = k.slice(0, lastUnd);
+                const q = k.slice(lastUnd+1) as FruitQuality;
+                const tree = TREES.find(tt => tt.fruitId === fruitId);
+                const qd = FRUIT_QUALITY_DEFS[q];
+                if (!tree || !qd) return null;
+                return { key: k, tree, q, qd, count: Number(c), unitPrice: tree.pricePerFruit * qd.mult };
+              })
+              .filter((x): x is NonNullable<typeof x> => x !== null);
+            const sellFruit = async (key: string, qty: number, unitPrice: number, name: string, icon: string) => {
+              if (!profile?.id || qty <= 0 || ladaFruitSelling) return;
+              const have = fruitInventory[key] ?? 0;
+              const realQty = Math.min(qty, have);
+              if (realQty <= 0) return;
+              setLadaFruitSelling(key);
+              const earned = unitPrice * realQty;
+              const newMoney = Math.round((displayMoney + earned) * 100) / 100;
+              const { error } = await supabase.from("profiles").update({ money: newMoney }).eq("id", profile.id);
+              if (error) { setLadaFruitSelling(null); setMessage({type:"error",title:"Błąd sprzedaży",text:error.message}); return; }
+              const newInv = { ...fruitInventory };
+              newInv[key] = have - realQty;
+              if (newInv[key] <= 0) delete newInv[key];
+              saveFruitInventory(newInv);
+              setLadaFruitQtys(q => ({ ...q, [key]: 1 }));
+              await loadProfile(profile.id);
+              setLadaFruitSelling(null);
+              setMessage({type:"success",title:`${icon} Sprzedano!`,text:`+${earned.toLocaleString()} 💰 (${realQty} ${name})`});
+            };
+            const hasAnythingToSell = honeyOwned > 0 || animalItemsToSell.length > 0 || fruitEntriesToSell.length > 0;
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
                 <div className="relative flex w-full max-w-[640px] max-h-[92vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
@@ -6910,7 +6945,7 @@ export default function Page() {
                       <span className="text-4xl">🛒</span>
                       <div>
                         <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
-                        <p className="text-sm text-amber-400/80">Sprzedaj produkty z ula i zagrody</p>
+                        <p className="text-sm text-amber-400/80">Sprzedaj produkty z ula, zagrody i sadu</p>
                       </div>
                     </div>
                   </div>
@@ -7028,6 +7063,93 @@ export default function Page() {
                         </div>
                       );
                     })}
+
+                    {/* Karty owoców z sadu — per (fruitId, quality) */}
+                    {fruitEntriesToSell.length > 0 && (
+                      <div className="rounded-xl border border-emerald-600/30 bg-emerald-950/10 p-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-300 mb-2">🌳 Owoce z sadu</p>
+                        <div className="space-y-2">
+                          {fruitEntriesToSell.map(f => {
+                            const have = f.count;
+                            const qty = Math.min(ladaFruitQtys[f.key] ?? have, have);
+                            const value = qty * f.unitPrice;
+                            const isSelling = ladaFruitSelling === f.key;
+                            const labelName = `${f.tree.fruitName}${f.q !== "zwykly" ? ` (${f.qd.label})` : ""}`;
+                            return (
+                              <div key={f.key} className="rounded-lg border border-[#8b6a3e]/40 bg-black/30 p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-2xl">{f.tree.fruitIcon}</span>
+                                  {f.qd.icon && <span className="text-base" style={{color: f.qd.color}}>{f.qd.icon}</span>}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-black text-[#f9e7b2]">{f.tree.fruitName} <span className="text-[11px] font-bold" style={{color: f.qd.color}}>{f.qd.label}</span></p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Posiadasz: <span className="font-bold text-[#dfcfab]">{have}</span> · Cena: <span className="font-bold text-amber-400">{f.unitPrice.toLocaleString()} 💰/szt</span></p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <button
+                                    onClick={() => setLadaFruitQtys(q => ({ ...q, [f.key]: Math.max(1, (q[f.key] ?? have) - 1) }))}
+                                    disabled={qty <= 1 || isSelling}
+                                    className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >−</button>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={have}
+                                    value={qty}
+                                    onChange={e => {
+                                      const v = parseInt(e.target.value, 10);
+                                      if (!isNaN(v)) setLadaFruitQtys(q => ({ ...q, [f.key]: Math.max(1, Math.min(have, v)) }));
+                                    }}
+                                    disabled={isSelling}
+                                    className="flex-1 min-w-0 rounded-lg border border-[#8b6a3e]/50 bg-black/40 text-center text-[#f9e7b2] font-black text-base py-1 outline-none focus:border-amber-500 disabled:opacity-50"
+                                  />
+                                  <button
+                                    onClick={() => setLadaFruitQtys(q => ({ ...q, [f.key]: Math.min(have, (q[f.key] ?? have) + 1) }))}
+                                    disabled={qty >= have || isSelling}
+                                    className="w-8 h-8 rounded-lg border border-[#8b6a3e]/50 bg-black/30 text-[#f3e6c8] font-black text-base hover:bg-black/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >+</button>
+                                  <button
+                                    onClick={() => setLadaFruitQtys(q => ({ ...q, [f.key]: have }))}
+                                    disabled={isSelling}
+                                    className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-2.5 py-1 text-[11px] font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40"
+                                  >MAX</button>
+                                </div>
+                                <button
+                                  onClick={() => { void sellFruit(f.key, qty, f.unitPrice, labelName, f.tree.fruitIcon); }}
+                                  disabled={qty <= 0 || isSelling}
+                                  className="w-full rounded-xl py-2 text-sm font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {isSelling ? "⏳ Sprzedaję..." : `🛒 Sprzedaj ${qty} za ${value.toLocaleString()} 💰`}
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {fruitEntriesToSell.length > 1 && (() => {
+                            const totalValue = fruitEntriesToSell.reduce((s,f) => s + f.count * f.unitPrice, 0);
+                            const isSellingAll = ladaFruitSelling === "__ALL__";
+                            return (
+                              <button
+                                disabled={isSellingAll || !!ladaFruitSelling}
+                                onClick={async () => {
+                                  if (!profile?.id || ladaFruitSelling) return;
+                                  setLadaFruitSelling("__ALL__");
+                                  const newMoney = Math.round((displayMoney + totalValue) * 100) / 100;
+                                  const { error } = await supabase.from("profiles").update({ money: newMoney }).eq("id", profile.id);
+                                  if (error) { setLadaFruitSelling(null); setMessage({type:"error",title:"Błąd sprzedaży",text:error.message}); return; }
+                                  saveFruitInventory({});
+                                  setLadaFruitQtys({});
+                                  await loadProfile(profile.id);
+                                  setLadaFruitSelling(null);
+                                  setMessage({type:"success",title:`💰 Sprzedano wszystkie owoce!`,text:`+${totalValue.toLocaleString()} 💰`});
+                                }}
+                                className="w-full rounded-xl border border-emerald-500/60 bg-emerald-900/30 py-2 text-xs font-black text-emerald-200 hover:bg-emerald-900/50 disabled:opacity-40 disabled:cursor-not-allowed">
+                                {isSellingAll ? "⏳ Sprzedaję..." : `💰 Sprzedaj WSZYSTKIE owoce za ${totalValue.toLocaleString()} 💰`}
+                              </button>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Stopka (stała) */}
@@ -7572,7 +7694,7 @@ export default function Page() {
                       <p className="mt-2 text-[10px] text-[#8b6a3e]">Limit drzew rośnie z poziomem: 10→2, 15→4, 20→6, 25→8 (łącznie wszystkie drzewa).</p>
                     </div>
                   </div>
-                  {/* Footer: inventory + sell */}
+                  {/* Footer: inventory + harvest (sprzedaż w Ladzie) */}
                   {(ownedTrees.length > 0 || invTotal > 0) && (
                     <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
                       {orchardError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{orchardError}</p>}
@@ -7594,18 +7716,13 @@ export default function Page() {
                               {Object.keys(fruitInventory).filter(k => (fruitInventory[k] ?? 0) > 0).length > 12 && <span className="text-[#8b6a3e]">…</span>}
                             </div>
                           )}
+                          {invTotal > 0 && <p className="mt-1 text-[11px] text-amber-300/90">💡 Sprzedaż owoców → <span className="font-black text-amber-300">Lada dla klientów</span> w mieście.</p>}
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={handleHarvestAll}
                             className="rounded-xl border border-emerald-500/60 bg-emerald-900/30 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-900/50">
-                            ✅ Zbierz wszystko
-                          </button>
-                          <button
-                            disabled={invValue === 0}
-                            onClick={handleSellAll}
-                            className={`rounded-xl px-4 py-2 text-sm font-black ${invValue > 0 ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
-                            💰 Sprzedaj wszystkie ({invValue.toLocaleString()}💰)
+                            ✅ Zbierz wszystko z drzew
                           </button>
                         </div>
                       </div>
