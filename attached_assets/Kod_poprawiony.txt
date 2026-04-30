@@ -203,7 +203,7 @@ const HIVE_MAX_HONEY     = [0, 8, 10, 12, 14, 16];
 const HIVE_UPGRADE_BEES  = [0, 20, 30, 40, 50];
 const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
 const HONEY_MS_PER_PT    = 3_600_000;
-const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
+const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
 
 // ═══ CZAS AKCJI POLOWYCH (sadzenie/zbiór) ═══
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
