@@ -1529,6 +1529,7 @@ export default function Page() {
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
   const [nextSpawnAt, setNextSpawnAt] = React.useState<number | null>(null);
+  const lastAutoTickAtRef = React.useRef(0);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -3054,6 +3055,16 @@ export default function Page() {
     return () => { clearInterval(tickT); clearInterval(nowT); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
+
+  // Auto-tick natychmiast po zerowaniu countdownu spawnu (z throttle 3s)
+  React.useEffect(() => {
+    if (!showLadaModal || !profile?.id || nextSpawnAt === null || customerLoading) return;
+    if (customerNow < nextSpawnAt) return;
+    if (Date.now() - lastAutoTickAtRef.current < 3000) return;
+    lastAutoTickAtRef.current = Date.now();
+    void refreshCustomerOrders({ tick: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerNow, nextSpawnAt, showLadaModal, profile?.id, customerLoading]);
 
   async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
     const { error } = await supabase
