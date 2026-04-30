@@ -1528,6 +1528,8 @@ export default function Page() {
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
+  const [nextSpawnAt, setNextSpawnAt] = React.useState<number | null>(null);
+  const lastAutoTickAtRef = React.useRef(0);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -2973,9 +2975,15 @@ export default function Page() {
   }
 
   function getCustomerDisplay(type: string): { name: string; icon: string } {
-    if (type === 'village_guest')   return { name: 'Gość ze wsi',         icon: '🧓' };
-    if (type === 'rich_collector')  return { name: 'Bogaty kolekcjoner',  icon: '💎' };
-    if (type === 'traveler')        return { name: 'Podróżny',            icon: '🌍' };
+    if (type === 'neighbor')              return { name: 'Sąsiad',                  icon: '🧑‍🌾' };
+    if (type === 'village_guest')         return { name: 'Gość ze wsi',             icon: '🧓' };
+    if (type === 'small_market')          return { name: 'Mały targ',               icon: '🏪' };
+    if (type === 'village_shop')          return { name: 'Sklep wiejski',           icon: '🏬' };
+    if (type === 'restaurant')            return { name: 'Restauracja',             icon: '🍽️' };
+    if (type === 'wholesaler')            return { name: 'Hurtownia',               icon: '🏢' };
+    if (type === 'market_chain')          return { name: 'Sieć handlowa',           icon: '🏛️' };
+    if (type === 'distribution_center')   return { name: 'Centrum dystrybucji',     icon: '🏗️' };
+    if (type === 'international_contract')return { name: 'Kontrakt międzynarodowy', icon: '🌍' };
     return { name: type, icon: '👤' };
   }
 
@@ -2984,7 +2992,10 @@ export default function Page() {
     setCustomerLoading(true);
     try {
       if (opts?.tick) {
-        await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
+        const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
+        if (tickData?.next_spawn_at) {
+          setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
+        }
       }
       const { data, error } = await supabase
         .from("customer_orders")
@@ -3044,6 +3055,16 @@ export default function Page() {
     return () => { clearInterval(tickT); clearInterval(nowT); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
+
+  // Auto-tick natychmiast po zerowaniu countdownu spawnu (z throttle 3s)
+  React.useEffect(() => {
+    if (!showLadaModal || !profile?.id || nextSpawnAt === null || customerLoading) return;
+    if (customerNow < nextSpawnAt) return;
+    if (Date.now() - lastAutoTickAtRef.current < 3000) return;
+    lastAutoTickAtRef.current = Date.now();
+    void refreshCustomerOrders({ tick: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerNow, nextSpawnAt, showLadaModal, profile?.id, customerLoading]);
 
   async function persistPlotCrops(nextPlotCrops: Record<number, PlotCropState>, userId: string) {
     const { error } = await supabase
@@ -7533,6 +7554,21 @@ export default function Page() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Pasek: czas do następnego klienta */}
+                    {nextSpawnAt !== null && (() => {
+                      const left = Math.max(0, nextSpawnAt - customerNow);
+                      const m = Math.floor(left / 60000);
+                      const s = Math.floor((left % 60000) / 1000);
+                      const isReady = left <= 0;
+                      return (
+                        <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
+                          {isReady
+                            ? '✨ Nowy klient lada chwila — odśwież listę!'
+                            : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex-1 overflow-y-auto p-5">
                       {customerLoading && customerOrders.length === 0 ? (
