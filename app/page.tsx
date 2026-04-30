@@ -2185,6 +2185,9 @@ export default function Page() {
       return;
     }
 
+    // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
+    const _preservedCompostBonus = plot.compostBonus ?? null;
+
     const { data, error } = await supabase.rpc("game_water_plot", {
       p_plot_id: plotId,
     });
@@ -2199,6 +2202,20 @@ export default function Page() {
     }
 
     applyProfileState(extractRpcProfile(data));
+
+    // Jeśli serwer zgubił bonus kompostu przy podlewaniu — przywróć go i zapisz
+    if (_preservedCompostBonus && profile?.id) {
+      setPlotCrops(prev => {
+        const _curr = prev[plotId];
+        if (!_curr || _curr.compostBonus) return prev;
+        const _merged = { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
+        // Asynchronicznie persystuj scalone plot_crops
+        void supabase.from("profiles").update({
+          plot_crops: serializePlotCrops(_merged) as unknown as Record<string,unknown>,
+        }).eq("id", profile.id);
+        return _merged;
+      });
+    }
 
     const _zaradBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
@@ -8757,13 +8774,15 @@ export default function Page() {
               const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultWet));
               const _hitGlobalMin = _totalMultWet < GROWTH_GLOBAL_MIN_MULT;
               const _fmt = (ms: number) => {
-                const _s = Math.max(1, Math.round(ms / 1000));
-                if (_s < 60) return `${_s}s`;
-                const _m = Math.round(_s / 60);
-                if (_m < 60) return `${_m} min`;
-                const _h = Math.floor(_m / 60);
-                const _r = _m % 60;
-                return _r > 0 ? `${_h}h ${_r} min` : `${_h}h`;
+                const _total = Math.max(0, Math.floor(ms / 1000));
+                const _h = Math.floor(_total / 3600);
+                const _m = Math.floor((_total % 3600) / 60);
+                const _sec = _total % 60;
+                const parts: string[] = [];
+                if (_h > 0) parts.push(`${_h}h`);
+                if (_m > 0 || _h > 0) parts.push(`${_m} min`);
+                parts.push(`${_sec}s`);
+                return parts.join(" ");
               };
               const _saved = _baseMs - _effMs;
               const _savedPct = Math.round((_saved / _baseMs) * 100);
