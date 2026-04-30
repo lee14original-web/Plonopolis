@@ -216,8 +216,103 @@ type BarnItems = Record<string,number>;
 interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; }
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
-const UPGRADE_COST   = [0,100,250,500,1000,2500,5000,10000,25000,50000,100000];
+// ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
+const UPGRADE_COST   = [0,50,100,250,500,1200,2500,5000,10000,20000,40000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
+// ─── Mnożnik ceny zależny od poziomu odblokowania itemu (tier T1..T9) ───
+function getItemTierMultiplier(unlockLevel: number): number {
+  if (unlockLevel <= 3)  return 1;     // T1
+  if (unlockLevel <= 6)  return 1.3;   // T2
+  if (unlockLevel <= 9)  return 1.6;   // T3
+  if (unlockLevel <= 12) return 2;     // T4
+  if (unlockLevel <= 15) return 2.5;   // T5
+  if (unlockLevel <= 18) return 3;     // T6
+  if (unlockLevel <= 21) return 4;     // T7
+  if (unlockLevel <= 25) return 5;     // T8
+  return 7;                            // T9 (26-30)
+}
+// ─── Mnożnik slotu (Głowa = ×1.3, Dłonie/Nogi = ×1) ───
+function getSlotMultiplier(slot?: string): number {
+  return slot === "glowa" ? 1.3 : 1;
+}
+function getItemTierLabel(unlockLevel: number): string {
+  if (unlockLevel <= 3)  return "T1";
+  if (unlockLevel <= 6)  return "T2";
+  if (unlockLevel <= 9)  return "T3";
+  if (unlockLevel <= 12) return "T4";
+  if (unlockLevel <= 15) return "T5";
+  if (unlockLevel <= 18) return "T6";
+  if (unlockLevel <= 21) return "T7";
+  if (unlockLevel <= 25) return "T8";
+  return "T9";
+}
+// Finalny koszt = bazowy × mnożnik tieru × mnożnik slotu (Głowa ×1.3)
+function getUpgradeCost(itemId: string, targetUpg: number): number {
+  if (targetUpg < 1 || targetUpg > 10) return 0;
+  const item = CHAR_EQUIP_ITEMS.find(i => i.id === itemId);
+  const tierMult = item ? getItemTierMultiplier(item.unlockLevel) : 1;
+  const slotMult = getSlotMultiplier(item?.slot);
+  return Math.round(UPGRADE_COST[targetUpg] * tierMult * slotMult);
+}
+// ─── Materiały ze zwierząt: M1..M10 → ID przedmiotu zwierzęcego ───
+const TIER_MATERIAL: Record<number,string> = {
+  1:"jajko", 2:"futro_krolika", 3:"mleko", 4:"piora", 5:"welna",
+  6:"nawoz_naturalny", 7:"mleko_kozie", 8:"duze_piora", 9:"energia_robocza", 10:"rogi_byka",
+};
+// Indeks tieru itemu (1..9) z poziomu odblokowania
+function getItemTierIndex(unlockLevel: number): number {
+  if (unlockLevel <= 3)  return 1;
+  if (unlockLevel <= 6)  return 2;
+  if (unlockLevel <= 9)  return 3;
+  if (unlockLevel <= 12) return 4;
+  if (unlockLevel <= 15) return 5;
+  if (unlockLevel <= 18) return 6;
+  if (unlockLevel <= 21) return 7;
+  if (unlockLevel <= 25) return 8;
+  return 9;
+}
+// Wymagane materiały dla docelowego ulepszenia (+4..+10). +1..+3 = tylko gold.
+function getUpgradeMaterials(itemId: string, targetUpg: number): Array<{matId:string; qty:number}> {
+  if (targetUpg < 4 || targetUpg > 10) return [];
+  const item = CHAR_EQUIP_ITEMS.find(i => i.id === itemId);
+  if (!item) return [];
+  const tier = getItemTierIndex(item.unlockLevel);
+  const current  = TIER_MATERIAL[tier];
+  const prev     = tier > 1 ? TIER_MATERIAL[tier-1] : null;
+  const prev2    = tier > 2 ? TIER_MATERIAL[tier-2] : null;
+  const rareHigh = TIER_MATERIAL[Math.min(tier+1, 10)];
+  const out: Array<{matId:string; qty:number}> = [];
+  switch (targetUpg) {
+    case 4: out.push({matId:current, qty:1}); break;
+    case 5: out.push({matId:current, qty:2}); break;
+    case 6:
+      out.push({matId:current, qty:2});
+      if (prev) out.push({matId:prev, qty:1});
+      break;
+    case 7:
+      out.push({matId:current, qty:3});
+      if (prev) out.push({matId:prev, qty:2});
+      break;
+    case 8:
+      out.push({matId:current, qty:4});
+      if (prev) out.push({matId:prev, qty:2});
+      if (prev2) out.push({matId:prev2, qty:1});
+      break;
+    case 9:
+      out.push({matId:current, qty:5});
+      if (prev) out.push({matId:prev, qty:3});
+      if (prev2) out.push({matId:prev2, qty:2});
+      break;
+    case 10:
+      out.push({matId:current, qty:6});
+      if (prev) out.push({matId:prev, qty:4});
+      if (rareHigh && rareHigh !== current && (!prev || rareHigh !== prev)) {
+        out.push({matId:rareHigh, qty:2});
+      }
+      break;
+  }
+  return out;
+}
 const UPG_COLOR = ["#6b7280","#9ca3af","#9ca3af","#9ca3af","#4ade80","#4ade80","#4ade80","#fbbf24","#fbbf24","#fbbf24","#fbbf24"];
 function upgBonusStr(base: number, upg: number, flat?: boolean): string {
   const val = flat ? base + upg : parseFloat((base * (1 + 0.15 * upg)).toFixed(2));
@@ -5496,10 +5591,28 @@ export default function Page() {
                   {domTab === "eq" && (() => {
                     const SLOT_BOX = slotBoxCustom;
                     const handleUpg = async (slot, eqD) => {
-                      const nextU = eqD.upg+1; const cost = UPGRADE_COST[nextU];
+                      const nextU = eqD.upg+1; const cost = getUpgradeCost(eqD.id, nextU);
                       if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
+                      // Sprawdź materiały (od +4)
+                      const mats = getUpgradeMaterials(eqD.id, nextU);
+                      const missing = mats.filter(m => (barnItems[m.matId] ?? 0) < m.qty);
+                      if (missing.length > 0) {
+                        const txt = missing.map(m => {
+                          const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
+                          const have = barnItems[m.matId] ?? 0;
+                          return `${md?.icon ?? "•"} ${md?.name ?? m.matId}: ${have}/${m.qty}`;
+                        }).join("\n");
+                        setMessage({ type:"error", title:"Brak materiałów!", text:txt });
+                        return;
+                      }
                       const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
                       if (me) return;
+                      // Odejmij materiały lokalnie
+                      if (mats.length > 0) {
+                        const newBarn = { ...barnItems };
+                        mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
+                        saveBarnItems(newBarn);
+                      }
                       const ok = Math.random() < UPGRADE_CHANCE[nextU];
                       let fu;
                       if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
@@ -5632,14 +5745,37 @@ export default function Page() {
                                       ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
                                       : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
                                     {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
+                                    {upg < 10 && (() => {
+                                      const matsNeeded = getUpgradeMaterials(eqD.id, upg+1);
+                                      if (matsNeeded.length === 0) return null;
+                                      return (
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                          {matsNeeded.map(m => {
+                                            const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
+                                            const have = barnItems[m.matId] ?? 0;
+                                            const enough = have >= m.qty;
+                                            return (
+                                              <span key={m.matId} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${enough ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/50" : "bg-red-900/40 text-red-300 border border-red-700/50"}`}>
+                                                {md?.icon ?? "•"} {have}/{m.qty}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                   <div className="flex flex-col gap-1 shrink-0">
-                                    {upg < 10 && (
+                                    {upg < 10 && (() => {
+                                      const matsNeeded = getUpgradeMaterials(eqD.id, upg+1);
+                                      const matsOk = matsNeeded.every(m => (barnItems[m.matId] ?? 0) >= m.qty);
+                                      return (
                                       <button type="button" onClick={() => handleUpg(slot, eqD)}
-                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                        ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                        disabled={!matsOk}
+                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed">
+                                        ⚒ {getUpgradeCost(eqD.id, upg+1).toLocaleString()} 💰
                                       </button>
-                                    )}
+                                      );
+                                    })()}
                                     <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
                                       className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
                                   </div>
@@ -5723,11 +5859,28 @@ export default function Page() {
                               : extraEqItems;
                             const handleUpgExtra = async (entry: ExtraEqEntry) => {
                               const nextU = entry.upg + 1;
-                              const cost = UPGRADE_COST[nextU];
+                              const cost = getUpgradeCost(entry.id, nextU);
                               if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
                               if (!profile?.id) return;
+                              // Sprawdź materiały (od +4)
+                              const mats = getUpgradeMaterials(entry.id, nextU);
+                              const missing = mats.filter(m => (barnItems[m.matId] ?? 0) < m.qty);
+                              if (missing.length > 0) {
+                                const txt = missing.map(m => {
+                                  const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
+                                  const have = barnItems[m.matId] ?? 0;
+                                  return `${md?.icon ?? "•"} ${md?.name ?? m.matId}: ${have}/${m.qty}`;
+                                }).join("\n");
+                                setMessage({ type:"error", title:"Brak materiałów!", text:txt });
+                                return;
+                              }
                               const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
                               if (me) return;
+                              if (mats.length > 0) {
+                                const newBarn = { ...barnItems };
+                                mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
+                                saveBarnItems(newBarn);
+                              }
                               const ok = Math.random() < UPGRADE_CHANCE[nextU];
                               let fu: number;
                               if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
@@ -5791,12 +5944,35 @@ export default function Page() {
                                           {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
                                         </div>
                                         <div className="flex flex-col gap-1 shrink-0">
-                                          {upg < 10 && (
+                                          {upg < 10 && (() => {
+                                            const matsNeeded = getUpgradeMaterials(entry.id, upg+1);
+                                            const matsOk = matsNeeded.every(m => (barnItems[m.matId] ?? 0) >= m.qty);
+                                            return (
                                             <button type="button" onClick={() => handleUpgExtra(entry)}
-                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap">
-                                              ⚒ {UPGRADE_COST[upg+1].toLocaleString()} 💰
+                                              disabled={!matsOk}
+                                              className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed">
+                                              ⚒ {getUpgradeCost(entry.id, upg+1).toLocaleString()} 💰
                                             </button>
-                                          )}
+                                            );
+                                          })()}
+                                          {upg < 10 && (() => {
+                                            const matsNeeded = getUpgradeMaterials(entry.id, upg+1);
+                                            if (matsNeeded.length === 0) return null;
+                                            return (
+                                              <div className="flex flex-wrap gap-0.5 justify-end">
+                                                {matsNeeded.map(m => {
+                                                  const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
+                                                  const have = barnItems[m.matId] ?? 0;
+                                                  const enough = have >= m.qty;
+                                                  return (
+                                                    <span key={m.matId} className={`text-[9px] font-bold px-1 py-0.5 rounded ${enough ? "bg-emerald-900/40 text-emerald-300" : "bg-red-900/40 text-red-300"}`}>
+                                                      {md?.icon ?? "•"}{have}/{m.qty}
+                                                    </span>
+                                                  );
+                                                })}
+                                              </div>
+                                            );
+                                          })()}
                                           <button type="button" onClick={() => handleSwapExtra(entry)}
                                             disabled={mainUpg === upg}
                                             title={mainUpg === upg ? "Identyczne ulepszenia — zamiana bez efektu" : "Przenieś do głównego ekwipunku"}
