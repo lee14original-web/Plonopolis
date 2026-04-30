@@ -13,7 +13,15 @@
   - % reward zwierząt → handleCollect / handleCollectAll
 
 ## 🚧 Brakujące elementy gry (do zrobienia w pierwszej kolejności)
-- [ ] **Drzewa / sad** — system sadowniczy w grze (item d13, n8, g5, g7 mają bonus "% speed drzew", ale drzew NIE MA)
+- [x] **Drzewa / sad** — ✅ ZROBIONE
+  - 9 drzew (jabłoń, grusza, śliwa, wiśnia, brzoskwinia, morela, pomarańcza, cytryna, granat) lvl 10–25
+  - System jakości owoców: zwykły 85% / soczysty 12% (×2💰) / złoty 3% (×5💰)
+  - Limity slotów per LVL: 10→2, 15→4, 20→6, 25→8
+  - Cykl produkcji offline-safe (storage cap 5 cykli)
+  - Bonusy: "% speed drzew" (z eq), Sadownik (drop +%), Szczęście + "% bonus drop" (rare/golden)
+  - Sklep zakładka 🌳 Drzewa, modal Sadu z timerami i sprzedażą per quality
+  - Owoce w osobnym `fruitInventory` (klucz `${fruitId}_${quality}`) — gotowe pod przyszłe crafting/gildie/eventy
+- [ ] **Czasy sadzenia/zbioru** — itemy n11, c5, n12, c6, c12, d3, d11 mają "% speed sadzenia/zbioru" ale w obecnym RPC sadzenie/zbiór są instant. Decyzja: dodać czasy czy wymienić bonusy?
 - [ ] (inne brakujące elementy które user wskaże)
 
 ## 📋 ODŁOŻONE — wrócić po dodaniu brakujących elementów
