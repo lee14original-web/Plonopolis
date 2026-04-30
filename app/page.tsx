@@ -6478,14 +6478,19 @@ export default function Page() {
                       </div>
                       <p className="text-[10px] text-emerald-500/70 mt-1">Łączne ładowania: {kompostCharges}</p>
                     </div>
-                    {/* Przycisk odbioru nagród */}
-                    {readyRewards > 0 && (
-                      <button
-                        onClick={() => void claimKompostReward()}
-                        className="mt-3 w-full rounded-2xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-3 text-base font-black text-white hover:scale-[1.02] transition shadow-lg shadow-emerald-500/30 animate-pulse">
-                        🎲 Odbierz {readyRewards} {readyRewards === 1 ? "nagrodę" : readyRewards < 5 ? "nagrody" : "nagród"}
-                      </button>
-                    )}
+                    {/* Przycisk odbioru nagród — zawsze widoczny żeby uniknąć layout shift */}
+                    <button
+                      onClick={() => { if (readyRewards > 0) void claimKompostReward(); }}
+                      disabled={readyRewards === 0}
+                      className={`mt-3 w-full rounded-2xl border-2 px-6 py-3 text-base font-black transition shadow-lg ${
+                        readyRewards > 0
+                          ? "border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:scale-[1.02] shadow-emerald-500/30 animate-pulse cursor-pointer"
+                          : "border-emerald-900/50 bg-emerald-950/30 text-emerald-700/60 shadow-none cursor-not-allowed"
+                      }`}>
+                      {readyRewards > 0
+                        ? `🎲 Odbierz ${readyRewards} ${readyRewards === 1 ? "nagrodę" : readyRewards < 5 ? "nagrody" : "nagród"}`
+                        : `🎲 Brak gotowych nagród`}
+                    </button>
                   </div>
 
                   {/* Sticky controls — pasek ilości + filtr (NIE scrolluje się z uprawami) */}
