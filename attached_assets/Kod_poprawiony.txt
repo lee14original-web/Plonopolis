@@ -440,7 +440,7 @@ const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,heigh
 };
 const BARN_STATE_KEY = "plonopolis_barn";
 const BARN_ITEMS_KEY = "plonopolis_barn_items";
-const HUNGER_DECAY_PER_MS = 4 / (60 * 60 * 1000); // 4 pkt/h → 0 po ~25h
+const HUNGER_DECAY_PER_MS = 3 / (60 * 60 * 1000); // 3 pkt/h → 0 po ~33h
 function barnSlotCosts(buyPrice: number, upgrades: number): number[] {
   const r: number[] = []; let c = Math.round(buyPrice * 0.17);
   for (let i = 0; i < upgrades; i++) { r.push(c); c = Math.round(c * 1.6); } return r;
@@ -503,8 +503,8 @@ function barnCurrentHunger(st: BarnAnimalState, opiekaPts: number = 0): number {
 function barnHungerStatus(h: number): { label:string; color:string; speedMod:number } {
   if (h >= 80) return { label:"Najedzone 😊", color:"#4ade80", speedMod:-0.10 };
   if (h >= 50) return { label:"Normalne",     color:"#f9e7b2", speedMod:0     };
-  if (h >= 20) return { label:"Głodne 😟",    color:"#fbbf24", speedMod:0.15  };
-  return               { label:"Wygłodzone 😵",color:"#ef4444", speedMod:0.30  };
+  if (h >= 20) return { label:"Głodne 😟",    color:"#fbbf24", speedMod:0.10  };
+  return               { label:"Wygłodzone 😵",color:"#ef4444", speedMod:0.20  };
 }
 function barnEffProdMs(a: AnimalDef, h: number): number {
   return Math.round(a.prodMs * (1 + barnHungerStatus(h).speedMod));
