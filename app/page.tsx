@@ -1213,7 +1213,8 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
 function serializePlotCrops(value: Record<number, PlotCropState>) {
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([, plot]) => Boolean(plot?.cropId))
+      // Zachowuj pola z uprawą LUB z aktywnym kompostem (kompost na puste pole musi przeżyć w bazie)
+      .filter(([, plot]) => Boolean(plot?.cropId) || Boolean(plot?.compostBonus))
       .map(([plotId, plot]) => [
         plotId,
         {
