@@ -3355,16 +3355,40 @@ export default function Page() {
       _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
     }
     if (_bonusExpTotal > 0 && profile?.id) {
-      const _newXp = (rpcProf?.xp ?? 0) + _bonusExpTotal;
-      const _xpToNext = (rpcProf?.xp_to_next_level ?? 100);
-      // Bezpieczne nadpisanie tylko jeśli nie wywoła levelup
-      if (_newXp < _xpToNext) {
-        await supabase.from("profiles").update({ xp: _newXp }).eq("id", profile.id);
-        setProfile(p => p ? { ...p, xp: _newXp } : p);
-        actualExp += _bonusExpTotal;
-      } else {
-        // Levelup case: pomijamy bonus (lub można byłoby wywołać RPC dla levelup)
-        _bonusExpTotal = 0;
+      // Pełna obsługa level-upu klient-side (jak handleAddExp)
+      const _baseXp = (rpcProf?.xp ?? 0);
+      const _baseLevel = (rpcProf?.level ?? previousLevel);
+      const _baseXpToNext = (rpcProf?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL);
+      let _newXp = _baseXp + _bonusExpTotal;
+      let _newLevel = _baseLevel;
+      let _newXpToNext = _baseXpToNext;
+      while (_newXp >= _newXpToNext && _newLevel < MAX_LEVEL) {
+        _newLevel += 1;
+        _newXp = _newXp - _newXpToNext;
+        _newXpToNext = getXpForLevel(_newLevel);
+      }
+      if (_newLevel >= MAX_LEVEL) { _newLevel = MAX_LEVEL; _newXp = 0; _newXpToNext = 0; }
+      const _updateData: Record<string, unknown> = {
+        xp: _newXp,
+        level: _newLevel,
+        xp_to_next_level: _newXpToNext,
+      };
+      // Levelup spowodowany bonusem → zmień też mapę (jak po normalnym lvl up)
+      if (_newLevel > _baseLevel) {
+        _updateData.current_map = getMapForLevel(_newLevel);
+        _updateData.location = getMapForLevel(_newLevel);
+      }
+      await supabase.from("profiles").update(_updateData).eq("id", profile.id);
+      setProfile(p => p ? {
+        ...p,
+        xp: _newXp,
+        level: _newLevel,
+        xp_to_next_level: _newXpToNext,
+        ...(_newLevel > _baseLevel ? { current_map: getMapForLevel(_newLevel), location: getMapForLevel(_newLevel) } : {}),
+      } : p);
+      actualExp += _bonusExpTotal;
+      if (_newLevel > _baseLevel) {
+        showFarmUpgradeModalOnce(profile.id, _newLevel);
       }
     }
 
