@@ -202,6 +202,17 @@ const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
 const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 
+// ═══ CZAS AKCJI POLOWYCH (sadzenie/zbiór) ═══
+// Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
+const BASE_PLANT_MS   = 2000;
+const BASE_HARVEST_MS = 2000;
+type PendingFieldAction = {
+  kind: "plant" | "harvest";
+  startMs: number;
+  durationMs: number;
+  seedId?: string;
+};
+
 // ═══ EKWIPUNEK POSTACI ═══
 type EquipSlot = "dlonie" | "nogi" | "glowa";
 interface EquipBonus { base: number; label: string; flat?: boolean; }
@@ -266,6 +277,24 @@ function getEquipBonusPct(label: string, charEq: Record<string,{id:string;upg:nu
     const upg = eq.upg ?? 0;
     item.bonuses.forEach(b => {
       if (b.label === label && !b.flat) {
+        total += b.base * (1 + 0.15 * upg);
+      }
+    });
+  });
+  return total;
+}
+// ─── Aggregator FLAT bonusów (np. "+5 pkt Wiedzy") ───
+// Zwraca SUMĘ wartości flat dla danej etykiety np. " pkt Wiedzy" → 5
+function getEquipFlatBonus(label: string, charEq: Record<string,{id:string;upg:number}|null>): number {
+  let total = 0;
+  (["dlonie","nogi","glowa"] as const).forEach(slot => {
+    const eq = charEq[slot];
+    if (!eq) return;
+    const item = CHAR_EQUIP_ITEMS.find(i => i.id === eq.id);
+    if (!item) return;
+    const upg = eq.upg ?? 0;
+    item.bonuses.forEach(b => {
+      if (b.label === label && b.flat) {
         total += b.base * (1 + 0.15 * upg);
       }
     });
@@ -1323,6 +1352,14 @@ export default function Page() {
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
+  // Akcje polowe w toku (sadzenie/zbiór z paskiem postępu)
+  const [pendingFieldActions, setPendingFieldActions] = useState<Record<number, PendingFieldAction>>({});
+  const [, setPendingTick] = useState(0);
+  // Mapa plotId → setTimeout id (do anulowania przy unmount)
+  const fieldActionTimeoutsRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  // Refs do fresh state — używane w setTimeout callbackach (closure capture by stary state)
+  const seedInventoryRef = React.useRef<SeedInventory>({});
+  const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
   const [isDesktop, setIsDesktop] = useState(true);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
@@ -2004,7 +2041,9 @@ export default function Page() {
     const crop = getPlantedCrop(plotId);
     if (!crop) return 0;
 
-    const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
+    // Wiedza efektywna = bazowa + flat bonus z eq (np. Kapelusz Mistrza Farmy +5)
+    const wiedzaEffective = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+    const wiedzaBonus = calcStatEffect(wiedzaEffective, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
@@ -2186,60 +2225,107 @@ export default function Page() {
       return;
     }
 
-    // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
-    // zanim serwer spróbuje go odczytać
-    if (profile.id) {
-      await supabase
-        .from("profiles")
-        .update({ seed_inventory: serializeSeedInventory(seedInventory) })
-        .eq("id", profile.id);
-    }
-
-    // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
-    const _preservedCompostBonus = plot.compostBonus ?? null;
-
-    const { data, error } = await supabase.rpc("game_plant_crop", {
-      p_plot_id: plotId,
-      p_crop_id: _baseCropId,
-      p_seed_key: effectiveSeedId,
-      p_planted_quality: _seedQuality ?? "good",
-    });
-
-    if (error) {
-      setMessage({
-        type: "error",
-        title: "Błąd sadzenia",
-        text: error.message,
-      });
+    // Blokada: na polu już trwa inna akcja
+    if (pendingFieldActions[plotId]) {
+      setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
-    // Zapisz jakość zasadzonego nasiona (dla EXP przy zbiorze)
-    if (typeof window !== "undefined" && profile?.id) {
-      const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
-      localStorage.setItem(_pqKey, _seedQuality ?? "good");
-    }
+    // Czas sadzenia z bonusem eq "% speed sadzenia"
+    const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
+    const _plantDurMs = Math.max(400, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
 
-    // Jeśli serwer zgubił bonus kompostu przy sadzeniu — przywróć go i zapisz
-    if (_preservedCompostBonus && profile?.id) {
-      setPlotCrops(prev => {
-        const _curr = prev[plotId];
-        if (!_curr || _curr.compostBonus) return prev;
-        const _merged = { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
-        // Asynchronicznie persystuj scalone plot_crops
-        void supabase.from("profiles").update({
-          plot_crops: serializePlotCrops(_merged) as unknown as Record<string,unknown>,
-        }).eq("id", profile.id);
-        return _merged;
+    // Ustaw timer postępu — RPC wykona się po zakończeniu
+    setPendingFieldActions(prev => ({
+      ...prev,
+      [plotId]: { kind: "plant", startMs: Date.now(), durationMs: _plantDurMs, seedId: effectiveSeedId },
+    }));
+
+    const _tid = setTimeout(() => {
+      fieldActionTimeoutsRef.current.delete(plotId);
+      void executePlantRpc(plotId, effectiveSeedId, _baseCropId, _seedQuality);
+    }, _plantDurMs);
+    fieldActionTimeoutsRef.current.set(plotId, _tid);
+  }
+
+  async function executePlantRpc(plotId: number, effectiveSeedId: string, _baseCropId: string, _seedQuality: string | null) {
+    // Sprzątanie pendingActions niezależnie od wyniku — try/finally zawsze odpala
+    const _clearPending = () => setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+
+    try {
+      if (!profile) { return; }
+      const crop = CROPS.find((item) => item.id === _baseCropId);
+      if (!crop) { return; }
+      // Re-walidacja po upływie timera (gracz mógł w międzyczasie coś zmienić)
+      // Używamy refs do FRESH state zamiast captured closures
+      const _freshPlot = plotCropsRef.current[plotId] ?? { cropId: null };
+      if (_freshPlot.cropId) {
+        setMessage({ type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
+        return;
+      }
+      const _freshInv = seedInventoryRef.current;
+      const _freshAmount = _freshInv[effectiveSeedId] ?? 0;
+      if (_freshAmount <= 0) {
+        setMessage({ type: "info", title: "Brak nasion", text: "W międzyczasie skończyły się nasiona." });
+        return;
+      }
+
+      // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
+      // zanim serwer spróbuje go odczytać — używamy FRESH ref state
+      if (profile.id) {
+        await supabase
+          .from("profiles")
+          .update({ seed_inventory: serializeSeedInventory(_freshInv) })
+          .eq("id", profile.id);
+      }
+
+      // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
+      const _preservedCompostBonus = _freshPlot.compostBonus ?? null;
+
+      const { data, error } = await supabase.rpc("game_plant_crop", {
+        p_plot_id: plotId,
+        p_crop_id: _baseCropId,
+        p_seed_key: effectiveSeedId,
+        p_planted_quality: _seedQuality ?? "good",
       });
-    }
+      if (error) {
+        setMessage({
+          type: "error",
+          title: "Błąd sadzenia",
+          text: error.message,
+        });
+        return;
+      }
 
-    setMessage({
-      type: "success",
-      title: "Posadzono uprawę",
-      text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
-    });
+      applyProfileState(extractRpcProfile(data));
+      // Zapisz jakość zasadzonego nasiona (dla EXP przy zbiorze)
+      if (typeof window !== "undefined" && profile?.id) {
+        const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
+        localStorage.setItem(_pqKey, _seedQuality ?? "good");
+      }
+
+      // Jeśli serwer zgubił bonus kompostu przy sadzeniu — przywróć go i zapisz
+      if (_preservedCompostBonus && profile?.id) {
+        setPlotCrops(prev => {
+          const _curr = prev[plotId];
+          if (!_curr || _curr.compostBonus) return prev;
+          const _merged = { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
+          // Asynchronicznie persystuj scalone plot_crops
+          void supabase.from("profiles").update({
+            plot_crops: serializePlotCrops(_merged) as unknown as Record<string,unknown>,
+          }).eq("id", profile.id);
+          return _merged;
+        });
+      }
+
+      setMessage({
+        type: "success",
+        title: "Posadzono uprawę",
+        text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
+      });
+    } finally {
+      _clearPending();
+    }
   }
 
   function getMaxPlotsForLevel(level: number) {
@@ -2463,6 +2549,27 @@ export default function Page() {
 
     return () => clearInterval(interval);
   }, [isFieldViewOpen]);
+
+  // Tick dla pasków postępu sadzenia/zbioru — działa tylko gdy są aktywne akcje
+  useEffect(() => {
+    if (Object.keys(pendingFieldActions).length === 0) return;
+    const interval = setInterval(() => {
+      setPendingTick(prev => prev + 1);
+    }, 60);
+    return () => clearInterval(interval);
+  }, [pendingFieldActions]);
+
+  // Synchronizuj refs ze świeżym state (dla setTimeout callbackach)
+  useEffect(() => { seedInventoryRef.current = seedInventory; }, [seedInventory]);
+  useEffect(() => { plotCropsRef.current = plotCrops; }, [plotCrops]);
+
+  // Cleanup wszystkich pending setTimeout przy unmount komponentu
+  useEffect(() => {
+    return () => {
+      fieldActionTimeoutsRef.current.forEach(id => clearTimeout(id));
+      fieldActionTimeoutsRef.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isFieldViewOpen) return;
@@ -3135,7 +3242,7 @@ export default function Page() {
     setKompostRewards(rewards);
   }
 
-  async function handleHarvestPlot(plotId: number) {
+  async function handleHarvestPlot(plotId: number, _skipTimer: boolean = false) {
     if (!profile) return;
 
     const plot = getPlotCrop(plotId);
@@ -3166,6 +3273,39 @@ export default function Page() {
       });
       return;
     }
+
+    // ─── Pasek postępu zbioru ───
+    if (!_skipTimer) {
+      // Blokada: na polu już trwa inna akcja
+      if (pendingFieldActions[plotId]) {
+        setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
+        return;
+      }
+      // Czas zbioru z bonusem eq "% speed zbioru"
+      const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
+      const _harvestDurMs = Math.max(400, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
+      setPendingFieldActions(prev => ({
+        ...prev,
+        [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs },
+      }));
+      const _tid = setTimeout(() => {
+        fieldActionTimeoutsRef.current.delete(plotId);
+        void handleHarvestPlot(plotId, true);
+      }, _harvestDurMs);
+      fieldActionTimeoutsRef.current.set(plotId, _tid);
+      return;
+    }
+    // Timer dobiegł końca — sprawdź FRESH state (gracz mógł zmienić w międzyczasie)
+    {
+      const _freshPlot = plotCropsRef.current[plotId];
+      if (!_freshPlot?.cropId) {
+        setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+        setMessage({ type: "info", title: "Pole opróżnione", text: "Uprawa zniknęła zanim akcja się zakończyła." });
+        return;
+      }
+    }
+    // Zdejmij wskaźnik paska, kontynuuj RPC
+    setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const previousLevel = displayLevel;
     const prevXp = displayXp;
@@ -3269,6 +3409,41 @@ export default function Page() {
       _totalYield += _compostExtraYield;
     }
 
+    // ─── Bonus z eq: % extra harvest (szansa na +1 sztukę za każdą zebraną) ───
+    const _extraHarvestPct = getEquipBonusPct("% extra harvest", charEquipped);
+    let _extraHarvestGain = 0;
+    if (_extraHarvestPct > 0 && _plantedQuality !== "legendary") {
+      const _goodKey = getQualityKey(crop.id, "good");
+      const _goodGained = Math.max(0, (nextInventory[_goodKey] ?? 0) - (prevInventorySnapshot[_goodKey] ?? 0));
+      const _chance = Math.min(1, _extraHarvestPct / 100);
+      for (let _i = 0; _i < _goodGained; _i++) {
+        if (Math.random() < _chance) _extraHarvestGain++;
+      }
+      if (_extraHarvestGain > 0) {
+        nextInventory[_goodKey] = (nextInventory[_goodKey] ?? 0) + _extraHarvestGain;
+        _totalYield += _extraHarvestGain;
+      }
+    }
+
+    // ─── Bonus z eq: % bonus drop (szansa na upgrade good → epic) ───
+    const _bonusDropPct = getEquipBonusPct("% bonus drop", charEquipped);
+    let _bonusDropUpgrades = 0;
+    if (_bonusDropPct > 0 && _plantedQuality !== "legendary") {
+      const _goodKey = getQualityKey(crop.id, "good");
+      const _epicKey = getQualityKey(crop.id, "epic");
+      const _goodAvail = nextInventory[_goodKey] ?? 0;
+      const _chance = Math.min(1, _bonusDropPct / 100);
+      // Rzucamy tylko za każdą NOWĄ sztukę (z RPC + extra harvest)
+      const _newGood = Math.max(0, _goodAvail - (prevInventorySnapshot[_goodKey] ?? 0));
+      for (let _i = 0; _i < _newGood; _i++) {
+        if (Math.random() < _chance) _bonusDropUpgrades++;
+      }
+      if (_bonusDropUpgrades > 0) {
+        nextInventory[_goodKey] = Math.max(0, _goodAvail - _bonusDropUpgrades);
+        nextInventory[_epicKey] = (nextInventory[_epicKey] ?? 0) + _bonusDropUpgrades;
+      }
+    }
+
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
     // Natychmiast nadpisz seedInventory wersją z kluczami jakości (po migracji)
@@ -3290,22 +3465,50 @@ export default function Page() {
       }
     }
 
-    // ─── Bonus EXP z kompostu Nauki ───
-    let _compostExtraExp = 0;
-    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0 && profile?.id) {
-      _compostExtraExp = Math.round(actualExp * (_compostBonusOnPlot.value / 100));
-      if (_compostExtraExp > 0) {
-        const _newXp = (rpcProf?.xp ?? 0) + _compostExtraExp;
-        const _xpToNext = (rpcProf?.xp_to_next_level ?? 100);
-        // Bezpieczne nadpisanie tylko jeśli nie wywoła levelup
-        if (_newXp < _xpToNext) {
-          await supabase.from("profiles").update({ xp: _newXp }).eq("id", profile.id);
-          setProfile(p => p ? { ...p, xp: _newXp } : p);
-          actualExp += _compostExtraExp;
-        } else {
-          // Levelup case: pomijamy bonus (lub można byłoby wywołać RPC dla levelup)
-          _compostExtraExp = 0;
-        }
+    // ─── Bonusy EXP: kompost Nauki + eq (% EXP, % EXP z upraw) ───
+    let _bonusExpTotal = 0;
+    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0) {
+      _bonusExpTotal += Math.round(actualExp * (_compostBonusOnPlot.value / 100));
+    }
+    const _expEqPct = getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped);
+    if (_expEqPct > 0 && actualExp > 0) {
+      _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
+    }
+    if (_bonusExpTotal > 0 && profile?.id) {
+      // Pełna obsługa level-upu klient-side (jak handleAddExp)
+      const _baseXp = (rpcProf?.xp ?? 0);
+      const _baseLevel = (rpcProf?.level ?? previousLevel);
+      const _baseXpToNext = (rpcProf?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL);
+      let _newXp = _baseXp + _bonusExpTotal;
+      let _newLevel = _baseLevel;
+      let _newXpToNext = _baseXpToNext;
+      while (_newXp >= _newXpToNext && _newLevel < MAX_LEVEL) {
+        _newLevel += 1;
+        _newXp = _newXp - _newXpToNext;
+        _newXpToNext = getXpForLevel(_newLevel);
+      }
+      if (_newLevel >= MAX_LEVEL) { _newLevel = MAX_LEVEL; _newXp = 0; _newXpToNext = 0; }
+      const _updateData: Record<string, unknown> = {
+        xp: _newXp,
+        level: _newLevel,
+        xp_to_next_level: _newXpToNext,
+      };
+      // Levelup spowodowany bonusem → zmień też mapę (jak po normalnym lvl up)
+      if (_newLevel > _baseLevel) {
+        _updateData.current_map = getMapForLevel(_newLevel);
+        _updateData.location = getMapForLevel(_newLevel);
+      }
+      await supabase.from("profiles").update(_updateData).eq("id", profile.id);
+      setProfile(p => p ? {
+        ...p,
+        xp: _newXp,
+        level: _newLevel,
+        xp_to_next_level: _newXpToNext,
+        ...(_newLevel > _baseLevel ? { current_map: getMapForLevel(_newLevel), location: getMapForLevel(_newLevel) } : {}),
+      } : p);
+      actualExp += _bonusExpTotal;
+      if (_newLevel > _baseLevel) {
+        showFarmUpgradeModalOnce(profile.id, _newLevel);
       }
     }
 
@@ -6759,7 +6962,14 @@ export default function Page() {
             };
             const collectHoney = async () => {
               if (!profile?.id) return;
-              const { data, error } = await supabase.rpc("collect_honey", { p_user_id: profile.id });
+              // Bonusy z eq: % produkcji miodu (g3 Kapelusz Pszczelarza), % zużycia stroju (d20 Rękawice Pszczelarza)
+              const _honeyBonusPct = getEquipBonusPct("% produkcji miodu", charEquipped);
+              const _suitSavePct   = getEquipBonusPct("% zużycia stroju", charEquipped);
+              const { data, error } = await supabase.rpc("collect_honey", {
+                p_user_id: profile.id,
+                p_honey_bonus_pct: _honeyBonusPct,
+                p_suit_save_pct:   _suitSavePct,
+              });
               if (error || !data?.ok) {
                 const msg = data?.error === "no_honey" ? "Poczekaj — miód jeszcze nie jest gotowy!"
                           : data?.error === "no_jars"  ? "Brak pustych słoików!"
@@ -6769,7 +6979,10 @@ export default function Page() {
                 return;
               }
               setHiveData(data.hive_data as HiveData);
-              if (data.success) setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯`, text:"" });
+              if (data.success) {
+                const _bonusInfo = _honeyBonusPct > 0 ? ` (+${_honeyBonusPct.toFixed(0)}% produkcji)` : "";
+                setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯${_bonusInfo}`, text:"" });
+              }
               else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
             };
             return (
@@ -8092,6 +8305,38 @@ export default function Page() {
                                     💧
                                   </div>
                                 )}
+
+                                {/* Pasek postępu sadzenia/zbioru */}
+                                {pendingFieldActions[plotId] && (() => {
+                                  const _act = pendingFieldActions[plotId];
+                                  const _elapsed = Math.max(0, Date.now() - _act.startMs);
+                                  const _pct = Math.min(100, Math.max(0, (_elapsed / _act.durationMs) * 100));
+                                  const _isPlant = _act.kind === "plant";
+                                  const _color = _isPlant ? "#22d3ee" : "#fbbf24";
+                                  const _glow = _isPlant ? "rgba(34,211,238,0.7)" : "rgba(251,191,36,0.7)";
+                                  const _label = _isPlant ? "Sadzenie..." : "Zbiór...";
+                                  return (
+                                    <>
+                                      <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl bg-black/35" />
+                                      <div className="pointer-events-none absolute left-1/2 top-1/2 z-[16] -translate-x-1/2 -translate-y-1/2 text-center">
+                                        <div className="mb-1 text-[10px] font-black uppercase tracking-wider drop-shadow-[0_0_4px_rgba(0,0,0,0.9)]"
+                                          style={{ color: _color }}>
+                                          {_label}
+                                        </div>
+                                        <div className="h-1.5 w-[70%] mx-auto overflow-hidden rounded-full border border-black/40 bg-black/60">
+                                          <div
+                                            className="h-full transition-[width] duration-75 ease-linear"
+                                            style={{
+                                              width: `${_pct}%`,
+                                              background: _color,
+                                              boxShadow: `0 0 6px ${_glow}`,
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
 
                                 <div className="absolute inset-x-1 bottom-1 z-10 text-center">
                                   {getPlotCrop(plotId).cropId ? (
