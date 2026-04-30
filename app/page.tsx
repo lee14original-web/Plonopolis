@@ -3348,7 +3348,7 @@ export default function Page() {
     ANIMAL_ITEMS.forEach(it => {
       newItems[it.id] = (newItems[it.id] ?? 0) + amount;
     });
-    const { error } = await supabase.from("profiles").update({ barn_items: newItems }).eq("id", profile.id);
+    const { error } = await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
     if (!error) {
       saveBarnItems(newItems);
       await loadProfile(profile.id);
@@ -3358,36 +3358,84 @@ export default function Page() {
     }
   }
 
+  async function handleAddFruits(amount: number) {
+    if (!profile?.id) return;
+    const newInv: Record<string, number> = { ...fruitInventory };
+    TREES.forEach(t => {
+      (["zwykly", "soczysty", "zloty"] as const).forEach(q => {
+        const k = `${t.fruitId}_${q}`;
+        newInv[k] = (newInv[k] ?? 0) + amount;
+      });
+    });
+    const { error } = await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: newInv });
+    if (!error) {
+      saveFruitInventory(newInv);
+      await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 3 jakości (zwykły/soczysty/złoty).` });
+    } else {
+      setMessage({ type: "error", title: "Błąd", text: error.message });
+    }
+  }
+
+  async function handleAddHoneyJars(amount: number) {
+    if (!profile?.id) return;
+    const newHive: HiveData = { ...hiveData, honey_jars: hiveData.honey_jars + amount };
+    const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
+    if (!error) {
+      setHiveData(newHive);
+      await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🍯 Dodano słoiki miodu!", text: `+${amount} słoików miodu (razem: ${newHive.honey_jars}).` });
+    } else {
+      setMessage({ type: "error", title: "Błąd", text: error.message });
+    }
+  }
+
   async function handleResetAccount() {
     if (!profile?.id) return;
     if (!confirm(
-      "⚠️ RESET KONTA — co zostanie zresetowane:\n" +
-      "• Poziom, XP, pieniądze\n" +
-      "• Uprawy i nasiona\n" +
-      "• Statystyki i punkty umiejętności\n" +
-      "• Avatar i dom\n\n" +
-      "✅ Co NIE zostanie zresetowane:\n" +
-      "• Ul i pszczoły\n" +
-      "• Słoiki i strój pszczelarza\n" +
-      "• Ekwipunek (odzież)\n\n" +
+      "⚠️ RESET KONTA — wszystko wraca do stanu nowego gracza:\n" +
+      "• Poziom, XP, pieniądze, mapa\n" +
+      "• Uprawy, nasiona, kompost (plecak + kompostownik)\n" +
+      "• Stodoła: zwierzęta, sloty, produkty (jajka, mleko, futra…)\n" +
+      "• Sad: drzewa i owoce wszystkich jakości\n" +
+      "• Ul: poziom, pszczoły, słoiki, miód, strój pszczelarza\n" +
+      "• Statystyki, punkty umiejętności, avatar, ekwipunek, epickie skiny\n\n" +
       "Kontynuować?"
     )) return;
-    if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować konto?")) return;
+    if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować całe konto?")) return;
     const xpNeeded = getXpForLevel(1);
+    const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
+    const freshBarnState = defaultBarnState();
+    const freshOrchardState = defaultOrchardState();
     const { error } = await supabase.from("profiles").update({
       level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
       location: "farm1", current_map: "farm1",
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
       equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
+      hive_data: freshHive,
     }).eq("id", profile.id);
+    // barn_items / fruit_inventory mają trigger blokujący direct update — używamy dedykowanych RPC
+    await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: {} });
+    await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: {} });
     if (!error) {
       lastLoadedUserIdRef.current = null;
       setEquipmentSlots(1); setEquipment([]);
       setUnlockedEpicAvatars([]);
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
       saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      // Zwierzęta / sad / ul / kompostownik / produkty — local + state
+      setHiveData(freshHive);
+      saveBarnItems({});
+      saveBarnState(freshBarnState);
+      saveOrchardState(freshOrchardState);
+      saveFruitInventory({});
+      saveKompostBatches([]);
+      try { localStorage.removeItem(KOMPOST_KEY); } catch {}
       await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
+    } else {
+      setMessage({ type: "error", title: "Błąd resetu", text: error.message });
     }
   }
 
@@ -5217,6 +5265,34 @@ export default function Page() {
 
                           {backpackTab === "przedmioty" && (
                             <div className="mt-2 flex flex-col gap-2">
+                              {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                              {(() => {
+                                const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                                if (owned.length === 0) return null;
+                                return (
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {owned.map(it => {
+                                      const animal = ANIMALS.find(a => a.itemId === it.id);
+                                      const cnt = barnItems[it.id] ?? 0;
+                                      return (
+                                        <div key={it.id}
+                                          className="group relative flex h-24 w-24 items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                          <span className="text-5xl leading-none">{it.icon}</span>
+                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                            <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                              <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
+                                              {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
+                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                            </div>
+                                            <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                               {/* Puste słoiki */}
                               {hiveData.empty_jars > 0 && (
                                 <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
@@ -5965,6 +6041,29 @@ export default function Page() {
                     <p className="mt-1 text-[10px] text-[#8b6a3e]">🥚 jajka · 🐇 futra · 🥛 mleko · 🪶 pióra · 🧶 wełna · 💩 nawóz · 🥛 mleko kozie · 🪶 duże pióra · ⚡ energia · 🦴 rogi byka</p>
                   </div>
                   <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 3 jakości)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[5,10,50].map(amt => (
+                        <button key={amt} onClick={() => handleAddFruits(amt)}
+                          className="rounded-xl border border-pink-500/60 bg-pink-900/30 px-3 py-2 text-xs font-black text-pink-200 hover:bg-pink-900/50">
+                          +{amt} każdy
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[#8b6a3e]">🍎 jabłko · 🍐 gruszka · 🟣 śliwka · 🍒 wiśnia · 🍒 czereśnia · 🍑 brzoskwinia · 🟠 morela · 🍊 pomarańcza · 🍋 cytryna (zwykły / soczysty / złoty)</p>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-300">🍯 Dodaj słoiki miodu</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[5,10,50].map(amt => (
+                        <button key={amt} onClick={() => handleAddHoneyJars(amt)}
+                          className="rounded-xl border border-amber-500/60 bg-amber-900/30 px-3 py-2 text-xs font-black text-amber-200 hover:bg-amber-900/50">
+                          +{amt} 🍯
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-400">⭐ Epickie avatary</p>
                     <button
                       onClick={async () => {
@@ -6323,6 +6422,34 @@ export default function Page() {
                     })()}
                     {backpackTab === "przedmioty" && (
                       <div className="flex flex-col gap-2 mt-1">
+                        {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                        {(() => {
+                          const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                          if (owned.length === 0) return null;
+                          return (
+                            <div className="grid grid-cols-3 gap-2">
+                              {owned.map(it => {
+                                const animal = ANIMALS.find(a => a.itemId === it.id);
+                                const cnt = barnItems[it.id] ?? 0;
+                                return (
+                                  <div key={it.id}
+                                    className="group relative flex h-20 w-full items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                    <span className="text-4xl leading-none">{it.icon}</span>
+                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                      <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                        <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
+                                        {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
+                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                      </div>
+                                      <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                         {hiveData.empty_jars > 0 && (
                           <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
                             <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
