@@ -1528,6 +1528,7 @@ export default function Page() {
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
+  const [nextSpawnAt, setNextSpawnAt] = React.useState<number | null>(null);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -2990,7 +2991,10 @@ export default function Page() {
     setCustomerLoading(true);
     try {
       if (opts?.tick) {
-        await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
+        const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
+        if (tickData?.next_spawn_at) {
+          setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
+        }
       }
       const { data, error } = await supabase
         .from("customer_orders")
@@ -7539,6 +7543,21 @@ export default function Page() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Pasek: czas do następnego klienta */}
+                    {nextSpawnAt !== null && (() => {
+                      const left = Math.max(0, nextSpawnAt - customerNow);
+                      const m = Math.floor(left / 60000);
+                      const s = Math.floor((left % 60000) / 1000);
+                      const isReady = left <= 0;
+                      return (
+                        <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
+                          {isReady
+                            ? '✨ Nowy klient lada chwila — odśwież listę!'
+                            : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex-1 overflow-y-auto p-5">
                       {customerLoading && customerOrders.length === 0 ? (
