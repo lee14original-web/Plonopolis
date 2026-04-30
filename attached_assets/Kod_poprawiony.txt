@@ -5458,15 +5458,74 @@ export default function Page() {
                         </div>
                       );
                     })()}
-                    {shopTab === "zwierzeta" && (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="text-center">
-                          <p className="text-4xl mb-4">🐄</p>
-                          <p className="text-base font-black text-[#f9e7b2]">Zwierzęta</p>
-                          <p className="mt-2 text-sm text-[#8b6a3e]">Zwierzęta kupujesz w Stodole — kliknij budynek na mapie farmy.</p>
+                    {shopTab === "zwierzeta" && (() => {
+                      const lvl = profile?.level ?? 1;
+                      const handleBuyAnimalShop = async (a: AnimalDef) => {
+                        if (!profile?.id) return;
+                        const st = barnState[a.id];
+                        if (!st) return;
+                        if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
+                        if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
+                        if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca w stodole!",text:`Kup więcej slotów dla ${a.name} w Stodole.`}); return; }
+                        const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
+                        if (error) return;
+                        saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+                        await loadProfile(profile.id);
+                        setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
+                      };
+                      return (
+                        <div className="flex flex-col gap-2 p-3 overflow-y-auto">
+                          <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">🐄 Zwierzęta hodowlane</p>
+                            <p className="mt-1 text-sm font-bold text-[#f9e7b2]">Każde zwierzę ma własne sloty w Stodole.</p>
+                            <p className="mt-1 text-[11px] text-[#8b6a3e]">Po zakupie zwierzę pojawi się w zagrodzie. Sloty kupujesz w Stodole (przycisk 🏗️).</p>
+                          </div>
+                          {ANIMALS.map(a => {
+                            const st = barnState[a.id];
+                            const owned = st?.owned ?? 0;
+                            const slots = st?.slots ?? a.startSlots;
+                            const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
+                            const locked = lvl < a.unlockLevel;
+                            const noSlot = !locked && owned >= slots;
+                            const tooPoor = !locked && !noSlot && displayMoney < a.buyPrice;
+                            const canBuy = !locked && !noSlot && !tooPoor;
+                            return (
+                              <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-3 ${locked ? "border-[#374151]/40 bg-black/10 opacity-60" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-xl border border-[#8b6a3e]/40 bg-black/30 text-4xl">{a.icon}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-black text-[#f9e7b2]">{a.name}</p>
+                                    <span className="rounded-full border border-[#8b6a3e]/40 bg-black/30 px-2 py-0.5 text-[10px] font-bold text-[#dfcfab]">LVL {a.unlockLevel}</span>
+                                    {locked && <span className="rounded-full border border-red-500/40 bg-red-900/20 px-2 py-0.5 text-[10px] font-bold text-red-300">🔒 Zablokowane</span>}
+                                  </div>
+                                  <p className="mt-1 text-[11px] text-[#8b6a3e]">
+                                    Produkuje: <span className="text-[#dfcfab] font-bold">{item?.icon} {item?.name}</span>
+                                    {" · "}Czas: <span className="text-[#dfcfab] font-bold">{a.prodMs/3600000}h</span>
+                                    {" · "}Magazyn: <span className="text-[#dfcfab] font-bold">{a.storageMax} cykli</span>
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
+                                    Karma: {a.feed.map(f => `${f.icon} ${f.name}`).join(" lub ")}
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
+                                    Posiadasz: <span className={`font-black ${owned > 0 ? "text-emerald-300" : "text-[#dfcfab]"}`}>{owned}/{slots}</span>
+                                    {" · "}Sprzedaż: <span className="text-amber-300 font-bold">{item?.sellPrice.toLocaleString()} 💰/szt</span>
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                  <p className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</p>
+                                  <button
+                                    disabled={!canBuy}
+                                    onClick={() => void handleBuyAnimalShop(a)}
+                                    className={`rounded-xl border px-4 py-2 text-sm font-black transition ${canBuy ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50" : "cursor-not-allowed border-[#374151] bg-black/20 text-[#6b7280]"}`}>
+                                    {locked ? `🔒 LVL ${a.unlockLevel}` : noSlot ? "Brak slotów" : tooPoor ? "Za mało 💰" : "🛒 Kup"}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                     {shopTab === "drzewa" && (() => {
                       const lvl = profile?.level ?? 1;
                       const maxSlots = getMaxTreeSlots(lvl);
@@ -7064,10 +7123,10 @@ export default function Page() {
                   <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                   {/* ─ Sidebar ─ */}
-                  <div className="flex w-[220px] shrink-0 flex-col gap-1 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
-                    <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#8b6a3e]">🏚️ Zagroda</p>
+                  <div className="flex w-[280px] shrink-0 flex-col gap-1.5 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
+                    <p className="mb-3 text-base font-black uppercase tracking-widest text-[#d8ba7a]">🏚️ Zagroda</p>
                     <button onClick={() => setSelectedAnimal(null)}
-                      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
                       📋 Przegląd
                     </button>
                     <div className="my-1 border-t border-[#8b6a3e]/20" />
@@ -7079,12 +7138,12 @@ export default function Page() {
                       return (
                         <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
                           disabled={locked}
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          <span>{a.icon}</span>
+                          className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                          <span className="text-xl">{a.icon}</span>
                           <span className="flex-1 truncate">{a.name}</span>
-                          {locked && <span className="text-[9px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
-                          {!locked && hasProd && <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />}
-                          {!locked && hasAnimals && !hasProd && <span className="text-[9px] text-[#8b6a3e]">{st.owned}</span>}
+                          {locked && <span className="text-[11px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
+                          {!locked && hasProd && <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />}
+                          {!locked && hasAnimals && !hasProd && <span className="text-[11px] text-[#8b6a3e]">{st.owned}</span>}
                         </button>
                       );
                     })}
@@ -7109,7 +7168,7 @@ export default function Page() {
                     {!selA && (
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
+                          <p className="text-2xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
                           {totalStorage > 0 && (
                             <button onClick={handleCollectAll} className="rounded-xl border border-green-500/60 bg-green-900/20 px-3 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
                               ✅ Odbierz wszystko
@@ -7129,12 +7188,12 @@ export default function Page() {
                               <div key={a.id} onClick={() => setSelectedAnimal(a.id)}
                                 className="cursor-pointer rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3 hover:border-[#d4a64f]/60 transition">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-2xl">{a.icon}</span>
+                                  <span className="text-3xl">{a.icon}</span>
                                   <div className="flex-1">
-                                    <p className="text-sm font-black text-[#f9e7b2]">{a.name}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
+                                    <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
+                                    <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
+                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -7147,7 +7206,7 @@ export default function Page() {
                                     </div>
                                   </>
                                 )}
-                                {st.owned === 0 && <p className="text-[10px] text-[#6b7280] text-center py-1">Kup {a.name.toLowerCase()} za {a.buyPrice.toLocaleString()} 💰</p>}
+                                {st.owned === 0 && <p className="text-[11px] text-amber-300/80 text-center py-1">🛒 Kup w mieście · {a.buyPrice.toLocaleString()} 💰</p>}
                               </div>
                             );
                           })}
@@ -7190,7 +7249,7 @@ export default function Page() {
                             <div className="flex flex-col gap-3">
                               {/* Status produkcji */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📊 Produkcja</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📊 Produkcja</p>
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
@@ -7218,7 +7277,7 @@ export default function Page() {
                               </div>
                               {/* Głód */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🌿 Głód</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🌿 Głód</p>
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="h-3 flex-1 rounded-full bg-black/40">
                                     <div className="h-full rounded-full transition-all" style={{width:`${h}%`, background:hs.color}} />
@@ -7259,32 +7318,24 @@ export default function Page() {
                             </div>
                             {/* Prawa kolumna */}
                             <div className="flex flex-col gap-3">
-                              {/* Kup zwierzę */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-3">🛒 Kup zwierzę</p>
-                                <div className="flex items-center justify-between mb-3">
+                              {/* Info: kupno przeniesione do miasta */}
+                              <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4">
+                                <p className="text-base font-black uppercase tracking-widest text-amber-300 mb-2">🛒 Kup zwierzę</p>
+                                <div className="flex items-center justify-between mb-2">
                                   <div>
-                                    <p className="text-sm font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Zajmuje 1 slot</p>
+                                    <p className="text-base font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
+                                    <p className="text-sm text-amber-200/80">Posiadasz: <span className="font-black">{st.owned} / {st.slots}</span></p>
                                   </div>
-                                  <span className="text-sm font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
+                                  <span className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
                                 </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="h-2 flex-1 rounded-full bg-black/40">
-                                    <div className="h-full rounded-full bg-amber-600/60 transition-all" style={{width:`${st.slots > 0 ? (st.owned/st.slots*100) : 0}%`}} />
-                                  </div>
-                                  <span className="text-xs text-[#8b6a3e]">{st.owned}/{st.slots}</span>
-                                </div>
-                                <button onClick={() => handleBuyAnimal(a)}
-                                  disabled={st.owned >= st.slots || displayMoney < a.buyPrice}
-                                  className={`w-full rounded-xl border py-2 text-sm font-bold transition ${st.owned >= st.slots ? "opacity-40 cursor-not-allowed border-[#374151] text-[#6b7280]" : displayMoney < a.buyPrice ? "opacity-50 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-amber-500/60 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40"}`}>
-                                  {st.owned >= st.slots ? "Brak miejsca" : `Kup ${a.name.toLowerCase()}`}
-                                </button>
+                                <p className="text-sm text-amber-200/90 leading-relaxed">
+                                  ➡️ Zwierzęta kupisz w <span className="font-black text-amber-300">mieście → Sklep → zakładka 🐄 Zwierzęta</span>.
+                                </p>
                               </div>
                               {/* Ulepszenia slotów */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🏗️ Sloty stodoły</p>
-                                <p className="text-sm font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🏗️ Sloty stodoły</p>
+                                <p className="text-base font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
                                 <div className="flex gap-1 flex-wrap mb-3">
                                   {Array.from({length: a.maxSlots}).map((_, i) => (
                                     <div key={i} className={`h-3 w-3 rounded-sm border ${i < st.slots ? "border-amber-400 bg-amber-400/30" : "border-[#374151] bg-black/20"}`} />
@@ -7302,7 +7353,7 @@ export default function Page() {
                               </div>
                               {/* Tabela produkcji */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📈 Info</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📈 Info</p>
                                 <div className="flex flex-col gap-1 text-[11px] text-[#dfcfab]">
                                   <div className="flex justify-between"><span>Produkuje</span><span className="font-bold">{item.icon} {item.name}</span></div>
                                   <div className="flex justify-between"><span>Czas (normalne)</span><span className="font-bold">{a.prodMs/3600000}h</span></div>
