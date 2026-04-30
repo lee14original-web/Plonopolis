@@ -67,6 +67,19 @@ Stan: **zrobione (klient).**
 - ⚠️ Wiedza > 50 i Zaradność > 50 — gracze, którzy już zainwestowali, dostają de facto nerf. **Rozważ darmowy reset statów raz po patchu** (do dyskusji).
 
 ## 📋 ODŁOŻONE — następne kroki
-- **Synchronizacja eq z DB** — `charEquipped` jest tylko w localStorage. Bonusy SQL (`collect_honey`) chwilowo dostają wartości od klienta — trust ✗. Long-term: dodać kolumnę `char_equipment JSONB` w `profiles` i czytać po stronie serwera.
+- **Synchronizacja eq z DB** — `charEquipped` jest tylko w localStorage. Bonusy SQL (`collect_honey`, `game_harvest_plot`) chwilowo dostają wartości od klienta — trust ✗. Long-term: dodać kolumnę `char_equipment JSONB` w `profiles` i czytać po stronie serwera.
 - **Walidacja `pendingFieldActions` w water/kompost** — `applyCompostToPlot` i `handleWaterPlot` nie blokują się gdy trwa akcja na polu (rzadki edge case).
-- **SQL do wgrania**: `attached_assets/sql_hive_bonuses.sql` (z Partii 2)
+
+## 🔥 BUG: Race condition przy zbiorze wielu pól (NAPRAWIONE)
+**Objaw:** user posadził 6 marchewek + kompost yield+3 (×6 pól), zebrał wszystkie naraz, dostał ~80 marchewek zamiast 30 (6 + 6×3 = 24 lub 30).
+**Przyczyna:** klient po RPC nadpisywał DB **pełnym obiektem** `seed_inventory` po dodaniu compost/extra/bonusDrop po stronie klienta. Gdy zbiór wielu pól leci równolegle, wszystkie callbacki czytają stary `nextInventory`, dodają swój compost+3, i nadpisują DB — ostatni wygrywa, ale każdy z **akumulowaną** wartością z poprzednich.
+**Fix:**
+1. **SQL** (`sql_fix_harvest_atomic.sql`) — RPC `game_harvest_plot` przyjmuje 3 nowe parametry (`p_compost_yield_extra`, `p_extra_harvest_pct`, `p_bonus_drop_pct`) i aplikuje je **atomicznie** w bazie. Zwraca `gained_good/gained_epic/gained_rotten/extra_harvest_gain/bonus_drop_upgrades` plus `profile`+`zrecznosc_triggered`. Migruje stary klucz `"carrot"` → `"carrot_good"` przy starcie. DROP starych sygnatur.
+   - **Anti-exploit**: `plantedQuality` i `compostBonus` (clamp value≤3) odczytywane z DB (`v_plot`) zamiast z parametrów — klient nie może ich zawyżyć. Pozostałe parametry (`p_extra_harvest_pct`, `p_bonus_drop_pct`, `p_zrecznosc`) nadal trust-from-client (zależą od eq w localStorage — patrz "Synchronizacja eq z DB").
+   - **Compost yield** zawsze trafia do `_good` (zachowane z poprzedniej semantyki — działa też przy zbiorze epic/rotten).
+2. **Klient** (`handleHarvestPlot`) — przekazuje nowe parametry do RPC, USUNIĘTO ręczne dodawanie compost/extra/bonusDrop, USUNIĘTO `await update({seed_inventory})` dla nie-legendarnych (SQL = źródło prawdy). Log events używają `gained_*` z RPC zamiast diff vs prevSnap. Legendary path bez zmian (klient nadal losuje opcję 0/1/2 i nadpisuje DB).
+
+## 🆕 SQL do wgrania w Supabase (kolejność)
+1. `attached_assets/sql_hive_bonuses.sql` (z Partii 2)
+2. `attached_assets/sql_fix_plant_preserve_compost.sql`
+3. `attached_assets/sql_fix_harvest_atomic.sql` ← **ZASTĘPUJE** `sql_harvest_legendary_update.sql`

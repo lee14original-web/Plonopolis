@@ -3610,6 +3610,16 @@ export default function Page() {
       _epicExpMult = Math.floor(Math.random() * 4) + 3; // 3–6
     }
 
+    // ─── Parametry bonusów do RPC (atomicznie po stronie SQL — anti-race) ───
+    // Dla legendarnych: zerujemy compost/extra/bonusDrop (klient sam aplikuje legendarny dropy).
+    const _plotPreRpc = getPlotCrop(plotId);
+    const _compostBonusForRpc = _plotPreRpc.compostBonus ?? null;
+    const _compostYieldExtraForRpc = (_plantedQuality !== "legendary" && _compostBonusForRpc?.type === "yield")
+      ? (_compostBonusForRpc.value ?? 0)
+      : 0;
+    const _extraHarvestPctForRpc = _plantedQuality !== "legendary" ? (_snapBonuses?.extraHarvestPct ?? 0) : 0;
+    const _bonusDropPctForRpc    = _plantedQuality !== "legendary" ? (_snapBonuses?.bonusDropPct ?? 0) : 0;
+
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
@@ -3620,6 +3630,10 @@ export default function Page() {
       p_exp_mult_override: _plantedQuality === "legendary"
         ? (_legOption === 2 ? _legExpMult : -1)
         : _epicExpMult,
+      // Atomicznie po stronie SQL (eliminuje race condition przy zbiorze wielu pól naraz)
+      p_compost_yield_extra: _compostYieldExtraForRpc,
+      p_extra_harvest_pct:   _extraHarvestPctForRpc,
+      p_bonus_drop_pct:      _bonusDropPctForRpc,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -3672,59 +3686,31 @@ export default function Page() {
       }, 0);
     }
 
-    // ─── Bonus z kompostu (zapisany na polu) ───
+    // ─── Bonus z kompostu (zachowany — używany do EXP bonus i notice) ───
     const _compostBonusOnPlot = plot.compostBonus ?? null;
-    let _compostExtraYield = 0;
-    if (_compostBonusOnPlot?.type === "yield") {
-      _compostExtraYield = _compostBonusOnPlot.value;
-      const _bonusKey = getQualityKey(crop.id, "good");
-      nextInventory[_bonusKey] = (nextInventory[_bonusKey] ?? 0) + _compostExtraYield;
-      _totalYield += _compostExtraYield;
-    }
 
-    // ─── Bonus z eq: % extra harvest (szansa na +1 sztukę za każdą zebraną) ───
-    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
-    const _extraHarvestPct = _snapBonuses?.extraHarvestPct ?? 0;
-    let _extraHarvestGain = 0;
-    if (_extraHarvestPct > 0 && _plantedQuality !== "legendary") {
-      const _goodKey = getQualityKey(crop.id, "good");
-      const _goodGained = Math.max(0, (nextInventory[_goodKey] ?? 0) - (prevInventorySnapshot[_goodKey] ?? 0));
-      const _chance = Math.min(1, _extraHarvestPct / 100);
-      for (let _i = 0; _i < _goodGained; _i++) {
-        if (Math.random() < _chance) _extraHarvestGain++;
-      }
-      if (_extraHarvestGain > 0) {
-        nextInventory[_goodKey] = (nextInventory[_goodKey] ?? 0) + _extraHarvestGain;
-        _totalYield += _extraHarvestGain;
-      }
-    }
-
-    // ─── Bonus z eq: % bonus drop (szansa na upgrade good → epic) ───
-    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
-    const _bonusDropPct = _snapBonuses?.bonusDropPct ?? 0;
-    let _bonusDropUpgrades = 0;
-    if (_bonusDropPct > 0 && _plantedQuality !== "legendary") {
-      const _goodKey = getQualityKey(crop.id, "good");
-      const _epicKey = getQualityKey(crop.id, "epic");
-      const _goodAvail = nextInventory[_goodKey] ?? 0;
-      const _chance = Math.min(1, _bonusDropPct / 100);
-      // Rzucamy tylko za każdą NOWĄ sztukę (z RPC + extra harvest)
-      const _newGood = Math.max(0, _goodAvail - (prevInventorySnapshot[_goodKey] ?? 0));
-      for (let _i = 0; _i < _newGood; _i++) {
-        if (Math.random() < _chance) _bonusDropUpgrades++;
-      }
-      if (_bonusDropUpgrades > 0) {
-        nextInventory[_goodKey] = Math.max(0, _goodAvail - _bonusDropUpgrades);
-        nextInventory[_epicKey] = (nextInventory[_epicKey] ?? 0) + _bonusDropUpgrades;
-      }
+    // ─── Wartości zwrócone przez RPC (atomicznie aplikowane przez SQL) ───
+    // SQL już dodał: bazowy yield + zręczność + compost yield + % extra harvest + % bonus drop.
+    // Eliminuje race condition przy zbiorze wielu pól naraz.
+    const _gainedGood   = (typeof (_rpcWrapper as { gained_good?: unknown }).gained_good   === "number") ? (_rpcWrapper as { gained_good: number }).gained_good   : 0;
+    const _gainedEpic   = (typeof (_rpcWrapper as { gained_epic?: unknown }).gained_epic   === "number") ? (_rpcWrapper as { gained_epic: number }).gained_epic   : 0;
+    const _gainedRotten = (typeof (_rpcWrapper as { gained_rotten?: unknown }).gained_rotten === "number") ? (_rpcWrapper as { gained_rotten: number }).gained_rotten : 0;
+    if (_plantedQuality !== "legendary") {
+      // Dla NIE-legendarnych: SQL jest źródłem prawdy. nextInventory = sparsowany rpcInv.
+      // Nie liczymy diff'a względem prevInventorySnapshot (race-prone) — używamy gained_* z RPC.
+      _totalYield = _gainedGood + _gainedEpic + _gainedRotten;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
-    // Natychmiast nadpisz seedInventory wersją z kluczami jakości (po migracji)
+    // Synchronizacja stanu klienta z DB
     setSeedInventory(nextInventory);
-    // Zapisz do DB (await — gwarantowane zachowanie jakości, bez starych kluczy)
-    await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
+    // Dla LEGENDARNYCH klient sam nadpisał inventory (decyduje o opcji 0/1/2) — zapisz do DB.
+    // Dla nie-legendarnych: SQL jest źródłem prawdy, NIE nadpisujemy DB pełnym obiektem
+    // (chroni przed race condition przy zbiorze wielu pól naraz).
+    if (_plantedQuality === "legendary") {
+      await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
+    }
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
@@ -3820,19 +3806,20 @@ export default function Page() {
       }
     } else {
       const _now2 = Date.now();
-      // Diff inventory: które jakości się zmieniły po zbiorze?
-      const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => {
-        const _key = getQualityKey(crop.id, _q);
-        return (nextInventory[_key] ?? 0) > (prevInventorySnapshot[_key] ?? 0);
-      });
+      // Wartości z RPC (atomicznie aplikowane przez SQL) — eliminuje race vs prevSnap.
+      const _qualGained: Record<CropQuality, number> = {
+        good:      _gainedGood,
+        epic:      _gainedEpic,
+        rotten:    _gainedRotten,
+        legendary: 0,
+      };
+      const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => _qualGained[_q] > 0);
       const _logEvents = _diffQuals.map((_q, _idx) => {
-        const _key = getQualityKey(crop.id, _q);
-        const _gained = (nextInventory[_key] ?? 0) - (prevInventorySnapshot[_key] ?? 0);
         return {
           id: ++harvestEventIdRef.current,
           cropId: crop.id,
           cropName: crop.name,
-          baseAmount: _gained,
+          baseAmount: _qualGained[_q],
           bonusAmount: 0,
           bonusSource: _idx === 0 && _zrecznoscionTriggered ? "Zręczność 🎯" : null,
           baseExp: _idx === 0 ? actualExp : 0,
