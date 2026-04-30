@@ -254,6 +254,24 @@ function getUpgradeCost(itemId: string, targetUpg: number): number {
   const slotMult = getSlotMultiplier(item?.slot);
   return Math.round(UPGRADE_COST[targetUpg] * tierMult * slotMult);
 }
+// ─── Aggregator bonusów z założonego ekwipunku (sumuje wszystkie 3 sloty) ───
+// Zwraca SUMĘ procentów dla danej etykiety np. "% speed upraw" → 23.5
+function getEquipBonusPct(label: string, charEq: Record<string,{id:string;upg:number}|null>): number {
+  let total = 0;
+  (["dlonie","nogi","glowa"] as const).forEach(slot => {
+    const eq = charEq[slot];
+    if (!eq) return;
+    const item = CHAR_EQUIP_ITEMS.find(i => i.id === eq.id);
+    if (!item) return;
+    const upg = eq.upg ?? 0;
+    item.bonuses.forEach(b => {
+      if (b.label === label && !b.flat) {
+        total += b.base * (1 + 0.15 * upg);
+      }
+    });
+  });
+  return total;
+}
 // ─── Materiały ze zwierząt: M1..M10 → ID przedmiotu zwierzęcego ───
 const TIER_MATERIAL: Record<number,string> = {
   1:"jajko", 2:"futro_krolika", 3:"mleko", 4:"piora", 5:"welna",
@@ -493,6 +511,91 @@ function defaultBarnState(): BarnState {
   const s: BarnState = {};
   ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 }; });
   return s;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SAD — drzewa owocowe (cykliczna produkcja owoców z lossowaną jakością)
+// ═══════════════════════════════════════════════════════════════════════
+type FruitQuality = "zwykly" | "soczysty" | "zloty";
+const FRUIT_QUALITY_DEFS: Record<FruitQuality, { label:string; mult:number; color:string; icon:string; baseChance:number }> = {
+  zwykly:   { label:"Zwykły",   mult:1, color:"#86efac", icon:"",   baseChance:0.85 },
+  soczysty: { label:"Soczysty", mult:2, color:"#22d3ee", icon:"💧", baseChance:0.12 },
+  zloty:    { label:"Złoty",    mult:5, color:"#fde047", icon:"✨", baseChance:0.03 },
+};
+// luckPct = bonus % (np. ze skilla Szczęście + eq "% bonus drop")
+function rollFruitQuality(luckPct: number = 0): FruitQuality {
+  const r = Math.random();
+  const lf = 1 + Math.max(0, luckPct) / 100;
+  const zlotyChance    = Math.min(0.50, FRUIT_QUALITY_DEFS.zloty.baseChance * lf);
+  const soczystyChance = Math.min(0.60, FRUIT_QUALITY_DEFS.soczysty.baseChance * lf);
+  if (r < zlotyChance) return "zloty";
+  if (r < zlotyChance + soczystyChance) return "soczysty";
+  return "zwykly";
+}
+interface TreeDef {
+  id: string;
+  name: string;
+  icon: string;
+  unlockLevel: number;
+  fruitId: string;
+  fruitName: string;
+  fruitIcon: string;
+  growthTimeMs: number;
+  dropMin: number;
+  dropMax: number;
+  pricePerFruit: number;
+  buyPrice: number;
+}
+const TREES: TreeDef[] = [
+  { id:"jablon",      name:"Jabłoń",      icon:"🍎", unlockLevel:10, fruitId:"jablko",       fruitName:"Jabłko",       fruitIcon:"🍎", growthTimeMs: 4*3600000, dropMin:10, dropMax:14, pricePerFruit:20,  buyPrice:   4500 },
+  { id:"grusza",      name:"Grusza",      icon:"🍐", unlockLevel:12, fruitId:"gruszka",      fruitName:"Gruszka",      fruitIcon:"🍐", growthTimeMs: 6*3600000, dropMin: 9, dropMax:12, pricePerFruit:35,  buyPrice:   9000 },
+  { id:"sliwa",       name:"Śliwa",       icon:"🟣", unlockLevel:14, fruitId:"sliwka",       fruitName:"Śliwka",       fruitIcon:"🟣", growthTimeMs: 8*3600000, dropMin: 8, dropMax:10, pricePerFruit:55,  buyPrice:  18000 },
+  { id:"wisnia",      name:"Wiśnia",      icon:"🍒", unlockLevel:16, fruitId:"wisnia",       fruitName:"Wiśnia",       fruitIcon:"🍒", growthTimeMs:10*3600000, dropMin: 7, dropMax: 9, pricePerFruit:80,  buyPrice:  35000 },
+  { id:"czeresnia",   name:"Czereśnia",   icon:"🍒", unlockLevel:18, fruitId:"czeresnia",    fruitName:"Czereśnia",    fruitIcon:"🍒", growthTimeMs:12*3600000, dropMin: 6, dropMax: 8, pricePerFruit:110, buyPrice:  60000 },
+  { id:"brzoskwinia", name:"Brzoskwinia", icon:"🍑", unlockLevel:20, fruitId:"brzoskwinia",  fruitName:"Brzoskwinia",  fruitIcon:"🍑", growthTimeMs:14*3600000, dropMin: 5, dropMax: 7, pricePerFruit:150, buyPrice: 100000 },
+  { id:"morela",      name:"Morela",      icon:"🟠", unlockLevel:22, fruitId:"morela",       fruitName:"Morela",       fruitIcon:"🟠", growthTimeMs:16*3600000, dropMin: 4, dropMax: 6, pricePerFruit:220, buyPrice: 170000 },
+  { id:"pomarancza",  name:"Pomarańcza",  icon:"🍊", unlockLevel:23, fruitId:"pomarancza",   fruitName:"Pomarańcza",   fruitIcon:"🍊", growthTimeMs:18*3600000, dropMin: 3, dropMax: 5, pricePerFruit:320, buyPrice: 260000 },
+  { id:"cytryna",     name:"Cytryna",     icon:"🍋", unlockLevel:25, fruitId:"cytryna",      fruitName:"Cytryna",      fruitIcon:"🍋", growthTimeMs:24*3600000, dropMin: 2, dropMax: 4, pricePerFruit:500, buyPrice: 450000 },
+];
+// Limit drzew = funkcja LVL gracza
+function getMaxTreeSlots(level: number): number {
+  if (level >= 25) return 8;
+  if (level >= 20) return 6;
+  if (level >= 15) return 4;
+  if (level >= 10) return 2;
+  return 0;
+}
+const ORCHARD_STATE_KEY = "plonopolis_orchard";
+type OrchardTreeState = { owned:number; prodStart:number; storage: Record<FruitQuality, number> };
+type OrchardState = Record<string, OrchardTreeState>;
+function defaultOrchardState(): OrchardState {
+  const s: OrchardState = {};
+  TREES.forEach(t => { s[t.id] = { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } }; });
+  return s;
+}
+function migrateOrchardState(raw: unknown): OrchardState {
+  const def = defaultOrchardState();
+  if (!raw || typeof raw !== "object") return def;
+  const r = raw as Record<string, unknown>;
+  TREES.forEach(t => {
+    const v = r[t.id];
+    if (!v || typeof v !== "object") return;
+    const s = v as { owned?:number; prodStart?:number; storage?:Record<string,number> };
+    def[t.id] = {
+      owned: typeof s.owned === "number" ? s.owned : 0,
+      prodStart: typeof s.prodStart === "number" ? s.prodStart : 0,
+      storage: {
+        zwykly:   typeof s.storage?.zwykly   === "number" ? s.storage.zwykly   : 0,
+        soczysty: typeof s.storage?.soczysty === "number" ? s.storage.soczysty : 0,
+        zloty:    typeof s.storage?.zloty    === "number" ? s.storage.zloty    : 0,
+      },
+    };
+  });
+  return def;
+}
+// Łączna liczba drzew w sadzie (sumarycznie ze wszystkich gatunków)
+function getOrchardTotalOwned(state: OrchardState): number {
+  return TREES.reduce((s, t) => s + (state[t.id]?.owned ?? 0), 0);
 }
 function barnCurrentHunger(st: BarnAnimalState, opiekaPts: number = 0): number {
   if (!st.lastFedAt) return 50;
@@ -1271,6 +1374,7 @@ export default function Page() {
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
+  const [showSadModal, setShowSadModal] = React.useState(false);
   const [showUlModal, setShowUlModal] = React.useState(false);
   const [showLadaModal, setShowLadaModal] = React.useState(false);
   const [ladaSellQty, setLadaSellQty] = React.useState(1);
@@ -1416,7 +1520,7 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
-    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
+    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"owoce">("uprawy");
     type BackpackQualityFilter = "rotten"|"good"|"epic"|"legendary"|"all";
     const [backpackSort, setBackpackSort] = React.useState<BackpackQualityFilter>(() => {
       if (typeof window === "undefined") return "good";
@@ -1507,6 +1611,18 @@ export default function Page() {
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
   const saveBarnState = (next: BarnState) => { setBarnState_(next); try { localStorage.setItem(BARN_STATE_KEY, JSON.stringify(next)); } catch {} };
   const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); try { localStorage.setItem(BARN_ITEMS_KEY, JSON.stringify(next)); } catch {} };
+  // SAD — state + persystencja
+  const [orchardState, setOrchardState_] = React.useState<OrchardState>(() => {
+    try { const s = localStorage.getItem(ORCHARD_STATE_KEY); return migrateOrchardState(s ? JSON.parse(s) : null); } catch { return defaultOrchardState(); }
+  });
+  const saveOrchardState = (next: OrchardState) => { setOrchardState_(next); try { localStorage.setItem(ORCHARD_STATE_KEY, JSON.stringify(next)); } catch {} };
+  const [orchardError, setOrchardError] = React.useState("");
+  // Owoce zebrane (Record<"fruitId_quality", number>) — osobny inventory bo sprzedaż per quality, w przyszłości też crafting/gildie
+  const FRUIT_INV_KEY = "plonopolis_fruit_inv";
+  const [fruitInventory, setFruitInventory_] = React.useState<Record<string,number>>(() => {
+    try { const s = localStorage.getItem(FRUIT_INV_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
+  const saveFruitInventory = (next: Record<string,number>) => { setFruitInventory_(next); try { localStorage.setItem(FRUIT_INV_KEY, JSON.stringify(next)); } catch {} };
   React.useEffect(() => {
     const t = setInterval(() => setBarnNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -1557,6 +1673,54 @@ export default function Page() {
     if (bonusMessages.length > 0) {
       setMessage({ type:"success", title:"🐄 Bonus Opieki!", text: bonusMessages.join(" · ") });
     }
+  }, [barnNow]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ─── SAD: cykl produkcji owoców (analogicznie do zwierząt, ale bez głodu) ───
+  React.useEffect(() => {
+    let changed = false;
+    const next: OrchardState = { ...orchardState };
+    // Bonus z eq "% speed drzew" przyspiesza wzrost (max -70%)
+    const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped) / 100;
+    const speedMult = Math.max(0.30, 1 - treeSpeedPct);
+    // Skill Sadownik (rate 0.005) → mnożnik liczby owoców (więcej owoców z drzewa)
+    const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005) / 100;
+    // Szczęście + eq "% bonus drop" → szansa na rare/golden
+    const luckPct = calcStatEffect(playerStats?.szczescie ?? 0, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+    TREES.forEach(t => {
+      const st = next[t.id];
+      if (!st || st.owned === 0) return;
+      const ns = { ...st, storage: { ...st.storage } };
+      const effMs = Math.max(60_000, Math.round(t.growthTimeMs * speedMult));
+      if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[t.id] = ns; return; }
+      const elapsed = barnNow - ns.prodStart;
+      if (elapsed >= effMs) {
+        // Liczba pełnych cykli (offline-safe). Limit storage = ~5 cykli per drzewo (żeby nie nazbierało za dużo).
+        const STORAGE_CYCLE_CAP = 5;
+        const totalStored = ns.storage.zwykly + ns.storage.soczysty + ns.storage.zloty;
+        const avgDropPerCycle = (t.dropMin + t.dropMax) / 2 * ns.owned;
+        const freeCycles = Math.max(0, Math.floor((STORAGE_CYCLE_CAP * avgDropPerCycle - totalStored) / Math.max(1, avgDropPerCycle)));
+        const fullCycles = Math.min(Math.floor(elapsed / effMs), freeCycles);
+        if (fullCycles > 0) {
+          for (let c = 0; c < fullCycles; c++) {
+            for (let tree = 0; tree < ns.owned; tree++) {
+              const baseDrop = t.dropMin + Math.floor(Math.random() * (t.dropMax - t.dropMin + 1));
+              const totalDrop = Math.max(1, Math.round(baseDrop * (1 + sadownikBonus)));
+              for (let f = 0; f < totalDrop; f++) {
+                const q = rollFruitQuality(luckPct);
+                ns.storage[q] += 1;
+              }
+            }
+          }
+          ns.prodStart = ns.prodStart + fullCycles * effMs;
+          changed = true;
+        } else if (freeCycles === 0) {
+          // Pełny storage — wstrzymaj nowe cykle (jak u zwierząt)
+          ns.prodStart = 0;
+          changed = true;
+        }
+      }
+      next[t.id] = ns;
+    });
+    if (changed) saveOrchardState(next);
   }, [barnNow]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     const merged: Record<string,number> = { ...itemUpgRegistry };
@@ -1840,17 +2004,24 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
-    // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu
+    // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
+    const compostBoost = 1 + getEquipBonusPct("% efekt kompostu", charEquipped) / 100;
     const compostMult = (plot.compostBonus?.type === "growth")
-      ? Math.max(0.1, 1 - (plot.compostBonus.value / 100))
+      ? Math.max(0.1, 1 - (plot.compostBonus.value * compostBoost / 100))
       : 1;
+    // Bonus z eq: % speed upraw (sumarycznie ze wszystkich slotów)
+    const equipGrowthPct = getEquipBonusPct("% speed upraw", charEquipped) / 100;
+    const equipGrowthMult = Math.max(0.3, 1 - equipGrowthPct);
     if (plot.watered) {
       const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.006) / 100;
-      const waterMult = Math.max(0.5, 1 - zaradnoscBonus);
-      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult * compostMult);
+      // Bonus z eq: % efekt podlewania + % efekt wody (boost siły zaradności)
+      const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+      const totalWaterReduction = Math.min(0.95, zaradnoscBonus * (1 + waterEqPct));
+      const waterMult = Math.max(0.5, 1 - totalWaterReduction);
+      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult * compostMult * equipGrowthMult);
     }
 
-    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult * compostMult);
+    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult * compostMult * equipGrowthMult);
   }
 
   function getGrowthProgress(plotId: number) {
@@ -2345,6 +2516,12 @@ export default function Page() {
   }, [showDomModal]);
 
   useEffect(() => {
+    if (!showSadModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowSadModal(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showSadModal]);
+  React.useEffect(() => {
     if (!showStodolaModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowStodolaModal(false); };
     window.addEventListener("keydown", handler);
@@ -3737,10 +3914,11 @@ export default function Page() {
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
-                      {/* Sad — bez akcji */}
+                      {/* Sad */}
                       <button
                         type="button"
                         title="Sad"
+                        onClick={() => setShowSadModal(true)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.sad.left}%`, top:`${navHitboxPos.sad.top}%`, width:`${navHitboxPos.sad.width}%`, height:`${navHitboxPos.sad.height}%`, zIndex: 20 }}
                       />
@@ -4265,14 +4443,14 @@ export default function Page() {
 
                         {/* Zakładki Uprawy / Przedmioty */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty"] as const).map(tab => (
+                            {(["uprawy","przedmioty","owoce"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
                                 onClick={() => setBackpackTab(tab)}
                                 className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                               >
-                                {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                                {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
                               </button>
                             ))}
                           </div>
@@ -4522,6 +4700,53 @@ export default function Page() {
                               )}
                             </div>
                           )}
+
+                          {/* ZAKŁADKA: OWOCE */}
+                          {backpackTab === "owoce" && (() => {
+                            const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
+                            if (entries.length === 0) {
+                              return (
+                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                                  <p className="text-2xl mb-2">🍎</p>
+                                  <p>Brak owoców w plecaku.</p>
+                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup drzewa w Sklepie → 🌳 Drzewa, a potem zbierz owoce w Sadzie.</p>
+                                </div>
+                              );
+                            }
+                            const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
+                            entries.forEach(([k,c]) => {
+                              const lastUnd = k.lastIndexOf("_");
+                              const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
+                              if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
+                              grouped[fid][q] = Number(c);
+                            });
+                            return (
+                              <div className="mt-3 flex flex-col gap-2">
+                                {Object.entries(grouped).map(([fid,q]) => {
+                                  const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
+                                  const total = q.zwykly + q.soczysty + q.zloty;
+                                  const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                                  return (
+                                    <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 px-3 py-2">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-3xl">{tree.fruitIcon}</span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
+                                          <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                                            {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1.5 py-0.5 font-bold text-emerald-300">{q.zwykly}×zwykły</span>}
+                                            {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1.5 py-0.5 font-bold text-cyan-300">💧{q.soczysty}×soczysty</span>}
+                                            {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1.5 py-0.5 font-bold text-yellow-300">✨{q.zloty}×złoty</span>}
+                                          </div>
+                                        </div>
+                                        <span className="text-xs font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                <p className="mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
+                              </div>
+                            );
+                          })()}
 
                       </div>
                     </div>
@@ -5233,15 +5458,132 @@ export default function Page() {
                         </div>
                       );
                     })()}
-                    {(shopTab === "zwierzeta" || shopTab === "drzewa") && (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="text-center">
-                          <p className="text-4xl mb-4">{shopTab === "zwierzeta" ? "🐄" : "🌳"}</p>
-                          <p className="text-base font-black text-[#f9e7b2]">{shopTab === "zwierzeta" ? "Zwierzęta" : "Drzewa"}</p>
-                          <p className="mt-2 text-sm text-[#8b6a3e]">Dostępne wkrótce w kolejnej aktualizacji.</p>
+                    {shopTab === "zwierzeta" && (() => {
+                      const lvl = profile?.level ?? 1;
+                      const handleBuyAnimalShop = async (a: AnimalDef) => {
+                        if (!profile?.id) return;
+                        const st = barnState[a.id];
+                        if (!st) return;
+                        if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
+                        if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
+                        if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca w stodole!",text:`Kup więcej slotów dla ${a.name} w Stodole.`}); return; }
+                        const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
+                        if (error) return;
+                        saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+                        await loadProfile(profile.id);
+                        setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
+                      };
+                      return (
+                        <div className="flex flex-col gap-2 p-3 overflow-y-auto">
+                          <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">🐄 Zwierzęta hodowlane</p>
+                            <p className="mt-1 text-sm font-bold text-[#f9e7b2]">Każde zwierzę ma własne sloty w Stodole.</p>
+                            <p className="mt-1 text-[11px] text-[#8b6a3e]">Po zakupie zwierzę pojawi się w zagrodzie. Sloty kupujesz w Stodole (przycisk 🏗️).</p>
+                          </div>
+                          {ANIMALS.map(a => {
+                            const st = barnState[a.id];
+                            const owned = st?.owned ?? 0;
+                            const slots = st?.slots ?? a.startSlots;
+                            const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
+                            const locked = lvl < a.unlockLevel;
+                            const noSlot = !locked && owned >= slots;
+                            const tooPoor = !locked && !noSlot && displayMoney < a.buyPrice;
+                            const canBuy = !locked && !noSlot && !tooPoor;
+                            return (
+                              <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-3 ${locked ? "border-[#374151]/40 bg-black/10 opacity-60" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-xl border border-[#8b6a3e]/40 bg-black/30 text-4xl">{a.icon}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-black text-[#f9e7b2]">{a.name}</p>
+                                    <span className="rounded-full border border-[#8b6a3e]/40 bg-black/30 px-2 py-0.5 text-[10px] font-bold text-[#dfcfab]">LVL {a.unlockLevel}</span>
+                                    {locked && <span className="rounded-full border border-red-500/40 bg-red-900/20 px-2 py-0.5 text-[10px] font-bold text-red-300">🔒 Zablokowane</span>}
+                                  </div>
+                                  <p className="mt-1 text-[11px] text-[#8b6a3e]">
+                                    Produkuje: <span className="text-[#dfcfab] font-bold">{item?.icon} {item?.name}</span>
+                                    {" · "}Czas: <span className="text-[#dfcfab] font-bold">{a.prodMs/3600000}h</span>
+                                    {" · "}Magazyn: <span className="text-[#dfcfab] font-bold">{a.storageMax} cykli</span>
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
+                                    Karma: {a.feed.map(f => `${f.icon} ${f.name}`).join(" lub ")}
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
+                                    Posiadasz: <span className={`font-black ${owned > 0 ? "text-emerald-300" : "text-[#dfcfab]"}`}>{owned}/{slots}</span>
+                                    {" · "}Sprzedaż: <span className="text-amber-300 font-bold">{item?.sellPrice.toLocaleString()} 💰/szt</span>
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                  <p className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</p>
+                                  <button
+                                    disabled={!canBuy}
+                                    onClick={() => void handleBuyAnimalShop(a)}
+                                    className={`rounded-xl border px-4 py-2 text-sm font-black transition ${canBuy ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50" : "cursor-not-allowed border-[#374151] bg-black/20 text-[#6b7280]"}`}>
+                                    {locked ? `🔒 LVL ${a.unlockLevel}` : noSlot ? "Brak slotów" : tooPoor ? "Za mało 💰" : "🛒 Kup"}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
+                    {shopTab === "drzewa" && (() => {
+                      const lvl = profile?.level ?? 1;
+                      const maxSlots = getMaxTreeSlots(lvl);
+                      const owned = getOrchardTotalOwned(orchardState);
+                      const free = maxSlots - owned;
+                      return (
+                        <div className="flex flex-col gap-2 p-3">
+                          <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">🌳 Sad — twoje miejsca</p>
+                            <p className="mt-1 text-sm font-bold text-[#f9e7b2]">{owned} / {maxSlots} <span className="text-xs font-normal text-[#8b6a3e]">drzew (limit od poziomu: 10→2, 15→4, 20→6, 25→8)</span></p>
+                            {maxSlots === 0 && <p className="mt-1 text-[11px] text-amber-300">Pierwsze miejsca odblokujesz na poziomie 10.</p>}
+                            {free === 0 && maxSlots > 0 && <p className="mt-1 text-[11px] text-red-300">Wszystkie miejsca zajęte. Zwiększ poziom aby kupić więcej drzew.</p>}
+                          </div>
+                          {TREES.map(t => {
+                            const locked = lvl < t.unlockLevel;
+                            const canBuy = !locked && free > 0 && (profile?.money ?? 0) >= t.buyPrice;
+                            const ownedHere = orchardState[t.id]?.owned ?? 0;
+                            const avgDrop = ((t.dropMin + t.dropMax) / 2).toFixed(1);
+                            const avgEarn = Math.round(((t.dropMin + t.dropMax) / 2) * t.pricePerFruit);
+                            return (
+                              <div key={t.id} className={`flex items-center gap-3 rounded-xl border bg-black/30 p-3 ${locked ? "border-[#8b6a3e]/20 opacity-60" : "border-[#8b6a3e]/50"}`}>
+                                <div className="text-3xl shrink-0">{t.icon}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-black text-[#f9e7b2]">{t.name}</p>
+                                    {ownedHere > 0 && <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-black text-emerald-300">×{ownedHere} w sadzie</span>}
+                                    {locked && <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-black text-red-300">🔒 LVL {t.unlockLevel}</span>}
+                                  </div>
+                                  <p className="text-[11px] text-[#dfcfab]">Owoc: {t.fruitIcon} {t.fruitName} · Drop: {t.dropMin}–{t.dropMax}/cykl · Cykl: {Math.round(t.growthTimeMs/3600000)}h · Cena owocu: {t.pricePerFruit}💰</p>
+                                  <p className="text-[10px] text-[#8b6a3e]">Średnio ~{avgDrop} owoców → ~{avgEarn}💰 / cykl (przy zwykłych)</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-sm font-black text-[#f9e7b2]">{t.buyPrice}💰</p>
+                                  <button
+                                    disabled={!canBuy}
+                                    onClick={() => {
+                                      if (!profile?.id || !canBuy) return;
+                                      setOrchardError("");
+                                      void (async () => {
+                                        const newMoney = (profile.money ?? 0) - t.buyPrice;
+                                        const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
+                                        if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
+                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } };
+                                        saveOrchardState({ ...orchardState, [t.id]: { ...cur, owned: cur.owned + 1, prodStart: cur.prodStart || Date.now() } });
+                                        await loadProfile(profile.id);
+                                        setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
+                                      })();
+                                    }}
+                                    className={`mt-1 rounded-lg px-3 py-1 text-xs font-black ${canBuy ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                                  >Kup</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {orchardError && <p className="rounded-lg bg-red-900/40 px-3 py-2 text-xs text-red-300">{orchardError}</p>}
+                        </div>
+                      );
+                    })()}
                   </div>
                   {/* Summary bar */}
                   {shopTab === "nasiona" && (() => {
@@ -5286,10 +5628,10 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty"] as const).map(tab => (
+                      {(["uprawy","przedmioty","owoce"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                          {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
                         </button>
                       ))}
                     </div>
@@ -5448,6 +5790,51 @@ export default function Page() {
                         )}
                       </div>
                     )}
+                    {backpackTab === "owoce" && (() => {
+                      const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
+                      if (entries.length === 0) {
+                        return (
+                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-center text-xs text-[#dfcfab]">
+                            <p className="text-2xl mb-1">🍎</p>
+                            <p>Brak owoców w plecaku.</p>
+                            <p className="mt-1 text-[10px] text-[#8b6a3e]">Posadź drzewa w Sklepie i zbieraj w Sadzie.</p>
+                          </div>
+                        );
+                      }
+                      const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
+                      entries.forEach(([k,c]) => {
+                        const lastUnd = k.lastIndexOf("_");
+                        const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
+                        if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
+                        grouped[fid][q] = Number(c);
+                      });
+                      return (
+                        <div className="flex flex-col gap-2 mt-1">
+                          {Object.entries(grouped).map(([fid,q]) => {
+                            const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
+                            const total = q.zwykly + q.soczysty + q.zloty;
+                            const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                            return (
+                              <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{tree.fruitIcon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
+                                    <div className="mt-0.5 flex flex-wrap gap-1 text-[9px]">
+                                      {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1 py-0.5 font-bold text-emerald-300">{q.zwykly}</span>}
+                                      {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1 py-0.5 font-bold text-cyan-300">💧{q.soczysty}</span>}
+                                      {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1 py-0.5 font-bold text-yellow-300">✨{q.zloty}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          <p className="text-[9px] text-[#8b6a3e] text-center mt-1">Sprzedaż w Sadzie</p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -6699,19 +7086,25 @@ export default function Page() {
               if (st.storage === 0 || st.owned === 0) return;
               const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
               // 1 cykl storage = owned sztuk produktu
-              const collected = st.storage * st.owned;
+              const baseCollected = st.storage * st.owned;
+              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
+              const collected = Math.floor(baseCollected * (1 + rewardBonus));
+              const bonusUnits = collected - baseCollected;
               const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + collected};
               saveBarnItems(newItems);
               saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
-              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})`});
+              const bonusMsg = bonusUnits > 0 ? ` 🎁 +${bonusUnits} z eq (+${(rewardBonus*100).toFixed(1)}%)` : "";
+              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})${bonusMsg}`});
             };
             const handleCollectAll = () => {
               let changed = false; const newItems = {...barnItems}; const newState = {...barnState};
               let totalItems = 0;
+              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
               ANIMALS.forEach(a => {
                 const st = barnState[a.id];
                 if (st.storage > 0 && st.owned > 0) {
-                  const collected = st.storage * st.owned;
+                  const baseCollected = st.storage * st.owned;
+                  const collected = Math.floor(baseCollected * (1 + rewardBonus));
                   newItems[a.itemId] = (newItems[a.itemId]??0) + collected;
                   newState[a.id] = {...st, storage:0, prodStart: barnNow};
                   totalItems += collected;
@@ -6730,10 +7123,10 @@ export default function Page() {
                   <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                   {/* ─ Sidebar ─ */}
-                  <div className="flex w-[220px] shrink-0 flex-col gap-1 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
-                    <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#8b6a3e]">🏚️ Zagroda</p>
+                  <div className="flex w-[280px] shrink-0 flex-col gap-1.5 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
+                    <p className="mb-3 text-base font-black uppercase tracking-widest text-[#d8ba7a]">🏚️ Zagroda</p>
                     <button onClick={() => setSelectedAnimal(null)}
-                      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
                       📋 Przegląd
                     </button>
                     <div className="my-1 border-t border-[#8b6a3e]/20" />
@@ -6745,12 +7138,12 @@ export default function Page() {
                       return (
                         <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
                           disabled={locked}
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          <span>{a.icon}</span>
+                          className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                          <span className="text-xl">{a.icon}</span>
                           <span className="flex-1 truncate">{a.name}</span>
-                          {locked && <span className="text-[9px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
-                          {!locked && hasProd && <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />}
-                          {!locked && hasAnimals && !hasProd && <span className="text-[9px] text-[#8b6a3e]">{st.owned}</span>}
+                          {locked && <span className="text-[11px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
+                          {!locked && hasProd && <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />}
+                          {!locked && hasAnimals && !hasProd && <span className="text-[11px] text-[#8b6a3e]">{st.owned}</span>}
                         </button>
                       );
                     })}
@@ -6775,7 +7168,7 @@ export default function Page() {
                     {!selA && (
                       <div>
                         <div className="flex items-center justify-between mb-4">
-                          <p className="text-xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
+                          <p className="text-2xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
                           {totalStorage > 0 && (
                             <button onClick={handleCollectAll} className="rounded-xl border border-green-500/60 bg-green-900/20 px-3 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
                               ✅ Odbierz wszystko
@@ -6795,12 +7188,12 @@ export default function Page() {
                               <div key={a.id} onClick={() => setSelectedAnimal(a.id)}
                                 className="cursor-pointer rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3 hover:border-[#d4a64f]/60 transition">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-2xl">{a.icon}</span>
+                                  <span className="text-3xl">{a.icon}</span>
                                   <div className="flex-1">
-                                    <p className="text-sm font-black text-[#f9e7b2]">{a.name}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
+                                    <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
+                                    <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
+                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -6813,7 +7206,7 @@ export default function Page() {
                                     </div>
                                   </>
                                 )}
-                                {st.owned === 0 && <p className="text-[10px] text-[#6b7280] text-center py-1">Kup {a.name.toLowerCase()} za {a.buyPrice.toLocaleString()} 💰</p>}
+                                {st.owned === 0 && <p className="text-[11px] text-amber-300/80 text-center py-1">🛒 Kup w mieście · {a.buyPrice.toLocaleString()} 💰</p>}
                               </div>
                             );
                           })}
@@ -6856,7 +7249,7 @@ export default function Page() {
                             <div className="flex flex-col gap-3">
                               {/* Status produkcji */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📊 Produkcja</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📊 Produkcja</p>
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
@@ -6884,7 +7277,7 @@ export default function Page() {
                               </div>
                               {/* Głód */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🌿 Głód</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🌿 Głód</p>
                                 <div className="flex items-center gap-2 mb-1">
                                   <div className="h-3 flex-1 rounded-full bg-black/40">
                                     <div className="h-full rounded-full transition-all" style={{width:`${h}%`, background:hs.color}} />
@@ -6925,32 +7318,24 @@ export default function Page() {
                             </div>
                             {/* Prawa kolumna */}
                             <div className="flex flex-col gap-3">
-                              {/* Kup zwierzę */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-3">🛒 Kup zwierzę</p>
-                                <div className="flex items-center justify-between mb-3">
+                              {/* Info: kupno przeniesione do miasta */}
+                              <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4">
+                                <p className="text-base font-black uppercase tracking-widest text-amber-300 mb-2">🛒 Kup zwierzę</p>
+                                <div className="flex items-center justify-between mb-2">
                                   <div>
-                                    <p className="text-sm font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Zajmuje 1 slot</p>
+                                    <p className="text-base font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
+                                    <p className="text-sm text-amber-200/80">Posiadasz: <span className="font-black">{st.owned} / {st.slots}</span></p>
                                   </div>
-                                  <span className="text-sm font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
+                                  <span className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
                                 </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="h-2 flex-1 rounded-full bg-black/40">
-                                    <div className="h-full rounded-full bg-amber-600/60 transition-all" style={{width:`${st.slots > 0 ? (st.owned/st.slots*100) : 0}%`}} />
-                                  </div>
-                                  <span className="text-xs text-[#8b6a3e]">{st.owned}/{st.slots}</span>
-                                </div>
-                                <button onClick={() => handleBuyAnimal(a)}
-                                  disabled={st.owned >= st.slots || displayMoney < a.buyPrice}
-                                  className={`w-full rounded-xl border py-2 text-sm font-bold transition ${st.owned >= st.slots ? "opacity-40 cursor-not-allowed border-[#374151] text-[#6b7280]" : displayMoney < a.buyPrice ? "opacity-50 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-amber-500/60 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40"}`}>
-                                  {st.owned >= st.slots ? "Brak miejsca" : `Kup ${a.name.toLowerCase()}`}
-                                </button>
+                                <p className="text-sm text-amber-200/90 leading-relaxed">
+                                  ➡️ Zwierzęta kupisz w <span className="font-black text-amber-300">mieście → Sklep → zakładka 🐄 Zwierzęta</span>.
+                                </p>
                               </div>
                               {/* Ulepszenia slotów */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">🏗️ Sloty stodoły</p>
-                                <p className="text-sm font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🏗️ Sloty stodoły</p>
+                                <p className="text-base font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
                                 <div className="flex gap-1 flex-wrap mb-3">
                                   {Array.from({length: a.maxSlots}).map((_, i) => (
                                     <div key={i} className={`h-3 w-3 rounded-sm border ${i < st.slots ? "border-amber-400 bg-amber-400/30" : "border-[#374151] bg-black/20"}`} />
@@ -6968,7 +7353,7 @@ export default function Page() {
                               </div>
                               {/* Tabela produkcji */}
                               <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3">
-                                <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">📈 Info</p>
+                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📈 Info</p>
                                 <div className="flex flex-col gap-1 text-[11px] text-[#dfcfab]">
                                   <div className="flex justify-between"><span>Produkuje</span><span className="font-bold">{item.icon} {item.name}</span></div>
                                   <div className="flex justify-between"><span>Czas (normalne)</span><span className="font-bold">{a.prodMs/3600000}h</span></div>
@@ -6983,6 +7368,249 @@ export default function Page() {
                       );
                     })()}
                   </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {showSadModal && (() => {
+            const lvl = profile?.level ?? 1;
+            const maxSlots = getMaxTreeSlots(lvl);
+            const ownedTotal = getOrchardTotalOwned(orchardState);
+            const ownedTrees = TREES.filter(t => (orchardState[t.id]?.owned ?? 0) > 0);
+            const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped);
+            const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005);
+            const luckPct = calcStatEffect(playerStats?.szczescie ?? 0, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+            const fmtTime = (ms: number) => {
+              if (ms <= 0) return "Gotowe!";
+              const s = Math.floor(ms/1000);
+              const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+              return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+            };
+            const handleHarvestTree = (t: TreeDef) => {
+              const st = orchardState[t.id];
+              if (!st) return;
+              const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+              if (total === 0) return;
+              const inv = { ...fruitInventory };
+              (["zwykly","soczysty","zloty"] as const).forEach(q => {
+                if (st.storage[q] > 0) {
+                  const k = `${t.fruitId}_${q}`;
+                  inv[k] = (inv[k] ?? 0) + st.storage[q];
+                }
+              });
+              saveFruitInventory(inv);
+              saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() } });
+              const parts: string[] = [];
+              if (st.storage.zwykly > 0)   parts.push(`${st.storage.zwykly} zwykłych`);
+              if (st.storage.soczysty > 0) parts.push(`💧${st.storage.soczysty} soczystych`);
+              if (st.storage.zloty > 0)    parts.push(`✨${st.storage.zloty} złotych`);
+              setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+            };
+            const handleHarvestAll = () => {
+              const inv = { ...fruitInventory };
+              const newOrch = { ...orchardState };
+              let totalAll = 0; const partsAll: string[] = [];
+              TREES.forEach(t => {
+                const st = newOrch[t.id]; if (!st) return;
+                const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+                if (total === 0) return;
+                (["zwykly","soczysty","zloty"] as const).forEach(q => {
+                  if (st.storage[q] > 0) { const k = `${t.fruitId}_${q}`; inv[k] = (inv[k] ?? 0) + st.storage[q]; }
+                });
+                newOrch[t.id] = { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() };
+                totalAll += total;
+                partsAll.push(`${t.fruitIcon}×${total}`);
+              });
+              if (totalAll === 0) return;
+              saveFruitInventory(inv); saveOrchardState(newOrch);
+              setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+            };
+            const calcInvValue = () => {
+              let v = 0;
+              TREES.forEach(t => {
+                (["zwykly","soczysty","zloty"] as FruitQuality[]).forEach(q => {
+                  const k = `${t.fruitId}_${q}`;
+                  const cnt = fruitInventory[k] ?? 0;
+                  if (cnt > 0) v += cnt * t.pricePerFruit * FRUIT_QUALITY_DEFS[q].mult;
+                });
+              });
+              return v;
+            };
+            const handleSellAll = () => {
+              if (!profile?.id) return;
+              const value = calcInvValue();
+              if (value === 0) { setOrchardError("Brak owoców do sprzedaży."); return; }
+              setOrchardError("");
+              void (async () => {
+                const newMoney = (profile.money ?? 0) + value;
+                const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
+                if (error) { setOrchardError("Błąd sprzedaży: " + error.message); return; }
+                saveFruitInventory({});
+                await loadProfile(profile.id);
+                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Owoce trafiły na rynek." });
+              })();
+            };
+            const invValue = calcInvValue();
+            const invTotal = Object.values(fruitInventory).reduce<number>((s,v) => s + (Number(v) || 0), 0);
+            return (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSadModal(false)}>
+                <div className="relative max-h-[92vh] w-full max-w-[1100px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setShowSadModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                  {/* Header */}
+                  <div className="shrink-0 border-b border-[#8b6a3e]/40 px-6 py-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-[#8b6a3e]">🌳 Sad Owocowy</p>
+                    <p className="text-xl font-black text-[#f9e7b2]">Twoje drzewa <span className="text-sm font-normal text-[#8b6a3e]">({ownedTotal}/{maxSlots} miejsc)</span></p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                      {treeSpeedPct > 0 && <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">⚡ Eq -{treeSpeedPct.toFixed(1)}% czasu</span>}
+                      {sadownikBonus > 0 && <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 font-bold text-amber-300">🌳 Sadownik +{sadownikBonus.toFixed(1)}% drop</span>}
+                      {luckPct > 0 && <span className="rounded-full bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">🍀 Szczęście +{luckPct.toFixed(1)}% rare</span>}
+                    </div>
+                  </div>
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {ownedTrees.length === 0 ? (
+                      <div className="flex items-center justify-center py-6">
+                        <div className="text-center max-w-md">
+                          <p className="text-5xl mb-3">🌱</p>
+                          <p className="text-base font-black text-[#f9e7b2]">Twój sad jest pusty</p>
+                          <p className="mt-1 text-sm text-[#8b6a3e]">Kup drzewa w Sklepie → zakładka 🌳 Drzewa.</p>
+                          {maxSlots === 0 && <p className="mt-2 text-xs text-amber-300">Pierwsze miejsca odblokujesz na poziomie 10.</p>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {ownedTrees.map(t => {
+                          const st = orchardState[t.id];
+                          const effMs = Math.max(60_000, Math.round(t.growthTimeMs * Math.max(0.30, 1 - treeSpeedPct/100)));
+                          const elapsed = st.prodStart > 0 ? barnNow - st.prodStart : 0;
+                          const remaining = Math.max(0, effMs - elapsed);
+                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+                          const cycleEarnings = (st.storage.zwykly * t.pricePerFruit) + (st.storage.soczysty * t.pricePerFruit * 2) + (st.storage.zloty * t.pricePerFruit * 5);
+                          return (
+                            <div key={t.id} className="rounded-2xl border border-[#8b6a3e]/50 bg-black/30 p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="text-4xl">{t.icon}</div>
+                                <div className="flex-1">
+                                  <p className="text-base font-black text-[#f9e7b2]">{t.name} <span className="text-xs font-normal text-emerald-400">×{st.owned}</span></p>
+                                  <p className="text-[11px] text-[#8b6a3e]">Owoc: {t.fruitIcon} {t.fruitName} · Cykl {Math.round(t.growthTimeMs/3600000)}h · Drop {t.dropMin}–{t.dropMax}</p>
+                                </div>
+                              </div>
+                              {/* Status */}
+                              <div className="mt-3 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
+                                {totalStored === 0 && remaining > 0 && (
+                                  <div>
+                                    <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">⏳ Następny zbiór za</p>
+                                    <p className="text-lg font-black text-amber-300 font-mono">{fmtTime(remaining)}</p>
+                                    <div className="mt-1 h-1.5 rounded-full bg-black/50 overflow-hidden">
+                                      <div className="h-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, (elapsed/effMs)*100)}%` }} />
+                                    </div>
+                                  </div>
+                                )}
+                                {totalStored > 0 && (
+                                  <div>
+                                    <p className="text-[10px] uppercase tracking-widest text-emerald-400">✅ Gotowe do zbioru!</p>
+                                    <p className="mt-1 text-base font-black text-[#f9e7b2]">{totalStored} {t.fruitIcon}</p>
+                                    <div className="mt-1 flex flex-wrap gap-1.5 text-[10px]">
+                                      {st.storage.zwykly > 0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
+                                      {st.storage.soczysty > 0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
+                                      {st.storage.zloty > 0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
+                                    </div>
+                                    <p className="mt-1 text-[10px] text-amber-400">≈ {cycleEarnings.toLocaleString()}💰 wartości</p>
+                                  </div>
+                                )}
+                              </div>
+                              {/* Actions */}
+                              <button
+                                disabled={totalStored === 0}
+                                onClick={() => handleHarvestTree(t)}
+                                className={`mt-2 w-full rounded-xl py-2 text-sm font-black transition ${totalStored > 0 ? "border border-emerald-500/60 bg-emerald-900/40 text-emerald-200 hover:bg-emerald-900/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
+                                ✅ Zbierz {totalStored > 0 ? totalStored : ""}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* Info wszystkich drzew (zakupisz w mieście) */}
+                    <div className="mt-5 rounded-2xl border border-[#8b6a3e]/40 bg-black/30 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a] mb-3">📜 Wszystkie drzewa <span className="font-normal text-[#8b6a3e] normal-case tracking-normal">— zakupisz w mieście (Sklep → 🌳 Drzewa)</span></p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-[10px] uppercase tracking-wider text-[#8b6a3e] border-b border-[#8b6a3e]/30">
+                              <th className="text-left py-1.5 pr-2">LVL</th>
+                              <th className="text-left py-1.5 pr-2">Drzewo</th>
+                              <th className="text-left py-1.5 pr-2">Produkt</th>
+                              <th className="text-left py-1.5 pr-2">Czas</th>
+                              <th className="text-left py-1.5 pr-2">Drop</th>
+                              <th className="text-right py-1.5 pr-2">Cena</th>
+                              <th className="text-right py-1.5">Posiadasz</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {TREES.map(t => {
+                              const ownedHere = orchardState[t.id]?.owned ?? 0;
+                              const locked = lvl < t.unlockLevel;
+                              return (
+                                <tr key={t.id} className={`border-b border-[#8b6a3e]/10 ${locked ? "opacity-50" : ""}`}>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{locked && "🔒"}{t.unlockLevel}</td>
+                                  <td className="py-1.5 pr-2 font-bold text-[#f9e7b2]">{t.icon} {t.name}</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.fruitIcon} {t.fruitName}</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{Math.round(t.growthTimeMs/3600000)}h</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.dropMin}–{t.dropMax}</td>
+                                  <td className="py-1.5 pr-2 text-right font-bold text-amber-400">{t.buyPrice.toLocaleString()}💰</td>
+                                  <td className="py-1.5 text-right">
+                                    <span className={`font-black ${ownedHere > 0 ? "text-emerald-300" : "text-[#8b6a3e]"}`}>{ownedHere}/{maxSlots}</span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="mt-2 text-[10px] text-[#8b6a3e]">Limit drzew rośnie z poziomem: 10→2, 15→4, 20→6, 25→8 (łącznie wszystkie drzewa).</p>
+                    </div>
+                  </div>
+                  {/* Footer: inventory + sell */}
+                  {(ownedTrees.length > 0 || invTotal > 0) && (
+                    <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
+                      {orchardError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{orchardError}</p>}
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">📦 Magazyn owoców</p>
+                          <p className="text-sm font-black text-[#f9e7b2]">{invTotal} owoców · wartość ~{invValue.toLocaleString()}💰</p>
+                          {invTotal > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5 text-[10px] max-w-[600px]">
+                              {Object.entries(fruitInventory).filter(([,c]) => (c as number) > 0).slice(0, 12).map(([k,c]) => {
+                                const lastUnd = k.lastIndexOf("_");
+                                const fruitId = k.slice(0, lastUnd);
+                                const q = k.slice(lastUnd+1) as FruitQuality;
+                                const tree = TREES.find(tt => tt.fruitId === fruitId);
+                                if (!tree) return null;
+                                const qd = FRUIT_QUALITY_DEFS[q];
+                                return <span key={k} className="rounded border border-[#8b6a3e]/40 bg-black/40 px-1.5 py-0.5 font-bold" style={{color: qd.color}}>{qd.icon}{tree.fruitIcon}×{c as number}</span>;
+                              })}
+                              {Object.keys(fruitInventory).filter(k => (fruitInventory[k] ?? 0) > 0).length > 12 && <span className="text-[#8b6a3e]">…</span>}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleHarvestAll}
+                            className="rounded-xl border border-emerald-500/60 bg-emerald-900/30 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-900/50">
+                            ✅ Zbierz wszystko
+                          </button>
+                          <button
+                            disabled={invValue === 0}
+                            onClick={handleSellAll}
+                            className={`rounded-xl px-4 py-2 text-sm font-black ${invValue > 0 ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
+                            💰 Sprzedaj wszystkie ({invValue.toLocaleString()}💰)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
