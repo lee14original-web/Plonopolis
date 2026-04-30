@@ -547,15 +547,15 @@ interface TreeDef {
   buyPrice: number;
 }
 const TREES: TreeDef[] = [
-  { id:"jablon",      name:"Jabłoń",      icon:"🍎", unlockLevel:10, fruitId:"jablko",       fruitName:"Jabłko",       fruitIcon:"🍎", growthTimeMs: 4*3600000, dropMin:10, dropMax:14, pricePerFruit:20,  buyPrice:  2400 },
-  { id:"grusza",      name:"Grusza",      icon:"🍐", unlockLevel:12, fruitId:"gruszka",      fruitName:"Gruszka",      fruitIcon:"🍐", growthTimeMs: 6*3600000, dropMin: 9, dropMax:12, pricePerFruit:35,  buyPrice:  3700 },
-  { id:"sliwa",       name:"Śliwa",       icon:"🟣", unlockLevel:14, fruitId:"sliwka",       fruitName:"Śliwka",       fruitIcon:"🟣", growthTimeMs: 8*3600000, dropMin: 8, dropMax:10, pricePerFruit:55,  buyPrice:  4950 },
-  { id:"wisnia",      name:"Wiśnia",      icon:"🍒", unlockLevel:16, fruitId:"wisnia",       fruitName:"Wiśnia",       fruitIcon:"🍒", growthTimeMs:10*3600000, dropMin: 7, dropMax: 9, pricePerFruit:80,  buyPrice:  6400 },
-  { id:"czeresnia",   name:"Czereśnia",   icon:"🍒", unlockLevel:18, fruitId:"czeresnia",    fruitName:"Czereśnia",    fruitIcon:"🍒", growthTimeMs:12*3600000, dropMin: 6, dropMax: 8, pricePerFruit:110, buyPrice:  7700 },
-  { id:"brzoskwinia", name:"Brzoskwinia", icon:"🍑", unlockLevel:20, fruitId:"brzoskwinia",  fruitName:"Brzoskwinia",  fruitIcon:"🍑", growthTimeMs:14*3600000, dropMin: 5, dropMax: 7, pricePerFruit:150, buyPrice:  9000 },
-  { id:"morela",      name:"Morela",      icon:"🟠", unlockLevel:22, fruitId:"morela",       fruitName:"Morela",       fruitIcon:"🟠", growthTimeMs:16*3600000, dropMin: 4, dropMax: 6, pricePerFruit:220, buyPrice: 11000 },
-  { id:"pomarancza",  name:"Pomarańcza",  icon:"🍊", unlockLevel:23, fruitId:"pomarancza",   fruitName:"Pomarańcza",   fruitIcon:"🍊", growthTimeMs:18*3600000, dropMin: 3, dropMax: 5, pricePerFruit:320, buyPrice: 12800 },
-  { id:"cytryna",     name:"Cytryna",     icon:"🍋", unlockLevel:25, fruitId:"cytryna",      fruitName:"Cytryna",      fruitIcon:"🍋", growthTimeMs:24*3600000, dropMin: 2, dropMax: 4, pricePerFruit:500, buyPrice: 15000 },
+  { id:"jablon",      name:"Jabłoń",      icon:"🍎", unlockLevel:10, fruitId:"jablko",       fruitName:"Jabłko",       fruitIcon:"🍎", growthTimeMs: 4*3600000, dropMin:10, dropMax:14, pricePerFruit:20,  buyPrice:   4500 },
+  { id:"grusza",      name:"Grusza",      icon:"🍐", unlockLevel:12, fruitId:"gruszka",      fruitName:"Gruszka",      fruitIcon:"🍐", growthTimeMs: 6*3600000, dropMin: 9, dropMax:12, pricePerFruit:35,  buyPrice:   9000 },
+  { id:"sliwa",       name:"Śliwa",       icon:"🟣", unlockLevel:14, fruitId:"sliwka",       fruitName:"Śliwka",       fruitIcon:"🟣", growthTimeMs: 8*3600000, dropMin: 8, dropMax:10, pricePerFruit:55,  buyPrice:  18000 },
+  { id:"wisnia",      name:"Wiśnia",      icon:"🍒", unlockLevel:16, fruitId:"wisnia",       fruitName:"Wiśnia",       fruitIcon:"🍒", growthTimeMs:10*3600000, dropMin: 7, dropMax: 9, pricePerFruit:80,  buyPrice:  35000 },
+  { id:"czeresnia",   name:"Czereśnia",   icon:"🍒", unlockLevel:18, fruitId:"czeresnia",    fruitName:"Czereśnia",    fruitIcon:"🍒", growthTimeMs:12*3600000, dropMin: 6, dropMax: 8, pricePerFruit:110, buyPrice:  60000 },
+  { id:"brzoskwinia", name:"Brzoskwinia", icon:"🍑", unlockLevel:20, fruitId:"brzoskwinia",  fruitName:"Brzoskwinia",  fruitIcon:"🍑", growthTimeMs:14*3600000, dropMin: 5, dropMax: 7, pricePerFruit:150, buyPrice: 100000 },
+  { id:"morela",      name:"Morela",      icon:"🟠", unlockLevel:22, fruitId:"morela",       fruitName:"Morela",       fruitIcon:"🟠", growthTimeMs:16*3600000, dropMin: 4, dropMax: 6, pricePerFruit:220, buyPrice: 170000 },
+  { id:"pomarancza",  name:"Pomarańcza",  icon:"🍊", unlockLevel:23, fruitId:"pomarancza",   fruitName:"Pomarańcza",   fruitIcon:"🍊", growthTimeMs:18*3600000, dropMin: 3, dropMax: 5, pricePerFruit:320, buyPrice: 260000 },
+  { id:"cytryna",     name:"Cytryna",     icon:"🍋", unlockLevel:25, fruitId:"cytryna",      fruitName:"Cytryna",      fruitIcon:"🍋", growthTimeMs:24*3600000, dropMin: 2, dropMax: 4, pricePerFruit:500, buyPrice: 450000 },
 ];
 // Limit drzew = funkcja LVL gracza
 function getMaxTreeSlots(level: number): number {
@@ -1520,7 +1520,7 @@ export default function Page() {
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
-    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty">("uprawy");
+    const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"owoce">("uprawy");
     type BackpackQualityFilter = "rotten"|"good"|"epic"|"legendary"|"all";
     const [backpackSort, setBackpackSort] = React.useState<BackpackQualityFilter>(() => {
       if (typeof window === "undefined") return "good";
@@ -4443,14 +4443,14 @@ export default function Page() {
 
                         {/* Zakładki Uprawy / Przedmioty */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty"] as const).map(tab => (
+                            {(["uprawy","przedmioty","owoce"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
                                 onClick={() => setBackpackTab(tab)}
                                 className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}
                               >
-                                {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                                {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
                               </button>
                             ))}
                           </div>
@@ -4700,6 +4700,53 @@ export default function Page() {
                               )}
                             </div>
                           )}
+
+                          {/* ZAKŁADKA: OWOCE */}
+                          {backpackTab === "owoce" && (() => {
+                            const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
+                            if (entries.length === 0) {
+                              return (
+                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                                  <p className="text-2xl mb-2">🍎</p>
+                                  <p>Brak owoców w plecaku.</p>
+                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup drzewa w Sklepie → 🌳 Drzewa, a potem zbierz owoce w Sadzie.</p>
+                                </div>
+                              );
+                            }
+                            const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
+                            entries.forEach(([k,c]) => {
+                              const lastUnd = k.lastIndexOf("_");
+                              const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
+                              if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
+                              grouped[fid][q] = Number(c);
+                            });
+                            return (
+                              <div className="mt-3 flex flex-col gap-2">
+                                {Object.entries(grouped).map(([fid,q]) => {
+                                  const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
+                                  const total = q.zwykly + q.soczysty + q.zloty;
+                                  const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                                  return (
+                                    <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 px-3 py-2">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-3xl">{tree.fruitIcon}</span>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
+                                          <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
+                                            {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1.5 py-0.5 font-bold text-emerald-300">{q.zwykly}×zwykły</span>}
+                                            {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1.5 py-0.5 font-bold text-cyan-300">💧{q.soczysty}×soczysty</span>}
+                                            {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1.5 py-0.5 font-bold text-yellow-300">✨{q.zloty}×złoty</span>}
+                                          </div>
+                                        </div>
+                                        <span className="text-xs font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                <p className="mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
+                              </div>
+                            );
+                          })()}
 
                       </div>
                     </div>
@@ -5522,10 +5569,10 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty"] as const).map(tab => (
+                      {(["uprawy","przedmioty","owoce"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          {tab === "uprawy" ? "🌾 Uprawy" : "🎒 Przedmioty"}
+                          {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
                         </button>
                       ))}
                     </div>
@@ -5684,6 +5731,51 @@ export default function Page() {
                         )}
                       </div>
                     )}
+                    {backpackTab === "owoce" && (() => {
+                      const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
+                      if (entries.length === 0) {
+                        return (
+                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-center text-xs text-[#dfcfab]">
+                            <p className="text-2xl mb-1">🍎</p>
+                            <p>Brak owoców w plecaku.</p>
+                            <p className="mt-1 text-[10px] text-[#8b6a3e]">Posadź drzewa w Sklepie i zbieraj w Sadzie.</p>
+                          </div>
+                        );
+                      }
+                      const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
+                      entries.forEach(([k,c]) => {
+                        const lastUnd = k.lastIndexOf("_");
+                        const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
+                        if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
+                        grouped[fid][q] = Number(c);
+                      });
+                      return (
+                        <div className="flex flex-col gap-2 mt-1">
+                          {Object.entries(grouped).map(([fid,q]) => {
+                            const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
+                            const total = q.zwykly + q.soczysty + q.zloty;
+                            const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                            return (
+                              <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl">{tree.fruitIcon}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
+                                    <div className="mt-0.5 flex flex-wrap gap-1 text-[9px]">
+                                      {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1 py-0.5 font-bold text-emerald-300">{q.zwykly}</span>}
+                                      {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1 py-0.5 font-bold text-cyan-300">💧{q.soczysty}</span>}
+                                      {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1 py-0.5 font-bold text-yellow-300">✨{q.zloty}</span>}
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          <p className="text-[9px] text-[#8b6a3e] text-center mt-1">Sprzedaż w Sadzie</p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -7327,11 +7419,11 @@ export default function Page() {
                   {/* Body */}
                   <div className="flex-1 overflow-y-auto p-4">
                     {ownedTrees.length === 0 ? (
-                      <div className="flex h-full items-center justify-center">
+                      <div className="flex items-center justify-center py-6">
                         <div className="text-center max-w-md">
-                          <p className="text-6xl mb-4">🌱</p>
+                          <p className="text-5xl mb-3">🌱</p>
                           <p className="text-base font-black text-[#f9e7b2]">Twój sad jest pusty</p>
-                          <p className="mt-2 text-sm text-[#8b6a3e]">Kup drzewa w Sklepie → zakładka 🌳 Drzewa.</p>
+                          <p className="mt-1 text-sm text-[#8b6a3e]">Kup drzewa w Sklepie → zakładka 🌳 Drzewa.</p>
                           {maxSlots === 0 && <p className="mt-2 text-xs text-amber-300">Pierwsze miejsca odblokujesz na poziomie 10.</p>}
                         </div>
                       </div>
@@ -7389,9 +7481,48 @@ export default function Page() {
                         })}
                       </div>
                     )}
+                    {/* Info wszystkich drzew (zakupisz w mieście) */}
+                    <div className="mt-5 rounded-2xl border border-[#8b6a3e]/40 bg-black/30 p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a] mb-3">📜 Wszystkie drzewa <span className="font-normal text-[#8b6a3e] normal-case tracking-normal">— zakupisz w mieście (Sklep → 🌳 Drzewa)</span></p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-[10px] uppercase tracking-wider text-[#8b6a3e] border-b border-[#8b6a3e]/30">
+                              <th className="text-left py-1.5 pr-2">LVL</th>
+                              <th className="text-left py-1.5 pr-2">Drzewo</th>
+                              <th className="text-left py-1.5 pr-2">Produkt</th>
+                              <th className="text-left py-1.5 pr-2">Czas</th>
+                              <th className="text-left py-1.5 pr-2">Drop</th>
+                              <th className="text-right py-1.5 pr-2">Cena</th>
+                              <th className="text-right py-1.5">Posiadasz</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {TREES.map(t => {
+                              const ownedHere = orchardState[t.id]?.owned ?? 0;
+                              const locked = lvl < t.unlockLevel;
+                              return (
+                                <tr key={t.id} className={`border-b border-[#8b6a3e]/10 ${locked ? "opacity-50" : ""}`}>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{locked && "🔒"}{t.unlockLevel}</td>
+                                  <td className="py-1.5 pr-2 font-bold text-[#f9e7b2]">{t.icon} {t.name}</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.fruitIcon} {t.fruitName}</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{Math.round(t.growthTimeMs/3600000)}h</td>
+                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.dropMin}–{t.dropMax}</td>
+                                  <td className="py-1.5 pr-2 text-right font-bold text-amber-400">{t.buyPrice.toLocaleString()}💰</td>
+                                  <td className="py-1.5 text-right">
+                                    <span className={`font-black ${ownedHere > 0 ? "text-emerald-300" : "text-[#8b6a3e]"}`}>{ownedHere}/{maxSlots}</span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="mt-2 text-[10px] text-[#8b6a3e]">Limit drzew rośnie z poziomem: 10→2, 15→4, 20→6, 25→8 (łącznie wszystkie drzewa).</p>
+                    </div>
                   </div>
                   {/* Footer: inventory + sell */}
-                  {ownedTrees.length > 0 && (
+                  {(ownedTrees.length > 0 || invTotal > 0) && (
                     <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
                       {orchardError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{orchardError}</p>}
                       <div className="flex items-center justify-between gap-3 flex-wrap">
