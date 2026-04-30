@@ -1525,16 +1525,30 @@ export default function Page() {
       if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[a.id] = ns; return; }
       const h = barnCurrentHunger(ns, opiekaPts);
       const effMs = barnEffProdMs(a, h);
-      if (barnNow - ns.prodStart >= effMs) {
-        // 1 cykl = 1 jednostka storage. Przy odbiorze: storage * owned sztuk produktu.
-        let cyclesToAdd = 1;
-        if (bonusChance > 0 && ns.storage + cyclesToAdd < a.storageMax && Math.random() < bonusChance) {
-          cyclesToAdd += 1;
-          const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
-          if (item) bonusMessages.push(`${a.icon} ${a.name} dała dodatkowy cykl ${item.name}! ${item.icon}`);
+      const elapsed = barnNow - ns.prodStart;
+      if (elapsed >= effMs) {
+        // 1 cykl = 1 jednostka storage. Liczymy ILE pełnych cykli się zmieściło (offline-safe).
+        const freeSlots = a.storageMax - ns.storage;
+        const fullCycles = Math.min(Math.floor(elapsed / effMs), freeSlots);
+        let cyclesToAdd = fullCycles;
+        // Bonus opieki: dla każdego cyklu szansa na dodatkowy
+        if (bonusChance > 0) {
+          for (let i = 0; i < fullCycles; i++) {
+            if (ns.storage + cyclesToAdd >= a.storageMax) break;
+            if (Math.random() < bonusChance) {
+              cyclesToAdd += 1;
+              const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
+              if (item) bonusMessages.push(`${a.icon} ${a.name} dała dodatkowy cykl ${item.name}! ${item.icon}`);
+            }
+          }
         }
         ns.storage = Math.min(a.storageMax, ns.storage + cyclesToAdd);
-        ns.prodStart = ns.storage < a.storageMax ? barnNow : 0;
+        if (ns.storage >= a.storageMax) {
+          ns.prodStart = 0;
+        } else {
+          // Zachowaj resztę czasu po pełnych cyklach (nie marnuj postępu)
+          ns.prodStart = ns.prodStart + fullCycles * effMs;
+        }
         changed = true;
       }
       next[a.id] = ns;
