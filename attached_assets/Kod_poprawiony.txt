@@ -272,6 +272,24 @@ function getEquipBonusPct(label: string, charEq: Record<string,{id:string;upg:nu
   });
   return total;
 }
+// ─── Aggregator FLAT bonusów (np. "+5 pkt Wiedzy") ───
+// Zwraca SUMĘ wartości flat dla danej etykiety np. " pkt Wiedzy" → 5
+function getEquipFlatBonus(label: string, charEq: Record<string,{id:string;upg:number}|null>): number {
+  let total = 0;
+  (["dlonie","nogi","glowa"] as const).forEach(slot => {
+    const eq = charEq[slot];
+    if (!eq) return;
+    const item = CHAR_EQUIP_ITEMS.find(i => i.id === eq.id);
+    if (!item) return;
+    const upg = eq.upg ?? 0;
+    item.bonuses.forEach(b => {
+      if (b.label === label && b.flat) {
+        total += b.base * (1 + 0.15 * upg);
+      }
+    });
+  });
+  return total;
+}
 // ─── Materiały ze zwierząt: M1..M10 → ID przedmiotu zwierzęcego ───
 const TIER_MATERIAL: Record<number,string> = {
   1:"jajko", 2:"futro_krolika", 3:"mleko", 4:"piora", 5:"welna",
@@ -2004,7 +2022,9 @@ export default function Page() {
     const crop = getPlantedCrop(plotId);
     if (!crop) return 0;
 
-    const wiedzaBonus = calcStatEffect(playerStats.wiedza, 0.005) / 100;
+    // Wiedza efektywna = bazowa + flat bonus z eq (np. Kapelusz Mistrza Farmy +5)
+    const wiedzaEffective = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+    const wiedzaBonus = calcStatEffect(wiedzaEffective, 0.005) / 100;
     const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
     const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
@@ -3269,6 +3289,41 @@ export default function Page() {
       _totalYield += _compostExtraYield;
     }
 
+    // ─── Bonus z eq: % extra harvest (szansa na +1 sztukę za każdą zebraną) ───
+    const _extraHarvestPct = getEquipBonusPct("% extra harvest", charEquipped);
+    let _extraHarvestGain = 0;
+    if (_extraHarvestPct > 0 && _plantedQuality !== "legendary") {
+      const _goodKey = getQualityKey(crop.id, "good");
+      const _goodGained = Math.max(0, (nextInventory[_goodKey] ?? 0) - (prevInventorySnapshot[_goodKey] ?? 0));
+      const _chance = Math.min(1, _extraHarvestPct / 100);
+      for (let _i = 0; _i < _goodGained; _i++) {
+        if (Math.random() < _chance) _extraHarvestGain++;
+      }
+      if (_extraHarvestGain > 0) {
+        nextInventory[_goodKey] = (nextInventory[_goodKey] ?? 0) + _extraHarvestGain;
+        _totalYield += _extraHarvestGain;
+      }
+    }
+
+    // ─── Bonus z eq: % bonus drop (szansa na upgrade good → epic) ───
+    const _bonusDropPct = getEquipBonusPct("% bonus drop", charEquipped);
+    let _bonusDropUpgrades = 0;
+    if (_bonusDropPct > 0 && _plantedQuality !== "legendary") {
+      const _goodKey = getQualityKey(crop.id, "good");
+      const _epicKey = getQualityKey(crop.id, "epic");
+      const _goodAvail = nextInventory[_goodKey] ?? 0;
+      const _chance = Math.min(1, _bonusDropPct / 100);
+      // Rzucamy tylko za każdą NOWĄ sztukę (z RPC + extra harvest)
+      const _newGood = Math.max(0, _goodAvail - (prevInventorySnapshot[_goodKey] ?? 0));
+      for (let _i = 0; _i < _newGood; _i++) {
+        if (Math.random() < _chance) _bonusDropUpgrades++;
+      }
+      if (_bonusDropUpgrades > 0) {
+        nextInventory[_goodKey] = Math.max(0, _goodAvail - _bonusDropUpgrades);
+        nextInventory[_epicKey] = (nextInventory[_epicKey] ?? 0) + _bonusDropUpgrades;
+      }
+    }
+
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
     // Natychmiast nadpisz seedInventory wersją z kluczami jakości (po migracji)
@@ -3290,22 +3345,26 @@ export default function Page() {
       }
     }
 
-    // ─── Bonus EXP z kompostu Nauki ───
-    let _compostExtraExp = 0;
-    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0 && profile?.id) {
-      _compostExtraExp = Math.round(actualExp * (_compostBonusOnPlot.value / 100));
-      if (_compostExtraExp > 0) {
-        const _newXp = (rpcProf?.xp ?? 0) + _compostExtraExp;
-        const _xpToNext = (rpcProf?.xp_to_next_level ?? 100);
-        // Bezpieczne nadpisanie tylko jeśli nie wywoła levelup
-        if (_newXp < _xpToNext) {
-          await supabase.from("profiles").update({ xp: _newXp }).eq("id", profile.id);
-          setProfile(p => p ? { ...p, xp: _newXp } : p);
-          actualExp += _compostExtraExp;
-        } else {
-          // Levelup case: pomijamy bonus (lub można byłoby wywołać RPC dla levelup)
-          _compostExtraExp = 0;
-        }
+    // ─── Bonusy EXP: kompost Nauki + eq (% EXP, % EXP z upraw) ───
+    let _bonusExpTotal = 0;
+    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0) {
+      _bonusExpTotal += Math.round(actualExp * (_compostBonusOnPlot.value / 100));
+    }
+    const _expEqPct = getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped);
+    if (_expEqPct > 0 && actualExp > 0) {
+      _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
+    }
+    if (_bonusExpTotal > 0 && profile?.id) {
+      const _newXp = (rpcProf?.xp ?? 0) + _bonusExpTotal;
+      const _xpToNext = (rpcProf?.xp_to_next_level ?? 100);
+      // Bezpieczne nadpisanie tylko jeśli nie wywoła levelup
+      if (_newXp < _xpToNext) {
+        await supabase.from("profiles").update({ xp: _newXp }).eq("id", profile.id);
+        setProfile(p => p ? { ...p, xp: _newXp } : p);
+        actualExp += _bonusExpTotal;
+      } else {
+        // Levelup case: pomijamy bonus (lub można byłoby wywołać RPC dla levelup)
+        _bonusExpTotal = 0;
       }
     }
 
