@@ -3358,28 +3358,62 @@ export default function Page() {
     }
   }
 
+  async function handleAddFruits(amount: number) {
+    if (!profile?.id) return;
+    const newInv: Record<string, number> = { ...fruitInventory };
+    TREES.forEach(t => {
+      (["zwykly", "soczysty", "zloty"] as const).forEach(q => {
+        const k = `${t.fruitId}_${q}`;
+        newInv[k] = (newInv[k] ?? 0) + amount;
+      });
+    });
+    const { error } = await supabase.from("profiles").update({ fruit_inventory: newInv }).eq("id", profile.id);
+    if (!error) {
+      saveFruitInventory(newInv);
+      await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 3 jakości (zwykły/soczysty/złoty).` });
+    } else {
+      setMessage({ type: "error", title: "Błąd", text: error.message });
+    }
+  }
+
+  async function handleAddHoneyJars(amount: number) {
+    if (!profile?.id) return;
+    const newHive: HiveData = { ...hiveData, honey_jars: hiveData.honey_jars + amount };
+    const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
+    if (!error) {
+      setHiveData(newHive);
+      await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🍯 Dodano słoiki miodu!", text: `+${amount} słoików miodu (razem: ${newHive.honey_jars}).` });
+    } else {
+      setMessage({ type: "error", title: "Błąd", text: error.message });
+    }
+  }
+
   async function handleResetAccount() {
     if (!profile?.id) return;
     if (!confirm(
-      "⚠️ RESET KONTA — co zostanie zresetowane:\n" +
-      "• Poziom, XP, pieniądze\n" +
-      "• Uprawy i nasiona\n" +
-      "• Statystyki i punkty umiejętności\n" +
-      "• Avatar i dom\n\n" +
-      "✅ Co NIE zostanie zresetowane:\n" +
-      "• Ul i pszczoły\n" +
-      "• Słoiki i strój pszczelarza\n" +
-      "• Ekwipunek (odzież)\n\n" +
+      "⚠️ RESET KONTA — wszystko wraca do stanu nowego gracza:\n" +
+      "• Poziom, XP, pieniądze, mapa\n" +
+      "• Uprawy, nasiona, kompost (plecak + kompostownik)\n" +
+      "• Stodoła: zwierzęta, sloty, produkty (jajka, mleko, futra…)\n" +
+      "• Sad: drzewa i owoce wszystkich jakości\n" +
+      "• Ul: poziom, pszczoły, słoiki, miód, strój pszczelarza\n" +
+      "• Statystyki, punkty umiejętności, avatar, ekwipunek, epickie skiny\n\n" +
       "Kontynuować?"
     )) return;
-    if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować konto?")) return;
+    if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować całe konto?")) return;
     const xpNeeded = getXpForLevel(1);
+    const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
+    const freshBarnState = defaultBarnState();
+    const freshOrchardState = defaultOrchardState();
     const { error } = await supabase.from("profiles").update({
       level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
       location: "farm1", current_map: "farm1",
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
       equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
+      hive_data: freshHive, barn_items: {}, fruit_inventory: {},
     }).eq("id", profile.id);
     if (!error) {
       lastLoadedUserIdRef.current = null;
@@ -3387,7 +3421,18 @@ export default function Page() {
       setUnlockedEpicAvatars([]);
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
       saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      // Zwierzęta / sad / ul / kompostownik / produkty — local + state
+      setHiveData(freshHive);
+      saveBarnItems({});
+      saveBarnState(freshBarnState);
+      saveOrchardState(freshOrchardState);
+      saveFruitInventory({});
+      saveKompostBatches([]);
+      try { localStorage.removeItem(KOMPOST_KEY); } catch {}
       await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
+    } else {
+      setMessage({ type: "error", title: "Błąd resetu", text: error.message });
     }
   }
 
@@ -5963,6 +6008,29 @@ export default function Page() {
                       ))}
                     </div>
                     <p className="mt-1 text-[10px] text-[#8b6a3e]">🥚 jajka · 🐇 futra · 🥛 mleko · 🪶 pióra · 🧶 wełna · 💩 nawóz · 🥛 mleko kozie · 🪶 duże pióra · ⚡ energia · 🦴 rogi byka</p>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 3 jakości)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[5,10,50].map(amt => (
+                        <button key={amt} onClick={() => handleAddFruits(amt)}
+                          className="rounded-xl border border-pink-500/60 bg-pink-900/30 px-3 py-2 text-xs font-black text-pink-200 hover:bg-pink-900/50">
+                          +{amt} każdy
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[#8b6a3e]">🍎 jabłko · 🍐 gruszka · 🟣 śliwka · 🍒 wiśnia · 🍒 czereśnia · 🍑 brzoskwinia · 🟠 morela · 🍊 pomarańcza · 🍋 cytryna (zwykły / soczysty / złoty)</p>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-300">🍯 Dodaj słoiki miodu</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[5,10,50].map(amt => (
+                        <button key={amt} onClick={() => handleAddHoneyJars(amt)}
+                          className="rounded-xl border border-amber-500/60 bg-amber-900/30 px-3 py-2 text-xs font-black text-amber-200 hover:bg-amber-900/50">
+                          +{amt} 🍯
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-400">⭐ Epickie avatary</p>
