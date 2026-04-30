@@ -54,6 +54,18 @@ Stan: **zrobione dla zbioru i sadzenia.**
 - **Snapshot przy SADZENIU dla `getEffectiveGrowthTimeMs`** — `pkt Wiedzy`, `% efekt kompostu`, `% speed upraw`, `% efekt podlewania`, `% efekt wody` wpływają na czas wzrostu. Aktualnie czytane na żywo przy zbiorze (przez `getEffectiveGrowthTimeMs(plotId)`). Powinny być snapshotowane na polu (kolumna w `plot_crops`) w chwili sadzenia.
 - **Inne timery** (sad, zwierzęta, miód): produkcja czasowa też podatna na exploit (`% speed drzew`, `% reward zwierząt`, `% produkcji miodu`, `% zużycia stroju`). Wymaga osobnej decyzji per system.
 
+## ✅ Balans bonusów wzrostu upraw (capy + globalne minimum)
+Stan: **zrobione (klient).**
+- Stałe balansu w jednym miejscu (linia ~213): `GROWTH_GLOBAL_MIN_MULT`, `WIEDZA_RATE`, `ZARADNOSC_RATE`, `WIEDZA_MULT_MIN`, `HIVE_MULT_MIN`, `EQUIP_GROWTH_MULT_MIN`, `COMPOST_MULT_MIN`, `WATER_BONUS_MAX`, `WATER_MULT_MIN`.
+- **Wiedza:** rate `0.005 → 0.0033` + cap −25% (`WIEDZA_MULT_MIN=0.75`). Każdy poziom Wiedzy do 100 daje wartość; cap osiągany ~val 100 z eq.
+- **Zaradność:** rate `0.006 → 0.004` + cap −30% (`WATER_MULT_MIN=0.70`, `WATER_BONUS_MAX=0.30`). Każdy poziom liczy się do 100.
+- **Ul:** bez zmian (max −10% przy lvl 5).
+- **Eq „% speed upraw":** cap −25% (`EQUIP_GROWTH_MULT_MIN=0.75`).
+- **Kompost Wzrostu:** cap −20% (`COMPOST_MULT_MIN=0.80`).
+- **GLOBALNE MINIMUM:** `0.35` bazowego czasu (max −65% TOTAL po multiplikatywności). Szparagi 12h → min **4h 12min**.
+- Zaktualizowane: `getEffectiveGrowthTimeMs`, toast po podlaniu, tooltip konewki, tooltip nasion (z ostrzeżeniem ⚠️ gdy hit globalne minimum).
+- ⚠️ Wiedza > 50 i Zaradność > 50 — gracze, którzy już zainwestowali, dostają de facto nerf. **Rozważ darmowy reset statów raz po patchu** (do dyskusji).
+
 ## 📋 ODŁOŻONE — następne kroki
 - **Synchronizacja eq z DB** — `charEquipped` jest tylko w localStorage. Bonusy SQL (`collect_honey`) chwilowo dostają wartości od klienta — trust ✗. Long-term: dodać kolumnę `char_equipment JSONB` w `profiles` i czytać po stronie serwera.
 - **Walidacja `pendingFieldActions` w water/kompost** — `applyCompostToPlot` i `handleWaterPlot` nie blokują się gdy trwa akcja na polu (rzadki edge case).
