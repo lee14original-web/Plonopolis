@@ -2973,9 +2973,15 @@ export default function Page() {
   }
 
   function getCustomerDisplay(type: string): { name: string; icon: string } {
-    if (type === 'village_guest')   return { name: 'Gość ze wsi',         icon: '🧓' };
-    if (type === 'rich_collector')  return { name: 'Bogaty kolekcjoner',  icon: '💎' };
-    if (type === 'traveler')        return { name: 'Podróżny',            icon: '🌍' };
+    if (type === 'neighbor')              return { name: 'Sąsiad',                  icon: '🧑‍🌾' };
+    if (type === 'village_guest')         return { name: 'Gość ze wsi',             icon: '🧓' };
+    if (type === 'small_market')          return { name: 'Mały targ',               icon: '🏪' };
+    if (type === 'village_shop')          return { name: 'Sklep wiejski',           icon: '🏬' };
+    if (type === 'restaurant')            return { name: 'Restauracja',             icon: '🍽️' };
+    if (type === 'wholesaler')            return { name: 'Hurtownia',               icon: '🏢' };
+    if (type === 'market_chain')          return { name: 'Sieć handlowa',           icon: '🏛️' };
+    if (type === 'distribution_center')   return { name: 'Centrum dystrybucji',     icon: '🏗️' };
+    if (type === 'international_contract')return { name: 'Kontrakt międzynarodowy', icon: '🌍' };
     return { name: type, icon: '👤' };
   }
 
