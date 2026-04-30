@@ -6842,7 +6842,14 @@ export default function Page() {
             };
             const collectHoney = async () => {
               if (!profile?.id) return;
-              const { data, error } = await supabase.rpc("collect_honey", { p_user_id: profile.id });
+              // Bonusy z eq: % produkcji miodu (g3 Kapelusz Pszczelarza), % zużycia stroju (d20 Rękawice Pszczelarza)
+              const _honeyBonusPct = getEquipBonusPct("% produkcji miodu", charEquipped);
+              const _suitSavePct   = getEquipBonusPct("% zużycia stroju", charEquipped);
+              const { data, error } = await supabase.rpc("collect_honey", {
+                p_user_id: profile.id,
+                p_honey_bonus_pct: _honeyBonusPct,
+                p_suit_save_pct:   _suitSavePct,
+              });
               if (error || !data?.ok) {
                 const msg = data?.error === "no_honey" ? "Poczekaj — miód jeszcze nie jest gotowy!"
                           : data?.error === "no_jars"  ? "Brak pustych słoików!"
@@ -6852,7 +6859,10 @@ export default function Page() {
                 return;
               }
               setHiveData(data.hive_data as HiveData);
-              if (data.success) setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯`, text:"" });
+              if (data.success) {
+                const _bonusInfo = _honeyBonusPct > 0 ? ` (+${_honeyBonusPct.toFixed(0)}% produkcji)` : "";
+                setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯${_bonusInfo}`, text:"" });
+              }
               else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
             };
             return (
