@@ -2050,6 +2050,17 @@ export default function Page() {
     });
     const _migratedInv = parseSeedInventory(source.seed_inventory);
     setSeedInventory(_migratedInv);
+
+    // Synchronizacja barn_items / fruit_inventory z bazy (źródło prawdy są RPC sync_*)
+    // Bez tego bonusy z Lady NPC (np. rogi byka) nie pojawiają się w stodole/plecaku
+    // bo lokalny stan był tylko z localStorage.
+    if (source.barn_items && typeof source.barn_items === "object" && !Array.isArray(source.barn_items)) {
+      saveBarnItems(source.barn_items as BarnItems);
+    }
+    if (source.fruit_inventory && typeof source.fruit_inventory === "object" && !Array.isArray(source.fruit_inventory)) {
+      saveFruitInventory(source.fruit_inventory as Record<string, number>);
+    }
+
     const _rawHive = source.hive_data as Record<string,unknown> | null | undefined;
     const _hiveSavedStart = typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null;
     const _hiveNow = Date.now();
