@@ -175,10 +175,13 @@ const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] 
 const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
 
+// UWAGA: rate dla "wiedza" i "zaradnosc" muszą być zgodne z WIEDZA_RATE/ZARADNOSC_RATE
+// (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
+// niż faktyczny efekt w `getEffectiveGrowthTimeMs`.
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej",              rate: 0.005  },
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej (max −25%)",   rate: 0.0033 },
   { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Szansa na podwójny zbiór",            rate: 0.004  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu",  rate: 0.006  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu (max −30%)", rate: 0.004  },
   { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Większy zysk z drzew",               rate: 0.005  },
   { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Zwierzęta wolniej głodnieją · szansa na bonus",  rate: 0.003  },
   { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Szansa na bonusowy drop",             rate: 0.0025 },
@@ -206,6 +209,19 @@ const HONEY_JAR_PRICE    = [0, 8, 9, 11, 13, 15];
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
 const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
+
+// ═══ BALANS WZROSTU UPRAW (capy bonusów + globalne minimum) ═══
+// Każdy bonus mnoży niezależnie. Globalne minimum chroni przed exploit-em multiplikatywności.
+// Po zmianie: max teoretyczny stack to -65% czasu wzrostu (globalne min 0.35 = 35% bazowego czasu).
+const GROWTH_GLOBAL_MIN_MULT = 0.35; // cap −65% TOTAL (szparagi 12h → min 4h 12min)
+const WIEDZA_RATE            = 0.0033; // było 0.005 (lepsze skalowanie do val 100)
+const ZARADNOSC_RATE         = 0.004;  // było 0.006 (lepsze skalowanie do val 100)
+const WIEDZA_MULT_MIN        = 0.75;   // cap −25% (z Wiedzy)
+const HIVE_MULT_MIN          = 0.50;   // cap −50% (faktycznie max −10% przy lvl 5)
+const EQUIP_GROWTH_MULT_MIN  = 0.75;   // cap −25% (z eq "% speed upraw")
+const COMPOST_MULT_MIN       = 0.80;   // cap −20% (z Kompostu Wzrostu)
+const WATER_BONUS_MAX        = 0.30;   // cap +30% (siła bonusu Zaradności + eq wody)
+const WATER_MULT_MIN         = 0.70;   // cap −30% (z podlania)
 type PendingFieldAction = {
   kind: "plant" | "harvest";
   startMs: number;
@@ -2051,27 +2067,30 @@ export default function Page() {
 
     // Wiedza efektywna = bazowa + flat bonus z eq (np. Kapelusz Mistrza Farmy +5)
     const wiedzaEffective = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
-    const wiedzaBonus = calcStatEffect(wiedzaEffective, 0.005) / 100;
-    const wiedzaMult = Math.max(0.5, 1 - wiedzaBonus);
-    const hiveMult = Math.max(0.5, 1 - hiveData.level * 0.02);
+    const wiedzaBonus = calcStatEffect(wiedzaEffective, WIEDZA_RATE) / 100;
+    const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
+    const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
     const compostBoost = 1 + getEquipBonusPct("% efekt kompostu", charEquipped) / 100;
     const compostMult = (plot.compostBonus?.type === "growth")
-      ? Math.max(0.1, 1 - (plot.compostBonus.value * compostBoost / 100))
+      ? Math.max(COMPOST_MULT_MIN, 1 - (plot.compostBonus.value * compostBoost / 100))
       : 1;
     // Bonus z eq: % speed upraw (sumarycznie ze wszystkich slotów)
     const equipGrowthPct = getEquipBonusPct("% speed upraw", charEquipped) / 100;
-    const equipGrowthMult = Math.max(0.3, 1 - equipGrowthPct);
+    const equipGrowthMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - equipGrowthPct);
+    let totalMult: number;
     if (plot.watered) {
-      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, 0.006) / 100;
+      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
       // Bonus z eq: % efekt podlewania + % efekt wody (boost siły zaradności)
       const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
-      const totalWaterReduction = Math.min(0.95, zaradnoscBonus * (1 + waterEqPct));
-      const waterMult = Math.max(0.5, 1 - totalWaterReduction);
-      return Math.round(crop.growthTimeMs * waterMult * wiedzaMult * hiveMult * compostMult * equipGrowthMult);
+      const totalWaterReduction = Math.min(WATER_BONUS_MAX, zaradnoscBonus * (1 + waterEqPct));
+      const waterMult = Math.max(WATER_MULT_MIN, 1 - totalWaterReduction);
+      totalMult = waterMult * wiedzaMult * hiveMult * compostMult * equipGrowthMult;
+    } else {
+      totalMult = wiedzaMult * hiveMult * compostMult * equipGrowthMult;
     }
-
-    return Math.round(crop.growthTimeMs * wiedzaMult * hiveMult * compostMult * equipGrowthMult);
+    // Globalne minimum: nawet z full buildem nie schodzimy poniżej GROWTH_GLOBAL_MIN_MULT bazowego czasu
+    return Math.round(crop.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, totalMult));
   }
 
   function getGrowthProgress(plotId: number) {
@@ -2181,12 +2200,14 @@ export default function Page() {
 
     applyProfileState(extractRpcProfile(data));
 
-    const _zaradPct = ((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100);
+    const _zaradBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+    const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+    const _zaradPct = Math.min(WATER_BONUS_MAX, _zaradBonus * (1 + _waterEqPct)) * 100;
     setMessage({
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
-        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${playerStats.zaradnosc}/100).`
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${playerStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
         : `${crop.name} podlana. Rozwijaj Zaradność, aby przyspieszać wzrost.`,
     });
   }
@@ -8687,8 +8708,12 @@ export default function Page() {
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
-          <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–45%)</p>
-          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{((1 - Math.max(0.5, 1 - calcStatEffect(playerStats.zaradnosc, 0.006) / 100)) * 100).toFixed(1)}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
+          <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{(() => {
+            const _zb = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+            const _we = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+            return (Math.min(WATER_BONUS_MAX, _zb * (1 + _we)) * 100).toFixed(1);
+          })()}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
@@ -8713,19 +8738,24 @@ export default function Page() {
               const _baseMs = hoveredCrop.growthTimeMs;
               // Te same wzory co w getEffectiveGrowthTimeMs (bez bonusów per-pole: woda/kompost)
               const _wiedzaEff   = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
-              const _wiedzaPct   = Math.min(50, calcStatEffect(_wiedzaEff, 0.005)); // % redukcji
-              const _hivePct     = Math.min(50, hiveData.level * 2);
-              const _equipPct    = Math.min(70, getEquipBonusPct("% speed upraw", charEquipped));
-              const _wiedzaMult  = Math.max(0.5, 1 - _wiedzaPct / 100);
-              const _hiveMult    = Math.max(0.5, 1 - _hivePct / 100);
-              const _equipMult   = Math.max(0.3, 1 - _equipPct / 100);
-              const _effMs       = Math.round(_baseMs * _wiedzaMult * _hiveMult * _equipMult);
+              const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE); // % redukcji surowy
+              const _wiedzaPct   = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw); // cap
+              const _hivePct     = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
+              const _equipPct    = Math.min((1 - EQUIP_GROWTH_MULT_MIN) * 100, getEquipBonusPct("% speed upraw", charEquipped));
+              const _wiedzaMult  = Math.max(WIEDZA_MULT_MIN, 1 - _wiedzaPct / 100);
+              const _hiveMult    = Math.max(HIVE_MULT_MIN, 1 - _hivePct / 100);
+              const _equipMult   = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - _equipPct / 100);
+              const _totalMultDry = _wiedzaMult * _hiveMult * _equipMult;
+              const _effMs       = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultDry));
               // Bonus z wody (jeśli podlejesz) — orientacyjnie z aktualnymi statami/eq
               const _zaradnosc   = playerStats.zaradnosc ?? 0;
-              const _zaradPct    = calcStatEffect(_zaradnosc, 0.006);
+              const _zaradBonus  = calcStatEffect(_zaradnosc, ZARADNOSC_RATE);
               const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
-              const _waterTotalPct = Math.min(95, _zaradPct * (1 + _waterEqPct / 100));
-              const _withWaterMs = Math.round(_effMs * Math.max(0.5, 1 - _waterTotalPct / 100));
+              const _waterTotalPct = Math.min(WATER_BONUS_MAX * 100, _zaradBonus * (1 + _waterEqPct / 100));
+              const _waterMult   = Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100);
+              const _totalMultWet = _waterMult * _wiedzaMult * _hiveMult * _equipMult;
+              const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultWet));
+              const _hitGlobalMin = _totalMultWet < GROWTH_GLOBAL_MIN_MULT;
               const _fmt = (ms: number) => {
                 const _s = Math.max(1, Math.round(ms / 1000));
                 if (_s < 60) return `${_s}s`;
@@ -8751,6 +8781,9 @@ export default function Page() {
                     )}
                     {_waterTotalPct > 0 && (
                       <p className="mt-1.5 text-[12px] text-cyan-300">💧 Z podlaniem: <span className="font-bold">{_fmt(_withWaterMs)}</span> <span className="text-[11px] text-[#8b6a3e]">(dodatkowe −{_waterTotalPct.toFixed(1)}%)</span></p>
+                    )}
+                    {_hitGlobalMin && (
+                      <p className="mt-1 text-[11px] font-bold text-amber-300">⚠️ Globalne minimum {(GROWTH_GLOBAL_MIN_MULT * 100).toFixed(0)}% bazy — bonusy ponad ten próg nie skracają już czasu.</p>
                     )}
                   </div>
                 </>
