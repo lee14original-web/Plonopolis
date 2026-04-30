@@ -2258,8 +2258,8 @@ export default function Page() {
       if (!crop) { return; }
       // Re-walidacja po upływie timera (gracz mógł w międzyczasie coś zmienić)
       // Używamy refs do FRESH state zamiast captured closures
-      const _freshPlot = plotCropsRef.current[plotId] ?? { cropId: null };
-      if (_freshPlot.cropId) {
+      const _freshPlot: PlotCropState | undefined = plotCropsRef.current[plotId];
+      if (_freshPlot?.cropId) {
         setMessage({ type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
         return;
       }
@@ -2280,7 +2280,7 @@ export default function Page() {
       }
 
       // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
-      const _preservedCompostBonus = _freshPlot.compostBonus ?? null;
+      const _preservedCompostBonus = _freshPlot?.compostBonus ?? null;
 
       const { data, error } = await supabase.rpc("game_plant_crop", {
         p_plot_id: plotId,
