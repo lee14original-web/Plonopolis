@@ -6687,7 +6687,16 @@ export default function Page() {
                                 const ownedList = CHAR_EQUIP_ITEMS
                                   .filter(i => !eqFilter || i.slot === eqFilter)
                                   .filter(i => ownedEqItems[i.id])
-                                  .sort((a,b) => a.unlockLevel - b.unlockLevel);
+                                  .sort((a,b) => {
+                                    // 1) wg poziomu rosnąco
+                                    if (a.unlockLevel !== b.unlockLevel) return a.unlockLevel - b.unlockLevel;
+                                    // 2) wg mocy ulepszenia malejąco (najmocniejsze wyżej w grupie tego samego poziomu)
+                                    const aOn = charEquipped[a.slot]?.id === a.id;
+                                    const bOn = charEquipped[b.slot]?.id === b.id;
+                                    const aUpg = aOn ? (charEquipped[a.slot]?.upg ?? getItemUpg(a.id)) : getItemUpg(a.id);
+                                    const bUpg = bOn ? (charEquipped[b.slot]?.upg ?? getItemUpg(b.id)) : getItemUpg(b.id);
+                                    return bUpg - aUpg;
+                                  });
                                 if (ownedList.length === 0) {
                                   return (
                                     <div className="col-span-5 rounded-xl border border-dashed border-[#8b6a3e]/50 bg-black/20 p-6 text-center">
@@ -6738,12 +6747,22 @@ export default function Page() {
 
                           {/* ═══ EKWIPUNEK DODATKOWY (duplikaty) ═══ */}
                           {(() => {
-                            const visibleExtras = eqFilter
+                            const visibleExtras = (eqFilter
                               ? extraEqItems.filter(e => {
                                   const it = CHAR_EQUIP_ITEMS.find(i => i.id === e.id);
                                   return it && it.slot === eqFilter;
                                 })
-                              : extraEqItems;
+                              : extraEqItems
+                            ).slice().sort((a, b) => {
+                              // 1) wg poziomu rosnąco
+                              const ia = CHAR_EQUIP_ITEMS.find(i => i.id === a.id);
+                              const ib = CHAR_EQUIP_ITEMS.find(i => i.id === b.id);
+                              const la = ia?.unlockLevel ?? 0;
+                              const lb = ib?.unlockLevel ?? 0;
+                              if (la !== lb) return la - lb;
+                              // 2) wg mocy ulepszenia malejąco
+                              return (b.upg ?? 0) - (a.upg ?? 0);
+                            });
                             const handleUpgExtra = async (entry: ExtraEqEntry) => {
                               const nextU = entry.upg + 1;
                               const cost = getUpgradeCost(entry.id, nextU);
