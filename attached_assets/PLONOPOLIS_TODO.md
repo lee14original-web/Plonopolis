@@ -44,7 +44,17 @@
 | **% speed sadzenia** | ✅ klient | `handlePlantFromSelectedSeed` (timer + pasek) |
 | **% speed zbioru** | ✅ klient | `handleHarvestPlot` (timer + pasek) |
 
+## ✅ Opcja A — snapshot bonusów eq (anti-exploit przebierania)
+Stan: **zrobione dla zbioru i sadzenia.**
+- **Sadzenie**: `% speed sadzenia` zamrożone przez `durationMs` w `pendingFieldActions[plotId]`.
+- **Zbiór**: `% speed zbioru` zamrożone przez `durationMs`; `extraHarvestPct`, `bonusDropPct`, `expPct` przekazywane **bezpośrednio przez parametr** `handleHarvestPlot(plotId, true, snapshot)` z setTimeout (closure-safe — nie czyta z React state). Brak fallbacku do `getEquipBonusPct` przy zbiorze — gdy snapshot brak, użyje 0 (bezpieczny default).
+- **Miód**: bez timera (akcja natychmiastowa) — snapshot zbędny.
+
+### Zostało jako future work (związane)
+- **Snapshot przy SADZENIU dla `getEffectiveGrowthTimeMs`** — `pkt Wiedzy`, `% efekt kompostu`, `% speed upraw`, `% efekt podlewania`, `% efekt wody` wpływają na czas wzrostu. Aktualnie czytane na żywo przy zbiorze (przez `getEffectiveGrowthTimeMs(plotId)`). Powinny być snapshotowane na polu (kolumna w `plot_crops`) w chwili sadzenia.
+- **Inne timery** (sad, zwierzęta, miód): produkcja czasowa też podatna na exploit (`% speed drzew`, `% reward zwierząt`, `% produkcji miodu`, `% zużycia stroju`). Wymaga osobnej decyzji per system.
+
 ## 📋 ODŁOŻONE — następne kroki
-- **Opcja A (snapshot bonusów eq)** — exploit przebierania: gracz może zaalokować wszystkie czasy/bonusy zaraz przed RPC i zdjąć potem. Plan: zapisać snapshot bonusów na polu w momencie startu akcji (sadzenie/zbiór), użyć przy RPC zamiast aktualnego eq.
 - **Synchronizacja eq z DB** — `charEquipped` jest tylko w localStorage. Bonusy SQL (`collect_honey`) chwilowo dostają wartości od klienta — trust ✗. Long-term: dodać kolumnę `char_equipment JSONB` w `profiles` i czytać po stronie serwera.
-- **SQL do wgrania**: `attached_assets/sql_hive_bonuses.sql` (nowy z Partii 2)
+- **Walidacja `pendingFieldActions` w water/kompost** — `applyCompostToPlot` i `handleWaterPlot` nie blokują się gdy trwa akcja na polu (rzadki edge case).
+- **SQL do wgrania**: `attached_assets/sql_hive_bonuses.sql` (z Partii 2)
