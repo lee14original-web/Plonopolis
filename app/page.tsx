@@ -2302,13 +2302,13 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [harvestLog]);
 
-  // ─── Farm music ───
+  // ─── Farm music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
     const isFarmMap = (FARM_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
     if (!isFarmMap) {
-      if (farmAudioRef.current) {
+      // Pauza zamiast resetu — przy powrocie wznowi w tym samym miejscu
+      if (farmAudioRef.current && !farmAudioRef.current.paused) {
         farmAudioRef.current.pause();
-        farmAudioRef.current.currentTime = 0;
       }
       return;
     }
@@ -2319,17 +2319,19 @@ export default function Page() {
       farmAudioRef.current = audio;
     }
     farmAudioRef.current.volume = musicMuted ? 0 : musicVolume;
-    farmAudioRef.current.play().catch(() => {});
+    if (farmAudioRef.current.paused) {
+      farmAudioRef.current.play().catch(() => {});
+    }
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
 
-  // ─── City music ───
+  // ─── City music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
     const isCityMap = (CITY_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
     if (!isCityMap) {
-      if (cityAudioRef.current) {
+      // Pauza zamiast resetu — przy powrocie wznowi w tym samym miejscu
+      if (cityAudioRef.current && !cityAudioRef.current.paused) {
         cityAudioRef.current.pause();
-        cityAudioRef.current.currentTime = 0;
       }
       return;
     }
@@ -2340,7 +2342,9 @@ export default function Page() {
       cityAudioRef.current = audio;
     }
     cityAudioRef.current.volume = musicMuted ? 0 : musicVolume * 0.7;
-    cityAudioRef.current.play().catch(() => {});
+    if (cityAudioRef.current.paused) {
+      cityAudioRef.current.play().catch(() => {});
+    }
     return () => {};
   }, [currentMap, musicVolume, musicMuted]);
 
