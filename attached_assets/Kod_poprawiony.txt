@@ -3348,7 +3348,7 @@ export default function Page() {
     ANIMAL_ITEMS.forEach(it => {
       newItems[it.id] = (newItems[it.id] ?? 0) + amount;
     });
-    const { error } = await supabase.from("profiles").update({ barn_items: newItems }).eq("id", profile.id);
+    const { error } = await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
     if (!error) {
       saveBarnItems(newItems);
       await loadProfile(profile.id);
@@ -3367,7 +3367,7 @@ export default function Page() {
         newInv[k] = (newInv[k] ?? 0) + amount;
       });
     });
-    const { error } = await supabase.from("profiles").update({ fruit_inventory: newInv }).eq("id", profile.id);
+    const { error } = await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: newInv });
     if (!error) {
       saveFruitInventory(newInv);
       await loadProfile(profile.id);
@@ -3413,8 +3413,11 @@ export default function Page() {
       unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
       equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
-      hive_data: freshHive, barn_items: {}, fruit_inventory: {},
+      hive_data: freshHive,
     }).eq("id", profile.id);
+    // barn_items / fruit_inventory mają trigger blokujący direct update — używamy dedykowanych RPC
+    await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: {} });
+    await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: {} });
     if (!error) {
       lastLoadedUserIdRef.current = null;
       setEquipmentSlots(1); setEquipment([]);
@@ -5262,6 +5265,34 @@ export default function Page() {
 
                           {backpackTab === "przedmioty" && (
                             <div className="mt-2 flex flex-col gap-2">
+                              {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                              {(() => {
+                                const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                                if (owned.length === 0) return null;
+                                return (
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {owned.map(it => {
+                                      const animal = ANIMALS.find(a => a.itemId === it.id);
+                                      const cnt = barnItems[it.id] ?? 0;
+                                      return (
+                                        <div key={it.id}
+                                          className="group relative flex h-24 w-24 items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                          <span className="text-5xl leading-none">{it.icon}</span>
+                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                            <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                              <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
+                                              {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
+                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                            </div>
+                                            <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                               {/* Puste słoiki */}
                               {hiveData.empty_jars > 0 && (
                                 <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
@@ -6391,6 +6422,34 @@ export default function Page() {
                     })()}
                     {backpackTab === "przedmioty" && (
                       <div className="flex flex-col gap-2 mt-1">
+                        {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                        {(() => {
+                          const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                          if (owned.length === 0) return null;
+                          return (
+                            <div className="grid grid-cols-3 gap-2">
+                              {owned.map(it => {
+                                const animal = ANIMALS.find(a => a.itemId === it.id);
+                                const cnt = barnItems[it.id] ?? 0;
+                                return (
+                                  <div key={it.id}
+                                    className="group relative flex h-20 w-full items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                    <span className="text-4xl leading-none">{it.icon}</span>
+                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                      <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                        <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
+                                        {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
+                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                      </div>
+                                      <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                         {hiveData.empty_jars > 0 && (
                           <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
                             <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
