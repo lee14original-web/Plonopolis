@@ -211,6 +211,14 @@ type PendingFieldAction = {
   startMs: number;
   durationMs: number;
   seedId?: string;
+  // Snapshot bonusów ekwipunku z chwili KLIKNIĘCIA — chroni przed exploitem
+  // przebierania (gracz nie może założyć/zdjąć ciuchów w trakcie timera żeby
+  // zmienić wynik akcji). Zbiór: extra harvest / bonus drop / EXP.
+  bonusesSnapshot?: {
+    extraHarvestPct?: number;
+    bonusDropPct?: number;
+    expPct?: number;
+  };
 };
 
 // ═══ EKWIPUNEK POSTACI ═══
@@ -3242,7 +3250,11 @@ export default function Page() {
     setKompostRewards(rewards);
   }
 
-  async function handleHarvestPlot(plotId: number, _skipTimer: boolean = false) {
+  async function handleHarvestPlot(
+    plotId: number,
+    _skipTimer: boolean = false,
+    _snapBonusesArg?: { extraHarvestPct?: number; bonusDropPct?: number; expPct?: number },
+  ) {
     if (!profile) return;
 
     const plot = getPlotCrop(plotId);
@@ -3284,13 +3296,22 @@ export default function Page() {
       // Czas zbioru z bonusem eq "% speed zbioru"
       const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
       const _harvestDurMs = Math.max(400, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
+      // SNAPSHOT bonusów eq w momencie kliknięcia — używane po zakończeniu timera.
+      // Dzięki temu gracz nie może wyexploitować przebierania w trakcie akcji.
+      const _harvestBonusesSnapshot = {
+        extraHarvestPct: getEquipBonusPct("% extra harvest", charEquipped),
+        bonusDropPct:    getEquipBonusPct("% bonus drop", charEquipped),
+        expPct:          getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped),
+      };
       setPendingFieldActions(prev => ({
         ...prev,
-        [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs },
+        [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs, bonusesSnapshot: _harvestBonusesSnapshot },
       }));
       const _tid = setTimeout(() => {
         fieldActionTimeoutsRef.current.delete(plotId);
-        void handleHarvestPlot(plotId, true);
+        // Przekazujemy snapshot BEZPOŚREDNIO (closure-safe) — nie czytamy go z React state,
+        // bo setTimeout zamyka się nad starym stanem (sprzed setPendingFieldActions)
+        void handleHarvestPlot(plotId, true, _harvestBonusesSnapshot);
       }, _harvestDurMs);
       fieldActionTimeoutsRef.current.set(plotId, _tid);
       return;
@@ -3303,6 +3324,13 @@ export default function Page() {
         setMessage({ type: "info", title: "Pole opróżnione", text: "Uprawa zniknęła zanim akcja się zakończyła." });
         return;
       }
+    }
+    // SNAPSHOT bonusów z chwili kliknięcia — przekazany BEZPOŚREDNIO przez parametr
+    // (nie z React state, bo setTimeout closure ma stale state). Chroni przed exploitem
+    // przebierania w trakcie timera. Brak snapshotu = błąd ścieżki — używamy 0 (bezpieczny default).
+    const _snapBonuses = _snapBonusesArg;
+    if (!_snapBonuses) {
+      console.warn(`[harvest] Brak snapshotu bonusów dla pola ${plotId} — używam zer.`);
     }
     // Zdejmij wskaźnik paska, kontynuuj RPC
     setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
@@ -3410,7 +3438,8 @@ export default function Page() {
     }
 
     // ─── Bonus z eq: % extra harvest (szansa na +1 sztukę za każdą zebraną) ───
-    const _extraHarvestPct = getEquipBonusPct("% extra harvest", charEquipped);
+    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
+    const _extraHarvestPct = _snapBonuses?.extraHarvestPct ?? 0;
     let _extraHarvestGain = 0;
     if (_extraHarvestPct > 0 && _plantedQuality !== "legendary") {
       const _goodKey = getQualityKey(crop.id, "good");
@@ -3426,7 +3455,8 @@ export default function Page() {
     }
 
     // ─── Bonus z eq: % bonus drop (szansa na upgrade good → epic) ───
-    const _bonusDropPct = getEquipBonusPct("% bonus drop", charEquipped);
+    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
+    const _bonusDropPct = _snapBonuses?.bonusDropPct ?? 0;
     let _bonusDropUpgrades = 0;
     if (_bonusDropPct > 0 && _plantedQuality !== "legendary") {
       const _goodKey = getQualityKey(crop.id, "good");
@@ -3470,7 +3500,8 @@ export default function Page() {
     if (_compostBonusOnPlot?.type === "exp" && actualExp > 0) {
       _bonusExpTotal += Math.round(actualExp * (_compostBonusOnPlot.value / 100));
     }
-    const _expEqPct = getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped);
+    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
+    const _expEqPct = _snapBonuses?.expPct ?? 0;
     if (_expEqPct > 0 && actualExp > 0) {
       _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
     }
