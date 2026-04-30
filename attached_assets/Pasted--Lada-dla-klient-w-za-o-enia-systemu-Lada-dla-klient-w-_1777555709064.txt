@@ -1,0 +1,264 @@
+# Lada dla klientów — założenia systemu
+
+Lada dla klientów działa jako system losowych zamówień NPC.
+
+Klient pojawia się z zamówieniem na przedmioty, które gracz już odblokował swoim poziomem.
+
+Klient nigdy nie może żądać przedmiotów, których gracz nie może jeszcze zdobyć.
+
+---
+
+# Kategorie przedmiotów w zamówieniach
+
+Klienci mogą żądać tylko istniejących przedmiotów z gry.
+
+## 1. Uprawy
+
+25 rodzajów upraw.
+
+Jakości:
+- zwykła
+- epicka
+- legendarna
+
+## 2. Owoce z sadu
+
+Rodzaje:
+- jabłko
+- gruszka
+- śliwka
+- wiśnia
+- czereśnia
+- brzoskwinia
+- morela
+- pomarańcza
+- cytryna
+
+Jakości:
+- zwykły
+- soczysty
+- złoty
+
+## 3. Produkty zwierzęce
+
+- jajko
+- futro królika
+- mleko
+- pióra
+- wełna
+- nawóz naturalny
+- mleko kozie
+- duże pióra
+- energia robocza
+- rogi byka
+
+## 4. Produkt z ula
+
+- słoik miodu
+
+## 5. Komposty
+
+Łącznie: 3 typy × 3 tiery = 9 wariantów
+
+### ⚡ Kompost Wzrostu
+- słaby
+- średni
+- mocny
+
+### 🌾 Kompost Urodzaju
+- słaby
+- średni
+- mocny
+
+### ⭐ Kompost Nauki
+- słaby
+- średni
+- mocny
+
+---
+
+# Odblokowanie przedmiotów
+
+Klient może losować tylko przedmioty dostępne dla aktualnego poziomu gracza.
+
+Przykłady:
+
+- lvl 1 → tylko marchew
+- lvl 3 → marchew, ziemniak, pomidor
+- lvl 10 → uprawy do lvl 10 + odblokowane produkty zwierząt + miód + dostępne owoce
+- lvl 25 → pełna pula przedmiotów
+
+---
+
+# Typy zamówień
+
+| Typ zamówienia | Ilość różnych rzeczy | Mnożnik nagrody |
+|---|---:|---:|
+| 👨‍🌾 Sąsiad | 1 | x1.0 |
+| 🚶 Gość z innej wioski | 1–2 | x1.15 |
+| 🥕 Mały warzywniak | 2–3 | x1.35 |
+| 🏪 Wiejski sklep | 3–4 | x1.6 |
+| 🍽 Restauracja | 4–5 | x2.0 |
+| 🚚 Hurtownik | 5–6 | x2.5 |
+| 🏬 Sieć marketów | 6–8 | x3.2 |
+| 🏭 Centrum dystrybucji | 7–9 | x4.0 |
+| 🌍 Międzynarodowy kontrakt | 8–10 | x5.0 |
+
+---
+
+# Szanse na typ zamówienia
+
+| Typ zamówienia | Szansa |
+|---|---:|
+| 👨‍🌾 Sąsiad | 35% |
+| 🚶 Gość z innej wioski | 25% |
+| 🥕 Mały warzywniak | 15% |
+| 🏪 Wiejski sklep | 10% |
+| 🍽 Restauracja | 7% |
+| 🚚 Hurtownik | 4% |
+| 🏬 Sieć marketów | 2% |
+| 🏭 Centrum dystrybucji | 1.5% |
+| 🌍 Międzynarodowy kontrakt | 0.5% |
+
+---
+
+# System pojawiania się klientów
+
+## Maksymalna liczba klientów jednocześnie
+
+Maksymalnie może stać:
+
+- 5 aktywnych klientów jednocześnie
+
+Jeśli limit jest osiągnięty, nowi klienci nie pojawiają się dopóki gracz nie ukończy lub nie wygaśnie któreś zamówienie.
+
+---
+
+## Czas pojawiania się nowych klientów
+
+Nowy klient pojawia się co:
+
+- 2 godziny
+
+ale tylko jeśli liczba aktywnych klientów jest mniejsza niż 5.
+
+---
+
+# Czas na wykonanie zamówienia
+
+Każde zamówienie ma timer wygasania.
+
+## Czas zależny od typu zamówienia
+
+| Typ zamówienia | Czas |
+|---|---:|
+| 👨‍🌾 Sąsiad | 12h |
+| 🚶 Gość z innej wioski | 16h |
+| 🥕 Mały warzywniak | 20h |
+| 🏪 Wiejski sklep | 24h |
+| 🍽 Restauracja | 30h |
+| 🚚 Hurtownik | 36h |
+| 🏬 Sieć marketów | 42h |
+| 🏭 Centrum dystrybucji | 48h |
+| 🌍 Międzynarodowy kontrakt | 48h |
+
+Po wygaśnięciu zamówienie znika i zwalnia miejsce dla nowego klienta.
+
+---
+
+# Ilości przedmiotów w zamówieniach
+
+Rare itemy mają mieć małe wymagane ilości.
+
+## Uprawy
+
+| Typ | Ilość |
+|---|---:|
+| zwykłe low lvl | 10–40 |
+| zwykłe mid lvl | 6–20 |
+| zwykłe high lvl | 2–8 |
+| epickie low lvl | 4–10 |
+| epickie mid lvl | 2–6 |
+| epickie high lvl | 1–3 |
+| legendarne low lvl | 2–5 |
+| legendarne mid lvl | 1–3 |
+| legendarne high lvl | 1–2 |
+
+## Owoce
+
+| Typ | Ilość |
+|---|---:|
+| zwykłe low lvl | 6–20 |
+| zwykłe high lvl | 1–6 |
+| soczyste low lvl | 3–8 |
+| soczyste high lvl | 1–3 |
+| złote low lvl | 1–3 |
+| złote high lvl | 1 |
+
+## Produkty zwierzęce
+
+| Produkt | Ilość |
+|---|---:|
+| jajko | 5–20 |
+| futro królika | 3–10 |
+| mleko | 3–10 |
+| pióra | 4–12 |
+| wełna | 2–8 |
+| nawóz naturalny | 3–10 |
+| mleko kozie | 2–6 |
+| duże pióra | 1–4 |
+| energia robocza | 1–3 |
+| rogi byka | 1–2 |
+
+## Miód
+
+| Produkt | Ilość |
+|---|---:|
+| słoik miodu | 1–8 |
+
+## Komposty
+
+| Tier | Ilość |
+|---|---:|
+| słaby | 2–6 |
+| średni | 1–4 |
+| mocny | 1–2 |
+
+---
+
+# Nagrody
+
+Nagroda powinna być liczona na podstawie wartości wymaganych przedmiotów.
+
+Przykład:
+
+rewardValue = requestedItemsValue × orderMultiplier
+
+Typ zamówienia ustala mnożnik nagrody.
+
+Gracz może dostać jedną lub kilka nagród naraz:
+
+- gold
+- EXP
+- produkty zwierzęce
+- kompost
+- losowy item
+- materiały ulepszeń
+
+Im wyższy poziom gracza i im wyższy tier zamówienia, tym lepsze możliwe nagrody.
+
+Przykład:
+
+👨‍🌾 Sąsiad na lvl 25 nadal może być małym klientem, ale jeśli żąda cytryn lub legendarnych szparagów, nagroda musi być dużo lepsza niż dla sąsiada na lvl 5.
+
+---
+
+# Ważne zasady
+
+1. Klient nie może żądać przedmiotów nieodblokowanych przez poziom gracza.
+2. Rare itemy mają mieć małe wymagane ilości.
+3. Wyższy tier zamówienia oznacza więcej typów rzeczy i większy mnożnik nagrody.
+4. Poziom gracza wpływa na pulę możliwych przedmiotów i wartość nagrody.
+5. System ma generować popyt na uprawy, owoce, produkty zwierzęce, miód i kompost.
+6. Zamówienia klientów powinny być bardziej opłacalne niż zwykła sprzedaż przedmiotów.
+7. Jeśli zamówienie wygaśnie, znika z lady i zwalnia miejsce dla nowego klienta.
