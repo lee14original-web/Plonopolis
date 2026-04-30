@@ -157,7 +157,7 @@ $$;
 -- Zakres ilości dla uprawy wg jakości i poziomu
 CREATE OR REPLACE FUNCTION _npc_crop_qty_range(p_quality TEXT, p_unlock INT)
 RETURNS TABLE(qmin INT, qmax INT) LANGUAGE SQL IMMUTABLE AS $$
-  SELECT * FROM (VALUES
+  SELECT t.qmin, t.qmax FROM (VALUES
     ('good',      'low',  10, 40),
     ('good',      'mid',   6, 20),
     ('good',      'high',  2,  8),
@@ -168,18 +168,18 @@ RETURNS TABLE(qmin INT, qmax INT) LANGUAGE SQL IMMUTABLE AS $$
     ('legendary', 'mid',   1,  3),
     ('legendary', 'high',  1,  2)
   ) AS t(q, band, qmin, qmax)
-  WHERE q = p_quality AND band = _npc_lvl_band(p_unlock);
+  WHERE t.q = p_quality AND t.band = _npc_lvl_band(p_unlock);
 $$;
 
 -- Zakres ilości dla owocu wg jakości i poziomu (low=10-16, high=17-25)
 CREATE OR REPLACE FUNCTION _npc_fruit_qty_range(p_quality TEXT, p_unlock INT)
 RETURNS TABLE(qmin INT, qmax INT) LANGUAGE SQL IMMUTABLE AS $$
-  SELECT * FROM (VALUES
+  SELECT t.qmin, t.qmax FROM (VALUES
     ('zwykly',   'low',  6, 20), ('zwykly',   'high', 1, 6),
     ('soczysty', 'low',  3,  8), ('soczysty', 'high', 1, 3),
     ('zloty',    'low',  1,  3), ('zloty',    'high', 1, 1)
   ) AS t(q, band, qmin, qmax)
-  WHERE q = p_quality AND band = (CASE WHEN p_unlock <= 16 THEN 'low' ELSE 'high' END);
+  WHERE t.q = p_quality AND t.band = (CASE WHEN p_unlock <= 16 THEN 'low' ELSE 'high' END);
 $$;
 
 -- Mnożnik wartości jakości
