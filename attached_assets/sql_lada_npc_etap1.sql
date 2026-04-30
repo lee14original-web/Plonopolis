@@ -452,7 +452,8 @@ DECLARE
   v_oid          UUID;
 BEGIN
   -- Walidacja właściciela
-  IF p_user_id IS NULL OR p_user_id <> auth.uid() THEN
+  IF p_user_id IS NULL THEN RAISE EXCEPTION 'p_user_id required'; END IF;
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
     RAISE EXCEPTION 'unauthorized';
   END IF;
 
