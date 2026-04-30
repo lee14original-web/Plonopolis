@@ -83,3 +83,43 @@ Stan: **zrobione (klient).**
 1. `attached_assets/sql_hive_bonuses.sql` (z Partii 2)
 2. `attached_assets/sql_fix_plant_preserve_compost.sql`
 3. `attached_assets/sql_fix_harvest_atomic.sql` ← **ZASTĘPUJE** `sql_harvest_legendary_update.sql`
+4. `attached_assets/sql_lada_npc_etap1.sql` ← **ETAP 1 nowej Lady NPC** (schemat + generator + spawner)
+
+## 🛒 LADA DLA KLIENTÓW — NOWY SYSTEM ZAMÓWIEŃ NPC
+
+### Decyzje projektowe (zatwierdzone)
+- **Stara sprzedaż:** A) USUNIĘTA — JEDYNY sposób sprzedaży to klienci NPC
+- **Architektura:** A) Server-side (SQL/Supabase)
+- **Nagrody:** gold = wartość × mult × 0.70, exp = (wartość × mult × 0.30) / 10
+- **Bonusy:** szansa zależna od tieru (5%–100%), siła rośnie z tierem, RESPEKTUJE lvl gracza
+- **UI:** B) Karuzela kart (przesuwana lewo/prawo), 1 klient na ekranie
+
+### ✅ ETAP 1 — DB + Generator + Spawner (ZROBIONE w SQL)
+Plik: `sql_lada_npc_etap1.sql`
+- Tabela `customer_orders` (id, user_id, customer_type, items JSONB, rewards JSONB, total_value, reward_mult, created_at, expires_at) + indeksy
+- Kolumna `profiles.last_customer_spawn_at TIMESTAMPTZ`
+- RLS: SELECT only own; INSERT/DELETE przez SECURITY DEFINER funkcje
+- Słowniki w SQL: uprawy (25, lvl 1-25, base_price = nasiona×3), owoce (9, lvl 10-25), zwierzęta M1-M10, kompost 9 wariantów, miód 12zł
+- Typy klientów (9): wagi, mnożniki, items_min/max, expires_h, bonus_chance, bonus_strength
+- Funkcje:
+  - `_npc_weighted_pick_text` — losowanie z wagami
+  - `_npc_pick_item(p_level)` — losuje 1 pozycję respektując lvl
+  - `_npc_roll_bonus(p_level, strength)` — losuje bonus respektując lvl
+  - `spawn_customer_order(p_user_id)` — tworzy 1 zamówienie (NO duplikaty ID, max 10 prób na pozycję)
+  - `tick_customer_orders(p_user_id)` — usuwa wygasłe + spawnuje brakujące (catch-up co 2h interwał, max 5 aktywnych) + zwraca aktualną listę
+
+### 📋 ETAP 2 — UI + Realizacja (DO ZROBIENIA)
+- [ ] UI karuzeli klientów w Ladzie (przyciski ◄ ►, licznik X/Y, czas do końca)
+- [ ] Karta klienta: ikona typu, lista przedmiotów (✅/❌ checkmark posiadania), nagrody, przycisk „Realizuj"
+- [ ] RPC `complete_customer_order(p_order_id)` — atomicznie sprawdza ekwipunek, odejmuje przedmioty, dodaje gold/exp/bonus, usuwa zamówienie
+- [ ] USUNĄĆ stary system sprzedaży z modala Lady (miód, owoce, produkty zwierząt)
+- [ ] Klient wywołuje `tick_customer_orders` przy: wejściu do gry + otwarciu Lady + co X min w tle
+- [ ] Notyfikacja „🛒 Nowy klient!" gdy spawn dorzuci ≥1 nowego
+- [ ] Tooltip / podgląd nagród bonusowych
+
+### 🔧 Mapowanie ID przedmiotów w `items` JSONB (wymagane przez ETAP 2)
+- **Uprawy:** `carrot_good` / `carrot_epic` / `carrot_legendary` → `seed_inventory[id]` (Record)
+- **Owoce:** `jablko_zwykly` / `jablko_soczysty` / `jablko_zloty` → `fruit_inventory[id]`
+- **Produkty zwierząt:** `jajko` / `mleko` / `rogi_byka` itp. → `barn_items[id]`
+- **Miód:** `honey_jar` → `hive_data.honey_jars` (specjalne pole, nie inventory)
+- **Kompost:** `compost_growth_5` / `compost_yield_2` / `compost_exp_30` → `compost_inventory[id]`
