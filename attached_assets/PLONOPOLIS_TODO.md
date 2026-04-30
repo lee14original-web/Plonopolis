@@ -13,34 +13,38 @@
   - % reward zwierząt → handleCollect / handleCollectAll
 
 ## 🚧 Brakujące elementy gry (do zrobienia w pierwszej kolejności)
-- [x] **Drzewa / sad** — ✅ ZROBIONE
-  - 9 drzew (jabłoń, grusza, śliwa, wiśnia, brzoskwinia, morela, pomarańcza, cytryna, granat) lvl 10–25
-  - System jakości owoców: zwykły 85% / soczysty 12% (×2💰) / złoty 3% (×5💰)
-  - Limity slotów per LVL: 10→2, 15→4, 20→6, 25→8
-  - Cykl produkcji offline-safe (storage cap 5 cykli)
-  - Bonusy: "% speed drzew" (z eq), Sadownik (drop +%), Szczęście + "% bonus drop" (rare/golden)
-  - Sklep zakładka 🌳 Drzewa, modal Sadu z timerami i sprzedażą per quality
-  - Owoce w osobnym `fruitInventory` (klucz `${fruitId}_${quality}`) — gotowe pod przyszłe crafting/gildie/eventy
-- [ ] **Czasy sadzenia/zbioru** — itemy n11, c5, n12, c6, c12, d3, d11 mają "% speed sadzenia/zbioru" ale w obecnym RPC sadzenie/zbiór są instant. Decyzja: dodać czasy czy wymienić bonusy?
-- [ ] (inne brakujące elementy które user wskaże)
+- [x] **Drzewa / sad** — ✅ ZROBIONE (9 drzew, jakości, sloty, sklep, sad)
+- [x] **Czasy sadzenia/zbioru** — ✅ ZROBIONE
+  - BASE_PLANT_MS=2000, BASE_HARVEST_MS=2000, paski postępu (cyan/amber)
+  - Bonusy `% speed sadzenia/zbioru` redukują czas max 80% (min 0.4s)
+  - Tracking timeout per pole (Map<plotId, id>) z cleanup przy unmount
+  - Refs do FRESH state (seedInventory, plotCrops) w callback timera — race-safe
+  - try/finally w executePlantRpc — pasek znika zawsze (nawet przy throw)
+  - User feedback gdy revalidation po timerze odpada ("Pole zajęte", "Brak nasion")
+  - Każde pole ma osobny timer — można sadzić/zbierać równolegle wiele pól
 
-## 📋 ODŁOŻONE — wrócić po dodaniu brakujących elementów
-**Pełna implementacja pozostałych 9 bonusów z eq przez SQL/RPC**
+## ✅ Bonusy z eq — STAN PO PARTIACH 1-3
 
-Ekwipunek (`charEquipped`) jest tylko w localStorage. Trzeba:
-1. Dodać kolumnę `char_equipment JSONB` w tabeli profili Supabase
-2. Synchronizować `charEquipped` przy każdej zmianie (rozszerzyć `saveCharEquipped`)
-3. Update'ować RPC żeby czytały eq i aplikowały bonusy:
-
-| Bonus | RPC do zmiany | Uwaga |
+| Bonus | Stan | Gdzie aplikowane |
 |---|---|---|
-| % speed sadzenia | `game_plant_crop` | |
-| % speed zbioru | `game_harvest_plot` | |
-| % speed drzew | (nowe RPC drzew) | **wymaga najpierw systemu drzew** |
-| % EXP / % EXP z upraw | `game_harvest_plot` | nadawanie EXP |
-| % extra harvest | `game_harvest_plot` | yieldAmount |
-| % bonus drop | `game_harvest_plot` | rzadkość/drop |
-| % produkcji miodu | `collect_honey` | |
-| % zużycia stroju | `collect_honey` | durability damage |
+| % speed upraw | ✅ klient | `getEffectiveGrowthTimeMs` |
+| % efekt podlewania | ✅ klient | `handleWaterPlot` |
+| % efekt wody | ✅ klient | `handleWaterPlot` |
+| % efekt kompostu | ✅ klient | `applyCompostToPlot` |
+| % reward zwierząt | ✅ klient | `handleCollect`/`handleCollectAll` |
+| % speed drzew | ✅ klient | sad |
+| % bonus drop (drzewa) | ✅ klient | sad |
+| **pkt Wiedzy (flat)** | ✅ klient | `getEffectiveGrowthTimeMs` |
+| **% extra harvest** | ✅ klient | `handleHarvestPlot` (pętla per sztuka) |
+| **% bonus drop (uprawy)** | ✅ klient | `handleHarvestPlot` (good→epic upgrade) |
+| **% EXP** | ✅ klient | `handleHarvestPlot` (level-up loop) |
+| **% EXP z upraw** | ✅ klient | `handleHarvestPlot` |
+| **% produkcji miodu** | ✅ SQL | `collect_honey` (param `p_honey_bonus_pct`) |
+| **% zużycia stroju** | ✅ SQL | `collect_honey` (param `p_suit_save_pct`) |
+| **% speed sadzenia** | ✅ klient | `handlePlantFromSelectedSeed` (timer + pasek) |
+| **% speed zbioru** | ✅ klient | `handleHarvestPlot` (timer + pasek) |
 
-**User powiedział:** "najpierw zrobimy to czego brakuje (drzewa itd.) i później się tym zajmiemy"
+## 📋 ODŁOŻONE — następne kroki
+- **Opcja A (snapshot bonusów eq)** — exploit przebierania: gracz może zaalokować wszystkie czasy/bonusy zaraz przed RPC i zdjąć potem. Plan: zapisać snapshot bonusów na polu w momencie startu akcji (sadzenie/zbiór), użyć przy RPC zamiast aktualnego eq.
+- **Synchronizacja eq z DB** — `charEquipped` jest tylko w localStorage. Bonusy SQL (`collect_honey`) chwilowo dostają wartości od klienta — trust ✗. Long-term: dodać kolumnę `char_equipment JSONB` w `profiles` i czytać po stronie serwera.
+- **SQL do wgrania**: `attached_assets/sql_hive_bonuses.sql` (nowy z Partii 2)
