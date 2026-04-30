@@ -8709,7 +8709,53 @@ export default function Page() {
             {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — po zbiorze losuje 1 z 3 nagród (każda po 33%)!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
           </p>
           {hoveredSeedQuality !== "rotten" && <>
-            <p>⏱ {(()=>{ const m=Math.round(hoveredCrop.growthTimeMs/60_000); const h=Math.floor(m/60); const r=m%60; return h>0?(r>0?`${h}h ${r} min`:`${h}h`):`${m} min`; })()}</p>
+            {(() => {
+              const _baseMs = hoveredCrop.growthTimeMs;
+              // Te same wzory co w getEffectiveGrowthTimeMs (bez bonusów per-pole: woda/kompost)
+              const _wiedzaEff   = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+              const _wiedzaPct   = Math.min(50, calcStatEffect(_wiedzaEff, 0.005)); // % redukcji
+              const _hivePct     = Math.min(50, hiveData.level * 2);
+              const _equipPct    = Math.min(70, getEquipBonusPct("% speed upraw", charEquipped));
+              const _wiedzaMult  = Math.max(0.5, 1 - _wiedzaPct / 100);
+              const _hiveMult    = Math.max(0.5, 1 - _hivePct / 100);
+              const _equipMult   = Math.max(0.3, 1 - _equipPct / 100);
+              const _effMs       = Math.round(_baseMs * _wiedzaMult * _hiveMult * _equipMult);
+              // Bonus z wody (jeśli podlejesz) — orientacyjnie z aktualnymi statami/eq
+              const _zaradnosc   = playerStats.zaradnosc ?? 0;
+              const _zaradPct    = calcStatEffect(_zaradnosc, 0.006);
+              const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
+              const _waterTotalPct = Math.min(95, _zaradPct * (1 + _waterEqPct / 100));
+              const _withWaterMs = Math.round(_effMs * Math.max(0.5, 1 - _waterTotalPct / 100));
+              const _fmt = (ms: number) => {
+                const _s = Math.max(1, Math.round(ms / 1000));
+                if (_s < 60) return `${_s}s`;
+                const _m = Math.round(_s / 60);
+                if (_m < 60) return `${_m} min`;
+                const _h = Math.floor(_m / 60);
+                const _r = _m % 60;
+                return _r > 0 ? `${_h}h ${_r} min` : `${_h}h`;
+              };
+              const _saved = _baseMs - _effMs;
+              const _savedPct = Math.round((_saved / _baseMs) * 100);
+              return (
+                <>
+                  <div className="mt-1 rounded-lg bg-black/30 p-2 text-[13px]">
+                    <p className="font-bold text-[#f9e7b2]">⏱ Twój czas: <span className="text-emerald-300">{_fmt(_effMs)}</span></p>
+                    <p className="text-[11px] text-[#8b6a3e]">Bazowo: {_fmt(_baseMs)}{_saved > 0 && <> · oszczędzasz <span className="text-emerald-400 font-bold">{_fmt(_saved)}</span> ({_savedPct}%)</>}</p>
+                    {(_wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0) && (
+                      <div className="mt-1.5 space-y-0.5 text-[12px]">
+                        {_wiedzaPct > 0 && <p>📚 Wiedza ({_wiedzaEff}): <span className="text-emerald-300">−{_wiedzaPct.toFixed(1)}%</span></p>}
+                        {_hivePct > 0 && <p>🍯 Ul (poz. {hiveData.level}): <span className="text-emerald-300">−{_hivePct}%</span></p>}
+                        {_equipPct > 0 && <p>👕 Ekwipunek (% speed upraw): <span className="text-emerald-300">−{_equipPct}%</span></p>}
+                      </div>
+                    )}
+                    {_waterTotalPct > 0 && (
+                      <p className="mt-1.5 text-[12px] text-cyan-300">💧 Z podlaniem: <span className="font-bold">{_fmt(_withWaterMs)}</span> <span className="text-[11px] text-[#8b6a3e]">(dodatkowe −{_waterTotalPct.toFixed(1)}%)</span></p>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
                 <p className="font-black text-amber-300">🎲 Jedna z 3 równych szans:</p>
