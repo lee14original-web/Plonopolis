@@ -3342,6 +3342,22 @@ export default function Page() {
     if (!error) await loadProfile(profile.id);
   }
 
+  async function handleAddBarnItems(amount: number) {
+    if (!profile?.id) return;
+    const newItems: Record<string, number> = { ...barnItems };
+    ANIMAL_ITEMS.forEach(it => {
+      newItems[it.id] = (newItems[it.id] ?? 0) + amount;
+    });
+    const { error } = await supabase.from("profiles").update({ barn_items: newItems }).eq("id", profile.id);
+    if (!error) {
+      saveBarnItems(newItems);
+      await loadProfile(profile.id);
+      setMessage({ type: "success", title: "🐄 Dodano produkty!", text: `+${amount} każdego z ${ANIMAL_ITEMS.length} produktów ze zwierząt.` });
+    } else {
+      setMessage({ type: "error", title: "Błąd", text: error.message });
+    }
+  }
+
   async function handleResetAccount() {
     if (!profile?.id) return;
     if (!confirm(
@@ -5935,6 +5951,18 @@ export default function Page() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-orange-300">🐄 Dodaj produkty ze zwierząt (każdy rodzaj)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[5,10,50].map(amt => (
+                        <button key={amt} onClick={() => handleAddBarnItems(amt)}
+                          className="rounded-xl border border-orange-500/60 bg-orange-900/30 px-3 py-2 text-xs font-black text-orange-200 hover:bg-orange-900/50">
+                          +{amt} każdy
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[#8b6a3e]">🥚 jajka · 🐇 futra · 🥛 mleko · 🪶 pióra · 🧶 wełna · 💩 nawóz · 🥛 mleko kozie · 🪶 duże pióra · ⚡ energia · 🦴 rogi byka</p>
                   </div>
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-green-400">⭐ Epickie avatary</p>
