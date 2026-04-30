@@ -432,6 +432,73 @@ function rollCompostTierIdx(): number {
   return 0;
 }
 
+// ─── KOMPOSTOWNIK: SYSTEM SCORE'OWY ───
+// Bazowa wartość uprawy do kompostu wg unlockLevel (lvl 1=1.0, +0.2 per lvl, lvl 25=6.0)
+const COMPOST_BASE_VALUE_BY_LEVEL: Record<number, number> = {
+  1:1.0,  2:1.2,  3:1.4,  4:1.6,  5:1.8,
+  6:2.0,  7:2.2,  8:2.4,  9:2.6,  10:2.8,
+  11:3.0, 12:3.2, 13:3.4, 14:3.6, 15:3.8,
+  16:4.0, 17:4.2, 18:4.4, 19:4.6, 20:4.8,
+  21:5.0, 22:5.2, 23:5.4, 24:5.6, 25:6.0,
+};
+// Mnożnik rzadkości plonu
+const COMPOST_RARITY_MULT: Record<"rotten"|"good"|"epic"|"legendary", number> = {
+  rotten:    0.25,
+  good:      1.00,
+  epic:      2.50,
+  legendary: 5.00,
+};
+type CompostQuality = "very_weak" | "weak" | "medium" | "good" | "very_good" | "legendary";
+// Klasy jakości kompostu (sortowane od najwyższej do najniższej żeby `>= min` działało)
+const COMPOST_QUALITY_DEFS: { id: CompostQuality; min: number; label: string; color: string; border: string }[] = [
+  { id:"legendary",  min:15.0, label:"Legendarny",   color:"#fbbf24", border:"#f59e0b" },
+  { id:"very_good",  min:9.0,  label:"Bardzo dobry", color:"#a78bfa", border:"#8b5cf6" },
+  { id:"good",       min:5.0,  label:"Dobry",        color:"#6ee7b7", border:"#10b981" },
+  { id:"medium",     min:2.5,  label:"Średni",       color:"#dfcfab", border:"#a8a29e" },
+  { id:"weak",       min:1.0,  label:"Słaby",        color:"#fca5a5", border:"#f87171" },
+  { id:"very_weak",  min:0,    label:"Bardzo słaby", color:"#94a3b8", border:"#64748b" },
+];
+// Tabela szans na tier itemu (5 kolumn: I1=lvl1-5, I2=lvl6-10, I3=lvl11-15, I4=lvl16-20, I5=lvl21-25)
+// Sumy w wierszach = 100
+const ITEM_TIER_BY_QUALITY: Record<CompostQuality, [number,number,number,number,number]> = {
+  very_weak: [90, 10,  0,  0,  0],
+  weak:      [70, 25,  5,  0,  0],
+  medium:    [45, 35, 17,  3,  0],
+  good:      [20, 35, 30, 12,  3],
+  very_good: [ 5, 15, 35, 30, 15],
+  legendary: [ 0,  5, 20, 40, 35],
+};
+// Siła kompostu growth/yield/exp wg jakości partii — DETERMINISTYCZNA (0=Słaby, 1=Średni, 2=Mocny)
+// Bardzo słaby/Słaby → Słaby (5%/+1/+10%); Średni/Dobry → Średni (10%/+2/+20%); Bardzo dobry/Legendarny → Mocny (15%/+3/+30%)
+const COMPOST_TIER_FIXED_BY_QUALITY: Record<CompostQuality, number> = {
+  very_weak: 0,
+  weak:      0,
+  medium:    1,
+  good:      1,
+  very_good: 2,
+  legendary: 2,
+};
+type CompostBatch = { fill: number; scoreSum: number };
+const KOMPOST_MAX_BATCHES = 10;
+
+function getCompostQualityFromScore(score: number): CompostQuality {
+  for (const def of COMPOST_QUALITY_DEFS) {
+    if (score >= def.min) return def.id;
+  }
+  return "very_weak";
+}
+function getCompostQualityDef(quality: CompostQuality) {
+  return COMPOST_QUALITY_DEFS.find(d => d.id === quality)!;
+}
+function rollFromChances(chances: number[]): number {
+  let r = Math.random() * 100;
+  for (let i = 0; i < chances.length; i++) {
+    r -= chances[i];
+    if (r < 0) return i;
+  }
+  return 0;
+}
+
 const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   // ─── DŁONIE (LVL 1–25, jeden per poziom) ───
   { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:"% speed zbioru"}] },
@@ -503,6 +570,7 @@ const ITEM_UPG_KEY   = "plonopolis_item_upg_reg";
 const OWNED_EQ_KEY   = "plonopolis_owned_eq";
 const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
+const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
   glowa:  { top:32, left:7.5, width:22.5, height:31 },
@@ -1630,11 +1698,97 @@ export default function Page() {
   const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); try { localStorage.setItem(EXTRA_EQ_KEY, JSON.stringify(next)); } catch {} };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
-  const KOMPOST_HARD_CAP = 9999;
-  const [kompostCharges, setKompostCharges] = React.useState<number>(() => {
-    try { const s = localStorage.getItem(KOMPOST_KEY); const n = Number(s); return Number.isFinite(n) ? Math.max(0, Math.min(KOMPOST_HARD_CAP, n)) : 0; } catch { return 0; }
+  const KOMPOST_HARD_CAP = 9999; // legacy — nieużywane w nowym systemie batchowym
+  const [kompostBatches, setKompostBatches] = React.useState<CompostBatch[]>(() => {
+    try {
+      // Najpierw próbuj wczytać nowy format (batches)
+      const sNew = localStorage.getItem(KOMPOST_BATCHES_KEY);
+      if (sNew) {
+        const arr = JSON.parse(sNew);
+        if (Array.isArray(arr)) {
+          return arr
+            .slice(0, KOMPOST_MAX_BATCHES)
+            .map((b: { fill?: unknown; scoreSum?: unknown }) => ({
+              fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))),
+              scoreSum: Math.max(0, Number(b?.scoreSum) || 0),
+            }))
+            .filter((b: CompostBatch) => b.fill > 0);
+        }
+      }
+      // Migracja ze starego: kompostCharges (płaski licznik) → batches z domyślnym score "Słaby" (1.0 per wrzut)
+      // UWAGA: jeśli stare charges > 100 (cap nowego systemu), nadwyżka zostaje w KOMPOST_KEY jako "pending"
+      //        i jest dosypywana automatycznie przy każdym deposit/claim (patrz consumePendingLegacyCharges)
+      const sOld = localStorage.getItem(KOMPOST_KEY);
+      if (sOld) {
+        const charges = Math.max(0, Math.floor(Number(sOld) || 0));
+        if (charges > 0) {
+          const consumeNow = Math.min(charges, KOMPOST_MAX_BATCHES * 10);
+          const fullBatches = Math.floor(consumeNow / 10);
+          const remainder = consumeNow % 10;
+          const batches: CompostBatch[] = [];
+          for (let i = 0; i < fullBatches; i++) {
+            batches.push({ fill: 10, scoreSum: 10 }); // średnia=1.0 → "Słaby"
+          }
+          if (batches.length < KOMPOST_MAX_BATCHES && remainder > 0) {
+            batches.push({ fill: remainder, scoreSum: remainder });
+          }
+          // Nadwyżka — zostaw w starym kluczu, dosypiemy ją później kiedy będą wolne sloty
+          const leftover = charges - consumeNow;
+          try {
+            if (leftover > 0) localStorage.setItem(KOMPOST_KEY, String(leftover));
+            else localStorage.removeItem(KOMPOST_KEY);
+          } catch {}
+          return batches;
+        }
+      }
+    } catch {}
+    return [];
   });
-  const saveKompostCharges = (n: number) => { const v = Math.max(0, Math.min(KOMPOST_HARD_CAP, n)); setKompostCharges(v); try { localStorage.setItem(KOMPOST_KEY, String(v)); } catch {} };
+  // Flaga przeciw race conditions: blokuje równoległe deposit/claim (np. szybkie podwójne kliknięcia)
+  const kompostBusyRef = React.useRef(false);
+  // Dosyp pozostałe legacy charges (z migracji nadwyżki >100) do zwolnionych slotów. Mutuje przekazaną tablicę.
+  const consumePendingLegacyCharges = (batches: CompostBatch[]) => {
+    try {
+      const sOld = localStorage.getItem(KOMPOST_KEY);
+      if (!sOld) return;
+      let pending = Math.max(0, Math.floor(Number(sOld) || 0));
+      if (pending <= 0) {
+        localStorage.removeItem(KOMPOST_KEY);
+        return;
+      }
+      while (pending > 0 && batches.length < KOMPOST_MAX_BATCHES) {
+        let last = batches[batches.length - 1];
+        if (!last || last.fill >= 10) {
+          last = { fill: 0, scoreSum: 0 };
+          batches.push(last);
+        }
+        const room = 10 - last.fill;
+        const take = Math.min(pending, room);
+        last.fill += take;
+        last.scoreSum += take; // legacy = score 1.0 per wrzut
+        pending -= take;
+      }
+      if (pending > 0) localStorage.setItem(KOMPOST_KEY, String(pending));
+      else localStorage.removeItem(KOMPOST_KEY);
+    } catch {}
+  };
+  const saveKompostBatches = (batches: CompostBatch[]) => {
+    const clean = batches
+      .slice(0, KOMPOST_MAX_BATCHES)
+      .map(b => ({
+        fill: Math.max(0, Math.min(10, Math.floor(b.fill))),
+        scoreSum: Math.max(0, b.scoreSum),
+      }))
+      .filter(b => b.fill > 0);
+    setKompostBatches(clean);
+    try {
+      localStorage.setItem(KOMPOST_BATCHES_KEY, JSON.stringify(clean));
+      // Wyczyść stary klucz po pierwszym zapisie nowego formatu
+      localStorage.removeItem(KOMPOST_KEY);
+    } catch {}
+  };
+  // Derived: łączne ładowania (suma fill) — dla wyświetlania i kompatybilności
+  const kompostCharges = kompostBatches.reduce((s, b) => s + b.fill, 0);
   const [showKompostModal, setShowKompostModal] = React.useState(false);
   type KompostRewardEntry =
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
@@ -3210,83 +3364,135 @@ export default function Page() {
     setTimeout(() => setCompostNotice(null), 5000);
   }
 
-  // ─── KOMPOSTOWNIK: wrzuć N upraw → +N ładowań ───
+  // ─── KOMPOSTOWNIK: wrzuć plon → +1 do bieżącej partii + dolicz wartość (base × rzadkość) do scoreSum ───
   async function depositCropToCompost(seedKey: string, count: number = 1) {
-    const have = seedInventory[seedKey] ?? 0;
-    if (have <= 0) return;
-    const room = Math.max(0, KOMPOST_HARD_CAP - kompostCharges);
-    const take = Math.max(0, Math.min(count, have, room));
-    if (take <= 0) return;
-    const nextInv = { ...seedInventory };
-    nextInv[seedKey] = have - take;
-    if (nextInv[seedKey] <= 0) delete nextInv[seedKey];
-    setSeedInventory(nextInv);
-    saveKompostCharges(kompostCharges + take);
-    if (profile?.id) {
-      await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+    if (kompostBusyRef.current) return; // chroni przed double-click race
+    kompostBusyRef.current = true;
+    try {
+      const have = seedInventory[seedKey] ?? 0;
+      if (have <= 0) return;
+      // Parsuj jakość z klucza (np. "carrot_legendary" → baseCropId="carrot", quality="legendary")
+      const { baseCropId, quality } = parseQualityKey(seedKey);
+      const cropDef = CROPS.find(c => c.id === baseCropId);
+      const baseValue = cropDef ? (COMPOST_BASE_VALUE_BY_LEVEL[cropDef.unlockLevel] ?? 1.0) : 1.0;
+      const rarityKey = (quality ?? "good") as keyof typeof COMPOST_RARITY_MULT;
+      const rarityMult = COMPOST_RARITY_MULT[rarityKey] ?? 1.0;
+      const valuePerCrop = baseValue * rarityMult;
+
+      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum }));
+      let remaining = Math.min(count, have);
+      let added = 0;
+      while (remaining > 0) {
+        let last = batches[batches.length - 1];
+        // Jeśli brak partii lub ostatnia jest pełna — utwórz nową (o ile mieści się w cap)
+        if (!last || last.fill >= 10) {
+          if (batches.length >= KOMPOST_MAX_BATCHES) break;
+          last = { fill: 0, scoreSum: 0 };
+          batches.push(last);
+        }
+        const room = 10 - last.fill;
+        const take = Math.min(remaining, room);
+        last.fill += take;
+        last.scoreSum += take * valuePerCrop;
+        remaining -= take;
+        added += take;
+      }
+      if (added <= 0) return;
+
+      const nextInv = { ...seedInventory };
+      nextInv[seedKey] = have - added;
+      if (nextInv[seedKey] <= 0) delete nextInv[seedKey];
+      setSeedInventory(nextInv);
+      saveKompostBatches(batches);
+      if (profile?.id) {
+        await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+      }
+    } finally {
+      kompostBusyRef.current = false;
     }
   }
 
-  // ─── KOMPOSTOWNIK: zbierz wszystkie dostępne nagrody (1 nagroda = 10 ładowań) ───
+  // ─── KOMPOSTOWNIK: odbierz nagrody — każda gotowa partia (fill=10) = 1 nagroda z TIEREM zależnym od score ───
   async function claimKompostReward() {
-    const rewardsCount = Math.floor(kompostCharges / KOMPOST_PER_REWARD);
-    if (rewardsCount <= 0) return;
+    if (kompostBusyRef.current) return; // chroni przed double-click race
+    kompostBusyRef.current = true;
+    try {
+    const readyBatches = kompostBatches.filter(b => b.fill >= 10);
+    if (readyBatches.length <= 0) return;
     const playerLvl = profile?.level ?? 1;
     const rewards: KompostRewardEntry[] = [];
     let inv = { ...seedInventory };
     let owned = { ...ownedEqItems };
     let upgReg = { ...itemUpgRegistry };
     let extras = [...extraEqItems];
-    for (let i = 0; i < rewardsCount; i++) {
+
+    for (const batch of readyBatches) {
+      const score = batch.scoreSum / 10;
+      const quality = getCompostQualityFromScore(score);
       const roll = Math.random() * 100;
-      // 10% — losowy przedmiot ekwipunku ≤ poziom gracza (duplikaty → Ekwipunek Dodatkowy)
+      // 10% — przedmiot ekwipunku z TIEREM wg jakości kompostu
       if (roll < 10) {
-        const candidates = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
-        if (candidates.length > 0) {
-          const item = candidates[Math.floor(Math.random() * candidates.length)];
+        const tierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]); // 0..4
+        const minLvl = tierIdx * 5 + 1;
+        const maxLvl = tierIdx * 5 + 5;
+        // Najpierw spróbuj puli w wylosowanym tierze (i ograniczonej do poziomu gracza)
+        let pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
+        // Fallback w dół: jeśli gracz nie ma jeszcze tego tieru — schodź do niższych
+        if (pool.length === 0) {
+          for (let t = tierIdx - 1; t >= 0; t--) {
+            const altMin = t * 5 + 1;
+            const altMax = t * 5 + 5;
+            pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= altMin && it.unlockLevel <= altMax && it.unlockLevel <= playerLvl);
+            if (pool.length > 0) break;
+          }
+        }
+        if (pool.length > 0) {
+          const item = pool[Math.floor(Math.random() * pool.length)];
           if (!owned[item.id]) {
-            // Pierwszy raz — wpada do głównego ekwipunku z upg 0
             owned = { ...owned, [item.id]: true as const };
           } else {
-            // Duplikat — porównujemy ulepszenia (nowy ma upg 0 — świeży z kompostu)
             const newUpg = 0;
             const curUpg = upgReg[item.id] ?? 0;
             if (newUpg > curUpg) {
-              // Nowy lepszy → zamieniamy: stary leci do Ekwipunku Dodatkowego
               extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: curUpg }];
               upgReg = { ...upgReg, [item.id]: newUpg };
             } else {
-              // Nowy ≤ aktualny → nowy do Ekwipunku Dodatkowego (stary zostaje w głównym)
               extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: newUpg }];
             }
           }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
           continue;
         }
-        // Fallback: brak przedmiotów dla tego poziomu → losuj kompost
+        // Brak żadnego dostępnego przedmiotu → fallback do kompostu
       }
-      // 40% Wzrost / 25% Urodzaj / 25% Nauka (z 90 = 40+25+25)
+      // 90% (lub fallback): kompost growth/yield/exp — równe szanse 30/30/30, TIER deterministyczny wg jakości
       let compostType: CompostType;
       const r2 = Math.random() * 90;
-      if (r2 < 40) compostType = "growth";
-      else if (r2 < 65) compostType = "yield";
+      if (r2 < 30) compostType = "growth";
+      else if (r2 < 60) compostType = "yield";
       else compostType = "exp";
-      // Dodatkowo losujemy tier (50/35/15)
-      const tierIdx = rollCompostTierIdx();
+      const tierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality]; // 0=Słaby / 1=Średni / 2=Mocny
       const value = COMPOST_DEFS[compostType].bonusValues[tierIdx];
       const key = compostKeyFor(compostType, value);
       inv = { ...inv, [key]: (inv[key] ?? 0) + 1 };
       rewards.push({ kind:"compost", compostType, value });
     }
+
+    // Usuń skonsumowane partie (pełne); zachowaj niepełne; dosyp pending legacy charges (z migracji nadwyżki)
+    const remainingBatches = kompostBatches.filter(b => b.fill < 10);
+    consumePendingLegacyCharges(remainingBatches);
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
     saveItemUpg(upgReg);
     saveExtraEqItems(extras);
-    saveKompostCharges(kompostCharges - rewardsCount * KOMPOST_PER_REWARD);
+    saveKompostBatches(remainingBatches);
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
     }
     setKompostRewards(rewards);
+    } finally {
+      kompostBusyRef.current = false;
+    }
   }
 
   async function handleHarvestPlot(
@@ -6717,8 +6923,15 @@ export default function Page() {
 
           {/* ═══ KOMPOSTOWNIK MODAL ═══ */}
           {showKompostModal && (() => {
-            const readyRewards = Math.floor(kompostCharges / KOMPOST_PER_REWARD);
-            const progressInCycle = kompostCharges % KOMPOST_PER_REWARD;
+            const readyBatchesUI = kompostBatches.filter(b => b.fill >= 10);
+            const readyRewards = readyBatchesUI.length;
+            // Aktualnie zapełniana partia (pierwsza niepełna lub pusta jeśli wszystkie pełne / brak)
+            const currentBatch = kompostBatches.find(b => b.fill < 10) ?? { fill: 0, scoreSum: 0 };
+            const currentScore = currentBatch.fill > 0 ? currentBatch.scoreSum / currentBatch.fill : 0;
+            const currentQuality = getCompostQualityFromScore(currentScore);
+            const currentQualityDef = getCompostQualityDef(currentQuality);
+            const totalBatchesUsed = kompostBatches.length;
+            const batchSlotsFull = totalBatchesUsed >= KOMPOST_MAX_BATCHES && (kompostBatches[kompostBatches.length - 1]?.fill ?? 0) >= 10;
             const QTY_OPTIONS: Array<1|5|10|100|"max"> = [1,5,10,100,"max"];
             const FILTER_OPTIONS: Array<{ id: typeof kompostFilter; label: string; color: string }> = [
               { id:"rotten",    label:"Popsute",     color:"#ffffff" },
@@ -6737,19 +6950,39 @@ export default function Page() {
                       <span className="text-4xl">🌿</span>
                       <div className="flex-1">
                         <h2 className="text-2xl font-black text-emerald-200">Kompostownik</h2>
-                        <p className="text-xs text-emerald-400/70 mt-0.5">Wrzucaj uprawy — co {KOMPOST_PER_REWARD} ładowań = 1 losowa nagroda</p>
+                        <p className="text-xs text-emerald-400/70 mt-0.5">Wrzucaj uprawy — każde 10 wrzutów = 1 partia. Jakość nagrody zależy od średniej wartości plonów.</p>
                       </div>
                     </div>
-                    {/* Pasek ładowania (cykliczny: 0-10) + licznik gotowych nagród */}
+                    {/* Pasek aktualnej partii + jakość + score */}
                     <div className="mt-4">
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-bold text-emerald-300">Postęp do nagrody</span>
-                        <span className="font-black text-emerald-200">{progressInCycle} / {KOMPOST_PER_REWARD}{readyRewards > 0 && <span className="ml-2 text-amber-300">+ {readyRewards} gotowych</span>}</span>
+                        <span className="font-bold text-emerald-300">Aktualna partia</span>
+                        <span className="font-black text-emerald-200">
+                          Zapełnienie: {currentBatch.fill} / 10
+                          {readyRewards > 0 && <span className="ml-2 text-amber-300">+ {readyRewards} gotowych</span>}
+                        </span>
                       </div>
                       <div className="h-3 rounded-full bg-emerald-950/60 border border-emerald-800/50 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all" style={{ width: `${(progressInCycle / KOMPOST_PER_REWARD) * 100}%` }} />
+                        <div className="h-full transition-all" style={{ width: `${(currentBatch.fill / 10) * 100}%`, background: `linear-gradient(to right, ${currentQualityDef.border}, ${currentQualityDef.color})` }} />
                       </div>
-                      <p className="text-[10px] text-emerald-500/70 mt-1">Łączne ładowania: {kompostCharges}</p>
+                      <div className="flex items-center justify-between text-[11px] mt-1">
+                        <span className="text-emerald-500/70">Score: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentScore.toFixed(2) : "—"}</span></span>
+                        <span className="font-bold" style={{ color: currentQualityDef.color }}>Jakość: {currentBatch.fill > 0 ? currentQualityDef.label : "—"}</span>
+                      </div>
+                      {/* Slots wszystkich partii (10 kropek) */}
+                      <div className="mt-2 flex items-center gap-1">
+                        {Array.from({ length: KOMPOST_MAX_BATCHES }).map((_, i) => {
+                          const b = kompostBatches[i];
+                          const isReady = !!b && b.fill >= 10;
+                          const isPartial = !!b && b.fill > 0 && b.fill < 10;
+                          const score = b && b.fill > 0 ? b.scoreSum / b.fill : 0;
+                          const q = getCompostQualityDef(getCompostQualityFromScore(score));
+                          const bg = isReady ? q.color : isPartial ? q.border : "#1f2937";
+                          const ttl = b ? `Partia ${i+1}: ${b.fill}/10 · score ${score.toFixed(2)} · ${q.label}` : `Partia ${i+1}: pusta`;
+                          return <div key={i} title={ttl} className="flex-1 h-2 rounded-sm border border-emerald-900/60" style={{ background: bg, opacity: b ? 1 : 0.4 }} />;
+                        })}
+                      </div>
+                      <p className="text-[10px] text-emerald-500/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
                     </div>
                     {/* Przycisk odbioru nagród — zawsze widoczny żeby uniknąć layout shift */}
                     <button
@@ -6840,8 +7073,8 @@ export default function Page() {
                               <button
                                 key={seedKey}
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
-                                disabled={kompostCharges >= KOMPOST_HARD_CAP}
-                                title={`Wrzuć ${qty} szt.`}
+                                disabled={batchSlotsFull}
+                                title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
                                 className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-emerald-800/60 bg-emerald-950/40 hover:border-emerald-400 hover:bg-emerald-900/50 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
