@@ -1540,6 +1540,8 @@ export default function Page() {
   const [showUlModal, setShowUlModal] = React.useState(false);
   const [showLadaModal, setShowLadaModal] = React.useState(false);
   const [showLadaInfo, setShowLadaInfo] = React.useState(false);
+  const [customerLootDrop, setCustomerLootDrop] = React.useState<null | { gold: number; exp: number; bonus: CustomerOrderBonus[]; customerName: string; customerIcon: string }>(null);
+  const [lootHoverIdx, setLootHoverIdx] = React.useState<number | null>(null);
   const ladaInfoCloseTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const openLadaInfo = React.useCallback(() => {
     if (ladaInfoCloseTimer.current) { clearTimeout(ladaInfoCloseTimer.current); ladaInfoCloseTimer.current = null; }
@@ -2903,6 +2905,12 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showLadaModal, showLadaInfo]);
   React.useEffect(() => {
+    if (!customerLootDrop) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Enter") { setCustomerLootDrop(null); setLootHoverIdx(null); } };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [customerLootDrop]);
+  React.useEffect(() => {
     if (!showShopModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowShopModal(false); setShopCart({}); setShopError(""); } };
     window.addEventListener("keydown", handler);
@@ -3161,17 +3169,24 @@ export default function Page() {
     } else {
       await loadProfile(profile.id);
     }
-    const bonusText = bonusList
-      .map((b: CustomerOrderBonus) => {
-        const d = getOrderItemDisplay(b.id ?? `eq_tier_${b.tier ?? 0}`);
-        return `${b.qty}× ${d.name}`;
-      })
-      .join(", ");
-    setMessage({
-      type: "success",
-      title: `🤝 Sprzedano! +${Number(data.gold).toFixed(0)} zł, +${data.exp} EXP`,
-      text: bonusText ? `Bonus: ${bonusText}` : "",
-    });
+    // Jeśli klient dał dodatkowy bonus → pokaż średni modal z dropem (z tooltipami)
+    if (bonusList.length > 0) {
+      const order = customerOrders.find(o => o.id === orderId);
+      const cd = order ? getCustomerDisplay(order.customer_type) : { name: 'Klient', icon: '👤' };
+      setCustomerLootDrop({
+        gold: Number(data.gold) || 0,
+        exp: Number(data.exp) || 0,
+        bonus: bonusList,
+        customerName: cd.name,
+        customerIcon: cd.icon,
+      });
+    } else {
+      setMessage({
+        type: "success",
+        title: `🤝 Sprzedano! +${Number(data.gold).toFixed(0)} zł, +${data.exp} EXP`,
+        text: "",
+      });
+    }
     void refreshCustomerOrders();
   }
 
@@ -8212,6 +8227,235 @@ export default function Page() {
                 </div>
               );
             })()}
+
+          {customerLootDrop && (() => {
+            const drop = customerLootDrop;
+            const hovered = lootHoverIdx !== null ? drop.bonus[lootHoverIdx] : null;
+            // Tooltip dla aktualnie podświetlonego przedmiotu
+            const renderTooltip = (b: CustomerOrderBonus) => {
+              const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
+              const d = getOrderItemDisplay(lookupId);
+              // Ekwipunek postaci
+              const eq = lookupId ? CHAR_EQUIP_ITEMS.find(i => i.id === lookupId) : null;
+              if (eq) {
+                const slotMeta = EQUIP_SLOT_META[eq.slot];
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{eq.icon}</span>
+                      <div>
+                        <p className="text-base font-black text-amber-200">{eq.name}</p>
+                        <p className="text-[11px] text-[#bfa274]">Ekwipunek · {slotMeta?.icon ?? '🎽'} {slotMeta?.label ?? eq.slot}</p>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-[#8b6a3e]">Wymagany lvl: <span className="text-amber-300">{eq.unlockLevel}</span></p>
+                    {eq.bonuses.length > 0 && (
+                      <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 p-2">
+                        <p className="text-[10px] uppercase tracking-widest text-emerald-300 mb-1 font-black">Bonusy (na +0)</p>
+                        <p className="text-[12px] text-emerald-100 leading-relaxed">{bonusLine(eq.bonuses, 0)}</p>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-[#8b6a3e] italic">Można ulepszać u rzemieślnika do +10.</p>
+                  </div>
+                );
+              }
+              // Tajemniczy przedmiot ekwipunku (placeholder)
+              if (lookupId.startsWith('eq_tier_')) {
+                const tier = Number(lookupId.split('_').pop()) || 0;
+                const minL = tier * 5 + 1, maxL = tier * 5 + 5;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🎁</span>
+                      <p className="text-base font-black text-amber-200">Tajemniczy przedmiot</p>
+                    </div>
+                    <p className="text-[12px] text-[#dfcfab]">Element ekwipunku z poziomu <span className="text-amber-300 font-bold">{minL}–{maxL}</span> — odblokuje się gdy osiągniesz odpowiedni poziom.</p>
+                  </div>
+                );
+              }
+              // Artykuł zwierzęcy
+              const ai = ANIMAL_ITEMS.find(a => a.id === lookupId);
+              if (ai) {
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{ai.icon}</span>
+                      <div>
+                        <p className="text-base font-black text-amber-200">{ai.name}</p>
+                        <p className="text-[11px] text-[#bfa274]">Artykuł zwierzęcy</p>
+                      </div>
+                    </div>
+                    <p className="text-[12px] text-[#dfcfab]">Wartość sprzedaży: <span className="text-yellow-300 font-bold">{ai.sellPrice} zł</span></p>
+                    <p className="text-[10px] text-[#8b6a3e] italic">Trafia do magazynu w stodole.</p>
+                  </div>
+                );
+              }
+              // Słoik miodu
+              if (lookupId === 'honey_jar') {
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">🍯</span>
+                      <p className="text-base font-black text-amber-200">Słoik miodu</p>
+                    </div>
+                    <p className="text-[12px] text-[#dfcfab]">Cenny produkt z ula. Można go sprzedać klientom za dobrą cenę.</p>
+                  </div>
+                );
+              }
+              // Kompost
+              if (isCompostKey(lookupId)) {
+                const t = compostTypeFromKey(lookupId);
+                const v = compostValueFromKey(lookupId);
+                if (t) {
+                  const def = COMPOST_DEFS[t];
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{def.icon}</span>
+                        <div>
+                          <p className="text-base font-black text-amber-200">{def.tierName(v)} {def.name}</p>
+                          <p className="text-[11px] text-[#bfa274]">Kompost</p>
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-[#dfcfab]">{def.desc}</p>
+                      <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 p-2">
+                        <p className="text-[12px] text-emerald-200 font-bold">{def.effectLabel}: {def.bonusLabel(v)}</p>
+                      </div>
+                    </div>
+                  );
+                }
+              }
+              // Uprawa
+              const cropM = lookupId.match(/^(.+)_(good|epic|legendary)$/);
+              if (cropM) {
+                const crop = CROPS.find(c => c.id === cropM[1]);
+                if (crop) {
+                  const qLabel = cropM[2] === 'good' ? 'zwykła' : cropM[2] === 'epic' ? 'epicka' : 'legendarna';
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {d.spritePath ? (
+                          <img src={d.spritePath} alt={d.name} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} />
+                        ) : (
+                          <span className="text-2xl">🌱</span>
+                        )}
+                        <div>
+                          <p className="text-base font-black text-amber-200">{crop.name}</p>
+                          <p className="text-[11px] text-[#bfa274]">Uprawa · jakość: <span className="text-amber-300">{qLabel}</span></p>
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-[#dfcfab]">Trafia do twojego magazynu plonów.</p>
+                    </div>
+                  );
+                }
+              }
+              // Owoc
+              const fruitM = lookupId.match(/^(.+)_(zwykly|soczysty|zloty)$/);
+              if (fruitM) {
+                const tree = TREES.find(t => t.fruitId === fruitM[1]);
+                const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
+                if (tree) {
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{tree.fruitIcon}</span>
+                        <div>
+                          <p className="text-base font-black text-amber-200">{tree.fruitName}{qd?.label ? ' ' + qd.label : ''}</p>
+                          <p className="text-[11px] text-[#bfa274]">Owoc z drzewa: {tree.name}</p>
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-[#dfcfab]">Trafia do magazynu owoców w sadzie.</p>
+                    </div>
+                  );
+                }
+              }
+              // Fallback
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{d.icon}</span>
+                    <p className="text-base font-black text-amber-200">{d.name}</p>
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+                <div className="relative w-full max-w-md rounded-3xl border-2 border-amber-500/70 bg-[rgba(20,12,5,0.99)] p-6 shadow-2xl">
+                  <button
+                    onClick={() => { setCustomerLootDrop(null); setLootHoverIdx(null); }}
+                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300"
+                  >✕</button>
+
+                  <div className="text-center mb-4">
+                    <p className="text-3xl mb-1">🎁</p>
+                    <p className="text-lg font-black text-amber-300">Klient zostawił Ci prezent!</p>
+                    <p className="text-[12px] text-[#bfa274]">{drop.customerIcon} {drop.customerName} dorzucił dodatkowy bonus do zapłaty</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="rounded-xl border border-yellow-500/50 bg-yellow-950/30 p-2.5 text-center">
+                      <p className="text-xl">💰</p>
+                      <p className="text-[10px] uppercase text-yellow-400/80 font-black">Złoto</p>
+                      <p className="text-base font-black text-yellow-300">+{drop.gold.toFixed(0)} zł</p>
+                    </div>
+                    <div className="rounded-xl border border-blue-500/50 bg-blue-950/30 p-2.5 text-center">
+                      <p className="text-xl">⭐</p>
+                      <p className="text-[10px] uppercase text-blue-400/80 font-black">EXP</p>
+                      <p className="text-base font-black text-blue-300">+{drop.exp}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-purple-500/60 bg-purple-950/25 p-3 mb-4">
+                    <p className="text-[11px] uppercase tracking-widest text-purple-300 mb-2 font-black text-center">🎁 Dodatkowy bonus</p>
+                    <div className={`grid gap-2 ${drop.bonus.length === 1 ? 'grid-cols-1' : drop.bonus.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                      {drop.bonus.map((b, idx) => {
+                        const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
+                        const d = getOrderItemDisplay(lookupId);
+                        const isHovered = lootHoverIdx === idx;
+                        return (
+                          <div
+                            key={idx}
+                            onMouseEnter={() => setLootHoverIdx(idx)}
+                            onMouseLeave={() => setLootHoverIdx(prev => prev === idx ? null : prev)}
+                            className={`relative rounded-xl border-2 p-3 text-center cursor-help transition ${isHovered ? 'border-amber-300 bg-purple-900/40 scale-105 shadow-lg' : 'border-purple-600/40 bg-purple-950/30 hover:border-purple-400/60'}`}
+                          >
+                            <div className="flex items-center justify-center mb-1 h-12">
+                              {d.spritePath ? (
+                                <img src={d.spritePath} alt={d.name} className="w-12 h-12 object-contain drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                              ) : (
+                                <span className="text-4xl">{d.icon}</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] font-black text-purple-100 leading-tight line-clamp-2">{d.name}</p>
+                            <p className="text-[10px] text-amber-300 font-bold mt-0.5">×{b.qty}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {hovered && (
+                    <div className="rounded-xl border border-amber-500/60 bg-black/50 p-3 mb-4 text-[#dfcfab] min-h-[80px]">
+                      {renderTooltip(hovered)}
+                    </div>
+                  )}
+                  {!hovered && drop.bonus.length > 0 && (
+                    <p className="text-[11px] text-center text-[#8b6a3e] italic mb-4">Najedź myszką na przedmiot, aby zobaczyć szczegóły</p>
+                  )}
+
+                  <button
+                    onClick={() => { setCustomerLootDrop(null); setLootHoverIdx(null); }}
+                    className="w-full rounded-xl py-3 text-base font-black border border-amber-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 transition"
+                  >
+                    🤝 Świetnie, dzięki!
+                  </button>
+                  <p className="text-[10px] text-center text-[#8b6a3e] mt-1.5">Esc lub Enter, aby zamknąć</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {showStodolaModal && (() => {
             const lvl = profile?.level ?? 0;
