@@ -7669,7 +7669,7 @@ export default function Page() {
                     {honeyStarted ? (
                       <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
                     ) : (
-                      <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup pierwszą pszczołę żeby ruszyć timer!</p>
+                      <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup pierwszą pszczołę żeby ruszyć z produkcją miodu!</p>
                     )}
                   </div>
                   {/* Zasoby */}
