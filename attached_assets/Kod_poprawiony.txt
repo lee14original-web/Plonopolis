@@ -3095,10 +3095,26 @@ export default function Page() {
     });
     setCustomerSelling(null);
     if (error || !data?.ok) {
+      const rawMsg = error?.message ?? data?.reason ?? "";
+      let polishMsg = "Brak wymaganych przedmiotów lub zamówienie wygasło.";
+      // insufficient: <item_id> (have X, need Y)
+      const mIns = rawMsg.match(/insufficient:\s*([a-z0-9_]+)\s*\(have\s*(\d+),\s*need\s*(\d+)\)/i);
+      if (mIns) {
+        const d = getOrderItemDisplay(mIns[1]);
+        polishMsg = `Brakuje: ${d.icon} ${d.name} — masz ${mIns[2]}, potrzebujesz ${mIns[3]}.`;
+      } else if (/expired|wyga/i.test(rawMsg)) {
+        polishMsg = "Zamówienie wygasło — klient już odszedł.";
+      } else if (/not[\s_-]*found|nie\s*znalezion|no\s*such/i.test(rawMsg)) {
+        polishMsg = "Zamówienie nie istnieje (mogło już zostać zrealizowane lub usunięte).";
+      } else if (/already.*(complet|fulfill)|już.*(zrealiz|wykonan)/i.test(rawMsg)) {
+        polishMsg = "To zamówienie zostało już zrealizowane.";
+      } else if (rawMsg) {
+        polishMsg = rawMsg;
+      }
       setMessage({
         type: "error",
         title: "Nie udało się zrealizować zamówienia",
-        text: error?.message ?? "Brak wymaganych przedmiotów lub zamówienie wygasło.",
+        text: polishMsg,
       });
       void refreshCustomerOrders();
       return;
