@@ -86,7 +86,11 @@ DECLARE
   v_empty_jars      int;
   v_honey_jars      int;
   v_money           numeric;
-  v_needed_arr      int[]   := ARRAY[0, 20, 30, 40, 50];  -- pszczoły do upgrade z lvl X→X+1
+  -- UWAGA: PostgreSQL ARRAY jest 1-indexed.
+  -- v_needed_arr[1] = 20 (lvl 1→2), v_needed_arr[2] = 30 (lvl 2→3), itd.
+  -- Frontend `HIVE_UPGRADE_BEES = [0, 20, 30, 40, 50]` jest 0-indexed,
+  -- więc `HIVE_UPGRADE_BEES[1] = 20` — wartości muszą być spójne!
+  v_needed_arr      int[]   := ARRAY[20, 30, 40, 50];     -- pszczoły do upgrade z lvl X→X+1
   v_needed          int;
   v_add             int;
   v_cost_per_bee    numeric := 75;
