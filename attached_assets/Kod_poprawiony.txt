@@ -8419,7 +8419,7 @@ export default function Page() {
                             key={idx}
                             onMouseEnter={() => setLootHoverIdx(idx)}
                             onMouseLeave={() => setLootHoverIdx(prev => prev === idx ? null : prev)}
-                            className={`relative rounded-xl border-2 p-3 text-center cursor-help transition ${isHovered ? 'border-amber-300 bg-purple-900/40 scale-105 shadow-lg' : 'border-purple-600/40 bg-purple-950/30 hover:border-purple-400/60'}`}
+                            className={`relative rounded-xl border-2 p-3 text-center cursor-help transition-colors ${isHovered ? 'border-amber-300 bg-purple-900/50 shadow-lg shadow-amber-500/20' : 'border-purple-600/40 bg-purple-950/30 hover:border-purple-400/60'}`}
                           >
                             <div className="flex items-center justify-center mb-1 h-12">
                               {d.spritePath ? (
@@ -8436,14 +8436,13 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {hovered && (
-                    <div className="rounded-xl border border-amber-500/60 bg-black/50 p-3 mb-4 text-[#dfcfab] min-h-[80px]">
-                      {renderTooltip(hovered)}
-                    </div>
-                  )}
-                  {!hovered && drop.bonus.length > 0 && (
-                    <p className="text-[11px] text-center text-[#8b6a3e] italic mb-4">Najedź myszką na przedmiot, aby zobaczyć szczegóły</p>
-                  )}
+                  <div className="rounded-xl border border-amber-500/60 bg-black/50 p-3 mb-4 text-[#dfcfab] h-[160px] overflow-y-auto">
+                    {hovered ? (
+                      renderTooltip(hovered)
+                    ) : (
+                      <p className="text-[12px] text-center text-[#8b6a3e] italic h-full flex items-center justify-center">Najedź myszką na przedmiot, aby zobaczyć szczegóły</p>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => { setCustomerLootDrop(null); setLootHoverIdx(null); }}
