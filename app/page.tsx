@@ -3015,7 +3015,7 @@ export default function Page() {
     return Array.from(map.values());
   }
 
-  function getOrderItemDisplay(id: string): { name: string; icon: string } {
+  function getOrderItemDisplay(id: string): { name: string; icon: string; spritePath?: string } {
     if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯' };
     const ai = ANIMAL_ITEMS.find(a => a.id === id);
     if (ai) return { name: ai.name, icon: ai.icon };
@@ -3023,7 +3023,12 @@ export default function Page() {
     if (cropM) {
       const crop = CROPS.find(c => c.id === cropM[1]);
       const qLabel = cropM[2] === 'good' ? ' (zwykła)' : cropM[2] === 'epic' ? ' (epicka)' : ' (legendarna)';
-      if (crop) return { name: crop.name + qLabel, icon: '🌱' };
+      if (crop) {
+        const sprite = cropM[2] === 'legendary' ? (crop.legendarySpritePath ?? crop.epicSpritePath ?? crop.spritePath)
+                     : cropM[2] === 'epic'      ? (crop.epicSpritePath ?? crop.spritePath)
+                     : crop.spritePath;
+        return { name: crop.name + qLabel, icon: '🌱', spritePath: sprite };
+      }
     }
     const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty)$/);
     if (fruitM) {
@@ -3095,10 +3100,26 @@ export default function Page() {
     });
     setCustomerSelling(null);
     if (error || !data?.ok) {
+      const rawMsg = error?.message ?? data?.reason ?? "";
+      let polishMsg = "Brak wymaganych przedmiotów lub zamówienie wygasło.";
+      // insufficient: <item_id> (have X, need Y)
+      const mIns = rawMsg.match(/insufficient:\s*([a-z0-9_]+)\s*\(have\s*(\d+),\s*need\s*(\d+)\)/i);
+      if (mIns) {
+        const d = getOrderItemDisplay(mIns[1]);
+        polishMsg = `Brakuje: ${d.icon} ${d.name} — masz ${mIns[2]}, potrzebujesz ${mIns[3]}.`;
+      } else if (/expired|wyga/i.test(rawMsg)) {
+        polishMsg = "Zamówienie wygasło — klient już odszedł.";
+      } else if (/not[\s_-]*found|nie\s*znalezion|no\s*such/i.test(rawMsg)) {
+        polishMsg = "Zamówienie nie istnieje (mogło już zostać zrealizowane lub usunięte).";
+      } else if (/already.*(complet|fulfill)|już.*(zrealiz|wykonan)/i.test(rawMsg)) {
+        polishMsg = "To zamówienie zostało już zrealizowane.";
+      } else if (rawMsg) {
+        polishMsg = rawMsg;
+      }
       setMessage({
         type: "error",
         title: "Nie udało się zrealizować zamówienia",
-        text: error?.message ?? "Brak wymaganych przedmiotów lub zamówienie wygasło.",
+        text: polishMsg,
       });
       void refreshCustomerOrders();
       return;
@@ -8118,7 +8139,11 @@ export default function Page() {
                                   <div key={idx} className={`flex items-center justify-between rounded-lg border p-2.5 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/10'}`}>
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
                                       <span className="text-lg shrink-0">{ok ? '✅' : '❌'}</span>
-                                      <span className="text-xl shrink-0">{d.icon}</span>
+                                      {d.spritePath ? (
+                                        <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                                      ) : (
+                                        <span className="text-xl shrink-0">{d.icon}</span>
+                                      )}
                                       <div className="min-w-0">
                                         <p className="text-sm font-black text-[#f9e7b2] truncate">{it.qty}× {d.name}</p>
                                         <p className="text-[10px] text-[#8b6a3e]">Masz: {have}</p>
@@ -8150,7 +8175,15 @@ export default function Page() {
                                   const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
                                   const d = getOrderItemDisplay(lookupId);
                                   return (
-                                    <p key={idx} className="text-xs font-bold text-purple-200">+{b.qty}× {d.icon} {d.name}</p>
+                                    <p key={idx} className="text-xs font-bold text-purple-200 flex items-center gap-1">
+                                      <span>+{b.qty}×</span>
+                                      {d.spritePath ? (
+                                        <img src={d.spritePath} alt={d.name} className="w-4 h-4 object-contain inline-block" style={{ imageRendering: 'pixelated' }} />
+                                      ) : (
+                                        <span>{d.icon}</span>
+                                      )}
+                                      <span>{d.name}</span>
+                                    </p>
                                   );
                                 })}
                               </div>
