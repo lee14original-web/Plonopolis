@@ -1540,6 +1540,15 @@ export default function Page() {
   const [showUlModal, setShowUlModal] = React.useState(false);
   const [showLadaModal, setShowLadaModal] = React.useState(false);
   const [showLadaInfo, setShowLadaInfo] = React.useState(false);
+  const ladaInfoCloseTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openLadaInfo = React.useCallback(() => {
+    if (ladaInfoCloseTimer.current) { clearTimeout(ladaInfoCloseTimer.current); ladaInfoCloseTimer.current = null; }
+    setShowLadaInfo(true);
+  }, []);
+  const scheduleCloseLadaInfo = React.useCallback(() => {
+    if (ladaInfoCloseTimer.current) clearTimeout(ladaInfoCloseTimer.current);
+    ladaInfoCloseTimer.current = setTimeout(() => { setShowLadaInfo(false); ladaInfoCloseTimer.current = null; }, 180);
+  }, []);
   // Lada NPC — zamówienia klientów
   const [customerOrders, setCustomerOrders] = React.useState<CustomerOrder[]>([]);
   const [currentCustomerIdx, setCurrentCustomerIdx] = React.useState(0);
@@ -7950,17 +7959,21 @@ export default function Page() {
                   <div className="relative flex w-full max-w-[640px] h-[92vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
                     <div
                       className="absolute left-4 top-4 z-30"
-                      onMouseEnter={() => setShowLadaInfo(true)}
-                      onMouseLeave={() => setShowLadaInfo(false)}
+                      onMouseEnter={openLadaInfo}
+                      onMouseLeave={scheduleCloseLadaInfo}
                     >
                       <button
                         type="button"
-                        onClick={() => setShowLadaInfo(v => !v)}
+                        onClick={() => { if (showLadaInfo) { scheduleCloseLadaInfo(); } else { openLadaInfo(); } }}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-500/70 bg-black/40 text-amber-300 font-black transition hover:border-amber-300 hover:text-amber-200 hover:scale-110"
                         title="Pomoc — jak działa lada?"
                       >?</button>
                       {showLadaInfo && (
-                        <div className="absolute left-0 top-11 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4">
+                        <div
+                          onMouseEnter={openLadaInfo}
+                          onMouseLeave={scheduleCloseLadaInfo}
+                          className="absolute left-0 top-9 pt-2 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4"
+                        >
                           <div>
                             <p className="text-lg font-black text-amber-300 mb-1">🛒 Lada dla klientów — jak to działa?</p>
                             <p className="text-[13px] text-[#bfa274] leading-relaxed">Klienci NPC pojawiają się automatycznie co kilka minut i zamawiają u Ciebie konkretne produkty (uprawy, owoce, produkty zwierzęce, miód). Każde zlecenie ma <span className="text-amber-300 font-bold">limit czasu</span> — jeśli go przekroczysz, klient odejdzie bez zapłaty. Po realizacji dostajesz <span className="text-yellow-300 font-bold">złoto</span>, <span className="text-blue-300 font-bold">EXP</span>, a czasem dodatkowy <span className="text-purple-300 font-bold">bonus</span>.</p>
