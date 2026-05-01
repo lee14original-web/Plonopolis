@@ -7631,7 +7631,10 @@ export default function Page() {
                           : data?.error === "no_jars"  ? "Brak pustych słoików!"
                           : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
                           : "Błąd zbierania miodu — spróbuj ponownie.";
-                setMessage({ type:"error", title: msg, text:"" });
+                setMessage({ type:"error", title: msg, text: "Synchronizuję stan ula z bazą..." });
+                // FIX: synchronizacja UI z bazą po błędzie (np. po nieudanym zbiorze
+                // honey_start został zresetowany w bazie, ale UI wciąż pokazuje 8/8).
+                await loadProfile(profile.id);
                 return;
               }
               setHiveData(data.hive_data as HiveData);
