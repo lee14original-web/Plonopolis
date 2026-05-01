@@ -221,6 +221,7 @@ const HIVE_BEE_ACCEPT_CHANCE = [0, 0.90, 0.80, 0.70, 0.60, 0.50]; // szansa przy
 const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
 const HIVE_UNLOCK_LVL    = 10;     // od którego poziomu gracza odblokowany jest ul
+const BARN_UNLOCK_LVL    = 3;      // od którego poziomu gracza odblokowana jest stodoła (lvl pierwszego zwierzęcia — Kura)
 const HIVE_BUY_COST      = 250;    // koszt zakupu ula (lvl 0 → 1)
 const BEE_COST           = 75;     // koszt 1 pszczoły
 const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął produkować miód
@@ -1520,6 +1521,7 @@ export default function Page() {
   const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
   const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
+  const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -4621,13 +4623,28 @@ export default function Page() {
                           style={{ left:`${navHitboxPos.dom.left}%`, top:`${navHitboxPos.dom.top}%`, width:`${navHitboxPos.dom.width}%`, height:`${navHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
                         {/* Stodoła */}
-                        <button
-                          type="button"
-                          onClick={() => setShowStodolaModal(true)}
-                          title="Stodoła"
-                          className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:`${navHitboxPos.stodola.left}%`, top:`${navHitboxPos.stodola.top}%`, width:`${navHitboxPos.stodola.width}%`, height:`${navHitboxPos.stodola.height}%`, zIndex: 20 }}
-                        />
+                        {(() => {
+                          const _playerLvl = profile?.level ?? 1;
+                          const _barnUnlocked = _playerLvl >= BARN_UNLOCK_LVL;
+                          return (
+                            <button
+                              type="button"
+                              title={_barnUnlocked ? "Stodoła" : ""}
+                              onMouseEnter={() => { if (!_barnUnlocked) setHoveredBarnLock(true); }}
+                              onMouseLeave={() => setHoveredBarnLock(false)}
+                              onClick={() => {
+                                if (!_barnUnlocked) {
+                                  setHoveredBarnLock(false);
+                                  setMessage({ type:"error", title:"🔒 Stodoła zablokowana", text:`Stodoła odblokowuje się od ${BARN_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
+                                  return;
+                                }
+                                setShowStodolaModal(true);
+                              }}
+                              className={`pointer-events-auto absolute transition-all duration-300 ${_barnUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
+                              style={{ left:`${navHitboxPos.stodola.left}%`, top:`${navHitboxPos.stodola.top}%`, width:`${navHitboxPos.stodola.width}%`, height:`${navHitboxPos.stodola.height}%`, zIndex: 20 }}
+                            />
+                          );
+                        })()}
                       {/* Do miasta */}
                       <button
                         type="button"
@@ -9344,6 +9361,19 @@ export default function Page() {
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= HIVE_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{HIVE_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">💰 Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
+        </div>
+      )}
+    {/* Tooltip stodoły (zablokowanej do lvl 3) podążający za kursorem */}
+      {hoveredBarnLock && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">🔒 Stodoła — zablokowana</p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Stodoła pozwala hodować zwierzęta (kury, króliki, krowy…) i zbierać od nich produkty (jajka, mleko, futra) potrzebne w zamówieniach NPC.</p>
+          <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{BARN_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= BARN_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{BARN_UNLOCK_LVL}</span></p>
+          <p className="mt-2 text-[13px] text-[#8b6a3e]">🐔 Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
         </div>
       )}
     {/* Tooltip konewki podążający za kursorem */}
