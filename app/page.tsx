@@ -8009,18 +8009,20 @@ export default function Page() {
                             )}
                           </div>
 
-                          <button
-                            onClick={() => { void completeCustomerOrder(order.id); }}
-                            disabled={!canFulfill || customerSelling === order.id || !!isExpired}
-                            className="w-full rounded-xl py-3 text-base font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie'}
-                          </button>
                         </div>
                       )}
                     </div>
 
-                    <div className="border-t border-amber-700/30 p-4">
+                    <div className="border-t border-amber-700/30 p-4 space-y-2">
+                      {order && customer && (
+                        <button
+                          onClick={() => { void completeCustomerOrder(order.id); }}
+                          disabled={!canFulfill || customerSelling === order.id || !!isExpired}
+                          className="w-full rounded-xl py-3 text-base font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie'}
+                        </button>
+                      )}
                       <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-2.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
                         ✕ Zamknij
                       </button>
