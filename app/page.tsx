@@ -2997,7 +2997,7 @@ export default function Page() {
     const cropM = id.match(/^(.+)_(good|epic|legendary)$/);
     if (cropM) {
       const crop = CROPS.find(c => c.id === cropM[1]);
-      const qLabel = cropM[2] === 'good' ? '' : cropM[2] === 'epic' ? ' ✨' : ' 🌟';
+      const qLabel = cropM[2] === 'good' ? ' (zwykła)' : cropM[2] === 'epic' ? ' (epicka)' : ' (legendarna)';
       if (crop) return { name: crop.name + qLabel, icon: '🌱' };
     }
     const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty)$/);
