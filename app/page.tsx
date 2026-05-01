@@ -42,7 +42,7 @@ type Profile = {
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
-type CustomerOrderBonus = { id: string; qty: number; type: 'animal' | 'crop' | 'compost' };
+type CustomerOrderBonus = { id?: string; qty: number; type: 'animal' | 'crop' | 'compost' | 'eq_item'; tier?: number };
 type CustomerOrderRewards = { gold: number; exp: number; bonus: CustomerOrderBonus[] };
 type CustomerOrder = {
   id: string;
@@ -2982,6 +2982,21 @@ export default function Page() {
       const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
       if (tree) return { name: `${tree.fruitName}${qd?.label ? ' ' + qd.label : ''}`, icon: tree.fruitIcon };
     }
+    if (isCompostKey(id)) {
+      const t = compostTypeFromKey(id);
+      const v = compostValueFromKey(id);
+      if (t) {
+        const def = COMPOST_DEFS[t];
+        return { name: `${def.tierName(v)} ${def.name}`, icon: def.icon };
+      }
+    }
+    const eq = CHAR_EQUIP_ITEMS.find(i => i.id === id);
+    if (eq) return { name: eq.name, icon: eq.icon };
+    if (id.startsWith('eq_tier_')) {
+      const tier = Number(id.split('_').pop()) || 0;
+      const minL = tier * 5 + 1, maxL = tier * 5 + 5;
+      return { name: `Tajemniczy przedmiot (lvl ${minL}-${maxL})`, icon: '🎁' };
+    }
     return { name: id, icon: '📦' };
   }
 
@@ -3039,14 +3054,46 @@ export default function Page() {
       void refreshCustomerOrders();
       return;
     }
+    // Obsługa bonusów typu eq_item: SQL zwraca {type:'eq_item', tier:N, qty:1} bez id.
+    // Frontend losuje konkretny przedmiot z CHAR_EQUIP_ITEMS po tier+playerLvl,
+    // dodaje do owned/extra (tak samo jak w kompostowniku) i podmienia bonus.id.
+    const bonusList: CustomerOrderBonus[] = Array.isArray(data.bonus) ? [...data.bonus] : [];
+    const eqBonuses = bonusList.filter(b => b.type === 'eq_item');
+    if (eqBonuses.length > 0) {
+      const playerLvl = profile.level ?? 1;
+      let owned = { ...ownedEqItems };
+      let extras = [...extraEqItems];
+      for (const b of eqBonuses) {
+        const tier = Math.max(0, Math.min(4, b.tier ?? 0));
+        let pool: typeof CHAR_EQUIP_ITEMS = [];
+        for (let t = tier; t >= 0; t--) {
+          const minLvl = t * 5 + 1, maxLvl = t * 5 + 5;
+          pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
+          if (pool.length > 0) break;
+        }
+        if (pool.length === 0) {
+          b.id = `eq_tier_${tier}`; // brak puli — pokaż placeholder w toaście
+          continue;
+        }
+        const item = pool[Math.floor(Math.random() * pool.length)];
+        if (!owned[item.id]) {
+          owned = { ...owned, [item.id]: true as const };
+        } else {
+          extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }];
+        }
+        b.id = item.id;
+      }
+      saveOwnedEqItems(owned);
+      saveExtraEqItems(extras);
+    }
     if ((data.exp ?? 0) > 0) {
       await handleAddExp(data.exp);
     } else {
       await loadProfile(profile.id);
     }
-    const bonusText = (data.bonus ?? [])
+    const bonusText = bonusList
       .map((b: CustomerOrderBonus) => {
-        const d = getOrderItemDisplay(b.id);
+        const d = getOrderItemDisplay(b.id ?? `eq_tier_${b.tier ?? 0}`);
         return `${b.qty}× ${d.name}`;
       })
       .join(", ");
@@ -7806,7 +7853,8 @@ export default function Page() {
                               <div className="mt-2 rounded-lg border border-purple-500/40 bg-purple-950/20 p-2">
                                 <p className="text-[10px] uppercase tracking-widest text-purple-300 mb-1 font-black">🎁 Bonus dodatkowy:</p>
                                 {order.rewards.bonus.map((b, idx) => {
-                                  const d = getOrderItemDisplay(b.id);
+                                  const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
+                                  const d = getOrderItemDisplay(lookupId);
                                   return (
                                     <p key={idx} className="text-xs font-bold text-purple-200">+{b.qty}× {d.icon} {d.name}</p>
                                   );
