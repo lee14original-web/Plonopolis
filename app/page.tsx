@@ -9374,7 +9374,6 @@ export default function Page() {
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-2 font-black text-amber-300">🔒 Ul — zablokowany</p>
-          <p className="mb-2 text-[14px] text-[#8b6a3e]">Ul produkuje miód, który możesz sprzedawać klientom przy ladzie i wykorzystać w zamówieniach NPC.</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= HIVE_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{HIVE_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">💰 Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
@@ -9387,7 +9386,6 @@ export default function Page() {
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-2 font-black text-amber-300">🔒 Stodoła — zablokowana</p>
-          <p className="mb-2 text-[14px] text-[#8b6a3e]">Stodoła pozwala hodować zwierzęta (kury, króliki, krowy…) i zbierać od nich produkty (jajka, mleko, futra) potrzebne w zamówieniach NPC.</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{BARN_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= BARN_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{BARN_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🐔 Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
@@ -9400,7 +9398,6 @@ export default function Page() {
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-2 font-black text-amber-300">🔒 Sad — zablokowany</p>
-          <p className="mb-2 text-[14px] text-[#8b6a3e]">Sad pozwala sadzić drzewa owocowe (jabłonie, grusze, śliwy…) i zbierać owoce wszystkich jakości (zwykłe, soczyste, złote).</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= SAD_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{SAD_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
