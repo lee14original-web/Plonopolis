@@ -7667,9 +7667,17 @@ export default function Page() {
               const _rejected  = data.bees_rejected  ?? 0;
               const _lostMoney = _rejected * BEE_COST;
               if (_rejected === 0) {
-                setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted === 1 ? "pszczoła przyjęta" : _accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+                if (_accepted === 1) {
+                  setMessage({ type:"success", title:`🐝 Pszczoła przyjęta!`, text:`Powodzenie — wleciała prosto do ula.` });
+                } else {
+                  setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+                }
               } else if (_accepted === 0) {
-                setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected === 1 ? "pszczoła zginęła" : _rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                if (_rejected === 1) {
+                  setMessage({ type:"error", title:`💀 Pszczoła nie przyjęła się, zginęła!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                } else {
+                  setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                }
               } else {
                 setMessage({ type:"error", title:`🐝 Przyjęto ${_accepted}/${_attempted} pszczół`, text:`${_rejected} ${_rejected === 1 ? "zginęła" : "zginęło"} — straciłeś ${_lostMoney} zł. (szansa przyjęcia: ${data.chance_pct}%)` });
               }
