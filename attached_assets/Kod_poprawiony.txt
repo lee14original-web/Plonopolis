@@ -213,12 +213,16 @@ interface HiveData {
   empty_jars: number;
   honey_jars: number;
 }
-const DEFAULT_HIVE_DATA: HiveData = { level:1, bees_progress:0, honey_start:null, suit_durability:0, empty_jars:0, honey_jars:0 };
+const DEFAULT_HIVE_DATA: HiveData = { level:0, bees_progress:0, honey_start:null, suit_durability:0, empty_jars:0, honey_jars:0 };
 const HIVE_MAX_HONEY     = [0, 8, 10, 12, 14, 16];
 const HIVE_UPGRADE_BEES  = [0, 20, 30, 40, 50];
 const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
 const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
+const HIVE_UNLOCK_LVL    = 10;     // od którego poziomu gracza odblokowany jest ul
+const HIVE_BUY_COST      = 250;    // koszt zakupu ula (lvl 0 → 1)
+const BEE_COST           = 75;     // koszt 1 pszczoły
+const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął produkować miód
 
 // ═══ CZAS AKCJI POLOWYCH (sadzenie/zbiór) ═══
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
@@ -2073,7 +2077,7 @@ export default function Page() {
     // FIX: honey_start = NULL dopóki gracz nie kupi pierwszej pszczoły.
     // Pszczoły są warunkiem produkcji — ul bez pszczół nic nie robi.
     const _parsedHive: HiveData = {
-      level:           typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
+      level:           typeof _rawHive?.level === "number" ? Math.max(0,Math.min(5,_rawHive.level)) : 0,
       bees_progress:   typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
       honey_start:     _hiveSavedStart,
       suit_durability: typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
@@ -4616,13 +4620,25 @@ export default function Page() {
                         style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
                       {/* Ul */}
-                      <button
-                        type="button"
-                        title="Ul"
-                        onClick={() => setShowUlModal(true)}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
-                      />
+                      {(() => {
+                        const _playerLvl = profile?.level ?? 1;
+                        const _hiveUnlocked = _playerLvl >= HIVE_UNLOCK_LVL;
+                        return (
+                          <button
+                            type="button"
+                            title={_hiveUnlocked ? "Ul" : `🔒 Wymaga: ${HIVE_UNLOCK_LVL} poziom`}
+                            onClick={() => {
+                              if (!_hiveUnlocked) {
+                                setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Ul odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
+                                return;
+                              }
+                              setShowUlModal(true);
+                            }}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_hiveUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
+                            style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
+                          />
+                        );
+                      })()}
                       {/* Lada dla klientów — sprzedaż słoików miodu */}
                       <button
                         type="button"
@@ -7606,12 +7622,40 @@ export default function Page() {
             const suitPct = Math.round((hiveData.suit_durability / 100) * 100);
             const hiveBonusPct = hlvl * 2;
             const hiveImg = `/ul_${hlvl}.png`;
+            const playerMoney = profile?.money ?? 0;
+            const buyHive = async () => {
+              if (!profile?.id) return;
+              if (playerMoney < HIVE_BUY_COST) {
+                setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${HIVE_BUY_COST} zł żeby kupić ul.` });
+                return;
+              }
+              const { data, error } = await supabase.rpc("buy_hive", { p_user_id: profile.id });
+              if (error || !data?.ok) {
+                setMessage({ type:"error", title:"Nie udało się kupić ula", text: data?.error || error?.message || "Spróbuj ponownie." });
+                await loadProfile(profile.id);
+                return;
+              }
+              setHiveData(data.hive_data as HiveData);
+              await loadProfile(profile.id);
+              setMessage({ type:"success", title:"🍯 Ul kupiony!", text:`Kup minimum ${HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ul ruszył z produkcją miodu.` });
+            };
             const addBees = async (n: number) => {
               if (!profile?.id) return;
               const add = Math.min(n, beesNeeded - beesProgress);
               if (add <= 0) return;
+              const cost = add * BEE_COST;
+              if (playerMoney < cost) {
+                setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${cost} zł na ${add} ${add === 1 ? "pszczołę" : add < 5 ? "pszczoły" : "pszczół"}.` });
+                return;
+              }
               const { data, error } = await supabase.rpc("add_hive_bees", { p_user_id: profile.id, p_amount: add });
-              if (!error && data?.ok) setHiveData(data.hive_data as HiveData);
+              if (error || !data?.ok) {
+                setMessage({ type:"error", title:"Nie udało się kupić pszczół", text: data?.error || error?.message || "Spróbuj ponownie." });
+                await loadProfile(profile.id);
+                return;
+              }
+              setHiveData(data.hive_data as HiveData);
+              await loadProfile(profile.id);
             };
             const collectHoney = async () => {
               if (!profile?.id) return;
@@ -7649,15 +7693,39 @@ export default function Page() {
                   <div className="flex items-center gap-4">
                     <span className="text-4xl">🍯</span>
                     <div>
-                      <h2 className="text-2xl font-black text-[#f9e7b2]">Ul — poziom {hlvl}</h2>
-                      <p className="text-sm text-amber-400/80">Pszczoły przyspieszają wzrost o {hiveBonusPct}%</p>
+                      <h2 className="text-2xl font-black text-[#f9e7b2]">{hlvl === 0 ? "Ul — brak (kup, by zacząć)" : `Ul — poziom ${hlvl}`}</h2>
+                      <p className="text-sm text-amber-400/80">{hlvl === 0 ? "Najpierw kup ul, potem pszczoły — i ruszysz z produkcją miodu." : `Pszczoły przyspieszają wzrost o ${hiveBonusPct}%`}</p>
                     </div>
                   </div>
-                  {/* Obraz ula */}
-                  <div className="flex justify-center">
-                    <img src={hiveImg} alt={`Ul poziom ${hlvl}`} className="h-36 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }} />
-                  </div>
+                  {/* Obraz ula (tylko gdy istnieje) */}
+                  {hlvl > 0 && (
+                    <div className="flex justify-center">
+                      <img src={hiveImg} alt={`Ul poziom ${hlvl}`} className="h-36 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }} />
+                    </div>
+                  )}
+                  {hlvl === 0 && (
+                    <div className="flex justify-center items-center h-36 rounded-2xl border-2 border-dashed border-[#8b6a3e]/40 bg-black/20">
+                      <span className="text-6xl opacity-40">🪧</span>
+                    </div>
+                  )}
+                  {/* Sekcja zakupu ula (tylko lvl 0) */}
+                  {hlvl === 0 && (
+                    <div className="rounded-2xl border border-amber-600/40 bg-amber-900/10 p-5 flex flex-col gap-3">
+                      <div>
+                        <p className="text-base font-black text-[#f9e7b2]">Kup ul (poziom 1)</p>
+                        <p className="text-xs text-[#dfcfab]/80 mt-1">Po zakupie ula musisz dokupić minimum {HIVE_MIN_BEES_TO_PRODUCE} pszczół ({HIVE_MIN_BEES_TO_PRODUCE * BEE_COST} zł), żeby uruchomić produkcję miodu.</p>
+                      </div>
+                      <button
+                        disabled={playerMoney < HIVE_BUY_COST}
+                        onClick={() => { void buyHive(); }}
+                        className={`w-full rounded-xl py-3 text-sm font-black transition ${playerMoney >= HIVE_BUY_COST ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                      >
+                        {playerMoney >= HIVE_BUY_COST ? `🍯 Kup ul (${HIVE_BUY_COST} zł)` : `🚫 Brak pieniędzy (${HIVE_BUY_COST} zł)`}
+                      </button>
+                    </div>
+                  )}
                   {/* Miód */}
+                  {hlvl > 0 && (
                   <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-[#dfcfab] font-bold">🍯 Miód</span>
@@ -7669,10 +7737,12 @@ export default function Page() {
                     {honeyStarted ? (
                       <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
                     ) : (
-                      <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup pierwszą pszczołę żeby ruszyć z produkcją miodu!</p>
+                      <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup minimum {HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ruszyć z produkcją miodu!</p>
                     )}
                   </div>
+                  )}
                   {/* Zasoby */}
+                  {hlvl > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
                       <img src="/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
@@ -7689,7 +7759,9 @@ export default function Page() {
                       </div>
                     </div>
                   </div>
+                  )}
                   {/* Strój pszczelarza */}
+                  {hlvl > 0 && (
                   <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3">
                     <div className="flex items-center gap-3 mb-2">
                       <img src="/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
@@ -7704,32 +7776,50 @@ export default function Page() {
                       </div>
                     </div>
                   </div>
+                  )}
                   {/* Przycisk zbioru */}
+                  {hlvl > 0 && (
                   <button
                     disabled={!canCollect}
                     onClick={() => { void collectHoney(); }}
                     className={`w-full rounded-xl py-3 text-sm font-black transition ${canCollect ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
                   >
-                    {!honeyStarted ? "🐝 Najpierw kup pierwszą pszczołę" : !canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
+                    {!honeyStarted ? `🐝 Kup minimum ${HIVE_MIN_BEES_TO_PRODUCE} pszczół` : !canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
                   </button>
+                  )}
                   {/* Ulepszanie ula */}
-                  {hlvl < 5 && (
+                  {hlvl >= 1 && hlvl < 5 && (
                     <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
-                      <p className="text-sm font-bold text-[#dfcfab] mb-2">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
+                      <p className="text-sm font-bold text-[#dfcfab] mb-1">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
+                      <p className="text-xs text-amber-400/80 mb-2">Cena: <span className="font-black text-yellow-200">{BEE_COST} zł</span> za 1 pszczołę</p>
                       <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3">
                         <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width:`${beesNeeded > 0 ? (beesProgress/beesNeeded*100) : 0}%` }} />
                       </div>
                       <div className="flex gap-2 flex-wrap">
-                        {[1,5,10].map(n => (
-                          <button key={n} disabled={beesProgress >= beesNeeded} onClick={() => { void addBees(n); }}
-                            className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-4 py-2 text-xs font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40 disabled:cursor-not-allowed">
-                            +{n} 🐝
-                          </button>
-                        ))}
-                        <button disabled={beesProgress >= beesNeeded} onClick={() => { void addBees(beesNeeded - beesProgress); }}
-                          className="rounded-lg border border-amber-500/60 bg-amber-700/20 px-4 py-2 text-xs font-bold text-yellow-200 hover:bg-amber-700/30 disabled:opacity-40 disabled:cursor-not-allowed">
-                          MAX 🐝
-                        </button>
+                        {[1,5,10].map(n => {
+                          const _add = Math.min(n, beesNeeded - beesProgress);
+                          const _cost = _add * BEE_COST;
+                          const _disabled = beesProgress >= beesNeeded || playerMoney < _cost || _add <= 0;
+                          return (
+                            <button key={n} disabled={_disabled} onClick={() => { void addBees(n); }}
+                              title={`Koszt: ${_cost} zł`}
+                              className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40 disabled:cursor-not-allowed">
+                              +{n} 🐝 ({n * BEE_COST}zł)
+                            </button>
+                          );
+                        })}
+                        {(() => {
+                          const _addMax = beesNeeded - beesProgress;
+                          const _costMax = _addMax * BEE_COST;
+                          const _disabledMax = _addMax <= 0 || playerMoney < _costMax;
+                          return (
+                            <button disabled={_disabledMax} onClick={() => { void addBees(_addMax); }}
+                              title={`Koszt: ${_costMax} zł`}
+                              className="rounded-lg border border-amber-500/60 bg-amber-700/20 px-3 py-2 text-xs font-bold text-yellow-200 hover:bg-amber-700/30 disabled:opacity-40 disabled:cursor-not-allowed">
+                              MAX 🐝 ({_costMax}zł)
+                            </button>
+                          );
+                        })()}
                       </div>
                       {beesProgress >= beesNeeded && <p className="mt-2 text-xs text-green-400 font-bold">✅ Ul gotowy do ulepszenia!</p>}
                     </div>
