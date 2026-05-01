@@ -216,7 +216,8 @@ interface HiveData {
 const DEFAULT_HIVE_DATA: HiveData = { level:0, bees_progress:0, honey_start:null, suit_durability:0, empty_jars:0, honey_jars:0 };
 const HIVE_MAX_HONEY     = [0, 8, 10, 12, 14, 16];
 const HIVE_UPGRADE_BEES  = [0, 20, 30, 40, 50];
-const HIVE_SUCCESS_CHANCE= [0, 0.90, 0.80, 0.70, 0.60, 0.50];
+const HIVE_SUCCESS_CHANCE= [0, 1.00, 1.00, 1.00, 1.00, 1.00]; // zbiór miodu — zawsze 100%
+const HIVE_BEE_ACCEPT_CHANCE = [0, 0.90, 0.80, 0.70, 0.60, 0.50]; // szansa przyjęcia 1 pszczoły wg poziomu ula
 const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
 const HIVE_UNLOCK_LVL    = 10;     // od którego poziomu gracza odblokowany jest ul
@@ -7660,6 +7661,18 @@ export default function Page() {
               }
               setHiveData(data.hive_data as HiveData);
               await loadProfile(profile.id);
+              // Feedback o wyniku losowania (przyjęte vs. zginęły)
+              const _attempted = data.bees_attempted ?? add;
+              const _accepted  = data.bees_accepted  ?? _attempted;
+              const _rejected  = data.bees_rejected  ?? 0;
+              const _lostMoney = _rejected * BEE_COST;
+              if (_rejected === 0) {
+                setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted === 1 ? "pszczoła przyjęta" : _accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+              } else if (_accepted === 0) {
+                setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected === 1 ? "pszczoła zginęła" : _rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+              } else {
+                setMessage({ type:"error", title:`🐝 Przyjęto ${_accepted}/${_attempted} pszczół`, text:`${_rejected} ${_rejected === 1 ? "zginęła" : "zginęło"} — straciłeś ${_lostMoney} zł. (szansa przyjęcia: ${data.chance_pct}%)` });
+              }
             };
             const collectHoney = async () => {
               if (!profile?.id) return;
@@ -7795,7 +7808,12 @@ export default function Page() {
                   {hlvl >= 1 && hlvl < 5 && (
                     <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
                       <p className="text-sm font-bold text-[#dfcfab] mb-1">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
-                      <p className="text-xs text-amber-400/80 mb-2">Cena: <span className="font-black text-yellow-200">{BEE_COST} zł</span> za 1 pszczołę</p>
+                      <p className="text-xs text-amber-400/80 mb-1">Cena: <span className="font-black text-yellow-200">{BEE_COST} zł</span> za 1 pszczołę</p>
+                      <p className="text-xs mb-2">
+                        🎯 Szansa przyjęcia pszczoły: <span className={`font-black ${(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.8 ? "text-green-400" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.6 ? "text-yellow-300" : "text-red-400"}`}>{Math.round((HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) * 100)}%</span>
+                        <span className="text-[#8b6a3e]"> — {(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.9 ? "łatwo" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.7 ? "umiarkowanie" : "trudno"} (im wyższy ul, tym trudniej)</span>
+                      </p>
+                      <p className="text-xs text-red-400/80 mb-2">⚠️ Pszczoła która nie zostanie przyjęta — ginie, a kasa przepada.</p>
                       <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3">
                         <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width:`${beesNeeded > 0 ? (beesProgress/beesNeeded*100) : 0}%` }} />
                       </div>
