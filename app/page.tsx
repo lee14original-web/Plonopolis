@@ -7667,9 +7667,17 @@ export default function Page() {
               const _rejected  = data.bees_rejected  ?? 0;
               const _lostMoney = _rejected * BEE_COST;
               if (_rejected === 0) {
-                setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted === 1 ? "pszczoła przyjęta" : _accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+                if (_accepted === 1) {
+                  setMessage({ type:"success", title:`🐝 Pszczoła przyjęta!`, text:`Powodzenie — wleciała prosto do ula.` });
+                } else {
+                  setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+                }
               } else if (_accepted === 0) {
-                setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected === 1 ? "pszczoła zginęła" : _rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                if (_rejected === 1) {
+                  setMessage({ type:"error", title:`💀 Pszczoła nie przyjęła się, zginęła!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                } else {
+                  setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+                }
               } else {
                 setMessage({ type:"error", title:`🐝 Przyjęto ${_accepted}/${_attempted} pszczół`, text:`${_rejected} ${_rejected === 1 ? "zginęła" : "zginęło"} — straciłeś ${_lostMoney} zł. (szansa przyjęcia: ${data.chance_pct}%)` });
               }
@@ -7809,9 +7817,8 @@ export default function Page() {
                     <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
                       <p className="text-sm font-bold text-[#dfcfab] mb-1">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
                       <p className="text-xs text-amber-400/80 mb-1">Cena: <span className="font-black text-yellow-200">{BEE_COST} zł</span> za 1 pszczołę</p>
-                      <p className="text-xs mb-2">
-                        🎯 Szansa przyjęcia pszczoły: <span className={`font-black ${(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.8 ? "text-green-400" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.6 ? "text-yellow-300" : "text-red-400"}`}>{Math.round((HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) * 100)}%</span>
-                        <span className="text-[#8b6a3e]"> — {(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.9 ? "łatwo" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.7 ? "umiarkowanie" : "trudno"} (im wyższy ul, tym trudniej)</span>
+                      <p className={`text-xs mb-2 font-bold ${(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.8 ? "text-green-400" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.6 ? "text-yellow-300" : "text-red-400"}`}>
+                        Szansa przyjęcia pszczoły: <span className="font-black">{Math.round((HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) * 100)}%</span>
                       </p>
                       <p className="text-xs text-red-400/80 mb-2">⚠️ Pszczoła która nie zostanie przyjęta — ginie, a kasa przepada.</p>
                       <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3">
