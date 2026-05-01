@@ -222,6 +222,7 @@ const HONEY_MS_PER_PT    = 3_600_000;
 const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
 const HIVE_UNLOCK_LVL    = 10;     // od którego poziomu gracza odblokowany jest ul
 const BARN_UNLOCK_LVL    = 3;      // od którego poziomu gracza odblokowana jest stodoła (lvl pierwszego zwierzęcia — Kura)
+const SAD_UNLOCK_LVL     = 10;     // od którego poziomu gracza odblokowany jest sad
 const HIVE_BUY_COST      = 250;    // koszt zakupu ula (lvl 0 → 1)
 const BEE_COST           = 75;     // koszt 1 pszczoły
 const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął produkować miód
@@ -1522,6 +1523,7 @@ export default function Page() {
   const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
+  const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -4693,13 +4695,28 @@ export default function Page() {
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
                       {/* Sad */}
-                      <button
-                        type="button"
-                        title="Sad"
-                        onClick={() => setShowSadModal(true)}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navHitboxPos.sad.left}%`, top:`${navHitboxPos.sad.top}%`, width:`${navHitboxPos.sad.width}%`, height:`${navHitboxPos.sad.height}%`, zIndex: 20 }}
-                      />
+                      {(() => {
+                        const _playerLvl = profile?.level ?? 1;
+                        const _sadUnlocked = _playerLvl >= SAD_UNLOCK_LVL;
+                        return (
+                          <button
+                            type="button"
+                            title={_sadUnlocked ? "Sad" : ""}
+                            onMouseEnter={() => { if (!_sadUnlocked) setHoveredSadLock(true); }}
+                            onMouseLeave={() => setHoveredSadLock(false)}
+                            onClick={() => {
+                              if (!_sadUnlocked) {
+                                setHoveredSadLock(false);
+                                setMessage({ type:"error", title:"🔒 Sad zablokowany", text:`Sad odblokowuje się od ${SAD_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
+                                return;
+                              }
+                              setShowSadModal(true);
+                            }}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_sadUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
+                            style={{ left:`${navHitboxPos.sad.left}%`, top:`${navHitboxPos.sad.top}%`, width:`${navHitboxPos.sad.width}%`, height:`${navHitboxPos.sad.height}%`, zIndex: 20 }}
+                          />
+                        );
+                      })()}
                       {/* Etykiety nawigacyjne — niezależne od hitboxów */}
                       {(["dom","stodola","doMiasta","polaUprawne","ul","lada","kompostownik","sad"] as const).map(id => {
                         const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne",ul:"Ul",lada:"Lada",kompostownik:"Kompostownik",sad:"Sad"};
@@ -9374,6 +9391,19 @@ export default function Page() {
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{BARN_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= BARN_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{BARN_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🐔 Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
+        </div>
+      )}
+    {/* Tooltip sadu (zablokowanego do lvl 10) podążający za kursorem */}
+      {hoveredSadLock && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">🔒 Sad — zablokowany</p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Sad pozwala sadzić drzewa owocowe (jabłonie, grusze, śliwy…) i zbierać owoce wszystkich jakości (zwykłe, soczyste, złote).</p>
+          <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= SAD_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{SAD_UNLOCK_LVL}</span></p>
+          <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
         </div>
       )}
     {/* Tooltip konewki podążający za kursorem */}
