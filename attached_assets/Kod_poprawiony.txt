@@ -1436,6 +1436,13 @@ export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
+  // Auto-ukrywanie powiadomień po 6 sekundach (success/info), 8s dla error
+  React.useEffect(() => {
+    if (!message) return;
+    const ms = message.type === 'error' ? 8000 : 6000;
+    const t = setTimeout(() => setMessage(null), ms);
+    return () => clearTimeout(t);
+  }, [message]);
   const [farmUpgradeModal, setFarmUpgradeModal] = useState<FarmUpgradeModal | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -9116,22 +9123,59 @@ export default function Page() {
             );
           })()}
 
-          {message && (
-            <div className="fixed bottom-4 left-4 z-50">
+          {message && (() => {
+            const isErr = message.type === 'error';
+            const isOk = message.type === 'success';
+            const colorWrap = isErr
+              ? 'border-red-400/60 bg-gradient-to-br from-red-950/95 to-red-900/90 text-red-50 shadow-[0_20px_60px_-10px_rgba(239,68,68,0.4)]'
+              : isOk
+              ? 'border-emerald-400/60 bg-gradient-to-br from-emerald-950/95 to-emerald-900/90 text-emerald-50 shadow-[0_20px_60px_-10px_rgba(16,185,129,0.4)]'
+              : 'border-sky-400/60 bg-gradient-to-br from-sky-950/95 to-sky-900/90 text-sky-50 shadow-[0_20px_60px_-10px_rgba(56,189,248,0.4)]';
+            const barColor = isErr ? 'bg-red-400' : isOk ? 'bg-emerald-400' : 'bg-sky-400';
+            const icon = isErr ? '⚠️' : isOk ? '✅' : 'ℹ️';
+            const durMs = isErr ? 8000 : 6000;
+            return (
               <div
-                className={`rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-sm ${
-                  message.type === "error"
-                    ? "border-red-400/40 bg-red-950/80 text-red-100"
-                    : message.type === "success"
-                    ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-                    : "border-sky-400/40 bg-sky-950/80 text-sky-100"
-                }`}
+                key={`${message.title}-${message.text}`}
+                className="fixed top-6 left-1/2 -translate-x-1/2 z-[400] w-[min(92vw,520px)] pointer-events-none"
+                style={{ animation: 'plonopolisToastIn 280ms cubic-bezier(0.16,1,0.3,1)' }}
               >
-                <p className="font-semibold">{message.title}</p>
-                {message.text && <p className="mt-1 opacity-90">{message.text}</p>}
+                <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border-2 backdrop-blur-md ${colorWrap}`}>
+                  <button
+                    onClick={() => setMessage(null)}
+                    aria-label="Zamknij powiadomienie"
+                    className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 text-base font-black transition hover:bg-black/60 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                  <div className="flex items-start gap-3 px-5 py-4 pr-12">
+                    <span className="text-3xl shrink-0 leading-none mt-0.5">{icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-black leading-tight">{message.title}</p>
+                      {message.text && <p className="mt-1.5 text-sm opacity-90 leading-snug">{message.text}</p>}
+                    </div>
+                  </div>
+                  {/* Pasek postępu zanikania */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+                    <div
+                      className={`h-full ${barColor}`}
+                      style={{ animation: `plonopolisToastBar ${durMs}ms linear forwards` }}
+                    />
+                  </div>
+                </div>
+                <style>{`
+                  @keyframes plonopolisToastIn {
+                    from { opacity: 0; transform: translate(-50%, -16px) scale(0.96); }
+                    to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+                  }
+                  @keyframes plonopolisToastBar {
+                    from { width: 100%; }
+                    to   { width: 0%; }
+                  }
+                `}</style>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     {/* Tooltip sierpa podążający za kursorem */}
