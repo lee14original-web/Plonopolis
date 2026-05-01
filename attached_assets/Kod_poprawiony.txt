@@ -2982,6 +2982,14 @@ export default function Page() {
       const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
       if (tree) return { name: `${tree.fruitName}${qd?.label ? ' ' + qd.label : ''}`, icon: tree.fruitIcon };
     }
+    if (isCompostKey(id)) {
+      const t = compostTypeFromKey(id);
+      const v = compostValueFromKey(id);
+      if (t) {
+        const def = COMPOST_DEFS[t];
+        return { name: `${def.tierName(v)} ${def.name}`, icon: def.icon };
+      }
+    }
     return { name: id, icon: '📦' };
   }
 
