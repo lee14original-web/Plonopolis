@@ -2070,21 +2070,17 @@ export default function Page() {
 
     const _rawHive = source.hive_data as Record<string,unknown> | null | undefined;
     const _hiveSavedStart = typeof _rawHive?.honey_start === "number" ? _rawHive.honey_start : null;
-    const _hiveNow = Date.now();
-    const _needsHiveStart = _hiveSavedStart === null && !!source.id;
-    const _hiveStart = _needsHiveStart ? _hiveNow : _hiveSavedStart;
+    // FIX: honey_start = NULL dopóki gracz nie kupi pierwszej pszczoły.
+    // Pszczoły są warunkiem produkcji — ul bez pszczół nic nie robi.
     const _parsedHive: HiveData = {
       level:           typeof _rawHive?.level === "number" ? Math.max(1,Math.min(5,_rawHive.level)) : 1,
       bees_progress:   typeof _rawHive?.bees_progress === "number" ? _rawHive.bees_progress : 0,
-      honey_start:     _hiveStart,
+      honey_start:     _hiveSavedStart,
       suit_durability: typeof _rawHive?.suit_durability === "number" ? _rawHive.suit_durability : 0,
       empty_jars:      typeof _rawHive?.empty_jars === "number" ? _rawHive.empty_jars : 0,
       honey_jars:      typeof _rawHive?.honey_jars === "number" ? _rawHive.honey_jars : 0,
     };
     setHiveData(_parsedHive);
-    if (_needsHiveStart) {
-      void supabase.from("profiles").update({ hive_data: _parsedHive }).eq("id", source.id!);
-    }
     if (_needsMigration && source.id) {
       void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
     }
@@ -7605,7 +7601,8 @@ export default function Page() {
             const timerStr = `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
             const beesNeeded = HIVE_UPGRADE_BEES[hlvl] ?? 50;
             const beesProgress = Math.min(hiveData.bees_progress, beesNeeded);
-            const canCollect = honeyAvailable > 0 && hiveData.empty_jars > 0 && hiveData.suit_durability > 0;
+            const honeyStarted = hiveData.honey_start != null;
+            const canCollect = honeyStarted && honeyAvailable > 0 && hiveData.empty_jars > 0 && hiveData.suit_durability > 0;
             const suitPct = Math.round((hiveData.suit_durability / 100) * 100);
             const hiveBonusPct = hlvl * 2;
             const hiveImg = `/ul_${hlvl}.png`;
@@ -7631,7 +7628,10 @@ export default function Page() {
                           : data?.error === "no_jars"  ? "Brak pustych słoików!"
                           : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
                           : "Błąd zbierania miodu — spróbuj ponownie.";
-                setMessage({ type:"error", title: msg, text:"" });
+                setMessage({ type:"error", title: msg, text: "Synchronizuję stan ula z bazą..." });
+                // FIX: synchronizacja UI z bazą po błędzie (np. po nieudanym zbiorze
+                // honey_start został zresetowany w bazie, ale UI wciąż pokazuje 8/8).
+                await loadProfile(profile.id);
                 return;
               }
               setHiveData(data.hive_data as HiveData);
@@ -7666,7 +7666,11 @@ export default function Page() {
                     <div className="h-3 rounded-full bg-black/40 border border-amber-700/30 overflow-hidden">
                       <div className="h-full rounded-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all" style={{ width:`${maxHoney > 0 ? (honeyAvailable/maxHoney*100) : 0}%` }} />
                     </div>
-                    <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
+                    {honeyStarted ? (
+                      <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
+                    ) : (
+                      <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup pierwszą pszczołę żeby ruszyć timer!</p>
+                    )}
                   </div>
                   {/* Zasoby */}
                   <div className="grid grid-cols-2 gap-3">
@@ -7706,7 +7710,7 @@ export default function Page() {
                     onClick={() => { void collectHoney(); }}
                     className={`w-full rounded-xl py-3 text-sm font-black transition ${canCollect ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
                   >
-                    {!canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
+                    {!honeyStarted ? "🐝 Najpierw kup pierwszą pszczołę" : !canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
                   </button>
                   {/* Ulepszanie ula */}
                   {hlvl < 5 && (
