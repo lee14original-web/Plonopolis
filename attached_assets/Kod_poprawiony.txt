@@ -1518,6 +1518,7 @@ export default function Page() {
   const [hoveredCrop, setHoveredCrop] = useState<typeof CROPS[0] | null>(null);
   const [hoveredSeedQuality, setHoveredSeedQuality] = useState<"rotten"|"good"|"epic"|"legendary"|null>(null);
   const [hoveredWateringCan, setHoveredWateringCan] = React.useState(false);
+  const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -4626,9 +4627,12 @@ export default function Page() {
                         return (
                           <button
                             type="button"
-                            title={_hiveUnlocked ? "Ul" : `🔒 Wymaga: ${HIVE_UNLOCK_LVL} poziom`}
+                            title={_hiveUnlocked ? "Ul" : ""}
+                            onMouseEnter={() => { if (!_hiveUnlocked) setHoveredHiveLock(true); }}
+                            onMouseLeave={() => setHoveredHiveLock(false)}
                             onClick={() => {
                               if (!_hiveUnlocked) {
+                                setHoveredHiveLock(false);
                                 setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Ul odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
                                 return;
                               }
@@ -9284,6 +9288,19 @@ export default function Page() {
           <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({playerStats.zrecznosc}/100)</p>
           <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(playerStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
           <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({playerStats.szczescie}/100)</p>
+        </div>
+      )}
+    {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
+      {hoveredHiveLock && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">🔒 Ul — zablokowany</p>
+          <p className="mb-2 text-[14px] text-[#8b6a3e]">Ul produkuje miód, który możesz sprzedawać klientom przy ladzie i wykorzystać w zamówieniach NPC.</p>
+          <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= HIVE_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{HIVE_UNLOCK_LVL}</span></p>
+          <p className="mt-2 text-[13px] text-[#8b6a3e]">💰 Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
         </div>
       )}
     {/* Tooltip konewki podążający za kursorem */}
