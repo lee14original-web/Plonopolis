@@ -2883,6 +2883,17 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showStodolaModal]);
   React.useEffect(() => {
+    if (!showLadaModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Najpierw zamknij info-panel jeśli otwarty, w przeciwnym razie zamknij cały modal
+      if (showLadaInfo) setShowLadaInfo(false);
+      else setShowLadaModal(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showLadaModal, showLadaInfo]);
+  React.useEffect(() => {
     if (!showShopModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowShopModal(false); setShopCart({}); setShopError(""); } };
     window.addEventListener("keydown", handler);
