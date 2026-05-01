@@ -2975,6 +2975,21 @@ export default function Page() {
   }
 
   // ─── LADA NPC: helpery + handlery ────────────────────────────────────
+  // Scala duplikaty w items zamówienia (np. 10× marchew_good + 29× marchew_good → 39× marchew_good)
+  function mergeOrderItems<T extends { id: string; qty: number; value: number | string }>(items: T[]): T[] {
+    const map = new Map<string, T>();
+    for (const it of items) {
+      const ex = map.get(it.id);
+      if (ex) {
+        ex.qty = (ex.qty || 0) + (it.qty || 0);
+        ex.value = Number(ex.value || 0) + Number(it.value || 0);
+      } else {
+        map.set(it.id, { ...it, qty: it.qty || 0, value: Number(it.value || 0) } as T);
+      }
+    }
+    return Array.from(map.values());
+  }
+
   function getOrderItemDisplay(id: string): { name: string; icon: string } {
     if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯' };
     const ai = ANIMAL_ITEMS.find(a => a.id === id);
@@ -7874,7 +7889,8 @@ export default function Page() {
                 if (/_(zwykly|soczysty|zloty)$/.test(id)) return fruitInventory[id] ?? 0;
                 return barnItems[id] ?? 0;
               };
-              const canFulfill = order ? order.items.every(it => haveFor(it.id) >= it.qty) : false;
+              const mergedItems = order ? mergeOrderItems(order.items) : [];
+              const canFulfill = order ? mergedItems.every(it => haveFor(it.id) >= it.qty) : false;
 
               const timeLeft = order ? Math.max(0, new Date(order.expires_at).getTime() - customerNow) : 0;
               const minLeft = Math.floor(timeLeft / 60000);
@@ -7946,7 +7962,7 @@ export default function Page() {
                           <div className="rounded-xl border border-amber-600/40 bg-black/30 p-4">
                             <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">📦 Klient potrzebuje:</p>
                             <div className="space-y-2">
-                              {order.items.map((it, idx) => {
+                              {mergedItems.map((it, idx) => {
                                 const have = haveFor(it.id);
                                 const ok = have >= it.qty;
                                 const d = getOrderItemDisplay(it.id);
