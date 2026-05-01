@@ -1539,6 +1539,7 @@ export default function Page() {
   const [showSadModal, setShowSadModal] = React.useState(false);
   const [showUlModal, setShowUlModal] = React.useState(false);
   const [showLadaModal, setShowLadaModal] = React.useState(false);
+  const [showLadaInfo, setShowLadaInfo] = React.useState(false);
   // Lada NPC — zamówienia klientów
   const [customerOrders, setCustomerOrders] = React.useState<CustomerOrder[]>([]);
   const [currentCustomerIdx, setCurrentCustomerIdx] = React.useState(0);
@@ -2881,6 +2882,17 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showStodolaModal]);
+  React.useEffect(() => {
+    if (!showLadaModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Najpierw zamknij info-panel jeśli otwarty, w przeciwnym razie zamknij cały modal
+      if (showLadaInfo) setShowLadaInfo(false);
+      else setShowLadaModal(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showLadaModal, showLadaInfo]);
   React.useEffect(() => {
     if (!showShopModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") { setShowShopModal(false); setShopCart({}); setShopError(""); } };
@@ -7936,6 +7948,95 @@ export default function Page() {
               return (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
                   <div className="relative flex w-full max-w-[640px] h-[92vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                    <div
+                      className="absolute left-4 top-4 z-30"
+                      onMouseEnter={() => setShowLadaInfo(true)}
+                      onMouseLeave={() => setShowLadaInfo(false)}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setShowLadaInfo(v => !v)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-500/70 bg-black/40 text-amber-300 font-black transition hover:border-amber-300 hover:text-amber-200 hover:scale-110"
+                        title="Pomoc — jak działa lada?"
+                      >?</button>
+                      {showLadaInfo && (
+                        <div className="absolute left-0 top-11 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4">
+                          <div>
+                            <p className="text-lg font-black text-amber-300 mb-1">🛒 Lada dla klientów — jak to działa?</p>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed">Klienci NPC pojawiają się automatycznie co kilka minut i zamawiają u Ciebie konkretne produkty (uprawy, owoce, produkty zwierzęce, miód). Każde zlecenie ma <span className="text-amber-300 font-bold">limit czasu</span> — jeśli go przekroczysz, klient odejdzie bez zapłaty. Po realizacji dostajesz <span className="text-yellow-300 font-bold">złoto</span>, <span className="text-blue-300 font-bold">EXP</span>, a czasem dodatkowy <span className="text-purple-300 font-bold">bonus</span>.</p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-black text-amber-300 mb-2">👥 Rodzaje klientów</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym częściej pojawiają się więksi klienci (większy mnożnik nagród, więcej produktów na liście).</p>
+                            <div className="space-y-1.5 text-[12.5px]">
+                              {[
+                                { i:'🧑‍🌾', n:'Sąsiad',                  it:'1 produkt',     m:'×1.00', t:'12h', b:'5%'  },
+                                { i:'🧓',  n:'Gość ze wsi',            it:'1–2 produkty',  m:'×1.15', t:'16h', b:'8%'  },
+                                { i:'🏪',  n:'Mały targ',              it:'2–3 produkty',  m:'×1.35', t:'20h', b:'12%' },
+                                { i:'🏬',  n:'Sklep wiejski',          it:'3–4 produkty',  m:'×1.60', t:'24h', b:'18%' },
+                                { i:'🍽️', n:'Restauracja',            it:'4–5 produktów', m:'×2.00', t:'30h', b:'25%' },
+                                { i:'🏢',  n:'Hurtownia',              it:'5–6 produktów', m:'×2.50', t:'36h', b:'40%' },
+                                { i:'🏛️', n:'Sieć handlowa',          it:'6–8 produktów', m:'×3.20', t:'42h', b:'60%' },
+                                { i:'🏗️', n:'Centrum dystrybucji',    it:'7–9 produktów', m:'×4.00', t:'48h', b:'80%' },
+                                { i:'🌍',  n:'Kontrakt międzynarodowy',it:'8–10 produktów',m:'×5.00', t:'48h', b:'100%' },
+                              ].map(c => (
+                                <div key={c.n} className="flex items-center gap-2 rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
+                                  <span className="text-base shrink-0">{c.i}</span>
+                                  <span className="font-bold text-[#f9e7b2] flex-1 truncate">{c.n}</span>
+                                  <span className="text-[#bfa274] hidden sm:inline">{c.it}</span>
+                                  <span className="text-amber-300 font-bold w-12 text-right">{c.m}</span>
+                                  <span className="text-[#8b6a3e] w-10 text-right">{c.t}</span>
+                                  <span className="text-purple-300 w-10 text-right">{c.b}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[10.5px] text-[#8b6a3e] mt-1.5">Kolumny: ikona · nazwa · liczba pozycji · mnożnik nagród · czas na realizację · szansa na bonus</p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
+                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
+                              <li><span className="text-yellow-300 font-bold">Złoto</span> = 70% wartości zamówionych produktów × mnożnik klienta</li>
+                              <li><span className="text-blue-300 font-bold">EXP</span> = 3% wartości × mnożnik klienta</li>
+                              <li><span className="text-purple-300 font-bold">Bonus dodatkowy</span> (czasem) — losowy przedmiot: nasiona, kompost, owoce, części wyposażenia, kucnięcia jakości</li>
+                            </ul>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów w zamówieniach</p>
+                            <div className="space-y-1.5 text-[12.5px]">
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
+                                <p className="font-bold text-emerald-300">🌱 Uprawy (warzywa)</p>
+                                <p className="text-[#bfa274]">zwykła — od początku · <span className="text-amber-300">epicka — od lvl 8</span> · <span className="text-amber-300">legendarna — od lvl 10</span></p>
+                              </div>
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
+                                <p className="font-bold text-emerald-300">🍎 Owoce z drzew (sad)</p>
+                                <p className="text-[#bfa274]">zwykły — od początku · <span className="text-amber-300">soczysty — od lvl 14</span> · <span className="text-amber-300">złoty — od lvl 16</span></p>
+                              </div>
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
+                                <p className="font-bold text-emerald-300">🐔 Produkty zwierzęce</p>
+                                <p className="text-[#bfa274]">odblokowane od lvl 3 (gdy stodoła jest dostępna)</p>
+                              </div>
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
+                                <p className="font-bold text-emerald-300">🍯 Słoik miodu</p>
+                                <p className="text-[#bfa274]">odblokowany od lvl 10 (gdy ul jest dostępny)</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-black text-amber-300 mb-2">📋 Realizacja zamówienia</p>
+                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
+                              <li>Musisz mieć <span className="font-bold text-emerald-300">wszystkie wymagane produkty</span> w odpowiedniej ilości i jakości.</li>
+                              <li>Naciskasz „🤝 Zrealizuj zamówienie" — produkty znikają z magazynu, nagroda trafia na konto.</li>
+                              <li>Jeśli czas na realizację upłynie, klient odejdzie i nic nie dostaniesz.</li>
+                              <li>Nowy klient pojawia się automatycznie po krótkim czasie — odliczanie widać u góry.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                     <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
