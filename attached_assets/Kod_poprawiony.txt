@@ -594,6 +594,18 @@ const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
+const ACTIVE_USER_KEY = "plonopolis_active_user";
+// Klucze localStorage przypisane do sesji gracza (bez userId w nazwie) — czyszczone przy zmianie konta
+const PER_SESSION_KEYS = [
+  "plonopolis_char_equipped", "plonopolis_item_upg_reg", "plonopolis_owned_eq",
+  "plonopolis_extra_eq", "plonopolis_kompost_charges", "plonopolis_kompost_batches",
+  "plonopolis_slot_box", "plonopolis_barn", "plonopolis_barn_items",
+  "plonopolis_orchard", "plonopolis_fruit_inv",
+  "plonopolis_backpack_filter", "plonopolis_backpack_position",
+];
+function clearPerSessionLocalStorage() {
+  try { PER_SESSION_KEYS.forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+}
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
   glowa:  { top:32, left:7.5, width:22.5, height:31 },
   dlonie: { top:32, left:39, width:22, height:31 },
@@ -2033,6 +2045,10 @@ export default function Page() {
   }
 
   function resetLocalGameState() {
+    // Wyczyść localStorage kluczy przypisanych do sesji (stodoła, sad, ekwipunek, kompost...)
+    clearPerSessionLocalStorage();
+    try { localStorage.removeItem(ACTIVE_USER_KEY); } catch { /* ignore */ }
+    // Resetuj React state
     setProfile(null);
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
@@ -2044,6 +2060,15 @@ export default function Page() {
     setSelectedSeedId(null);
     setSelectedTool(null);
     setIsDraggingBackpack(false);
+    // Resetuj stany ekwipunku, stodoły, sadu, kompostu
+    setCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+    setItemUpgRegistry({});
+    setOwnedEqItems({});
+    setExtraEqItems([]);
+    setBarnState_(defaultBarnState());
+    setBarnItems_({});
+    setOrchardState_(defaultOrchardState());
+    setFruitInventory_({});
   }
 
   function applyProfileState(rawProfile: unknown) {
@@ -2056,6 +2081,24 @@ export default function Page() {
     }
 
     const source = rawProfile as Profile;
+
+    // Wykryj zmianę konta — jeśli inny userId niż poprzednio, wyczyść dane z localStorage
+    try {
+      const lastUserId = localStorage.getItem(ACTIVE_USER_KEY);
+      if (lastUserId && lastUserId !== source.id) {
+        // Nowe konto na tym urządzeniu → usuń dane poprzedniego gracza
+        clearPerSessionLocalStorage();
+        setCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+        setItemUpgRegistry({});
+        setOwnedEqItems({});
+        setExtraEqItems([]);
+        setBarnState_(defaultBarnState());
+        setBarnItems_({});
+        setOrchardState_(defaultOrchardState());
+        setFruitInventory_({});
+      }
+      localStorage.setItem(ACTIVE_USER_KEY, source.id);
+    } catch { /* ignore */ }
 
     const nextProfile: Profile = {
       ...source,
