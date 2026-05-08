@@ -1591,6 +1591,7 @@ export default function Page() {
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
+  const OWNER_ID = "c68b84c6-335a-4832-af86-477bcb09fc16"; // tylko właściciel widzi panel dev
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
@@ -3460,13 +3461,13 @@ export default function Page() {
   }
 
   async function handleAddGold(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const { error } = await supabase.from("profiles").update({ money: (profile.money ?? 0) + amount }).eq("id", profile.id);
     if (!error) await loadProfile(profile.id);
   }
 
   async function handleAddSeeds(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
     const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
     const allKeys = [...baseCropIds, ...qualityKeys];
@@ -3477,7 +3478,7 @@ export default function Page() {
   }
 
   async function handleAddEpic(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const newInv: Record<string,number> = { ...seedInventory };
     CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).forEach(c => {
       newInv[`${c.id}_epic`] = (newInv[`${c.id}_epic`] ?? 0) + amount;
@@ -3487,7 +3488,7 @@ export default function Page() {
   }
 
   async function handleAddLegendary(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const newInv: Record<string,number> = { ...seedInventory };
     CROPS.filter(c => c.id !== "test_nasiono" && c.legendarySpritePath).forEach(c => {
       newInv[`${c.id}_legendary`] = (newInv[`${c.id}_legendary`] ?? 0) + amount;
@@ -3497,7 +3498,7 @@ export default function Page() {
   }
 
   async function handleAddBarnItems(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const newItems: Record<string, number> = { ...barnItems };
     ANIMAL_ITEMS.forEach(it => {
       newItems[it.id] = (newItems[it.id] ?? 0) + amount;
@@ -3513,7 +3514,7 @@ export default function Page() {
   }
 
   async function handleAddFruits(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const newInv: Record<string, number> = { ...fruitInventory };
     TREES.forEach(t => {
       (["zwykly", "soczysty", "zloty"] as const).forEach(q => {
@@ -3532,7 +3533,7 @@ export default function Page() {
   }
 
   async function handleAddHoneyJars(amount: number) {
-    if (!profile?.id) return;
+    if (!profile?.id || profile.id !== OWNER_ID) return;
     const newHive: HiveData = { ...hiveData, honey_jars: hiveData.honey_jars + amount };
     const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
     if (!error) {
@@ -4534,6 +4535,7 @@ export default function Page() {
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
 
               `}</style>
+              {profile?.id === OWNER_ID && (
               <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
                 <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
@@ -4543,6 +4545,7 @@ export default function Page() {
                   <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
                 </button>
               </div>
+              )}
 
               {/* ═══ EDYTOR BUDYNKÓW + PRZYCISKÓW ═══ */}
               {(isOnFarmMap || currentMap === "city") && (
