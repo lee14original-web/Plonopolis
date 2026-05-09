@@ -1156,7 +1156,7 @@ const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => 
 
 // Grid 10×10 — pola numerowane wierszami od lewej do prawej, z góry na dół
 // Obraz farm-field-view.png ma proporcje 1536:1092
-// Każde pole: width=8.4%, height=7.8%
+// Każde pole: width=9.3%, height=9.8% — pola przylegają bez odstępów
 // Kolumny left: 2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0
 // Wiersze top:  2.5, 12.3, 22.1, 31.9, 41.7, 51.5, 61.3, 71.1, 80.9, 90.2
 const _COLS = [2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0];
@@ -1168,8 +1168,8 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
     id: i + 1,
     left: `${_COLS[col]}%`,
     top: `${_ROWS[row]}%`,
-    width: "8.4%",
-    height: "7.8%",
+    width: "9.3%",
+    height: "9.8%",
   };
 });
 
