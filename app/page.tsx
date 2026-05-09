@@ -3579,6 +3579,11 @@ export default function Page() {
       setUnlockedEpicAvatars([]);
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
       saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      // Czyszczenie LS ekwipunku — bez tego applyProfileState przywróciłby stary stan z cache
+      saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+      saveItemUpg({});
+      saveOwnedEqItems({});
+      saveExtraEqItems([]);
       // Zwierzęta / sad / ul / kompostownik / produkty — local + state
       setHiveData(freshHive);
       saveBarnItems({});
