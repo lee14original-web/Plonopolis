@@ -39,6 +39,7 @@ type Profile = {
   hive_data?: Record<string, unknown> | null;
   barn_items?: Record<string, number> | null;
   fruit_inventory?: Record<string, number> | null;
+  plot_obstacles?: Record<string, { type: string; cost: number }> | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -141,7 +142,7 @@ const DEFAULT_MONEY = 10;
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
-const MAX_FIELDS = 25;
+const MAX_FIELDS = 100;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
@@ -1153,61 +1154,32 @@ const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => 
   height: "0%",
 }));
 
-const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = [
-  { id: 1, left: "10.5%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 2, left: "27.2%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 3, left: "43.9%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 4, left: "60.6%", top: "10.0%", width: "12.5%", height: "10.0%" },
-  { id: 5, left: "77.3%", top: "10.0%", width: "12.5%", height: "10.0%" },
+// Grid 10×10 — pola numerowane wierszami od lewej do prawej, z góry na dół
+// Obraz farm-field-view.png ma proporcje 1536:1092
+// Każde pole: width=8.4%, height=7.8%
+// Kolumny left: 2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0
+// Wiersze top:  2.5, 12.3, 22.1, 31.9, 41.7, 51.5, 61.3, 71.1, 80.9, 90.2
+const _COLS = [2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0];
+const _ROWS = [2.5, 12.3, 22.1, 31.9, 41.7, 51.5, 61.3, 71.1, 80.9, 90.2];
+const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, i) => {
+  const row = Math.floor(i / 10);
+  const col = i % 10;
+  return {
+    id: i + 1,
+    left: `${_COLS[col]}%`,
+    top: `${_ROWS[row]}%`,
+    width: "8.4%",
+    height: "7.8%",
+  };
+});
 
-  { id: 6, left: "10.5%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 7, left: "27.2%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 8, left: "43.9%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 9, left: "60.6%", top: "26.4%", width: "12.5%", height: "10.0%" },
-  { id: 10, left: "77.3%", top: "26.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 11, left: "10.5%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 12, left: "27.2%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 13, left: "43.9%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 14, left: "60.6%", top: "41.9%", width: "12.5%", height: "10.0%" },
-  { id: 15, left: "77.3%", top: "41.9%", width: "12.5%", height: "10.0%" },
-
-  { id: 16, left: "10.5%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 17, left: "27.2%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 18, left: "43.9%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 19, left: "60.6%", top: "58.4%", width: "12.5%", height: "10.0%" },
-  { id: 20, left: "77.3%", top: "58.4%", width: "12.5%", height: "10.0%" },
-
-  { id: 21, left: "10.5%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 22, left: "27.2%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 23, left: "43.9%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 24, left: "60.6%", top: "75.0%", width: "12.5%", height: "10.0%" },
-  { id: 25, left: "77.3%", top: "75.0%", width: "12.5%", height: "10.0%" },
-];
-
-const PLOT_UNLOCK_COSTS: Record<number, number> = {
-  4: 100,
-  5: 150,
-  6: 200,
-  7: 250,
-  8: 300,
-  9: 350,
-  10: 400,
-  11: 500,
-  12: 600,
-  13: 700,
-  14: 800,
-  15: 1000,
-  16: 1200,
-  17: 1400,
-  18: 1600,
-  19: 1800,
-  20: 2000,
-  21: 2300,
-  22: 2600,
-  23: 3000,
-  24: 3500,
-  25: 4000,
+// Typy i koszty przeszkód (pola 21–100)
+const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string }> = {
+  chwasty:  { name: "Chwasty",    icon: "🌿", color: "#86efac" },
+  kamienie: { name: "Kamienie",   icon: "🪨", color: "#d1d5db" },
+  maly_pien:{ name: "Mały pień",  icon: "🪵", color: "#d97706" },
+  duzy_pien:{ name: "Duży pień",  icon: "🌲", color: "#a16207" },
+  kret:     { name: "Kret",       icon: "🐾", color: "#a8a29e" },
 };
 
 const XP_TABLE: Record<number, number> = {
@@ -1272,7 +1244,8 @@ function getFarmUpgradeStorageKey(userId: string, level: number) {
 }
 
 function getDefaultUnlockedPlots() {
-  return [1, 2, 3];
+  // Pola 1–20 odblokowane od startu
+  return Array.from({ length: 20 }, (_, i) => i + 1);
 }
 
 function normalizeUnlockedPlots(plots: number[]) {
@@ -1496,6 +1469,7 @@ export default function Page() {
 
   const [selectedPlotId, setSelectedPlotId] = useState<number | null>(1);
   const [unlockedPlots, setUnlockedPlots] = useState<number[]>(getDefaultUnlockedPlots());
+  const [plotObstacles, setPlotObstacles] = useState<Record<string, { type: string; cost: number }>>({});
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
@@ -1989,7 +1963,15 @@ export default function Page() {
   }
 
   function getPlotUnlockCost(plotId: number) {
-    return PLOT_UNLOCK_COSTS[plotId] ?? 0;
+    // Koszty startowych pól 1–20: darmowe (zawsze odblokowane)
+    if (plotId <= 20) return 0;
+    // Pola 21–100: koszt z losowych przeszkód (załadowany z Supabase)
+    return plotObstacles[String(plotId)]?.cost ?? 0;
+  }
+
+  function getPlotObstacleType(plotId: number): string | null {
+    if (plotId <= 20) return null;
+    return plotObstacles[String(plotId)]?.type ?? null;
   }
 
   function resetLocalGameState() {
@@ -2000,6 +1982,7 @@ export default function Page() {
     setProfile(null);
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
+    setPlotObstacles({});
     setPlotCrops({});
     setSeedInventory(getDefaultSeedInventory());
     setFarmUpgradeModal(null);
@@ -2061,6 +2044,10 @@ export default function Page() {
     setProfile(nextProfile);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     setPlotCrops(parsePlotCrops(source.plot_crops));
+    // Przeszkody pól — zawsze z DB (losowane na serwerze przy rejestracji)
+    if (source.plot_obstacles && typeof source.plot_obstacles === "object" && !Array.isArray(source.plot_obstacles)) {
+      setPlotObstacles(source.plot_obstacles as Record<string, { type: string; cost: number }>);
+    }
 
     // Migracja: jeśli DB ma stare klucze (np. "carrot"), zapisz do DB nowe ("carrot_good")
     const _rawInv = source.seed_inventory as Record<string, unknown> | null | undefined;
@@ -2593,7 +2580,8 @@ export default function Page() {
   }
 
   function getMaxPlotsForLevel(level: number) {
-    return Math.min(3 + Math.max(level - 1, 0), MAX_FIELDS);
+    // Poziom 1 → 20 pól; każdy poziom +2 pola; max 100
+    return Math.min(20 + Math.max(level - 1, 0) * 2, MAX_FIELDS);
   }
 
   function showFarmUpgradeModalOnce(userId: string, level: number) {
@@ -3562,21 +3550,28 @@ export default function Page() {
     const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
     const freshBarnState = defaultBarnState();
     const freshOrchardState = defaultOrchardState();
+    const freshUnlockedPlots = Array.from({ length: 20 }, (_, i) => i + 1);
     const { error } = await supabase.from("profiles").update({
       level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
       location: "farm1", current_map: "farm1",
-      unlocked_plots: [1], plot_crops: {}, seed_inventory: {},
+      unlocked_plots: freshUnlockedPlots, plot_crops: {}, seed_inventory: {},
       avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
       equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
       hive_data: freshHive,
     }).eq("id", profile.id);
     // barn_items / fruit_inventory mają trigger blokujący direct update — używamy dedykowanych RPC
-    await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: {} });
-    await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: {} });
+    // plot_obstacles resetujemy przez dedykowaną RPC (generuje nowe losowe przeszkody)
+    await Promise.all([
+      supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: {} }),
+      supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: {} }),
+      supabase.rpc("game_reset_plot_obstacles", { p_user_id: profile.id }),
+    ]);
     if (!error) {
       lastLoadedUserIdRef.current = null;
       setEquipmentSlots(1); setEquipment([]);
       setUnlockedEpicAvatars([]);
+      setUnlockedPlots(freshUnlockedPlots);
+      setPlotObstacles({});
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
       saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
       // Czyszczenie LS ekwipunku — bez tego applyProfileState przywróciłby stary stan z cache
@@ -3662,10 +3657,12 @@ export default function Page() {
     setPlotToBuy(null);
     setSelectedPlotId(plotId);
 
+    const _ot = getPlotObstacleType(plotId);
+    const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
     setMessage({
       type: "success",
       title: "Pole odblokowane",
-      text: `Kupiono pole #${plotId} za ${plotCost} PLN.`,
+      text: `Usunięto ${_od ? `${_od.icon} ${_od.name}` : "przeszkodę"} z pola #${plotId} za ${plotCost} PLN.`,
     });
   }
 
@@ -9459,10 +9456,22 @@ export default function Page() {
                                     isSelected ? "border-yellow-200/60" : "border-white/12"
                                   }`}
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center px-1 text-center">
-                                  <span className="text-[11px] font-bold uppercase leading-tight text-[#f5dfb0] md:text-sm">
-                                    KOSZT: {plotCost} PLN
-                                  </span>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center px-0.5 text-center">
+                                  {(() => {
+                                    const _ot = getPlotObstacleType(plotId);
+                                    const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
+                                    return _od ? (
+                                      <>
+                                        <span className="text-[14px] leading-none">{_od.icon}</span>
+                                        <span className="mt-0.5 text-[9px] font-bold leading-tight" style={{ color: _od.color }}>{_od.name}</span>
+                                        <span className="text-[8px] font-black text-amber-300 leading-none">{plotCost} PLN</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-[9px] font-bold uppercase leading-tight text-[#f5dfb0]">
+                                        {plotCost} PLN
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                               </>
                             )}
@@ -9505,6 +9514,8 @@ export default function Page() {
                               );
                             }
 
+                            const _obstType = getPlotObstacleType(selectedPlotId);
+                            const _obstDef = _obstType ? OBSTACLE_DEFS[_obstType] : null;
                             return (
                               <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
                                 <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
@@ -9514,8 +9525,13 @@ export default function Page() {
                                         Zablokowane pole
                                       </p>
                                       <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
-                                      <p className="mt-1 text-sm text-[#f2ddb0]">
-                                        Cena odblokowania: {selectedPlotCost} PLN
+                                      {_obstDef ? (
+                                        <p className="mt-1 text-sm text-[#f2ddb0]">
+                                          Przeszkoda: <span style={{ color: _obstDef.color }}>{_obstDef.icon} {_obstDef.name}</span>
+                                        </p>
+                                      ) : null}
+                                      <p className="mt-0.5 text-sm text-[#f2ddb0]">
+                                        Koszt usunięcia: <span className="font-black text-amber-300">{selectedPlotCost} PLN</span>
                                       </p>
                                     </div>
                                     <button
@@ -9535,7 +9551,7 @@ export default function Page() {
                                       className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                                       disabled={displayMoney < selectedPlotCost}
                                     >
-                                      Kup: {selectedPlotCost} PLN
+                                      {_obstDef ? `${_obstDef.icon} Usuń: ${selectedPlotCost} PLN` : `Odblokuj: ${selectedPlotCost} PLN`}
                                     </button>
                                     {displayMoney < selectedPlotCost && (
                                       <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
@@ -9552,28 +9568,42 @@ export default function Page() {
                     {plotToBuy !== null && (
                       <div className="absolute inset-0 z-[95] flex items-center justify-center bg-black/60 px-4">
                         <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                          <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie zakupu</p>
-                          <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Kupić pole #{plotToBuy}?</h2>
-                          <p className="mt-4 text-base leading-7 text-[#f2ddb0]">
-                            Czy na pewno chcesz zakupić to pole za {getPlotUnlockCost(plotToBuy)} PLN?
-                          </p>
+                          {(() => {
+                            const _ot2 = getPlotObstacleType(plotToBuy);
+                            const _od2 = _ot2 ? OBSTACLE_DEFS[_ot2] : null;
+                            const _cost2 = getPlotUnlockCost(plotToBuy);
+                            return (
+                              <>
+                                <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Potwierdzenie usunięcia przeszkody</p>
+                                <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{plotToBuy}</h2>
+                                {_od2 && (
+                                  <p className="mt-2 text-base text-[#f2ddb0]">
+                                    Przeszkoda: <span style={{ color: _od2.color }} className="font-black">{_od2.icon} {_od2.name}</span>
+                                  </p>
+                                )}
+                                <p className="mt-2 text-base leading-7 text-[#f2ddb0]">
+                                  Koszt usunięcia: <span className="font-black text-amber-300">{_cost2} PLN</span>
+                                </p>
 
-                          <div className="mt-6 flex justify-end gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setPlotToBuy(null)}
-                              className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
-                            >
-                              Anuluj
-                            </button>
-                            <button
-                              type="button"
-                              onClick={confirmBuyPlot}
-                              className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                            >
-                              Kup: {getPlotUnlockCost(plotToBuy)} PLN
-                            </button>
-                          </div>
+                                <div className="mt-6 flex justify-end gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setPlotToBuy(null)}
+                                    className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                                  >
+                                    Anuluj
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={confirmBuyPlot}
+                                    className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                                  >
+                                    {_od2 ? `${_od2.icon} Usuń` : "Odblokuj"}: {_cost2} PLN
+                                  </button>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
