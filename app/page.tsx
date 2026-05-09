@@ -594,6 +594,35 @@ const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
+const ACTIVE_USER_KEY = "plonopolis_active_user";
+// Klucze localStorage przypisane do sesji gracza (bez userId w nazwie) — czyszczone przy zmianie konta
+const PER_SESSION_KEYS = [
+  "plonopolis_char_equipped", "plonopolis_item_upg_reg", "plonopolis_owned_eq",
+  "plonopolis_extra_eq", "plonopolis_kompost_charges", "plonopolis_kompost_batches",
+  "plonopolis_slot_box", "plonopolis_barn", "plonopolis_barn_items",
+  "plonopolis_orchard", "plonopolis_fruit_inv",
+  "plonopolis_backpack_filter", "plonopolis_backpack_position",
+];
+function clearPerSessionLocalStorage() {
+  try { PER_SESSION_KEYS.forEach(k => localStorage.removeItem(k)); } catch { /* ignore */ }
+}
+// Klucz z userId: izolacja danych per-konto nawet przy kilku otwartych kartach
+function lsKey(base: string, uid: string): string { return uid ? `${base}_${uid}` : base; }
+// Migracja: czyta z nowego klucza (z userId), fallback do starego globalnego (kopiuje + usuwa globalny)
+function lsLoadMigrate<T>(base: string, uid: string, parse: (s: string) => T, dflt: () => T): T {
+  try {
+    const uk = lsKey(base, uid);
+    const sNew = localStorage.getItem(uk);
+    if (sNew != null) return parse(sNew);
+    const sOld = localStorage.getItem(base);
+    if (sOld != null) {
+      localStorage.setItem(uk, sOld);
+      localStorage.removeItem(base);
+      return parse(sOld);
+    }
+  } catch {}
+  return dflt();
+}
 const DEFAULT_SLOT_BOX: Record<string,{top:number,left:number,width:number,height:number}> = {
   glowa:  { top:32, left:7.5, width:22.5, height:31 },
   dlonie: { top:32, left:39, width:22, height:31 },
@@ -1562,6 +1591,7 @@ export default function Page() {
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
+  const OWNER_ID = "c68b84c6-335a-4832-af86-477bcb09fc16"; // właściciel gry (do przyszłego użycia)
   const mapContainerRef = React.useRef<HTMLDivElement>(null);
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
@@ -1715,119 +1745,59 @@ export default function Page() {
       { id:"legendary", label:"Legendarne", short:"Leg",  color:"#fbbf24" },
       { id:"all",       label:"Wszystkie",  short:"Wsz",  color:"#dfcfab" },
     ];
-  const [charEquipped, setCharEquipped] = React.useState<CharEquipped>(() => {
-    try { const s = localStorage.getItem(CHAR_EQUIP_KEY); return s ? migrateCharEquipped(JSON.parse(s)) : { ...DEFAULT_CHAR_EQUIPPED }; } catch { return { ...DEFAULT_CHAR_EQUIPPED }; }
-  });
+  const [charEquipped, setCharEquipped] = React.useState<CharEquipped>({ ...DEFAULT_CHAR_EQUIPPED });
   const [equippingSlot, setEquippingSlot] = React.useState<EquipSlot | null>(null);
   const [selectedExtraUid, setSelectedExtraUid] = React.useState<string | null>(null);
   const [eqFilter, setEqFilter] = React.useState<EquipSlot | "">("");
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
-  const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>(() => {
-    try { const s = localStorage.getItem(ITEM_UPG_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
-  const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); try { localStorage.setItem(CHAR_EQUIP_KEY, JSON.stringify(next)); } catch { /* ignore */ } };
-  const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); try { localStorage.setItem(ITEM_UPG_KEY, JSON.stringify(reg)); } catch { /* ignore */ } };
+  const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>({});
+  const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ } };
+  const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(reg)); } catch { /* ignore */ } };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
   // ─── Ekwipunek: zdobyte przedmioty (gracz musi je zdobyć by je mieć) ───
-  const [ownedEqItems, setOwnedEqItems] = React.useState<Record<string, true>>(() => {
-    try { const s = localStorage.getItem(OWNED_EQ_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
-  const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); try { localStorage.setItem(OWNED_EQ_KEY, JSON.stringify(next)); } catch {} };
+  const [ownedEqItems, setOwnedEqItems] = React.useState<Record<string, true>>({});
+  const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(next)); } catch {} };
   // ─── Ekwipunek Dodatkowy: nadmiarowe duplikaty (przyszłość: handel/ulepszenia/sprzedaż) ───
   type ExtraEqEntry = { uid: string; id: string; upg: number };
-  const [extraEqItems, setExtraEqItems] = React.useState<ExtraEqEntry[]>(() => {
-    try { const s = localStorage.getItem(EXTRA_EQ_KEY); const p = s ? JSON.parse(s) : []; return Array.isArray(p) ? p : []; } catch { return []; }
-  });
-  const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); try { localStorage.setItem(EXTRA_EQ_KEY, JSON.stringify(next)); } catch {} };
+  const [extraEqItems, setExtraEqItems] = React.useState<ExtraEqEntry[]>([]);
+  const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {} };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
   const KOMPOST_HARD_CAP = 9999; // legacy — nieużywane w nowym systemie batchowym
-  const [kompostBatches, setKompostBatches] = React.useState<CompostBatch[]>(() => {
-    try {
-      // Najpierw próbuj wczytać nowy format (batches)
-      const sNew = localStorage.getItem(KOMPOST_BATCHES_KEY);
-      if (sNew) {
-        const arr = JSON.parse(sNew);
-        if (Array.isArray(arr)) {
-          return arr
-            .slice(0, KOMPOST_MAX_BATCHES)
-            .map((b: { fill?: unknown; scoreSum?: unknown }) => ({
-              fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))),
-              scoreSum: Math.max(0, Number(b?.scoreSum) || 0),
-            }))
-            .filter((b: CompostBatch) => b.fill > 0);
-        }
-      }
-      // Migracja ze starego: kompostCharges (płaski licznik) → batches z domyślnym score "Słaby" (1.0 per wrzut)
-      // UWAGA: jeśli stare charges > 100 (cap nowego systemu), nadwyżka zostaje w KOMPOST_KEY jako "pending"
-      //        i jest dosypywana automatycznie przy każdym deposit/claim (patrz consumePendingLegacyCharges)
-      const sOld = localStorage.getItem(KOMPOST_KEY);
-      if (sOld) {
-        const charges = Math.max(0, Math.floor(Number(sOld) || 0));
-        if (charges > 0) {
-          const consumeNow = Math.min(charges, KOMPOST_MAX_BATCHES * 10);
-          const fullBatches = Math.floor(consumeNow / 10);
-          const remainder = consumeNow % 10;
-          const batches: CompostBatch[] = [];
-          for (let i = 0; i < fullBatches; i++) {
-            batches.push({ fill: 10, scoreSum: 10 }); // średnia=1.0 → "Słaby"
-          }
-          if (batches.length < KOMPOST_MAX_BATCHES && remainder > 0) {
-            batches.push({ fill: remainder, scoreSum: remainder });
-          }
-          // Nadwyżka — zostaw w starym kluczu, dosypiemy ją później kiedy będą wolne sloty
-          const leftover = charges - consumeNow;
-          try {
-            if (leftover > 0) localStorage.setItem(KOMPOST_KEY, String(leftover));
-            else localStorage.removeItem(KOMPOST_KEY);
-          } catch {}
-          return batches;
-        }
-      }
-    } catch {}
-    return [];
-  });
+  const [kompostBatches, setKompostBatches] = React.useState<CompostBatch[]>([]);
   // Flaga przeciw race conditions: blokuje równoległe deposit/claim (np. szybkie podwójne kliknięcia)
   const kompostBusyRef = React.useRef(false);
   // Dosyp pozostałe legacy charges (z migracji nadwyżki >100) do zwolnionych slotów. Mutuje przekazaną tablicę.
-  const consumePendingLegacyCharges = (batches: CompostBatch[]) => {
+  const consumePendingLegacyCharges = (batches: CompostBatch[], uid: string) => {
     try {
-      const sOld = localStorage.getItem(KOMPOST_KEY);
+      const legacyKey = lsKey(KOMPOST_KEY, uid);
+      const sOld = localStorage.getItem(legacyKey) ?? (uid ? localStorage.getItem(KOMPOST_KEY) : null);
       if (!sOld) return;
       let pending = Math.max(0, Math.floor(Number(sOld) || 0));
-      if (pending <= 0) {
-        localStorage.removeItem(KOMPOST_KEY);
-        return;
-      }
+      if (pending <= 0) { localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY); return; }
       while (pending > 0 && batches.length < KOMPOST_MAX_BATCHES) {
         let last = batches[batches.length - 1];
-        if (!last || last.fill >= 10) {
-          last = { fill: 0, scoreSum: 0 };
-          batches.push(last);
-        }
+        if (!last || last.fill >= 10) { last = { fill: 0, scoreSum: 0 }; batches.push(last); }
         const room = 10 - last.fill;
         const take = Math.min(pending, room);
-        last.fill += take;
-        last.scoreSum += take; // legacy = score 1.0 per wrzut
+        last.fill += take; last.scoreSum += take;
         pending -= take;
       }
-      if (pending > 0) localStorage.setItem(KOMPOST_KEY, String(pending));
-      else localStorage.removeItem(KOMPOST_KEY);
+      if (pending > 0) localStorage.setItem(legacyKey, String(pending));
+      else { localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY); }
     } catch {}
   };
   const saveKompostBatches = (batches: CompostBatch[]) => {
+    const uid = profile?.id ?? "";
     const clean = batches
       .slice(0, KOMPOST_MAX_BATCHES)
-      .map(b => ({
-        fill: Math.max(0, Math.min(10, Math.floor(b.fill))),
-        scoreSum: Math.max(0, b.scoreSum),
-      }))
+      .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(b.fill))), scoreSum: Math.max(0, b.scoreSum) }))
       .filter(b => b.fill > 0);
     setKompostBatches(clean);
-    try {
-      localStorage.setItem(KOMPOST_BATCHES_KEY, JSON.stringify(clean));
-      // Wyczyść stary klucz po pierwszym zapisie nowego formatu
+    if (uid) try {
+      localStorage.setItem(lsKey(KOMPOST_BATCHES_KEY, uid), JSON.stringify(clean));
+      localStorage.removeItem(lsKey(KOMPOST_KEY, uid));
       localStorage.removeItem(KOMPOST_KEY);
     } catch {}
   };
@@ -1857,35 +1827,25 @@ export default function Page() {
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
-  const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>(() => {
-    try { const s = localStorage.getItem(SLOT_BOX_KEY); return s ? JSON.parse(s) : { ...DEFAULT_SLOT_BOX }; } catch { return { ...DEFAULT_SLOT_BOX }; }
-  });
+  const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>({ ...DEFAULT_SLOT_BOX });
   const [editSlotBox, setEditSlotBox] = React.useState(false);
   const saveSlotBox = (v: Record<string,{top:number,left:number,width:number,height:number}>) => {
-    setSlotBoxCustom(v); try { localStorage.setItem(SLOT_BOX_KEY, JSON.stringify(v)); } catch { /* ignore */ }
+    setSlotBoxCustom(v); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(SLOT_BOX_KEY, uid), JSON.stringify(v)); } catch { /* ignore */ }
   };
   const [barnNow, setBarnNow] = React.useState(Date.now());
-  const [barnState, setBarnState_] = React.useState<BarnState>(() => {
-    try { const s = localStorage.getItem(BARN_STATE_KEY); const parsed = s ? JSON.parse(s) : {}; return { ...defaultBarnState(), ...parsed }; } catch { return defaultBarnState(); }
-  });
-  const [barnItems, setBarnItems_] = React.useState<BarnItems>(() => {
-    try { const s = localStorage.getItem(BARN_ITEMS_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
+  const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
+  const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
-  const saveBarnState = (next: BarnState) => { setBarnState_(next); try { localStorage.setItem(BARN_STATE_KEY, JSON.stringify(next)); } catch {} };
-  const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); try { localStorage.setItem(BARN_ITEMS_KEY, JSON.stringify(next)); } catch {} };
+  const saveBarnState = (next: BarnState) => { setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
+  const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_ITEMS_KEY, uid), JSON.stringify(next)); } catch {} };
   // SAD — state + persystencja
-  const [orchardState, setOrchardState_] = React.useState<OrchardState>(() => {
-    try { const s = localStorage.getItem(ORCHARD_STATE_KEY); return migrateOrchardState(s ? JSON.parse(s) : null); } catch { return defaultOrchardState(); }
-  });
-  const saveOrchardState = (next: OrchardState) => { setOrchardState_(next); try { localStorage.setItem(ORCHARD_STATE_KEY, JSON.stringify(next)); } catch {} };
+  const [orchardState, setOrchardState_] = React.useState<OrchardState>(defaultOrchardState());
+  const saveOrchardState = (next: OrchardState) => { setOrchardState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(ORCHARD_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
   const [orchardError, setOrchardError] = React.useState("");
   // Owoce zebrane (Record<"fruitId_quality", number>) — osobny inventory bo sprzedaż per quality, w przyszłości też crafting/gildie
   const FRUIT_INV_KEY = "plonopolis_fruit_inv";
-  const [fruitInventory, setFruitInventory_] = React.useState<Record<string,number>>(() => {
-    try { const s = localStorage.getItem(FRUIT_INV_KEY); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
-  const saveFruitInventory = (next: Record<string,number>) => { setFruitInventory_(next); try { localStorage.setItem(FRUIT_INV_KEY, JSON.stringify(next)); } catch {} };
+  const [fruitInventory, setFruitInventory_] = React.useState<Record<string,number>>({});
+  const saveFruitInventory = (next: Record<string,number>) => { setFruitInventory_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(FRUIT_INV_KEY, uid), JSON.stringify(next)); } catch {} };
   React.useEffect(() => {
     const t = setInterval(() => setBarnNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -2033,6 +1993,10 @@ export default function Page() {
   }
 
   function resetLocalGameState() {
+    // Wyczyść localStorage kluczy przypisanych do sesji (stodoła, sad, ekwipunek, kompost...)
+    clearPerSessionLocalStorage();
+    try { localStorage.removeItem(ACTIVE_USER_KEY); } catch { /* ignore */ }
+    // Resetuj React state
     setProfile(null);
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
@@ -2044,6 +2008,15 @@ export default function Page() {
     setSelectedSeedId(null);
     setSelectedTool(null);
     setIsDraggingBackpack(false);
+    // Resetuj stany ekwipunku, stodoły, sadu, kompostu
+    setCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+    setItemUpgRegistry({});
+    setOwnedEqItems({});
+    setExtraEqItems([]);
+    setBarnState_(defaultBarnState());
+    setBarnItems_({});
+    setOrchardState_(defaultOrchardState());
+    setFruitInventory_({});
   }
 
   function applyProfileState(rawProfile: unknown) {
@@ -2056,6 +2029,24 @@ export default function Page() {
     }
 
     const source = rawProfile as Profile;
+
+    // Wykryj zmianę konta — jeśli inny userId niż poprzednio, wyczyść dane z localStorage
+    try {
+      const lastUserId = localStorage.getItem(ACTIVE_USER_KEY);
+      if (lastUserId && lastUserId !== source.id) {
+        // Nowe konto na tym urządzeniu → usuń dane poprzedniego gracza
+        clearPerSessionLocalStorage();
+        setCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+        setItemUpgRegistry({});
+        setOwnedEqItems({});
+        setExtraEqItems([]);
+        setBarnState_(defaultBarnState());
+        setBarnItems_({});
+        setOrchardState_(defaultOrchardState());
+        setFruitInventory_({});
+      }
+      localStorage.setItem(ACTIVE_USER_KEY, source.id);
+    } catch { /* ignore */ }
 
     const nextProfile: Profile = {
       ...source,
@@ -2163,6 +2154,27 @@ export default function Page() {
         ? source.prev_level : prevLevelRef.current;
       if (prevLevel > prevLevelRef.current) prevLevelRef.current = prevLevel;
     }
+
+    // Załaduj dane z localStorage per-userId (izolacja kont — każde konto ma swoje klucze)
+    const uid = source.id;
+    setCharEquipped(lsLoadMigrate(CHAR_EQUIP_KEY, uid, s => migrateCharEquipped(JSON.parse(s)), () => ({ ...DEFAULT_CHAR_EQUIPPED })));
+    setItemUpgRegistry(lsLoadMigrate(ITEM_UPG_KEY, uid, s => JSON.parse(s) as Record<string,number>, () => ({})));
+    setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
+    setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
+    setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
+    setBarnState_(lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState));
+    setOrchardState_(lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState));
+    // Kompost: migracja starego formatu (płaski licznik) + migracja klucza globalnego → userId
+    const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
+      const arr = JSON.parse(s);
+      if (!Array.isArray(arr)) return [];
+      return (arr as Array<{fill?:unknown;scoreSum?:unknown}>)
+        .slice(0, KOMPOST_MAX_BATCHES)
+        .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))), scoreSum: Math.max(0, Number(b?.scoreSum) || 0) }))
+        .filter(b => b.fill > 0);
+    }, () => []);
+    consumePendingLegacyCharges(loadedBatches, uid);
+    setKompostBatches(loadedBatches);
 
     return nextProfile;
   }
@@ -3814,7 +3826,7 @@ export default function Page() {
 
     // Usuń skonsumowane partie (pełne); zachowaj niepełne; dosyp pending legacy charges (z migracji nadwyżki)
     const remainingBatches = kompostBatches.filter(b => b.fill < 10);
-    consumePendingLegacyCharges(remainingBatches);
+    consumePendingLegacyCharges(remainingBatches, profile?.id ?? "");
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
     saveItemUpg(upgReg);
@@ -4170,6 +4182,13 @@ export default function Page() {
 
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
+
+      // Reset wszystkich hover-stanów — mapa znika zanim onMouseLeave zdąży zadziałać
+      setHoveredBarnLock(false);
+      setHoveredHiveLock(false);
+      setHoveredSadLock(false);
+      setHoveredWateringCan(false);
+      setHoveredSickle(false);
 
       setIsMapLoading(true);
 
