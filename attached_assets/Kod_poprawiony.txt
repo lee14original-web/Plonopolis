@@ -4183,6 +4183,13 @@ export default function Page() {
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
 
+      // Reset wszystkich hover-stanów — mapa znika zanim onMouseLeave zdąży zadziałać
+      setHoveredBarnLock(false);
+      setHoveredHiveLock(false);
+      setHoveredSadLock(false);
+      setHoveredWateringCan(false);
+      setHoveredSickle(false);
+
       setIsMapLoading(true);
 
       const { data: rpcData, error } = await supabase.rpc("game_change_map", {
