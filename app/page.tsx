@@ -9777,7 +9777,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
-      {hoveredHiveLock && (
+      {hoveredHiveLock && isOnFarmMap && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
@@ -9789,7 +9789,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip stodoły (zablokowanej do lvl 3) podążający za kursorem */}
-      {hoveredBarnLock && (
+      {hoveredBarnLock && isOnFarmMap && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
@@ -9801,7 +9801,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip sadu (zablokowanego do lvl 10) podążający za kursorem */}
-      {hoveredSadLock && (
+      {hoveredSadLock && isOnFarmMap && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
