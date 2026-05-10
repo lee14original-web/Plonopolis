@@ -1157,10 +1157,10 @@ const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => 
 // Grid 10×10 — pola numerowane wierszami od lewej do prawej, z góry na dół
 // Obraz farm-field-view.png ma proporcje 1536:1092
 // Każde pole: width=6.9%, height=8.2%
-// Kolumny left: 16.1, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5
-// Wiersze top:  12.9, 21.1, 28.8, 36.8, 44.6, 52.9, 60.9, 69.0, 77.2, 85.2
-const _COLS = [16.1, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5];
-const _ROWS = [12.9, 21.1, 28.8, 36.8, 44.6, 52.9, 60.9, 69.0, 77.2, 85.2];
+// Kolumny left: 15.8, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5
+// Wiersze top:  12.9, 21.1, 28.8, 36.8, 44.6, 52.7, 60.8, 68.7, 76.8, 84.9
+const _COLS = [15.8, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5];
+const _ROWS = [12.9, 21.1, 28.8, 36.8, 44.6, 52.7, 60.8, 68.7, 76.8, 84.9];
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, i) => {
   const row = Math.floor(i / 10);
   const col = i % 10;
@@ -1473,8 +1473,8 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]);
-  const [fhRows, setFhRows] = React.useState<number[]>([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]);
+  const [fhCols, setFhCols] = React.useState<number[]>([15.8,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]);
+  const [fhRows, setFhRows] = React.useState<number[]>([12.9,21.1,28.8,36.8,44.6,52.7,60.8,68.7,76.8,84.9]);
   const [fhCellW, setFhCellW] = React.useState(6.9);
   const [fhCellH, setFhCellH] = React.useState(8.2);
   const [fhLockAxis, setFhLockAxis] = React.useState<"none"|"x"|"y">("none");
@@ -2582,6 +2582,29 @@ export default function Page() {
         p_planted_quality: _seedQuality ?? "good",
       });
       if (error) {
+        // Pole nie jest odblokowane w DB — zsynchronizuj lokalny stan z DB
+        if (error.message?.includes("nie jest odblokowane") && profile?.id) {
+          const { data: freshRow } = await supabase
+            .from("profiles")
+            .select("unlocked_plots, plot_obstacles")
+            .eq("id", profile.id)
+            .single();
+          if (freshRow) {
+            setUnlockedPlots(parseUnlockedPlots(freshRow.unlocked_plots));
+            if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
+              setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+            }
+          } else {
+            // Brak odpowiedzi — usuń pole z lokalnych odblokowanych
+            setUnlockedPlots(prev => prev.filter(id => id !== plotId));
+          }
+          setMessage({
+            type: "error",
+            title: "Pole nie jest odblokowane",
+            text: `Pole #${plotId} nie jest odblokowane w bazie danych. Stan lokalny został zsynchronizowany — kliknij pole, aby je odblokować.`,
+          });
+          return;
+        }
         setMessage({
           type: "error",
           title: "Błąd sadzenia",
@@ -3692,23 +3715,29 @@ export default function Page() {
     });
 
     if (error) {
-      // Pole jest już odblokowane w DB ale lokalny stan tego nie wie — napraw synchronizację
-      if (error.message?.includes("Brak danych przeszkody")) {
-        setUnlockedPlots(prev =>
-          prev.includes(plotId) ? prev : [...prev, plotId]
-        );
-        setPlotObstacles(prev => {
-          const n = { ...prev };
-          delete n[String(plotId)];
-          return n;
-        });
-        setPlotToBuy(null);
-        setSelectedPlotId(null);
-        setMessage({
-          type: "info",
-          title: "Stan zsynchronizowany",
-          text: `Pole #${plotId} jest już odblokowane — stan lokalny został naprawiony.`,
-        });
+      // Brak danych przeszkody — sprawdź w DB czy pole jest faktycznie odblokowane
+      if (error.message?.includes("Brak danych przeszkody") && profile?.id) {
+        const { data: freshRow } = await supabase
+          .from("profiles")
+          .select("unlocked_plots, plot_obstacles")
+          .eq("id", profile.id)
+          .single();
+        if (freshRow) {
+          const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+          setUnlockedPlots(freshUnlocked);
+          if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
+            setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+          }
+          setPlotToBuy(null);
+          setSelectedPlotId(null);
+          if (freshUnlocked.includes(plotId)) {
+            setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${plotId} jest już odblokowane — stan lokalny został naprawiony.` });
+          } else {
+            setMessage({ type: "error", title: "Nie można odblokować pola", text: `Pole #${plotId} nie ma danych przeszkody w bazie. Skontaktuj się z administratorem lub zresetuj przeszkody w ustawieniach.` });
+          }
+        } else {
+          setMessage({ type: "error", title: "Błąd zakupu pola", text: error.message });
+        }
         return;
       }
       setMessage({
@@ -9728,10 +9757,26 @@ export default function Page() {
                                         </button>
                                         <button
                                           type="button"
-                                          onClick={() => {
-                                            setUnlockedPlots(prev => prev.includes(selectedPlotId) ? prev : [...prev, selectedPlotId]);
-                                            setPlotObstacles(prev => { const n={...prev}; delete n[String(selectedPlotId)]; return n; });
-                                            setSelectedPlotId(null);
+                                          onClick={async () => {
+                                            if (!profile?.id) return;
+                                            const { data: freshRow } = await supabase
+                                              .from("profiles")
+                                              .select("unlocked_plots, plot_obstacles")
+                                              .eq("id", profile.id)
+                                              .single();
+                                            if (freshRow) {
+                                              const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+                                              setUnlockedPlots(freshUnlocked);
+                                              if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
+                                                setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+                                              }
+                                              setSelectedPlotId(null);
+                                              if (freshUnlocked.includes(selectedPlotId)) {
+                                                setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
+                                              } else {
+                                                setMessage({ type: "info", title: "Zsynchronizowano", text: `Pole #${selectedPlotId} nie jest odblokowane w bazie — kliknij je, aby odblokować.` });
+                                              }
+                                            }
                                           }}
                                           className="rounded-2xl border border-yellow-400/80 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
                                         >
@@ -9862,7 +9907,7 @@ export default function Page() {
                       ↩ Reset do domyślnych
                     </button>
                     <button type="button"
-                      onClick={() => { setFhCols([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
+                      onClick={() => { setFhCols([15.8,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.7,60.8,68.7,76.8,84.9]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
                       className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
                       ↺ Przywróć moje wartości
                     </button>
