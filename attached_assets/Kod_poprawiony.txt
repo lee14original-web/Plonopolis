@@ -9133,8 +9133,9 @@ export default function Page() {
                 )}
 
                 {/* Epickie */}
-                {skinTab === "epickie" && (
+                {(skinTab === "epickie" || skinTab === "wszystkie") && (
                   <>
+                    {skinTab === "wszystkie" && <p className="mt-4 mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">⭐ Epickie</p>}
                     <p className="mb-4 text-center text-xs text-green-400/80">Kliknij zablokowany avatar, aby go odblokować za odpowiedni koszt z plecaka.</p>
                     <div className="grid grid-cols-5 gap-3">
                       {EPIC_SKINS.map((es, i) => {
