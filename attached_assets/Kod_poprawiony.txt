@@ -1527,6 +1527,15 @@ export default function Page() {
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
+  const [hoveredDom, setHoveredDom] = React.useState(false);
+  const [hoveredKompostownik, setHoveredKompostownik] = React.useState(false);
+  const [hoveredPolaUprawne, setHoveredPolaUprawne] = React.useState(false);
+  const [hoveredDoMiasta, setHoveredDoMiasta] = React.useState(false);
+  const [hoveredNaFarme, setHoveredNaFarme] = React.useState(false);
+  const [hoveredSklep, setHoveredSklep] = React.useState(false);
+  const [hoveredTarg, setHoveredTarg] = React.useState(false);
+  const [hoveredBank, setHoveredBank] = React.useState(false);
+  const [hoveredRatusz, setHoveredRatusz] = React.useState(false);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -4686,6 +4695,8 @@ export default function Page() {
       setIsFieldViewOpen(true);
       setSelectedPlotId((prev) => prev ?? 1);
     }}
+    onMouseEnter={() => setHoveredPolaUprawne(true)}
+    onMouseLeave={() => setHoveredPolaUprawne(false)}
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
       left: `${navHitboxPos.polaUprawne.left}%`,
@@ -4694,7 +4705,7 @@ export default function Page() {
       height: `${navHitboxPos.polaUprawne.height}%`,
       zIndex: 4,
     }}
-    title="Pola uprawne"
+    title=""
   />
 )}
 
@@ -4704,7 +4715,9 @@ export default function Page() {
                         <button
                           type="button"
                           onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
-                          title="Dom gracza"
+                          title=""
+                          onMouseEnter={() => setHoveredDom(true)}
+                          onMouseLeave={() => setHoveredDom(false)}
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                           style={{ left:`${navHitboxPos.dom.left}%`, top:`${navHitboxPos.dom.top}%`, width:`${navHitboxPos.dom.width}%`, height:`${navHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
@@ -4735,7 +4748,9 @@ export default function Page() {
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city")}
-                        title="Do miasta"
+                        title=""
+                        onMouseEnter={() => setHoveredDoMiasta(true)}
+                        onMouseLeave={() => setHoveredDoMiasta(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
@@ -4773,7 +4788,9 @@ export default function Page() {
                       {/* Kompostownik */}
                       <button
                         type="button"
-                        title="Kompostownik"
+                        title=""
+                        onMouseEnter={() => setHoveredKompostownik(true)}
+                        onMouseLeave={() => setHoveredKompostownik(false)}
                         onClick={() => setShowKompostModal(true)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
@@ -4913,37 +4930,47 @@ export default function Page() {
                       <button
                         type="button"
                         onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
+                        onMouseEnter={() => setHoveredNaFarme(true)}
+                        onMouseLeave={() => setHoveredNaFarme(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
-                        title="Na farmę"
+                        title=""
                       />
                       <button
                         type="button"
                         onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
+                        onMouseEnter={() => setHoveredSklep(true)}
+                        onMouseLeave={() => setHoveredSklep(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
-                        title="Sklep"
+                        title=""
                       />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_market")}
+                        onMouseEnter={() => setHoveredTarg(true)}
+                        onMouseLeave={() => setHoveredTarg(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
-                        title="Targ"
+                        title=""
                       />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_bank")}
+                        onMouseEnter={() => setHoveredBank(true)}
+                        onMouseLeave={() => setHoveredBank(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
-                        title="Bank"
+                        title=""
                       />
                       <button
                         type="button"
                         onClick={() => handleChangeMap("city_townhall")}
+                        onMouseEnter={() => setHoveredRatusz(true)}
+                        onMouseLeave={() => setHoveredRatusz(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
-                        title="Ratusz"
+                        title=""
                       />
                       {/* ── Etykiety ── */}
                       {([
@@ -9817,7 +9844,6 @@ export default function Page() {
         >
           <p className="mb-2 font-black text-amber-300">🔒 Ul — zablokowany</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= HIVE_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{HIVE_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">💰 Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
         </div>
       )}
@@ -9829,7 +9855,6 @@ export default function Page() {
         >
           <p className="mb-2 font-black text-amber-300">🔒 Stodoła — zablokowana</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{BARN_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= BARN_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{BARN_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🐔 Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
         </div>
       )}
@@ -9841,8 +9866,75 @@ export default function Page() {
         >
           <p className="mb-2 font-black text-amber-300">🔒 Sad — zablokowany</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mb-1">👤 Twój poziom: <span className={`font-bold ${(profile?.level ?? 1) >= SAD_UNLOCK_LVL ? "text-green-400" : "text-red-400"}`}>{profile?.level ?? 1}/{SAD_UNLOCK_LVL}</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
+        </div>
+      )}
+    {/* Tooltip Dom */}
+      {hoveredDom && isOnFarmMap && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🏠 Dom gracza</p>
+          <p className="mb-1 text-[14px]">Twój profil, statystyki i ekwipunek.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Znajdziesz tu poziom, EXP, PLN oraz zarządzanie postacią.</p>
+        </div>
+      )}
+    {/* Tooltip Kompostownik */}
+      {hoveredKompostownik && isOnFarmMap && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-green-400">♻️ Kompostownik</p>
+          <p className="mb-1 text-[14px]">Przetwarzaj odpadki w kompost.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Kompost zwiększa plony lub przyspiesza wzrost upraw na polu.</p>
+        </div>
+      )}
+    {/* Tooltip Pola uprawne */}
+      {hoveredPolaUprawne && isOnFarmMap && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-lime-400">🌾 Pola uprawne</p>
+          <p className="mb-1 text-[14px]">Sadź, podlewaj i zbieraj plony.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Masz {unlockedPlotsCount} z {MAX_FIELDS} pól. Odblokowuj kolejne usuwając przeszkody.</p>
+        </div>
+      )}
+    {/* Tooltip Do miasta */}
+      {hoveredDoMiasta && isOnFarmMap && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-sky-300">🏙️ Do miasta</p>
+          <p className="mb-1 text-[14px]">Przejdź do centrum Plonopolis.</p>
+          <p className="text-[13px] text-[#8b6a3e]">W mieście znajdziesz Sklep, Targ, Bank i Ratusz.</p>
+        </div>
+      )}
+    {/* Tooltips — Miasto */}
+      {hoveredNaFarme && currentMap === "city" && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-lime-400">🌾 Na farmę</p>
+          <p className="mb-1 text-[14px]">Wróć do swojej farmy.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Siej, podlewaj i zbieraj plony na polach uprawnych.</p>
+        </div>
+      )}
+      {hoveredSklep && currentMap === "city" && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🛒 Sklep</p>
+          <p className="mb-1 text-[14px]">Kup nasiona, drzewa i zwierzęta.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Szeroki asortyment nasion każdej jakości, sadzonki drzew owocowych i ekwipunek.</p>
+        </div>
+      )}
+      {hoveredTarg && currentMap === "city" && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-orange-300">🏪 Targ</p>
+          <p className="mb-1 text-[14px]">Sprzedaj swoje plony i owoce.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Ceny na targu zmieniają się dynamicznie — sprawdzaj regularnie, by sprzedawać drożej.</p>
+        </div>
+      )}
+      {hoveredBank && currentMap === "city" && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-yellow-300">🏦 Bank</p>
+          <p className="mb-1 text-[14px]">Zarządzaj swoimi finansami.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Lokaty i pożyczki — pomnażaj oszczędności lub finansuj rozwój farmy.</p>
+        </div>
+      )}
+      {hoveredRatusz && currentMap === "city" && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-purple-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-purple-300">🏛️ Ratusz</p>
+          <p className="mb-1 text-[14px]">Rankingi i osiągnięcia graczy.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Sprawdź tablicę wyników i porównaj swoje postępy z innymi farmerami Plonopolis.</p>
         </div>
       )}
     {/* Tooltip konewki podążający za kursorem */}
