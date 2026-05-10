@@ -1473,10 +1473,10 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.3,43.1,49.9,56.7,63.6,70.4,77.2]);
-  const [fhRows, setFhRows] = React.useState<number[]>([13.4,21.1,28.8,36.7,45.6,56.1,64.7,74.3,83.8,89.8]);
-  const [fhCellW, setFhCellW] = React.useState(6.8);
-  const [fhCellH, setFhCellH] = React.useState(7.9);
+  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.6]);
+  const [fhRows, setFhRows] = React.useState<number[]>([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]);
+  const [fhCellW, setFhCellW] = React.useState(6.9);
+  const [fhCellH, setFhCellH] = React.useState(8.2);
   const [fhLockAxis, setFhLockAxis] = React.useState<"none"|"x"|"y">("none");
   const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
   const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
@@ -9809,7 +9809,7 @@ export default function Page() {
                       ↩ Reset do domyślnych
                     </button>
                     <button type="button"
-                      onClick={() => { setFhCols([16.1,22.7,29.5,36.3,43.1,49.9,56.7,63.6,70.4,77.2]); setFhRows([13.4,21.1,28.8,36.7,45.6,56.1,64.7,74.3,83.8,89.8]); setFhCellW(6.8); setFhCellH(7.9); setFhLockAxis("none"); }}
+                      onClick={() => { setFhCols([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.6]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
                       className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
                       ↺ Przywróć moje wartości
                     </button>
