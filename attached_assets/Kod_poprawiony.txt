@@ -8222,7 +8222,6 @@ export default function Page() {
                                         <p className="text-[10px] text-[#8b6a3e]">Masz: {have}</p>
                                       </div>
                                     </div>
-                                    <p className="text-xs font-bold text-amber-400 whitespace-nowrap">{Number(it.value).toFixed(0)} zł</p>
                                   </div>
                                 );
                               })}
