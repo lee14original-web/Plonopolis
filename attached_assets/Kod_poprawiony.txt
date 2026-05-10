@@ -3692,6 +3692,25 @@ export default function Page() {
     });
 
     if (error) {
+      // Pole jest już odblokowane w DB ale lokalny stan tego nie wie — napraw synchronizację
+      if (error.message?.includes("Brak danych przeszkody")) {
+        setUnlockedPlots(prev =>
+          prev.includes(plotId) ? prev : [...prev, plotId]
+        );
+        setPlotObstacles(prev => {
+          const n = { ...prev };
+          delete n[String(plotId)];
+          return n;
+        });
+        setPlotToBuy(null);
+        setSelectedPlotId(null);
+        setMessage({
+          type: "info",
+          title: "Stan zsynchronizowany",
+          text: `Pole #${plotId} jest już odblokowane — stan lokalny został naprawiony.`,
+        });
+        return;
+      }
       setMessage({
         type: "error",
         title: "Błąd zakupu pola",
@@ -9687,39 +9706,73 @@ export default function Page() {
 
                             const _obstType = getPlotObstacleType(selectedPlotId);
                             const _obstDef = _obstType ? OBSTACLE_DEFS[_obstType] : null;
+                            // Desynchronizacja: pole nie jest odblokowane lokalnie, ale brak też danych przeszkody
+                            const _isStaleState = selectedPlotId > 20 && !_obstType && selectedPlotCost === 0;
                             return (
                               <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/50 px-4">
                                 <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                  <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Zablokowane pole</p>
-                                  <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
-                                  {_obstDef ? (
-                                    <p className="mt-2 text-base text-[#f2ddb0]">
-                                      Przeszkoda: <span style={{ color: _obstDef.color }} className="font-black">{_obstDef.icon} {_obstDef.name}</span>
-                                    </p>
-                                  ) : null}
-                                  <p className="mt-2 text-base text-[#f2ddb0]">
-                                    Koszt usunięcia: <span className="font-black text-amber-300">{selectedPlotCost} PLN</span>
-                                  </p>
-                                  {displayMoney < selectedPlotCost && (
-                                    <p className="mt-2 text-sm text-red-300">Masz za mało pieniędzy na to pole.</p>
+                                  {_isStaleState ? (
+                                    <>
+                                      <p className="text-xs uppercase tracking-[0.35em] text-yellow-400">Desynchronizacja stanu</p>
+                                      <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
+                                      <p className="mt-2 text-sm text-[#f2ddb0] leading-relaxed">
+                                        To pole jest prawdopodobnie już odblokowane w bazie danych, ale lokalny stan gry tego nie wie. Kliknij "Napraw", aby zsynchronizować.
+                                      </p>
+                                      <div className="mt-6 flex justify-end gap-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedPlotId(null)}
+                                          className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                                        >
+                                          Anuluj
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setUnlockedPlots(prev => prev.includes(selectedPlotId) ? prev : [...prev, selectedPlotId]);
+                                            setPlotObstacles(prev => { const n={...prev}; delete n[String(selectedPlotId)]; return n; });
+                                            setSelectedPlotId(null);
+                                          }}
+                                          className="rounded-2xl border border-yellow-400/80 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                                        >
+                                          Napraw stan pola
+                                        </button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Zablokowane pole</p>
+                                      <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
+                                      {_obstDef ? (
+                                        <p className="mt-2 text-base text-[#f2ddb0]">
+                                          Przeszkoda: <span style={{ color: _obstDef.color }} className="font-black">{_obstDef.icon} {_obstDef.name}</span>
+                                        </p>
+                                      ) : null}
+                                      <p className="mt-2 text-base text-[#f2ddb0]">
+                                        Koszt usunięcia: <span className="font-black text-amber-300">{selectedPlotCost} PLN</span>
+                                      </p>
+                                      {displayMoney < selectedPlotCost && (
+                                        <p className="mt-2 text-sm text-red-300">Masz za mało pieniędzy na to pole.</p>
+                                      )}
+                                      <div className="mt-6 flex justify-end gap-3">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedPlotId(null)}
+                                          className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
+                                        >
+                                          Anuluj
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setPlotToBuy(selectedPlotId)}
+                                          className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                                          disabled={displayMoney < selectedPlotCost}
+                                        >
+                                          {_obstDef ? `${_obstDef.icon} Usuń: ${selectedPlotCost} PLN` : `Odblokuj: ${selectedPlotCost} PLN`}
+                                        </button>
+                                      </div>
+                                    </>
                                   )}
-                                  <div className="mt-6 flex justify-end gap-3">
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedPlotId(null)}
-                                      className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
-                                    >
-                                      Anuluj
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setPlotToBuy(selectedPlotId)}
-                                      className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-                                      disabled={displayMoney < selectedPlotCost}
-                                    >
-                                      {_obstDef ? `${_obstDef.icon} Usuń: ${selectedPlotCost} PLN` : `Odblokuj: ${selectedPlotCost} PLN`}
-                                    </button>
-                                  </div>
                                 </div>
                               </div>
                             );
