@@ -1527,6 +1527,7 @@ export default function Page() {
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
+  const [hoveredLada, setHoveredLada] = React.useState(false);
   const [hoveredDom, setHoveredDom] = React.useState(false);
   const [hoveredKompostownik, setHoveredKompostownik] = React.useState(false);
   const [hoveredPolaUprawne, setHoveredPolaUprawne] = React.useState(false);
@@ -4780,7 +4781,9 @@ export default function Page() {
                       {/* Lada dla klientów — sprzedaż słoików miodu */}
                       <button
                         type="button"
-                        title="Lada"
+                        title=""
+                        onMouseEnter={() => setHoveredLada(true)}
+                        onMouseLeave={() => setHoveredLada(false)}
                         onClick={() => { setCurrentCustomerIdx(0); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
@@ -9869,6 +9872,14 @@ export default function Page() {
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
         </div>
       )}
+    {/* Tooltip Lada dla klientów */}
+      {hoveredLada && isOnFarmMap && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🍯 Lada dla klientów</p>
+          <p className="mb-1 text-[14px]">Obsługuj klientów i sprzedawaj miód.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Klienci przychodzą regularnie — odpowiadaj na zamówienia, by zarabiać na słoikach miodu z ula.</p>
+        </div>
+      )}
     {/* Tooltip Dom */}
       {hoveredDom && isOnFarmMap && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
@@ -9882,7 +9893,8 @@ export default function Page() {
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-green-400">♻️ Kompostownik</p>
           <p className="mb-1 text-[14px]">Przetwarzaj odpadki w kompost.</p>
-          <p className="text-[13px] text-[#8b6a3e]">Kompost zwiększa plony lub przyspiesza wzrost upraw na polu.</p>
+          <p className="mb-1 text-[13px] text-[#8b6a3e]">Kompost przyspiesza wzrost upraw i zwiększa plony na polu.</p>
+          <p className="text-[13px] text-green-600">🎁 Każde użycie daje % szansę na losowy przedmiot specjalny.</p>
         </div>
       )}
     {/* Tooltip Pola uprawne */}
