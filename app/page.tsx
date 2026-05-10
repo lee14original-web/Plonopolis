@@ -2847,6 +2847,12 @@ export default function Page() {
         e.preventDefault();
       }
 
+      if (plotToBuy !== null) {
+        if (key === "enter" || key === " ") void confirmBuyPlot();
+        if (key === "escape") setPlotToBuy(null);
+        return;
+      }
+
       if (key === "w" || key === "arrowup") {
         moveSelection("up");
       } else if (key === "s" || key === "arrowdown") {
@@ -2865,7 +2871,7 @@ export default function Page() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId]);
+  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId, plotToBuy]);
 
   useEffect(() => {
     if (!showRankingPanel) return;
@@ -9517,45 +9523,37 @@ export default function Page() {
                             const _obstType = getPlotObstacleType(selectedPlotId);
                             const _obstDef = _obstType ? OBSTACLE_DEFS[_obstType] : null;
                             return (
-                              <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex justify-center px-4">
-                                <div className="pointer-events-auto w-full max-w-sm rounded-[24px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-4 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                      <p className="text-[11px] uppercase tracking-[0.24em] text-[#d8ba7a]">
-                                        Zablokowane pole
-                                      </p>
-                                      <p className="mt-1 text-lg font-black text-[#fff1c7]">Pole #{selectedPlotId}</p>
-                                      {_obstDef ? (
-                                        <p className="mt-1 text-sm text-[#f2ddb0]">
-                                          Przeszkoda: <span style={{ color: _obstDef.color }}>{_obstDef.icon} {_obstDef.name}</span>
-                                        </p>
-                                      ) : null}
-                                      <p className="mt-0.5 text-sm text-[#f2ddb0]">
-                                        Koszt usunięcia: <span className="font-black text-amber-300">{selectedPlotCost} PLN</span>
-                                      </p>
-                                    </div>
+                              <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/50 px-4">
+                                <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
+                                  <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Zablokowane pole</p>
+                                  <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
+                                  {_obstDef ? (
+                                    <p className="mt-2 text-base text-[#f2ddb0]">
+                                      Przeszkoda: <span style={{ color: _obstDef.color }} className="font-black">{_obstDef.icon} {_obstDef.name}</span>
+                                    </p>
+                                  ) : null}
+                                  <p className="mt-2 text-base text-[#f2ddb0]">
+                                    Koszt usunięcia: <span className="font-black text-amber-300">{selectedPlotCost} PLN</span>
+                                  </p>
+                                  {displayMoney < selectedPlotCost && (
+                                    <p className="mt-2 text-sm text-red-300">Masz za mało pieniędzy na to pole.</p>
+                                  )}
+                                  <div className="mt-6 flex justify-end gap-3">
                                     <button
                                       type="button"
                                       onClick={() => setSelectedPlotId(null)}
-                                      className="rounded-full border border-[#8b6a3e] px-2 py-1 text-xs font-bold text-[#f3e6c8] transition hover:bg-black/20"
-                                      aria-label="Zamknij podpowiedź zakupu pola"
+                                      className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] px-5 py-2 text-sm font-bold text-[#f3e6c8] transition hover:bg-[rgba(20,12,8,0.8)]"
                                     >
-                                      ✕
+                                      Anuluj
                                     </button>
-                                  </div>
-
-                                  <div className="mt-4">
                                     <button
                                       type="button"
                                       onClick={() => setPlotToBuy(selectedPlotId)}
-                                      className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+                                      className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
                                       disabled={displayMoney < selectedPlotCost}
                                     >
                                       {_obstDef ? `${_obstDef.icon} Usuń: ${selectedPlotCost} PLN` : `Odblokuj: ${selectedPlotCost} PLN`}
                                     </button>
-                                    {displayMoney < selectedPlotCost && (
-                                      <p className="mt-2 text-[11px] text-red-200">Masz za mało pieniędzy na to pole.</p>
-                                    )}
                                   </div>
                                 </div>
                               </div>
