@@ -1473,12 +1473,13 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhColStart, setFhColStart] = React.useState(2.3);
-  const [fhColStep,  setFhColStep]  = React.useState(9.3);
-  const [fhRowStart, setFhRowStart] = React.useState(2.5);
-  const [fhRowStep,  setFhRowStep]  = React.useState(9.8);
-  const [fhCellW,    setFhCellW]    = React.useState(9.3);
-  const [fhCellH,    setFhCellH]    = React.useState(9.8);
+  const [fhCols, setFhCols] = React.useState<number[]>([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]);
+  const [fhRows, setFhRows] = React.useState<number[]>([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]);
+  const [fhCellW, setFhCellW] = React.useState(9.3);
+  const [fhCellH, setFhCellH] = React.useState(9.8);
+  const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
+  const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
+  const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -9346,45 +9347,79 @@ export default function Page() {
 
                   {/* ══ EDYTOR HITBOXÓW POLA ══ */}
                   {fieldHitboxEditMode && (() => {
-                    const step = 0.1;
-                    const makeBtn = (label: string, fn: () => void) => (
-                      <button type="button" onClick={fn} className="w-8 h-8 rounded-lg border border-orange-500/60 bg-black/40 text-orange-300 font-black hover:bg-orange-900/40 transition text-sm">{label}</button>
+                    const s = 0.1;
+                    const adj = (arr: number[], i: number, d: number) => { const n=[...arr]; n[i]=parseFloat((n[i]+d).toFixed(2)); return n; };
+                    const btn = (lbl: string, fn: () => void) => (
+                      <button
+                        type="button"
+                        onMouseDown={() => fhStartHold(fn)}
+                        onMouseUp={fhStopHold}
+                        onMouseLeave={fhStopHold}
+                        onTouchStart={(e) => { e.preventDefault(); fhStartHold(fn); }}
+                        onTouchEnd={fhStopHold}
+                        className="w-7 h-7 rounded-md border border-orange-500/60 bg-black/40 text-orange-300 font-black hover:bg-orange-900/40 active:bg-orange-700/60 active:border-orange-300 transition text-xs select-none"
+                      >{lbl}</button>
                     );
-                    const fmtCols = () => `[${Array.from({length:10},(_,i)=>(fhColStart+i*fhColStep).toFixed(1)).join(",")}]`;
-                    const fmtRows = () => `[${Array.from({length:10},(_,i)=>(fhRowStart+i*fhRowStep).toFixed(1)).join(",")}]`;
-                    const fmtAll = () =>
-`_COLS = ${fmtCols()}
-_ROWS = ${fmtRows()}
-width = "${fhCellW.toFixed(1)}%"
-height = "${fhCellH.toFixed(1)}%"`;
+                    const fmtArr = (a: number[]) => `[${a.map(v=>v.toFixed(1)).join(",")}]`;
+                    const fmtAll = `const _COLS = ${fmtArr(fhCols)};\nconst _ROWS = ${fmtArr(fhRows)};\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`;
                     return (
                       <div className="mb-4 rounded-2xl border border-orange-500/60 bg-[rgba(30,15,5,0.97)] p-4 text-[#dfcfab] text-sm space-y-3">
-                        <p className="font-black text-orange-300 text-base">🎯 Edytor hitboxów pól (siatka 10×10)</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          {([
-                            ["colStart (lewa krawędź 1. kolumny)", fhColStart, setFhColStart],
-                            ["colStep  (odstęp między kol.)",      fhColStep,  setFhColStep],
-                            ["rowStart (górna krawędź 1. wiersza)",fhRowStart, setFhRowStart],
-                            ["rowStep  (odstęp między wierszami)", fhRowStep,  setFhRowStep],
-                            ["cellWidth  (szerokość pola %)",       fhCellW,    setFhCellW],
-                            ["cellHeight (wysokość pola %)",        fhCellH,    setFhCellH],
-                          ] as [string, number, React.Dispatch<React.SetStateAction<number>>][]).map(([label, val, setVal]) => (
-                            <div key={label} className="flex items-center gap-2 rounded-xl border border-orange-700/30 bg-black/20 px-3 py-2">
-                              <span className="flex-1 text-[11px] text-[#bfa274] truncate">{label}</span>
-                              {makeBtn("−", () => setVal(v => Math.max(0, parseFloat((v - step).toFixed(2)))))}
-                              <span className="w-14 text-center font-black text-orange-200 text-[13px]">{val.toFixed(1)}%</span>
-                              {makeBtn("+", () => setVal(v => parseFloat((v + step).toFixed(2))))}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">📋 Aktualne wartości (skopiuj do kodu):</p>
-                          <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{fmtAll()}</pre>
-                          <div className="mt-2 text-[10px] text-orange-700/80">
-                            Cols: {fmtCols()} | Rows: {fmtRows()}
+                        <p className="font-black text-orange-300 text-base">🎯 Pozycje hitboxów pól</p>
+
+                        {/* Kolumny */}
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Kolumny — left % (C1–C10)</p>
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {fhCols.map((v, i) => (
+                              <div key={i} className="flex items-center gap-1 rounded-lg border border-orange-700/30 bg-black/20 px-2 py-1">
+                                <span className="text-[10px] text-[#8b6a3e] w-4 shrink-0">C{i+1}</span>
+                                {btn("−", () => setFhCols(a => adj(a, i, -s)))}
+                                <span className="flex-1 text-center font-black text-orange-200 text-[11px]">{v.toFixed(1)}</span>
+                                {btn("+", () => setFhCols(a => adj(a, i, +s)))}
+                              </div>
+                            ))}
                           </div>
                         </div>
-                        <button type="button" onClick={() => { setFhColStart(2.3); setFhColStep(9.3); setFhRowStart(2.5); setFhRowStep(9.8); setFhCellW(9.3); setFhCellH(9.8); }} className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition">↩ Reset do domyślnych</button>
+
+                        {/* Wiersze */}
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Wiersze — top % (R1–R10)</p>
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {fhRows.map((v, i) => (
+                              <div key={i} className="flex items-center gap-1 rounded-lg border border-orange-700/30 bg-black/20 px-2 py-1">
+                                <span className="text-[10px] text-[#8b6a3e] w-4 shrink-0">R{i+1}</span>
+                                {btn("−", () => setFhRows(a => adj(a, i, -s)))}
+                                <span className="flex-1 text-center font-black text-orange-200 text-[11px]">{v.toFixed(1)}</span>
+                                {btn("+", () => setFhRows(a => adj(a, i, +s)))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Rozmiar pola */}
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Rozmiar pola</p>
+                          <div className="flex gap-3">
+                            {([["Szerokość (width)", fhCellW, setFhCellW],["Wysokość (height)", fhCellH, setFhCellH]] as [string,number,React.Dispatch<React.SetStateAction<number>>][]).map(([lbl,val,set]) => (
+                              <div key={lbl} className="flex items-center gap-2 rounded-lg border border-orange-700/30 bg-black/20 px-3 py-1.5 flex-1">
+                                <span className="text-[11px] text-[#bfa274] flex-1">{lbl}</span>
+                                {btn("−", () => set(v => parseFloat((Math.max(1,v-s)).toFixed(2))))}
+                                <span className="w-12 text-center font-black text-orange-200 text-[12px]">{val.toFixed(1)}%</span>
+                                {btn("+", () => set(v => parseFloat((v+s).toFixed(2))))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Readout */}
+                        <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">📋 Skopiuj do kodu:</p>
+                          <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{fmtAll}</pre>
+                        </div>
+
+                        <button type="button"
+                          onClick={() => { setFhCols([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]); setFhRows([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]); setFhCellW(9.3); setFhCellH(9.8); }}
+                          className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition">↩ Reset do domyślnych</button>
                       </div>
                     );
                   })()}
@@ -9399,7 +9434,7 @@ height = "${fhCellH.toFixed(1)}%"`;
 
                     <div className="absolute inset-0">
                       {(fieldHitboxEditMode
-                        ? Array.from({length:100},(_,i)=>({ id:i+1, left:`${(fhColStart+(i%10)*fhColStep).toFixed(1)}%`, top:`${(fhRowStart+Math.floor(i/10)*fhRowStep).toFixed(1)}%`, width:`${fhCellW.toFixed(1)}%`, height:`${fhCellH.toFixed(1)}%` }))
+                        ? Array.from({length:100},(_,i)=>({ id:i+1, left:`${fhCols[i%10].toFixed(1)}%`, top:`${fhRows[Math.floor(i/10)].toFixed(1)}%`, width:`${fhCellW.toFixed(1)}%`, height:`${fhCellH.toFixed(1)}%` }))
                         : FIELD_VIEW_PLOTS
                       ).map((plot) => {
                         const plotId = plot.id;
