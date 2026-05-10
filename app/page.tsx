@@ -1480,6 +1480,26 @@ export default function Page() {
   const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
   const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
   const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
+  const fhContainerRef = React.useRef<HTMLDivElement>(null);
+  const fhDragRef = React.useRef<{col:number,row:number,startMouseX:number,startMouseY:number,startColVal:number,startRowVal:number}|null>(null);
+  const fhResizeRef = React.useRef<{startMouseX:number,startMouseY:number,startW:number,startH:number}|null>(null);
+  const handleFhMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!fhContainerRef.current) return;
+    const rect = fhContainerRef.current.getBoundingClientRect();
+    const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+    const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+    if (fhDragRef.current) {
+      const { col, row, startMouseX, startMouseY, startColVal, startRowVal } = fhDragRef.current;
+      setFhCols(a => { const n=[...a]; n[col]=parseFloat((startColVal+(pctX-startMouseX)).toFixed(2)); return n; });
+      setFhRows(a => { const n=[...a]; n[row]=parseFloat((startRowVal+(pctY-startMouseY)).toFixed(2)); return n; });
+    }
+    if (fhResizeRef.current) {
+      const { startMouseX, startMouseY, startW, startH } = fhResizeRef.current;
+      setFhCellW(Math.max(1, parseFloat((startW+(pctX-startMouseX)).toFixed(2))));
+      setFhCellH(Math.max(1, parseFloat((startH+(pctY-startMouseY)).toFixed(2))));
+    }
+  };
+  const handleFhMouseUp = () => { fhDragRef.current = null; fhResizeRef.current = null; };
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -9345,86 +9365,15 @@ export default function Page() {
                     </button>
                   </div>
 
-                  {/* ══ EDYTOR HITBOXÓW POLA ══ */}
-                  {fieldHitboxEditMode && (() => {
-                    const s = 0.1;
-                    const adj = (arr: number[], i: number, d: number) => { const n=[...arr]; n[i]=parseFloat((n[i]+d).toFixed(2)); return n; };
-                    const btn = (lbl: string, fn: () => void) => (
-                      <button
-                        type="button"
-                        onMouseDown={() => fhStartHold(fn)}
-                        onMouseUp={fhStopHold}
-                        onMouseLeave={fhStopHold}
-                        onTouchStart={(e) => { e.preventDefault(); fhStartHold(fn); }}
-                        onTouchEnd={fhStopHold}
-                        className="w-7 h-7 rounded-md border border-orange-500/60 bg-black/40 text-orange-300 font-black hover:bg-orange-900/40 active:bg-orange-700/60 active:border-orange-300 transition text-xs select-none"
-                      >{lbl}</button>
-                    );
-                    const fmtArr = (a: number[]) => `[${a.map(v=>v.toFixed(1)).join(",")}]`;
-                    const fmtAll = `const _COLS = ${fmtArr(fhCols)};\nconst _ROWS = ${fmtArr(fhRows)};\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`;
-                    return (
-                      <div className="mb-4 rounded-2xl border border-orange-500/60 bg-[rgba(30,15,5,0.97)] p-4 text-[#dfcfab] text-sm space-y-3">
-                        <p className="font-black text-orange-300 text-base">🎯 Pozycje hitboxów pól</p>
-
-                        {/* Kolumny */}
-                        <div>
-                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Kolumny — left % (C1–C10)</p>
-                          <div className="grid grid-cols-5 gap-1.5">
-                            {fhCols.map((v, i) => (
-                              <div key={i} className="flex items-center gap-1 rounded-lg border border-orange-700/30 bg-black/20 px-2 py-1">
-                                <span className="text-[10px] text-[#8b6a3e] w-4 shrink-0">C{i+1}</span>
-                                {btn("−", () => setFhCols(a => adj(a, i, -s)))}
-                                <span className="flex-1 text-center font-black text-orange-200 text-[11px]">{v.toFixed(1)}</span>
-                                {btn("+", () => setFhCols(a => adj(a, i, +s)))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Wiersze */}
-                        <div>
-                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Wiersze — top % (R1–R10)</p>
-                          <div className="grid grid-cols-5 gap-1.5">
-                            {fhRows.map((v, i) => (
-                              <div key={i} className="flex items-center gap-1 rounded-lg border border-orange-700/30 bg-black/20 px-2 py-1">
-                                <span className="text-[10px] text-[#8b6a3e] w-4 shrink-0">R{i+1}</span>
-                                {btn("−", () => setFhRows(a => adj(a, i, -s)))}
-                                <span className="flex-1 text-center font-black text-orange-200 text-[11px]">{v.toFixed(1)}</span>
-                                {btn("+", () => setFhRows(a => adj(a, i, +s)))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Rozmiar pola */}
-                        <div>
-                          <p className="text-[11px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Rozmiar pola</p>
-                          <div className="flex gap-3">
-                            {([["Szerokość (width)", fhCellW, setFhCellW],["Wysokość (height)", fhCellH, setFhCellH]] as [string,number,React.Dispatch<React.SetStateAction<number>>][]).map(([lbl,val,set]) => (
-                              <div key={lbl} className="flex items-center gap-2 rounded-lg border border-orange-700/30 bg-black/20 px-3 py-1.5 flex-1">
-                                <span className="text-[11px] text-[#bfa274] flex-1">{lbl}</span>
-                                {btn("−", () => set(v => parseFloat((Math.max(1,v-s)).toFixed(2))))}
-                                <span className="w-12 text-center font-black text-orange-200 text-[12px]">{val.toFixed(1)}%</span>
-                                {btn("+", () => set(v => parseFloat((v+s).toFixed(2))))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Readout */}
-                        <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">📋 Skopiuj do kodu:</p>
-                          <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{fmtAll}</pre>
-                        </div>
-
-                        <button type="button"
-                          onClick={() => { setFhCols([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]); setFhRows([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]); setFhCellW(9.3); setFhCellH(9.8); }}
-                          className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition">↩ Reset do domyślnych</button>
-                      </div>
-                    );
-                  })()}
-
-                  <div className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20">
+                  <div className={fieldHitboxEditMode ? "flex gap-3 items-start" : ""}>
+                  <div
+                    ref={fhContainerRef}
+                    className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20 flex-1"
+                    onMouseMove={fieldHitboxEditMode ? handleFhMouseMove : undefined}
+                    onMouseUp={fieldHitboxEditMode ? handleFhMouseUp : undefined}
+                    onMouseLeave={fieldHitboxEditMode ? handleFhMouseUp : undefined}
+                    style={fieldHitboxEditMode ? { userSelect: "none" } : {}}
+                  >
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
                       src="/farm-field-view.png"
@@ -9448,7 +9397,19 @@ export default function Page() {
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
+                            onMouseDown={fieldHitboxEditMode ? (e) => {
+                              if ((e.target as HTMLElement).dataset.resizeHandle) return;
+                              e.preventDefault();
+                              const col = (plotId - 1) % 10;
+                              const row = Math.floor((plotId - 1) / 10);
+                              const rect = fhContainerRef.current?.getBoundingClientRect();
+                              if (!rect) return;
+                              const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+                              const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+                              fhDragRef.current = { col, row, startMouseX: pctX, startMouseY: pctY, startColVal: fhCols[col], startRowVal: fhRows[row] };
+                            } : undefined}
                             onClick={() => {
+                              if (fieldHitboxEditMode) return;
                               setSelectedPlotId(plotId);
 
                               if (!isUnlocked) {
@@ -9495,7 +9456,9 @@ export default function Page() {
                               return `${_cropName} (${_qLabel})${_status}${_bonusLine}`;
                             })()}
                             className={`absolute rounded-xl transition-all duration-300 ${
-                              isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
+                              fieldHitboxEditMode
+                                ? "cursor-move border-2 border-orange-400/70 bg-orange-900/10"
+                                : isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
                             }`}
                             style={{
                               left: plot.left,
@@ -9664,6 +9627,22 @@ export default function Page() {
                                 </div>
                               </>
                             )}
+                            {fieldHitboxEditMode && (
+                              <div
+                                data-resize-handle="1"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  const rect = fhContainerRef.current?.getBoundingClientRect();
+                                  if (!rect) return;
+                                  const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+                                  const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+                                  fhResizeRef.current = { startMouseX: pctX, startMouseY: pctY, startW: fhCellW, startH: fhCellH };
+                                }}
+                                className="absolute bottom-0 right-0 z-50 h-4 w-4 cursor-se-resize rounded-tl-md bg-orange-500 opacity-80 hover:opacity-100"
+                                title="Przeciągnij, aby zmienić rozmiar"
+                              />
+                            )}
                           </button>
                         );
                       })}
@@ -9790,9 +9769,29 @@ export default function Page() {
                     )}
                   </div>
                 </div>
+                {fieldHitboxEditMode && (
+                  <div className="w-72 shrink-0 self-start rounded-2xl border border-orange-500/60 bg-[rgba(30,15,5,0.97)] p-4 text-[#dfcfab] text-sm space-y-4">
+                    <p className="font-black text-orange-300 text-base">Pozycje hitboxów</p>
+                    <p className="text-[11px] text-[#8b6a3e] leading-relaxed">Przeciągnij kafelek myszką, aby zmienić pozycję kolumny i wiersza. Uchwyt w prawym dolnym rogu zmienia rozmiar wszystkich pól.</p>
+                    <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Skopiuj do kodu:</p>
+                      <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{`const _COLS = [${fhCols.map(v=>v.toFixed(1)).join(",")}];\nconst _ROWS = [${fhRows.map(v=>v.toFixed(1)).join(",")}];\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`}</pre>
+                    </div>
+                    <div className="flex gap-4 text-[13px] text-orange-200">
+                      <span>Szer: <span className="font-black">{fhCellW.toFixed(1)}%</span></span>
+                      <span>Wys: <span className="font-black">{fhCellH.toFixed(1)}%</span></span>
+                    </div>
+                    <button type="button"
+                      onClick={() => { setFhCols([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]); setFhRows([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]); setFhCellW(9.3); setFhCellH(9.8); }}
+                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition w-full">
+                      ↩ Reset do domyślnych
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {farmUpgradeModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
