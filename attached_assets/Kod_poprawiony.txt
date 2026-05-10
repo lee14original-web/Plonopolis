@@ -2207,15 +2207,15 @@ export default function Page() {
   function moveSelection(direction: "up" | "down" | "left" | "right") {
     const current = selectedPlotId ?? 1;
 
-    let row = Math.floor((current - 1) / 5);
-    let col = (current - 1) % 5;
+    let row = Math.floor((current - 1) / 10);
+    let col = (current - 1) % 10;
 
     if (direction === "up" && row > 0) row -= 1;
-    if (direction === "down" && row < 4) row += 1;
+    if (direction === "down" && row < 9) row += 1;
     if (direction === "left" && col > 0) col -= 1;
-    if (direction === "right" && col < 4) col += 1;
+    if (direction === "right" && col < 9) col += 1;
 
-    const nextPlotId = row * 5 + col + 1;
+    const nextPlotId = row * 10 + col + 1;
     setSelectedPlotId(nextPlotId);
   }
 
