@@ -1156,11 +1156,11 @@ const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => 
 
 // Grid 10×10 — pola numerowane wierszami od lewej do prawej, z góry na dół
 // Obraz farm-field-view.png ma proporcje 1536:1092
-// Każde pole: width=9.3%, height=9.8% — pola przylegają bez odstępów
-// Kolumny left: 2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0
-// Wiersze top:  2.5, 12.3, 22.1, 31.9, 41.7, 51.5, 61.3, 71.1, 80.9, 90.2
-const _COLS = [2.3, 11.6, 20.9, 30.2, 39.5, 48.8, 58.1, 67.4, 76.7, 86.0];
-const _ROWS = [2.5, 12.3, 22.1, 31.9, 41.7, 51.5, 61.3, 71.1, 80.9, 90.2];
+// Każde pole: width=6.9%, height=8.2%
+// Kolumny left: 16.1, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5
+// Wiersze top:  12.9, 21.1, 28.8, 36.8, 44.6, 52.9, 60.9, 69.0, 77.2, 85.2
+const _COLS = [16.1, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5];
+const _ROWS = [12.9, 21.1, 28.8, 36.8, 44.6, 52.9, 60.9, 69.0, 77.2, 85.2];
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, i) => {
   const row = Math.floor(i / 10);
   const col = i % 10;
@@ -1168,8 +1168,8 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
     id: i + 1,
     left: `${_COLS[col]}%`,
     top: `${_ROWS[row]}%`,
-    width: "9.3%",
-    height: "9.8%",
+    width: "6.9%",
+    height: "8.2%",
   };
 });
 
@@ -1473,7 +1473,7 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.6]);
+  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]);
   const [fhRows, setFhRows] = React.useState<number[]>([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]);
   const [fhCellW, setFhCellW] = React.useState(6.9);
   const [fhCellH, setFhCellH] = React.useState(8.2);
@@ -9809,7 +9809,7 @@ export default function Page() {
                       ↩ Reset do domyślnych
                     </button>
                     <button type="button"
-                      onClick={() => { setFhCols([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.6]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
+                      onClick={() => { setFhCols([16.1,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.9,60.9,69.0,77.2,85.2]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
                       className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
                       ↺ Przywróć moje wartości
                     </button>
