@@ -1407,7 +1407,7 @@ function getMapForLevel(level: number | null | undefined) {
   if (safeLevel >= 20) return "farm20";
   if (safeLevel >= 15) return "farm15";
   if (safeLevel >= 10) return "farm10";
-  if (safeLevel >= 5) return "farm5";
+  if (safeLevel >= 3) return "farm5";
 
   return DEFAULT_MAP;
 }
