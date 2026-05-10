@@ -1544,6 +1544,7 @@ export default function Page() {
   const [unlockedEpicAvatars, setUnlockedEpicAvatars] = React.useState<number[]>([]);
   const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("mezczyzni");
   const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
+  const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
@@ -2653,7 +2654,7 @@ export default function Page() {
   // ─── Farm music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
     const isFarmMap = (FARM_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
-    if (!isFarmMap) {
+    if (!isFarmMap || !profile) {
       // Pauza zamiast resetu — przy powrocie wznowi w tym samym miejscu
       if (farmAudioRef.current && !farmAudioRef.current.paused) {
         farmAudioRef.current.pause();
@@ -2671,12 +2672,12 @@ export default function Page() {
       farmAudioRef.current.play().catch(() => {});
     }
     return () => {};
-  }, [currentMap, musicVolume, musicMuted]);
+  }, [currentMap, musicVolume, musicMuted, profile]);
 
   // ─── City music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
     const isCityMap = (CITY_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
-    if (!isCityMap) {
+    if (!isCityMap || !profile) {
       // Pauza zamiast resetu — przy powrocie wznowi w tym samym miejscu
       if (cityAudioRef.current && !cityAudioRef.current.paused) {
         cityAudioRef.current.pause();
@@ -2694,7 +2695,7 @@ export default function Page() {
       cityAudioRef.current.play().catch(() => {});
     }
     return () => {};
-  }, [currentMap, musicVolume, musicMuted]);
+  }, [currentMap, musicVolume, musicMuted, profile]);
 
   // ─── Countdown timer ───
   useEffect(() => {
@@ -9133,8 +9134,9 @@ export default function Page() {
                 )}
 
                 {/* Epickie */}
-                {skinTab === "epickie" && (
+                {(skinTab === "epickie" || skinTab === "wszystkie") && (
                   <>
+                    {skinTab === "wszystkie" && <p className="mt-4 mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">⭐ Epickie</p>}
                     <p className="mb-4 text-center text-xs text-green-400/80">Kliknij zablokowany avatar, aby go odblokować za odpowiedni koszt z plecaka.</p>
                     <div className="grid grid-cols-5 gap-3">
                       {EPIC_SKINS.map((es, i) => {
@@ -9153,6 +9155,8 @@ export default function Page() {
                                 setEpicPurchaseTarget(idx);
                               }
                             }}
+                            onMouseEnter={() => setHoveredEpicSkin(idx)}
+                            onMouseLeave={() => setHoveredEpicSkin(null)}
                             className={`relative flex flex-col items-center justify-end rounded-2xl border-2 overflow-hidden transition pb-2 ${
                               isActive ? "border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.5)] bg-green-900/20"
                               : isUnlocked ? "border-green-500/70 bg-green-950/20 hover:border-green-400"
@@ -9190,6 +9194,57 @@ export default function Page() {
               </div>
             </div>
           )}
+
+          {/* ═══ TOOLTIP EPICKIEGO SKINA ═══ */}
+          {hoveredEpicSkin !== null && showSkinModal && (() => {
+            const es = EPIC_SKINS[hoveredEpicSkin - EPIC_SKIN_START];
+            if (!es) return null;
+            const isUnlocked = unlockedEpicAvatars.includes(hoveredEpicSkin);
+            const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+            return (
+              <div className="pointer-events-none fixed z-[9999] w-64 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-4 shadow-2xl backdrop-blur-sm"
+                style={{ left: mousePos.x + 20, top: Math.max(8, mousePos.y - 160) }}>
+                {/* Podgląd skina */}
+                <div className="mb-3 flex justify-center">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
+                    <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(80%) brightness(0.5)" }} />
+                    {!isUnlocked && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl">🔒</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {/* Nazwa */}
+                <p className="mb-1 text-center text-[15px] font-black text-green-300">⭐ {es.name}</p>
+                {/* Status */}
+                {isUnlocked
+                  ? <p className="mb-2 text-center text-[11px] font-bold text-green-400">✓ Odblokowany — kliknij, aby wybrać</p>
+                  : <p className="mb-2 text-center text-[11px] text-[#8b6a3e]">Zablokowany — kliknij, aby odblokować</p>
+                }
+                {/* Koszty */}
+                {!isUnlocked && (
+                  <div className="rounded-xl border border-green-800/40 bg-black/30 p-3">
+                    <p className="mb-1.5 text-[10px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
+                    {Object.entries(es.cost).map(([k, v]) => {
+                      const { baseCropId, quality } = parseQualityKey(k);
+                      const crop = CROPS.find(c => c.id === baseCropId);
+                      const qLabel = quality === "epic" ? "epickich" : quality === "legendary" ? "legendarnych" : "zwykłych";
+                      const have = seedInventory[k] ?? 0;
+                      const enough = have >= v;
+                      return (
+                        <div key={k} className={`flex items-center justify-between text-[12px] font-bold ${enough ? "text-green-300" : "text-red-300"}`}>
+                          <span>{v}× {crop?.name ?? k} {qLabel}</span>
+                          <span className="ml-2 text-[11px] opacity-70">({have}/{v})</span>
+                        </div>
+                      );
+                    })}
+                    {canAfford && <p className="mt-1.5 text-center text-[11px] font-black text-green-400">Masz wystarczająco!</p>}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ═══ MODAL ZAKUPU EPICKIEGO AVATARA ═══ */}
           {epicPurchaseTarget !== null && (() => {
@@ -9840,7 +9895,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
-      {hoveredHiveLock && isOnFarmMap && (
+      {hoveredHiveLock && isOnFarmMap && !!profile && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
@@ -9851,7 +9906,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip stodoły (zablokowanej do lvl 3) podążający za kursorem */}
-      {hoveredBarnLock && isOnFarmMap && (
+      {hoveredBarnLock && isOnFarmMap && !!profile && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
@@ -9862,7 +9917,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip sadu (zablokowanego do lvl 10) podążający za kursorem */}
-      {hoveredSadLock && isOnFarmMap && (
+      {hoveredSadLock && isOnFarmMap && !!profile && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
           style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
@@ -9873,7 +9928,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip Lada dla klientów */}
-      {hoveredLada && isOnFarmMap && (
+      {hoveredLada && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-amber-300">🍯 Lada dla klientów</p>
           <p className="mb-1 text-[14px]">Obsługuj klientów i sprzedawaj miód.</p>
@@ -9881,7 +9936,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip Dom */}
-      {hoveredDom && isOnFarmMap && (
+      {hoveredDom && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-amber-300">🏠 Dom gracza</p>
           <p className="mb-1 text-[14px]">Twój profil, statystyki i ekwipunek.</p>
@@ -9889,7 +9944,7 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip Kompostownik */}
-      {hoveredKompostownik && isOnFarmMap && (
+      {hoveredKompostownik && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-green-400">♻️ Kompostownik</p>
           <p className="mb-1 text-[14px]">Przetwarzaj odpadki w kompost.</p>
@@ -9898,14 +9953,14 @@ export default function Page() {
         </div>
       )}
     {/* Tooltip Pola uprawne */}
-      {hoveredPolaUprawne && isOnFarmMap && (
+      {hoveredPolaUprawne && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-lime-400">🌾 Pola uprawne</p>
           <p className="text-[14px]">Sadź, podlewaj i zbieraj plony.</p>
         </div>
       )}
     {/* Tooltip Do miasta */}
-      {hoveredDoMiasta && isOnFarmMap && (
+      {hoveredDoMiasta && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-sky-300">🏙️ Do miasta</p>
           <p className="mb-1 text-[14px]">Przejdź do centrum Plonopolis.</p>
@@ -9913,35 +9968,35 @@ export default function Page() {
         </div>
       )}
     {/* Tooltips — Miasto */}
-      {hoveredNaFarme && currentMap === "city" && (
+      {hoveredNaFarme && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-lime-400">🌾 Na farmę</p>
           <p className="mb-1 text-[14px]">Wróć do swojej farmy.</p>
           <p className="text-[13px] text-[#8b6a3e]">Siej, podlewaj i zbieraj plony na polach uprawnych.</p>
         </div>
       )}
-      {hoveredSklep && currentMap === "city" && (
+      {hoveredSklep && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-amber-300">🛒 Sklep</p>
           <p className="mb-1 text-[14px]">Kup nasiona, drzewa i zwierzęta.</p>
           <p className="text-[13px] text-[#8b6a3e]">Szeroki asortyment nasion każdej jakości, sadzonki drzew owocowych i ekwipunek.</p>
         </div>
       )}
-      {hoveredTarg && currentMap === "city" && (
+      {hoveredTarg && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-orange-300">🏪 Targ</p>
           <p className="mb-1 text-[14px]">Sprzedaj swoje plony i owoce.</p>
           <p className="text-[13px] text-[#8b6a3e]">Ceny na targu zmieniają się dynamicznie — sprawdzaj regularnie, by sprzedawać drożej.</p>
         </div>
       )}
-      {hoveredBank && currentMap === "city" && (
+      {hoveredBank && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-yellow-300">🏦 Bank</p>
           <p className="mb-1 text-[14px]">Zarządzaj swoimi finansami.</p>
           <p className="text-[13px] text-[#8b6a3e]">Lokaty i pożyczki — pomnażaj oszczędności lub finansuj rozwój farmy.</p>
         </div>
       )}
-      {hoveredRatusz && currentMap === "city" && (
+      {hoveredRatusz && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-purple-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-purple-300">🏛️ Ratusz</p>
           <p className="mb-1 text-[14px]">Rankingi i osiągnięcia graczy.</p>
