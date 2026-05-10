@@ -1477,6 +1477,9 @@ export default function Page() {
   const [fhRows, setFhRows] = React.useState<number[]>([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]);
   const [fhCellW, setFhCellW] = React.useState(9.3);
   const [fhCellH, setFhCellH] = React.useState(9.8);
+  const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
+  const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
+  const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -9347,7 +9350,15 @@ export default function Page() {
                     const s = 0.1;
                     const adj = (arr: number[], i: number, d: number) => { const n=[...arr]; n[i]=parseFloat((n[i]+d).toFixed(2)); return n; };
                     const btn = (lbl: string, fn: () => void) => (
-                      <button type="button" onClick={fn} className="w-7 h-7 rounded-md border border-orange-500/60 bg-black/40 text-orange-300 font-black hover:bg-orange-900/40 transition text-xs">{lbl}</button>
+                      <button
+                        type="button"
+                        onMouseDown={() => fhStartHold(fn)}
+                        onMouseUp={fhStopHold}
+                        onMouseLeave={fhStopHold}
+                        onTouchStart={(e) => { e.preventDefault(); fhStartHold(fn); }}
+                        onTouchEnd={fhStopHold}
+                        className="w-7 h-7 rounded-md border border-orange-500/60 bg-black/40 text-orange-300 font-black hover:bg-orange-900/40 active:bg-orange-700/60 active:border-orange-300 transition text-xs select-none"
+                      >{lbl}</button>
                     );
                     const fmtArr = (a: number[]) => `[${a.map(v=>v.toFixed(1)).join(",")}]`;
                     const fmtAll = `const _COLS = ${fmtArr(fhCols)};\nconst _ROWS = ${fmtArr(fhRows)};\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`;
