@@ -1473,10 +1473,11 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhCols, setFhCols] = React.useState<number[]>([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]);
-  const [fhRows, setFhRows] = React.useState<number[]>([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]);
-  const [fhCellW, setFhCellW] = React.useState(9.3);
-  const [fhCellH, setFhCellH] = React.useState(9.8);
+  const [fhCols, setFhCols] = React.useState<number[]>([16.1,22.7,29.5,36.3,43.1,49.9,56.7,63.6,70.4,77.2]);
+  const [fhRows, setFhRows] = React.useState<number[]>([13.4,21.1,28.8,36.7,45.6,56.1,64.7,74.3,83.8,89.8]);
+  const [fhCellW, setFhCellW] = React.useState(6.8);
+  const [fhCellH, setFhCellH] = React.useState(7.9);
+  const [fhLockAxis, setFhLockAxis] = React.useState<"none"|"x"|"y">("none");
   const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
   const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
   const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
@@ -1490,8 +1491,10 @@ export default function Page() {
     const pctY = ((e.clientY - rect.top) / rect.height) * 100;
     if (fhDragRef.current) {
       const { col, row, startMouseX, startMouseY, startColVal, startRowVal } = fhDragRef.current;
-      setFhCols(a => { const n=[...a]; n[col]=parseFloat((startColVal+(pctX-startMouseX)).toFixed(2)); return n; });
-      setFhRows(a => { const n=[...a]; n[row]=parseFloat((startRowVal+(pctY-startMouseY)).toFixed(2)); return n; });
+      const dX = pctX - startMouseX;
+      const dY = pctY - startMouseY;
+      if (fhLockAxis !== "y") setFhCols(a => { const n=[...a]; n[col]=parseFloat((startColVal+dX).toFixed(2)); return n; });
+      if (fhLockAxis !== "x") setFhRows(a => { const n=[...a]; n[row]=parseFloat((startRowVal+dY).toFixed(2)); return n; });
     }
     if (fhResizeRef.current) {
       const { startMouseX, startMouseY, startW, startH } = fhResizeRef.current;
@@ -9773,6 +9776,25 @@ export default function Page() {
                   <div className="w-72 shrink-0 self-start rounded-2xl border border-orange-500/60 bg-[rgba(30,15,5,0.97)] p-4 text-[#dfcfab] text-sm space-y-4">
                     <p className="font-black text-orange-300 text-base">Pozycje hitboxów</p>
                     <p className="text-[11px] text-[#8b6a3e] leading-relaxed">Przeciągnij kafelek myszką, aby zmienić pozycję kolumny i wiersza. Uchwyt w prawym dolnym rogu zmienia rozmiar wszystkich pól.</p>
+
+                    {/* Blokada osi */}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Blokada ruchu</p>
+                      <div className="flex gap-2">
+                        {([["Brak", "none"], ["Tylko poziom →", "y"], ["Tylko pion ↕", "x"]] as [string, "none"|"x"|"y"][]).map(([lbl, val]) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setFhLockAxis(val)}
+                            className={`flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-black transition ${fhLockAxis === val ? "border-orange-400 bg-orange-900/60 text-orange-200" : "border-orange-700/30 bg-black/20 text-[#8b6a3e] hover:border-orange-500/50"}`}
+                          >{lbl}</button>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-[10px] text-[#6b4e2e]">
+                        {fhLockAxis === "y" ? "Ruch tylko w poziomie — pion zablokowany" : fhLockAxis === "x" ? "Ruch tylko w pionie — poziom zablokowany" : "Ruch swobodny w obu kierunkach"}
+                      </p>
+                    </div>
+
                     <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Skopiuj do kodu:</p>
                       <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{`const _COLS = [${fhCols.map(v=>v.toFixed(1)).join(",")}];\nconst _ROWS = [${fhRows.map(v=>v.toFixed(1)).join(",")}];\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`}</pre>
@@ -9785,6 +9807,11 @@ export default function Page() {
                       onClick={() => { setFhCols([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]); setFhRows([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]); setFhCellW(9.3); setFhCellH(9.8); }}
                       className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition w-full">
                       ↩ Reset do domyślnych
+                    </button>
+                    <button type="button"
+                      onClick={() => { setFhCols([16.1,22.7,29.5,36.3,43.1,49.9,56.7,63.6,70.4,77.2]); setFhRows([13.4,21.1,28.8,36.7,45.6,56.1,64.7,74.3,83.8,89.8]); setFhCellW(6.8); setFhCellH(7.9); setFhLockAxis("none"); }}
+                      className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
+                      ↺ Przywróć moje wartości
                     </button>
                   </div>
                 )}
