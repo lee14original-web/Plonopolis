@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Plonopolis"
+version = "1.0.0"
+id = "artifacts/plonopolis"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22294
+
+[services.development]
+run = "pnpm --filter @workspace/plonopolis run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/plonopolis", "run", "build" ]
+publicDir = "artifacts/plonopolis/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22294"
+BASE_PATH = "/"

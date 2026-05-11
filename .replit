@@ -15,28 +15,6 @@ args = ["pnpm", "store", "prune"]
 env = { "CI" = "true" }
 
 [workflows]
-runButton = "Project"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Plonopolis Dev"
-
-[[workflows.workflow]]
-name = "Plonopolis Dev"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=3000 pnpm --filter @workspace/plonopolis run dev"
-waitForPort = 3000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [agent]
 stack = "PNPM_WORKSPACE"
@@ -51,3 +29,5 @@ timeoutMs = 20000
 [userenv.shared]
 NEXT_PUBLIC_SUPABASE_URL = "https://vwgfoevjiliggsgmqacg.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z2ZvZXZqaWxpZ2dzZ21xYWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTg5OTMsImV4cCI6MjA4OTg3NDk5M30.3_wHFLElsWc3RCmRQLgMyJmtKiP61t8efnVxWBa2duk"
+VITE_SUPABASE_URL = "https://vwgfoevjiliggsgmqacg.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z2ZvZXZqaWxpZ2dzZ21xYWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTg5OTMsImV4cCI6MjA4OTg3NDk5M30.3_wHFLElsWc3RCmRQLgMyJmtKiP61t8efnVxWBa2duk"
