@@ -724,20 +724,25 @@ function computeFarmPower(
 // ═══════════════════════════════════════════════════════════════════════
 // SAD — drzewa owocowe (cykliczna produkcja owoców z lossowaną jakością)
 // ═══════════════════════════════════════════════════════════════════════
-type FruitQuality = "zwykly" | "soczysty" | "zloty";
+type FruitQuality = "zwykly" | "soczysty" | "zloty" | "zgnile";
 const FRUIT_QUALITY_DEFS: Record<FruitQuality, { label:string; mult:number; color:string; icon:string; baseChance:number }> = {
-  zwykly:   { label:"Zwykły",   mult:1, color:"#86efac", icon:"",   baseChance:0.85 },
+  zwykly:   { label:"Zwykły",   mult:1, color:"#86efac", icon:"",   baseChance:0.78 },
   soczysty: { label:"Soczysty", mult:2, color:"#22d3ee", icon:"💧", baseChance:0.12 },
   zloty:    { label:"Złoty",    mult:5, color:"#fde047", icon:"✨", baseChance:0.03 },
+  zgnile:   { label:"Zgniłe",   mult:0, color:"#6b7280", icon:"",   baseChance:0.10 },
 };
 // luckPct = bonus % (np. ze skilla Szczęście + eq "% bonus drop")
 function rollFruitQuality(luckPct: number = 0): FruitQuality {
   const r = Math.random();
+  // zgniłe: stałe 10% — nie zależy od szczęścia
+  const zgnileChance = FRUIT_QUALITY_DEFS.zgnile.baseChance;
+  if (r < zgnileChance) return "zgnile";
   const lf = 1 + Math.max(0, luckPct) / 100;
   const zlotyChance    = Math.min(0.50, FRUIT_QUALITY_DEFS.zloty.baseChance * lf);
   const soczystyChance = Math.min(0.60, FRUIT_QUALITY_DEFS.soczysty.baseChance * lf);
-  if (r < zlotyChance) return "zloty";
-  if (r < zlotyChance + soczystyChance) return "soczysty";
+  const rr = (r - zgnileChance) / (1 - zgnileChance);
+  if (rr < zlotyChance) return "zloty";
+  if (rr < zlotyChance + soczystyChance) return "soczysty";
   return "zwykly";
 }
 interface TreeDef {
@@ -778,7 +783,7 @@ type OrchardTreeState = { owned:number; prodStart:number; storage: Record<FruitQ
 type OrchardState = Record<string, OrchardTreeState>;
 function defaultOrchardState(): OrchardState {
   const s: OrchardState = {};
-  TREES.forEach(t => { s[t.id] = { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } }; });
+  TREES.forEach(t => { s[t.id] = { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } }; });
   return s;
 }
 function migrateOrchardState(raw: unknown): OrchardState {
@@ -796,6 +801,7 @@ function migrateOrchardState(raw: unknown): OrchardState {
         zwykly:   typeof s.storage?.zwykly   === "number" ? s.storage.zwykly   : 0,
         soczysty: typeof s.storage?.soczysty === "number" ? s.storage.soczysty : 0,
         zloty:    typeof s.storage?.zloty    === "number" ? s.storage.zloty    : 0,
+        zgnile:   typeof s.storage?.zgnile   === "number" ? s.storage.zgnile   : 0,
       },
     };
   });
@@ -2015,7 +2021,7 @@ export default function Page() {
       if (elapsed >= effMs) {
         // Liczba pełnych cykli (offline-safe). Limit storage = ~5 cykli per drzewo (żeby nie nazbierało za dużo).
         const STORAGE_CYCLE_CAP = 5;
-        const totalStored = ns.storage.zwykly + ns.storage.soczysty + ns.storage.zloty;
+        const totalStored = ns.storage.zwykly + ns.storage.soczysty + ns.storage.zloty + (ns.storage.zgnile ?? 0);
         const avgDropPerCycle = (t.dropMin + t.dropMax) / 2 * ns.owned;
         const freeCycles = Math.max(0, Math.floor((STORAGE_CYCLE_CAP * avgDropPerCycle - totalStored) / Math.max(1, avgDropPerCycle)));
         const fullCycles = Math.min(Math.floor(elapsed / effMs), freeCycles);
@@ -3204,7 +3210,7 @@ export default function Page() {
         return { name: crop.name + qLabel, icon: '🌱', spritePath: sprite };
       }
     }
-    const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty)$/);
+    const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty|zgnile)$/);
     if (fruitM) {
       const tree = TREES.find(t => t.fruitId === fruitM[1]);
       const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
@@ -3680,7 +3686,7 @@ export default function Page() {
     if (!profile?.id) return;
     const newInv: Record<string, number> = { ...fruitInventory };
     TREES.forEach(t => {
-      (["zwykly", "soczysty", "zloty"] as const).forEach(q => {
+      (["zwykly", "soczysty", "zloty", "zgnile"] as const).forEach(q => {
         const k = `${t.fruitId}_${q}`;
         newInv[k] = (newInv[k] ?? 0) + amount;
       });
@@ -3689,7 +3695,7 @@ export default function Page() {
     if (!error) {
       saveFruitInventory(newInv);
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 3 jakości (zwykły/soczysty/złoty).` });
+      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
     } else {
       setMessage({ type: "error", title: "Błąd", text: error.message });
     }
@@ -3954,6 +3960,52 @@ export default function Page() {
       saveKompostBatches(batches);
       if (profile?.id) {
         await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+      }
+    } finally {
+      kompostBusyRef.current = false;
+    }
+  }
+
+  // ─── KOMPOSTOWNIK: wrzuć zgniłe owoce → +1 do bieżącej partii (score: cena owocu × 0.25) ───
+  async function depositFruitToCompost(fruitKey: string, count: number = 1) {
+    if (kompostBusyRef.current) return;
+    kompostBusyRef.current = true;
+    try {
+      const have = fruitInventory[fruitKey] ?? 0;
+      if (have <= 0) return;
+      // Parsuj fruitId z klucza np. "jablko_zgnile" → fruitId="jablko"
+      const lastU = fruitKey.lastIndexOf("_");
+      const fruitId = fruitKey.slice(0, lastU);
+      const tree = TREES.find(t => t.fruitId === fruitId);
+      // Score = cena owocu × 0.25 (jak "rotten" uprawa — najsłabszy kompost)
+      const valuePerFruit = tree ? tree.pricePerFruit * COMPOST_RARITY_MULT.rotten : 1.0;
+
+      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum }));
+      let remaining = Math.min(count, have);
+      let added = 0;
+      while (remaining > 0) {
+        let last = batches[batches.length - 1];
+        if (!last || last.fill >= 10) {
+          if (batches.length >= KOMPOST_MAX_BATCHES) break;
+          last = { fill: 0, scoreSum: 0 };
+          batches.push(last);
+        }
+        const room = 10 - last.fill;
+        const take = Math.min(remaining, room);
+        last.fill += take;
+        last.scoreSum += take * valuePerFruit;
+        remaining -= take;
+        added += take;
+      }
+      if (added <= 0) return;
+
+      const nextInv = { ...fruitInventory };
+      nextInv[fruitKey] = have - added;
+      if (nextInv[fruitKey] <= 0) delete nextInv[fruitKey];
+      saveFruitInventory(nextInv);
+      saveKompostBatches(batches);
+      if (profile?.id) {
+        await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: nextInv });
       }
     } finally {
       kompostBusyRef.current = false;
@@ -5799,7 +5851,7 @@ export default function Page() {
                                 </div>
                               );
                             }
-                            const _qOrd: Record<string, number> = { zwykly: 0, soczysty: 1, zloty: 2 };
+                            const _qOrd: Record<string, number> = { zgnile: 0, zwykly: 1, soczysty: 2, zloty: 3 };
                             const sorted = [...entries].sort(([aKey], [bKey]) => {
                               const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
                               const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
@@ -5815,19 +5867,21 @@ export default function Page() {
                                   const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
                                   const tree = TREES.find(t => t.fruitId === fid);
                                   if (!tree) return null;
-                                  const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                                  const borderColor = q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
-                                  const bgColor = q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
-                                  const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const isZgnile = q === "zgnile";
+                                  const qLabel = isZgnile ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                                  const borderColor = isZgnile ? "#6b7280" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const bgColor = isZgnile ? "rgba(30,30,30,0.55)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                                  const labelColor = isZgnile ? "#9ca3af" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                                   return (
-                                    <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
+                                    <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed opacity-80" : "cursor-default"}`}
                                       style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                                      {isZgnile && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                       {q === "zloty" && (
                                         <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
                                           <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                         </span>
                                       )}
-                                      <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                      <span className="text-4xl leading-none" style={isZgnile ? { filter: "grayscale(0.7) brightness(0.7)" } : undefined}>{tree.fruitIcon}</span>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -5835,13 +5889,14 @@ export default function Page() {
                                           <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
                                           <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
                                           <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
+                                          {isZgnile && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}
                                         </div>
                                         <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                       </div>
                                     </div>
                                   );
                                 })}
-                                <p className="col-span-4 mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
+                                <p className="col-span-4 mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie"). Zgniłe idą do kompostu.</p>
                               </div>
                             );
                           })()}
@@ -6705,7 +6760,7 @@ export default function Page() {
                                         const newMoney = (profile.money ?? 0) - t.buyPrice;
                                         const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
                                         if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
-                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } };
+                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } };
                                         saveOrchardState({ ...orchardState, [t.id]: { ...cur, owned: cur.owned + 1, prodStart: cur.prodStart || Date.now() } });
                                         await loadProfile(profile.id);
                                         setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
@@ -6955,7 +7010,7 @@ export default function Page() {
                           </div>
                         );
                       }
-                      const _qOrd2: Record<string, number> = { zwykly: 0, soczysty: 1, zloty: 2 };
+                      const _qOrd2: Record<string, number> = { zgnile: 0, zwykly: 1, soczysty: 2, zloty: 3 };
                       const sorted2 = [...entries].sort(([aKey], [bKey]) => {
                         const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
                         const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
@@ -6971,19 +7026,21 @@ export default function Page() {
                             const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
                             const tree = TREES.find(t => t.fruitId === fid);
                             if (!tree) return null;
-                            const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                            const borderColor = q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
-                            const bgColor = q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
-                            const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const isZgnile2 = q === "zgnile";
+                            const qLabel = isZgnile2 ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                            const borderColor = isZgnile2 ? "#6b7280" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const bgColor = isZgnile2 ? "rgba(30,30,30,0.55)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                            const labelColor = isZgnile2 ? "#9ca3af" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                             return (
-                              <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
+                              <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed opacity-80" : "cursor-default"}`}
                                 style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                                {isZgnile2 && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                 {q === "zloty" && (
                                   <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
                                     <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                   </span>
                                 )}
-                                <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                <span className="text-4xl leading-none" style={isZgnile2 ? { filter: "grayscale(0.7) brightness(0.7)" } : undefined}>{tree.fruitIcon}</span>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -6991,13 +7048,14 @@ export default function Page() {
                                     <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
                                     <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
                                     <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
+                                    {isZgnile2 && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}
                                   </div>
                                   <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                 </div>
                               </div>
                             );
                           })}
-                          <p className="col-span-4 mt-1 text-[9px] text-[#8b6a3e] text-center">Sprzedaż w Sadzie</p>
+                          <p className="col-span-4 mt-1 text-[9px] text-[#8b6a3e] text-center">Sprzedaż w Sadzie · Zgniłe idą do kompostu</p>
                         </div>
                       );
                     })()}
@@ -7977,6 +8035,48 @@ export default function Page() {
                         </div>
                       );
                     })()}
+
+                    {/* Zgniłe owoce */}
+                    {(() => {
+                      const zgnileEntries = (Object.entries(fruitInventory).filter(
+                        ([k, amt]) => Number(amt) > 0 && k.endsWith("_zgnile")
+                      ) as Array<[string, number]>);
+                      if (zgnileEntries.length === 0) return null;
+                      const sortedFruits = [...zgnileEntries].sort(([aKey], [bKey]) => {
+                        const aFid = aKey.slice(0, aKey.lastIndexOf("_"));
+                        const bFid = bKey.slice(0, bKey.lastIndexOf("_"));
+                        const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                        const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                        return aLv - bLv;
+                      });
+                      return (
+                        <div className="mt-4">
+                          <p className="text-[11px] font-bold text-gray-400 mb-2">🍂 Zgniłe owoce (nie do sprzedaży)</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {sortedFruits.map(([fruitKey, amount]) => {
+                              const fid = fruitKey.slice(0, fruitKey.lastIndexOf("_"));
+                              const tree = TREES.find(t => t.fruitId === fid);
+                              if (!tree) return null;
+                              const qty = kompostQty === "max" ? amount : Math.min(kompostQty, amount);
+                              return (
+                                <button
+                                  key={fruitKey}
+                                  onClick={() => void depositFruitToCompost(fruitKey, qty)}
+                                  disabled={batchSlotsFull}
+                                  title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
+                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-gray-600/60 bg-gray-900/60 hover:border-gray-400 hover:bg-gray-800/60 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2">
+                                  <span className="text-3xl" style={{ filter: "grayscale(0.6) brightness(0.7)" }}>{tree.fruitIcon}</span>
+                                  <span className="mt-1 text-[10px] font-bold text-gray-300 truncate w-full text-center">{tree.fruitName}</span>
+                                  <span className="text-[9px] font-black text-gray-500">Zgniłe</span>
+                                  <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-gray-300">×{amount}</span>
+                                  <span className="absolute bottom-1 right-1 rounded bg-gray-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="px-6 py-3 border-t border-emerald-800/40 text-center">
@@ -8385,7 +8485,7 @@ export default function Page() {
               const haveFor = (id: string): number => {
                 if (id === 'honey_jar') return hiveData.honey_jars;
                 if (/_(good|epic|legendary)$/.test(id)) return seedInventory[id] ?? 0;
-                if (/_(zwykly|soczysty|zloty)$/.test(id)) return fruitInventory[id] ?? 0;
+                if (/_(zwykly|soczysty|zloty|zgnile)$/.test(id)) return fruitInventory[id] ?? 0;
                 return barnItems[id] ?? 0;
               };
               const mergedItems = order ? mergeOrderItems(order.items) : [];
@@ -8766,7 +8866,7 @@ export default function Page() {
                 }
               }
               // Owoc
-              const fruitM = lookupId.match(/^(.+)_(zwykly|soczysty|zloty)$/);
+              const fruitM = lookupId.match(/^(.+)_(zwykly|soczysty|zloty|zgnile)$/);
               if (fruitM) {
                 const tree = TREES.find(t => t.fruitId === fruitM[1]);
                 const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
@@ -9221,21 +9321,22 @@ export default function Page() {
             const handleHarvestTree = (t: TreeDef) => {
               const st = orchardState[t.id];
               if (!st) return;
-              const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+              const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
               if (total === 0) return;
               const inv = { ...fruitInventory };
-              (["zwykly","soczysty","zloty"] as const).forEach(q => {
-                if (st.storage[q] > 0) {
+              (["zwykly","soczysty","zloty","zgnile"] as const).forEach(q => {
+                if ((st.storage[q] ?? 0) > 0) {
                   const k = `${t.fruitId}_${q}`;
                   inv[k] = (inv[k] ?? 0) + st.storage[q];
                 }
               });
               saveFruitInventory(inv);
-              saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() } });
+              saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: Date.now() } });
               const parts: string[] = [];
-              if (st.storage.zwykly > 0)   parts.push(`${st.storage.zwykly} zwykłych`);
-              if (st.storage.soczysty > 0) parts.push(`💧${st.storage.soczysty} soczystych`);
-              if (st.storage.zloty > 0)    parts.push(`✨${st.storage.zloty} złotych`);
+              if (st.storage.zwykly > 0)          parts.push(`${st.storage.zwykly} zwykłych`);
+              if (st.storage.soczysty > 0)         parts.push(`💧${st.storage.soczysty} soczystych`);
+              if (st.storage.zloty > 0)            parts.push(`✨${st.storage.zloty} złotych`);
+              if ((st.storage.zgnile ?? 0) > 0)   parts.push(`🍂${st.storage.zgnile} zgniłych`);
               setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
             };
             const handleHarvestAll = () => {
@@ -9244,12 +9345,12 @@ export default function Page() {
               let totalAll = 0; const partsAll: string[] = [];
               TREES.forEach(t => {
                 const st = newOrch[t.id]; if (!st) return;
-                const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+                const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
                 if (total === 0) return;
-                (["zwykly","soczysty","zloty"] as const).forEach(q => {
-                  if (st.storage[q] > 0) { const k = `${t.fruitId}_${q}`; inv[k] = (inv[k] ?? 0) + st.storage[q]; }
+                (["zwykly","soczysty","zloty","zgnile"] as const).forEach(q => {
+                  if ((st.storage[q] ?? 0) > 0) { const k = `${t.fruitId}_${q}`; inv[k] = (inv[k] ?? 0) + st.storage[q]; }
                 });
-                newOrch[t.id] = { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() };
+                newOrch[t.id] = { ...st, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: Date.now() };
                 totalAll += total;
                 partsAll.push(`${t.fruitIcon}×${total}`);
               });
@@ -9265,21 +9366,27 @@ export default function Page() {
                   const cnt = fruitInventory[k] ?? 0;
                   if (cnt > 0) v += cnt * t.pricePerFruit * FRUIT_QUALITY_DEFS[q].mult;
                 });
+                // zgniłe: mult=0, nie wliczamy do wartości
               });
               return v;
             };
             const handleSellAll = () => {
               if (!profile?.id) return;
               const value = calcInvValue();
-              if (value === 0) { setOrchardError("Brak owoców do sprzedaży."); return; }
+              if (value === 0) { setOrchardError("Brak owoców do sprzedaży (zgniłe owoce nie mają wartości)."); return; }
               setOrchardError("");
               void (async () => {
                 const newMoney = (profile.money ?? 0) + value;
                 const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
                 if (error) { setOrchardError("Błąd sprzedaży: " + error.message); return; }
-                saveFruitInventory({});
+                // zachowaj zgniłe owoce — nie można ich sprzedać
+                const keepZgnile: Record<string, number> = {};
+                Object.entries(fruitInventory).forEach(([k, v]) => {
+                  if (k.endsWith("_zgnile") && Number(v) > 0) keepZgnile[k] = Number(v);
+                });
+                saveFruitInventory(keepZgnile);
                 await loadProfile(profile.id);
-                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Owoce trafiły na rynek." });
+                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
               })();
             };
             const invValue = calcInvValue();
@@ -9316,7 +9423,7 @@ export default function Page() {
                           const effMs = Math.max(60_000, Math.round(t.growthTimeMs * Math.max(0.30, 1 - treeSpeedPct/100)));
                           const elapsed = st.prodStart > 0 ? barnNow - st.prodStart : 0;
                           const remaining = Math.max(0, effMs - elapsed);
-                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
                           const cycleEarnings = (st.storage.zwykly * t.pricePerFruit) + (st.storage.soczysty * t.pricePerFruit * 2) + (st.storage.zloty * t.pricePerFruit * 5);
                           return (
                             <div key={t.id} className="rounded-2xl border border-[#8b6a3e]/50 bg-black/30 p-4">
@@ -9343,9 +9450,10 @@ export default function Page() {
                                     <p className="text-[10px] uppercase tracking-widest text-emerald-400">✅ Gotowe do zbioru!</p>
                                     <p className="mt-1 text-base font-black text-[#f9e7b2]">{totalStored} {t.fruitIcon}</p>
                                     <div className="mt-1 flex flex-wrap gap-1.5 text-[10px]">
-                                      {st.storage.zwykly > 0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
-                                      {st.storage.soczysty > 0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
-                                      {st.storage.zloty > 0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
+                                      {st.storage.zwykly > 0          && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
+                                      {st.storage.soczysty > 0         && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
+                                      {st.storage.zloty > 0            && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
+                                      {(st.storage.zgnile ?? 0) > 0   && <span className="rounded bg-gray-900/40 border border-gray-600/40 px-2 py-0.5 font-bold text-gray-400">🍂 {st.storage.zgnile} zgniłe</span>}
                                     </div>
                                     <p className="mt-1 text-[10px] text-amber-400">≈ {cycleEarnings.toLocaleString()}💰 wartości</p>
                                   </div>
