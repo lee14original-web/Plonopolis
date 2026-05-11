@@ -4785,7 +4785,7 @@ export default function Page() {
               )}
 
               {/* ═══ MUZYKA ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "165px" }}>
+              <div className="fixed right-4 z-[92]" style={{ top: "240px" }}>
                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] px-3 py-3 shadow-2xl backdrop-blur-sm w-[72px]">
                   {/* Ikona dźwięku */}
                   <button
