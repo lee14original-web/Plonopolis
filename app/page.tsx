@@ -1197,12 +1197,11 @@ const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => 
 }));
 
 // Grid 10×10 — pola numerowane wierszami od lewej do prawej, z góry na dół
-// Obraz farm-field-view.png ma proporcje 1536:1092
-// Każde pole: width=6.9%, height=8.2%
-// Kolumny left: 15.8, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5
-// Wiersze top:  12.9, 21.1, 28.8, 36.8, 44.6, 52.7, 60.8, 68.7, 76.8, 84.9
-const _COLS = [15.8, 22.7, 29.5, 36.4, 43.3, 50.1, 56.9, 63.8, 70.6, 77.5];
-const _ROWS = [12.9, 21.1, 28.8, 36.8, 44.6, 52.7, 60.8, 68.7, 76.8, 84.9];
+// Hitboxy pól — synchronizowane z edit-mode (fhOffsetX/Y/CellW/H)
+// offsetX=16.83, offsetY=4.15, cellW=6.59, cellH=9.01
+const _FH_OX = 16.83, _FH_OY = 4.15, _FH_CW = 6.59, _FH_CH = 9.01;
+const _COLS = Array.from({length:10},(_,i)=>parseFloat((_FH_OX+i*_FH_CW).toFixed(2)));
+const _ROWS = Array.from({length:10},(_,i)=>parseFloat((_FH_OY+i*_FH_CH).toFixed(2)));
 const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, i) => {
   const row = Math.floor(i / 10);
   const col = i % 10;
@@ -1210,8 +1209,8 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
     id: i + 1,
     left: `${_COLS[col]}%`,
     top: `${_ROWS[row]}%`,
-    width: "6.9%",
-    height: "8.2%",
+    width: `${_FH_CW}%`,
+    height: `${_FH_CH}%`,
   };
 });
 
@@ -10394,8 +10393,8 @@ export default function Page() {
     {/* Tooltip sierpa podążający za kursorem */}
       {hoveredSickle && (
         <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 100) }}
+          className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
           <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
@@ -10517,8 +10516,8 @@ export default function Page() {
     {/* Tooltip konewki podążający za kursorem */}
       {hoveredWateringCan && (
         <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 100) }}
+          className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
