@@ -12,6 +12,7 @@ type RankingPlayer = {
   money: number;
   missions_completed: number;
   farm_power?: number;
+  ranking_score?: number;
   avatar_skin?: number | null;
 };
 
@@ -5944,7 +5945,7 @@ export default function Page() {
                         </thead>
                         <tbody>
                           {[...rankingData].sort((a,b) => {
-                            if (rankingSort==="level") return b.level-a.level||b.money-a.money;
+                            if (rankingSort==="level") return (b.ranking_score ?? 0)-(a.ranking_score ?? 0);
                             if (rankingSort==="money") return b.money-a.money;
                             if (rankingSort==="farmpower") return (b.farm_power ?? 0)-(a.farm_power ?? 0);
                             return a.player_name.localeCompare(b.player_name,"pl");
