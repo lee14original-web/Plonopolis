@@ -7084,7 +7084,8 @@ export default function Page() {
                             ];
                             const top = [...systems].sort((a,b)=>b.val-a.val)[0];
                             const statLabels: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zręczność",zaradnosc:"Zaradność",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczęście" };
-                            const bestStat = (Object.entries(playerStats) as [string,number][]).reduce((a,b)=>a[1]>=b[1]?a:b);
+                            const _statEntries = Object.entries(playerStats) as [string,number][];
+                            const bestStat = _statEntries.length > 0 ? _statEntries.reduce((a,b)=>a[1]>=b[1]?a:b) : ["wiedza",0] as [string,number];
                             return (
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
