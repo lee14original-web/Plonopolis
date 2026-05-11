@@ -9437,7 +9437,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className={fieldHitboxEditMode ? "flex gap-3 items-start" : ""}>
+                  <div>
                   <div
                     ref={fhContainerRef}
                     className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20 flex-1"
@@ -9891,7 +9891,7 @@ export default function Page() {
                   </div>
                 </div>
                 {fieldHitboxEditMode && (
-                  <div className="w-72 shrink-0 self-start rounded-2xl border border-orange-500/60 bg-[rgba(30,15,5,0.97)] p-4 text-[#dfcfab] text-sm space-y-4">
+                  <div className="fixed right-4 top-4 z-[9998] w-72 rounded-2xl border border-orange-500/60 bg-[rgba(20,10,3,0.97)] p-4 text-[#dfcfab] text-sm space-y-4 shadow-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
                     <p className="font-black text-orange-300 text-base">Pozycje hitboxów</p>
                     <p className="text-[11px] text-[#8b6a3e] leading-relaxed">Przeciągnij kafelek myszką, aby zmienić pozycję kolumny i wiersza. Uchwyt w prawym dolnym rogu zmienia rozmiar wszystkich pól.</p>
 
