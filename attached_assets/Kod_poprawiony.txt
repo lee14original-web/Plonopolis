@@ -1483,7 +1483,7 @@ export default function Page() {
   const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
   const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
   const fhContainerRef = React.useRef<HTMLDivElement>(null);
-  const fhDragRef = React.useRef<{col:number,row:number,startMouseX:number,startMouseY:number,startColVal:number,startRowVal:number}|null>(null);
+  const fhDragRef = React.useRef<{startMouseX:number,startMouseY:number,startCols:number[],startRows:number[]}|null>(null);
   const fhResizeRef = React.useRef<{startMouseX:number,startMouseY:number,startW:number,startH:number}|null>(null);
   const handleFhMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!fhContainerRef.current) return;
@@ -1491,11 +1491,11 @@ export default function Page() {
     const pctX = ((e.clientX - rect.left) / rect.width) * 100;
     const pctY = ((e.clientY - rect.top) / rect.height) * 100;
     if (fhDragRef.current) {
-      const { col, row, startMouseX, startMouseY, startColVal, startRowVal } = fhDragRef.current;
+      const { startMouseX, startMouseY, startCols, startRows } = fhDragRef.current;
       const dX = pctX - startMouseX;
       const dY = pctY - startMouseY;
-      if (fhLockAxis !== "y") setFhCols(a => { const n=[...a]; n[col]=parseFloat((startColVal+dX).toFixed(2)); return n; });
-      if (fhLockAxis !== "x") setFhRows(a => { const n=[...a]; n[row]=parseFloat((startRowVal+dY).toFixed(2)); return n; });
+      if (fhLockAxis !== "y") setFhCols(startCols.map(v => parseFloat((v + dX).toFixed(2))));
+      if (fhLockAxis !== "x") setFhRows(startRows.map(v => parseFloat((v + dY).toFixed(2))));
     }
     if (fhResizeRef.current) {
       const { startMouseX, startMouseY, startW, startH } = fhResizeRef.current;
@@ -9472,13 +9472,11 @@ export default function Page() {
                             onMouseDown={fieldHitboxEditMode ? (e) => {
                               if ((e.target as HTMLElement).dataset.resizeHandle) return;
                               e.preventDefault();
-                              const col = (plotId - 1) % 10;
-                              const row = Math.floor((plotId - 1) / 10);
                               const rect = fhContainerRef.current?.getBoundingClientRect();
                               if (!rect) return;
                               const pctX = ((e.clientX - rect.left) / rect.width) * 100;
                               const pctY = ((e.clientY - rect.top) / rect.height) * 100;
-                              fhDragRef.current = { col, row, startMouseX: pctX, startMouseY: pctY, startColVal: fhCols[col], startRowVal: fhRows[row] };
+                              fhDragRef.current = { startMouseX: pctX, startMouseY: pctY, startCols: [...fhCols], startRows: [...fhRows] };
                             } : undefined}
                             onClick={() => {
                               if (fieldHitboxEditMode) return;
