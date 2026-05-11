@@ -1509,26 +1509,35 @@ export default function Page() {
   const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 60, t: 380, w: 80, h: 90 });
   const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 60, t: 480, w: 80, h: 90 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
-  const handleFvToolMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!fvToolDragRef.current) return;
-    const d = fvToolDragRef.current;
-    const setter = d.btn === "konewka" ? setFvKonewkaPos : setFvZbierzPos;
-    if (d.mode === "move") {
-      setter(() => ({
-        l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX))),
-        t: Math.round(Math.max(0, d.startT + (e.clientY - d.startMY))),
-        w: d.startW,
-        h: d.startH,
-      }));
-    } else {
-      setter(prev => ({
-        ...prev,
-        w: Math.round(Math.max(40, d.startW + (e.clientX - d.startMX))),
-        h: Math.round(Math.max(40, d.startH + (e.clientY - d.startMY))),
-      }));
-    }
-  };
-  const handleFvToolMouseUp = () => { fvToolDragRef.current = null; };
+  React.useEffect(() => {
+    if (!fvToolEditMode || !isFieldViewOpen) return;
+    const handleMove = (e: MouseEvent) => {
+      if (!fvToolDragRef.current) return;
+      const d = fvToolDragRef.current;
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : setFvZbierzPos;
+      if (d.mode === "move") {
+        setter({
+          l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX))),
+          t: Math.round(Math.max(0, d.startT + (e.clientY - d.startMY))),
+          w: d.startW,
+          h: d.startH,
+        });
+      } else {
+        setter(prev => ({
+          ...prev,
+          w: Math.round(Math.max(40, d.startW + (e.clientX - d.startMX))),
+          h: Math.round(Math.max(40, d.startH + (e.clientY - d.startMY))),
+        }));
+      }
+    };
+    const handleUp = () => { fvToolDragRef.current = null; };
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleUp);
+    };
+  }, [fvToolEditMode, isFieldViewOpen]);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -9379,9 +9388,6 @@ export default function Page() {
           {isFieldViewOpen && isOnFarmMap && (
             <div
               className="fixed inset-0 z-[80] flex items-center justify-center px-2 py-2"
-              onMouseMove={fvToolEditMode ? handleFvToolMouseMove : undefined}
-              onMouseUp={fvToolEditMode ? handleFvToolMouseUp : undefined}
-              onMouseLeave={fvToolEditMode ? handleFvToolMouseUp : undefined}
               style={fvToolEditMode ? { userSelect: "none" } : undefined}
             >
                 <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(20,12,6,0.82)] p-5 shadow-2xl backdrop-blur-[2px]">
@@ -9931,66 +9937,67 @@ export default function Page() {
               </div>
             </div>
 
-            {/* ── Przyciski Konewka i Zbierz — fixed na całym ekranie ── */}
-            {(["konewka", "zbierz"] as const).map(btn => {
-              const pos = btn === "konewka" ? fvKonewkaPos : fvZbierzPos;
-              const isActive = btn === "konewka" ? selectedTool === "watering_can" : selectedTool === "sickle";
-              return (
-                <button
-                  key={btn}
-                  type="button"
-                  onMouseDown={fvToolEditMode ? (e) => {
-                    if ((e.target as HTMLElement).dataset.resizeHandle) return;
-                    e.stopPropagation();
-                    e.preventDefault();
-                    fvToolDragRef.current = { btn, mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                  } : undefined}
-                  onClick={fvToolEditMode ? undefined : () => {
-                    if (btn === "konewka") {
-                      setSelectedTool(prev => prev === "watering_can" ? null : "watering_can");
-                    } else {
-                      setSelectedTool(prev => prev === "sickle" ? null : "sickle");
-                    }
-                    setSelectedSeedId(null);
-                  }}
-                  onMouseEnter={btn === "konewka" ? () => setHoveredWateringCan(true) : () => setHoveredSickle(true)}
-                  onMouseLeave={btn === "konewka" ? () => setHoveredWateringCan(false) : () => setHoveredSickle(false)}
-                  className={`fixed z-[82] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${
-                    fvToolEditMode
-                      ? "cursor-move border-purple-400/80 bg-purple-900/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]"
-                      : isActive
-                      ? (btn === "konewka"
-                          ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
-                          : "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]")
-                      : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
-                  }`}
-                  style={{ left: pos.l, top: pos.t, width: pos.w, height: pos.h }}
-                >
-                  <img
-                    src={btn === "konewka" ? "/watering_can_transparent.png" : "/sierp.png"}
-                    alt={btn === "konewka" ? "Konewka" : "Zbierz"}
-                    className="h-[50%] w-[50%] object-contain pointer-events-none"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                  <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">
-                    {btn === "konewka" ? "Konewka" : "Zbierz"}
-                  </p>
-                  {fvToolEditMode && (
-                    <div
-                      data-resize-handle="1"
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        fvToolDragRef.current = { btn, mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                      }}
-                      className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl-md bg-purple-400 opacity-80 hover:opacity-100 pointer-events-auto"
-                    />
-                  )}
-                </button>
-              );
-            })}
           </div>
         )}
+
+          {/* ── Przyciski Konewka i Zbierz — poza field view div, globalny fixed z-[90] ── */}
+          {isFieldViewOpen && isOnFarmMap && (["konewka", "zbierz"] as const).map(btn => {
+            const pos = btn === "konewka" ? fvKonewkaPos : fvZbierzPos;
+            const isActive = btn === "konewka" ? selectedTool === "watering_can" : selectedTool === "sickle";
+            return (
+              <button
+                key={btn}
+                type="button"
+                onMouseDown={(e) => {
+                  if ((e.target as HTMLElement).dataset.resizeHandle) return;
+                  if (!fvToolEditMode) return;
+                  e.preventDefault();
+                  fvToolDragRef.current = { btn, mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                }}
+                onClick={fvToolEditMode ? undefined : () => {
+                  if (btn === "konewka") {
+                    setSelectedTool(prev => prev === "watering_can" ? null : "watering_can");
+                  } else {
+                    setSelectedTool(prev => prev === "sickle" ? null : "sickle");
+                  }
+                  setSelectedSeedId(null);
+                }}
+                onMouseEnter={btn === "konewka" ? () => setHoveredWateringCan(true) : () => setHoveredSickle(true)}
+                onMouseLeave={btn === "konewka" ? () => setHoveredWateringCan(false) : () => setHoveredSickle(false)}
+                className={`fixed z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${
+                  fvToolEditMode
+                    ? "cursor-move border-purple-400/80 bg-purple-900/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]"
+                    : isActive
+                    ? (btn === "konewka"
+                        ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
+                        : "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]")
+                    : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
+                }`}
+                style={{ left: pos.l, top: pos.t, width: pos.w, height: pos.h }}
+              >
+                <img
+                  src={btn === "konewka" ? "/watering_can_transparent.png" : "/sierp.png"}
+                  alt={btn === "konewka" ? "Konewka" : "Zbierz"}
+                  className="h-[50%] w-[50%] object-contain pointer-events-none"
+                  style={{ imageRendering: "pixelated" }}
+                />
+                <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">
+                  {btn === "konewka" ? "Konewka" : "Zbierz"}
+                </p>
+                {fvToolEditMode && (
+                  <div
+                    data-resize-handle="1"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      fvToolDragRef.current = { btn, mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    }}
+                    className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl-md bg-purple-400 opacity-80 hover:opacity-100 pointer-events-auto"
+                  />
+                )}
+              </button>
+            );
+          })}
 
           {farmUpgradeModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
