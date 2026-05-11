@@ -5550,7 +5550,7 @@ export default function Page() {
 
                         {/* Zakładki Uprawy / Przedmioty */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty","owoce"] as const).map(tab => (
+                            {(["uprawy","owoce","przedmioty"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
@@ -5673,132 +5673,117 @@ export default function Page() {
                           )}
 
                           {backpackTab === "przedmioty" && (
-                            <div className="mt-2 flex flex-col gap-2">
-                              {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                            <div className="mt-3">
                               {(() => {
-                                const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
-                                if (owned.length === 0) return null;
+                                const ownedAnimals = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                                const hasEmptyJars = hiveData.empty_jars > 0;
+                                const hasHoneyJars = hiveData.honey_jars > 0;
+                                const hasSuit = hiveData.suit_durability > 0;
+                                const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
+                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                                if (!hasAny) return (
+                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                                    <p className="text-2xl mb-2">🎒</p>
+                                    <p>Brak przedmiotów.</p>
+                                    <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
+                                  </div>
+                                );
                                 return (
                                   <div className="grid grid-cols-4 gap-2">
-                                    {owned.map(it => {
+                                    {ownedAnimals.map(it => {
                                       const animal = ANIMALS.find(a => a.itemId === it.id);
                                       const cnt = barnItems[it.id] ?? 0;
                                       return (
-                                        <div key={it.id}
-                                          className="group relative flex h-24 w-24 items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
-                                          <span className="text-5xl leading-none">{it.icon}</span>
+                                        <div key={it.id} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                          <span className="text-4xl leading-none">{it.icon}</span>
+                                          <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
                                           <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
                                           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
                                             <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
                                               <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
                                               {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p>
                                             </div>
                                             <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                           </div>
                                         </div>
                                       );
                                     })}
+                                    {hasEmptyJars && (
+                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                        <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.empty_jars}</span>
+                                      </div>
+                                    )}
+                                    {hasHoneyJars && (
+                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
+                                        <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.honey_jars}</span>
+                                      </div>
+                                    )}
+                                    {hasSuit && (
+                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                        <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
+                                        <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                                        </div>
+                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                          <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                            <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
+                                            <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
+                                            <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
+                                          </div>
+                                          <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {compostKeys
+                                      .sort((a,b) => {
+                                        const ta = compostTypeFromKey(a) ?? "growth";
+                                        const tb = compostTypeFromKey(b) ?? "growth";
+                                        const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
+                                        if (order[ta] !== order[tb]) return order[ta] - order[tb];
+                                        return compostValueFromKey(a) - compostValueFromKey(b);
+                                      })
+                                      .map(cid => {
+                                        const cnt = seedInventory[cid];
+                                        const t = compostTypeFromKey(cid)!;
+                                        const def = COMPOST_DEFS[t];
+                                        const value = compostValueFromKey(cid);
+                                        const tierIdx = def.bonusValues.indexOf(value);
+                                        const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                        const isSel = selectedSeedId === cid;
+                                        return (
+                                          <div key={cid}
+                                            draggable
+                                            onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                                            onDragEnd={() => setDraggedSeedId(null)}
+                                            onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                            className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                            style={isSel
+                                              ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                              : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
+                                            <span className="text-4xl leading-none">{def.icon}</span>
+                                            <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
+                                            {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                            <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                              <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                                <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
+                                                <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
+                                                <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
+                                                <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                   </div>
                                 );
                               })()}
-                              {/* Puste słoiki */}
-                              {hiveData.empty_jars > 0 && (
-                                <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
-                                  </div>
-                                  <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
-                                </div>
-                              )}
-                              {/* Słoiki z miodem */}
-                              {hiveData.honey_jars > 0 && (
-                                <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
-                                  </div>
-                                  <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
-                                </div>
-                              )}
-                              {/* Strój pszczelarza */}
-                              {hiveData.suit_durability > 0 && (
-                                <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                                  <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
-                                    <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                                      <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                                    </div>
-                                  </div>
-                                  <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
-                                  {/* Tooltip */}
-                                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                      <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                      <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                      <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                                    </div>
-                                    <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                  </div>
-                                </div>
-                              )}
-                              {/* Kompost — przeciągalny na pola (z zaszytą wartością tieru) */}
-                              {Object.keys(seedInventory)
-                                .filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0)
-                                .sort((a,b) => {
-                                  const ta = compostTypeFromKey(a) ?? "growth";
-                                  const tb = compostTypeFromKey(b) ?? "growth";
-                                  const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
-                                  if (order[ta] !== order[tb]) return order[ta] - order[tb];
-                                  return compostValueFromKey(a) - compostValueFromKey(b);
-                                })
-                                .map(cid => {
-                                  const cnt = seedInventory[cid];
-                                  const t = compostTypeFromKey(cid)!;
-                                  const def = COMPOST_DEFS[t];
-                                  const value = compostValueFromKey(cid);
-                                  const tierIdx = def.bonusValues.indexOf(value);
-                                  const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
-                                  const isSel = selectedSeedId === cid;
-                                  return (
-                                    <div key={cid}
-                                      draggable
-                                      onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
-                                      onDragEnd={() => setDraggedSeedId(null)}
-                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                      className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
-                                      style={isSel
-                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
-                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
-                                      <span className="text-3xl">{def.icon}</span>
-                                      <div className="flex-1">
-                                        <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
-                                        <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
-                                        {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY · klik w pole = nałóż</p>}
-                                      </div>
-                                      <span className="text-base font-black text-emerald-300">×{cnt}</span>
-                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                        <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                          <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                          <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                          <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !Object.keys(seedInventory).some(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0) && (
-                                <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                  <p className="text-2xl mb-2">🎒</p>
-                                  <p>Brak przedmiotów.</p>
-                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
-                                </div>
-                              )}
                             </div>
                           )}
 
@@ -5814,37 +5799,44 @@ export default function Page() {
                                 </div>
                               );
                             }
-                            const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
-                            entries.forEach(([k,c]) => {
-                              const lastUnd = k.lastIndexOf("_");
-                              const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
-                              if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
-                              grouped[fid][q] = Number(c);
+                            const _qOrd: Record<string, number> = { zwykly: 0, soczysty: 1, zloty: 2 };
+                            const sorted = [...entries].sort(([aKey], [bKey]) => {
+                              const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
+                              const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
+                              const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                              const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                              if (aLv !== bLv) return aLv - bLv;
+                              return (_qOrd[aQ] ?? 0) - (_qOrd[bQ] ?? 0);
                             });
                             return (
-                              <div className="mt-3 flex flex-col gap-2">
-                                {Object.entries(grouped).map(([fid,q]) => {
-                                  const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
-                                  const total = q.zwykly + q.soczysty + q.zloty;
-                                  const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                              <div className="mt-3 grid grid-cols-4 gap-2">
+                                {sorted.map(([key, cnt]) => {
+                                  const lastU = key.lastIndexOf("_");
+                                  const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
+                                  const tree = TREES.find(t => t.fruitId === fid);
+                                  if (!tree) return null;
+                                  const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                                  const borderColor = q === "zwykly" ? "#8b6a3e" : q === "soczysty" ? "rgba(34,211,238,0.6)" : "rgba(234,179,8,0.6)";
+                                  const bgColor = q === "zwykly" ? "rgba(20,12,8,0.65)" : q === "soczysty" ? "rgba(8,30,40,0.65)" : "rgba(40,30,5,0.65)";
+                                  const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#67e8f9" : "#fcd34d";
                                   return (
-                                    <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 px-3 py-2">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-3xl">{tree.fruitIcon}</span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
-                                          <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
-                                            {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1.5 py-0.5 font-bold text-emerald-300">{q.zwykly}×zwykły</span>}
-                                            {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1.5 py-0.5 font-bold text-cyan-300">💧{q.soczysty}×soczysty</span>}
-                                            {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1.5 py-0.5 font-bold text-yellow-300">✨{q.zloty}×złoty</span>}
-                                          </div>
+                                    <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
+                                      style={{ borderColor, background: bgColor }}>
+                                      <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
+                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                        <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
+                                          <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
+                                          <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
                                         </div>
-                                        <span className="text-xs font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                        <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                       </div>
                                     </div>
                                   );
                                 })}
-                                <p className="mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
+                                <p className="col-span-4 mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
                               </div>
                             );
                           })()}
@@ -6768,7 +6760,7 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty","owoce"] as const).map(tab => (
+                      {(["uprawy","owoce","przedmioty"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
                           {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
@@ -6834,128 +6826,117 @@ export default function Page() {
                       );
                     })()}
                     {backpackTab === "przedmioty" && (
-                      <div className="flex flex-col gap-2 mt-1">
-                        {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                      <div className="mt-2">
                         {(() => {
-                          const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
-                          if (owned.length === 0) return null;
+                          const ownedAnimals = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                          const hasEmptyJars = hiveData.empty_jars > 0;
+                          const hasHoneyJars = hiveData.honey_jars > 0;
+                          const hasSuit = hiveData.suit_durability > 0;
+                          const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
+                          const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                          if (!hasAny) return (
+                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
+                              <p className="text-2xl mb-2">🎒</p>
+                              <p>Brak przedmiotów.</p>
+                              <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
+                            </div>
+                          );
                           return (
-                            <div className="grid grid-cols-3 gap-2">
-                              {owned.map(it => {
+                            <div className="grid grid-cols-4 gap-2">
+                              {ownedAnimals.map(it => {
                                 const animal = ANIMALS.find(a => a.itemId === it.id);
                                 const cnt = barnItems[it.id] ?? 0;
                                 return (
-                                  <div key={it.id}
-                                    className="group relative flex h-20 w-full items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                  <div key={it.id} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
                                     <span className="text-4xl leading-none">{it.icon}</span>
-                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
                                     <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
                                       <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
                                         <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
                                         {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
+                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p>
                                       </div>
                                       <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                     </div>
                                   </div>
                                 );
                               })}
+                              {hasEmptyJars && (
+                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                  <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.empty_jars}</span>
+                                </div>
+                              )}
+                              {hasHoneyJars && (
+                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
+                                  <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.honey_jars}</span>
+                                </div>
+                              )}
+                              {hasSuit && (
+                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                  <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
+                                  <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                                  </div>
+                                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                      <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
+                                      <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
+                                      <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
+                                    </div>
+                                    <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                  </div>
+                                </div>
+                              )}
+                              {compostKeys
+                                .sort((a,b) => {
+                                  const ta = compostTypeFromKey(a) ?? "growth";
+                                  const tb = compostTypeFromKey(b) ?? "growth";
+                                  const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
+                                  if (order[ta] !== order[tb]) return order[ta] - order[tb];
+                                  return compostValueFromKey(a) - compostValueFromKey(b);
+                                })
+                                .map(cid => {
+                                  const cnt = seedInventory[cid];
+                                  const t = compostTypeFromKey(cid)!;
+                                  const def = COMPOST_DEFS[t];
+                                  const value = compostValueFromKey(cid);
+                                  const tierIdx = def.bonusValues.indexOf(value);
+                                  const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                  const isSel = selectedSeedId === cid;
+                                  return (
+                                    <div key={cid}
+                                      draggable
+                                      onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                                      onDragEnd={() => setDraggedSeedId(null)}
+                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                      className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                      style={isSel
+                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
+                                      <span className="text-4xl leading-none">{def.icon}</span>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
+                                      {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                        <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                          <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
+                                          <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
+                                          <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
+                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           );
                         })()}
-                        {hiveData.empty_jars > 0 && (
-                          <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
-                              <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
-                            </div>
-                            <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
-                          </div>
-                        )}
-                        {hiveData.honey_jars > 0 && (
-                          <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
-                              <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
-                            </div>
-                            <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
-                          </div>
-                        )}
-                        {hiveData.suit_durability > 0 && (
-                          <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                            <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
-                              <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                              </div>
-                            </div>
-                            <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
-                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                              <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                              </div>
-                              <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                            </div>
-                          </div>
-                        )}
-                        {/* Kompost — przeciągalny na pola (z zaszytą wartością tieru) */}
-                        {Object.keys(seedInventory)
-                          .filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0)
-                          .sort((a,b) => {
-                            const ta = compostTypeFromKey(a) ?? "growth";
-                            const tb = compostTypeFromKey(b) ?? "growth";
-                            const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
-                            if (order[ta] !== order[tb]) return order[ta] - order[tb];
-                            return compostValueFromKey(a) - compostValueFromKey(b);
-                          })
-                          .map(cid => {
-                            const cnt = seedInventory[cid];
-                            const t = compostTypeFromKey(cid)!;
-                            const def = COMPOST_DEFS[t];
-                            const value = compostValueFromKey(cid);
-                            const tierIdx = def.bonusValues.indexOf(value);
-                            const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
-                            const isSel = selectedSeedId === cid;
-                            return (
-                              <div key={cid}
-                                draggable
-                                onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
-                                onDragEnd={() => setDraggedSeedId(null)}
-                                onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
-                                style={isSel
-                                  ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
-                                  : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
-                                <span className="text-3xl">{def.icon}</span>
-                                <div className="flex-1">
-                                  <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
-                                  <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
-                                  {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY</p>}
-                                </div>
-                                <span className="text-base font-black text-emerald-300">×{cnt}</span>
-                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                  <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                    <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                    <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                    <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !Object.keys(seedInventory).some(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0) && (
-                          <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                            <p className="text-2xl mb-2">🎒</p>
-                            <p>Brak przedmiotów.</p>
-                            <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
-                          </div>
-                        )}
                       </div>
                     )}
                     {backpackTab === "owoce" && (() => {
@@ -6969,37 +6950,44 @@ export default function Page() {
                           </div>
                         );
                       }
-                      const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
-                      entries.forEach(([k,c]) => {
-                        const lastUnd = k.lastIndexOf("_");
-                        const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
-                        if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
-                        grouped[fid][q] = Number(c);
+                      const _qOrd2: Record<string, number> = { zwykly: 0, soczysty: 1, zloty: 2 };
+                      const sorted2 = [...entries].sort(([aKey], [bKey]) => {
+                        const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
+                        const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
+                        const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                        const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                        if (aLv !== bLv) return aLv - bLv;
+                        return (_qOrd2[aQ] ?? 0) - (_qOrd2[bQ] ?? 0);
                       });
                       return (
-                        <div className="flex flex-col gap-2 mt-1">
-                          {Object.entries(grouped).map(([fid,q]) => {
-                            const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
-                            const total = q.zwykly + q.soczysty + q.zloty;
-                            const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                        <div className="mt-1 grid grid-cols-4 gap-2">
+                          {sorted2.map(([key, cnt]) => {
+                            const lastU = key.lastIndexOf("_");
+                            const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
+                            const tree = TREES.find(t => t.fruitId === fid);
+                            if (!tree) return null;
+                            const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                            const borderColor = q === "zwykly" ? "#8b6a3e" : q === "soczysty" ? "rgba(34,211,238,0.6)" : "rgba(234,179,8,0.6)";
+                            const bgColor = q === "zwykly" ? "rgba(20,12,8,0.65)" : q === "soczysty" ? "rgba(8,30,40,0.65)" : "rgba(40,30,5,0.65)";
+                            const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#67e8f9" : "#fcd34d";
                             return (
-                              <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-2xl">{tree.fruitIcon}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
-                                    <div className="mt-0.5 flex flex-wrap gap-1 text-[9px]">
-                                      {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1 py-0.5 font-bold text-emerald-300">{q.zwykly}</span>}
-                                      {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1 py-0.5 font-bold text-cyan-300">💧{q.soczysty}</span>}
-                                      {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1 py-0.5 font-bold text-yellow-300">✨{q.zloty}</span>}
-                                    </div>
+                              <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
+                                style={{ borderColor, background: bgColor }}>
+                                <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
+                                <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
+                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
+                                  <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
+                                    <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
+                                    <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
+                                    <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
                                   </div>
-                                  <span className="text-[10px] font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                  <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                 </div>
                               </div>
                             );
                           })}
-                          <p className="text-[9px] text-[#8b6a3e] text-center mt-1">Sprzedaż w Sadzie</p>
+                          <p className="col-span-4 mt-1 text-[9px] text-[#8b6a3e] text-center">Sprzedaż w Sadzie</p>
                         </div>
                       );
                     })()}
