@@ -7243,10 +7243,6 @@ export default function Page() {
                                   : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e]/70"
                                 }`}>
                                 <div className="flex items-center gap-3">
-                                  {/* Ikona */}
-                                  <div className={`shrink-0 w-11 h-11 flex items-center justify-center ${isLocked ? "grayscale" : ""}`}>
-                                    <span className="text-2xl">{def.icon}</span>
-                                  </div>
                                   {/* Info */}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
