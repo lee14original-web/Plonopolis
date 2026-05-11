@@ -7075,6 +7075,35 @@ export default function Page() {
                             <span className="font-black text-yellow-300 tabular-nums">{computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState)}</span>
                           </div>
                         </div>
+                        <div className="w-full rounded-xl border border-[#8b6a3e]/20 bg-black/15 p-3">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-[#8b6a3e] mb-2">Twoje osiągnięcia</p>
+                          {(() => {
+                            const systems = [
+                              { label:"Zwierzęta", val:Object.values(barnState as Record<string,{owned:number}>).reduce((s,a)=>s+a.owned,0) },
+                              { label:"Drzewa",    val:Object.values(orchardState as Record<string,{owned:number}>).reduce((s,t)=>s+t.owned,0) },
+                              { label:"Pszczoły",  val:hiveData.level },
+                            ];
+                            const top = [...systems].sort((a,b)=>b.val-a.val)[0];
+                            const statLabels: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zręczność",zaradnosc:"Zaradność",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczęście" };
+                            const bestStat = (Object.entries(playerStats) as [string,number][]).reduce((a,b)=>a[1]>=b[1]?a:b);
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] text-[#8b6a3e]">Najsilniejszy system</span>
+                                  <span className="text-[11px] font-bold text-[#dfcfab]">{top.label} ({top.val})</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] text-[#8b6a3e]">Najwyższy stat</span>
+                                  <span className="text-[11px] font-bold text-[#dfcfab]">{statLabels[bestStat[0]]??bestStat[0]} ({bestStat[1]})</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] text-[#8b6a3e]">Aktywność dziś</span>
+                                  <span className="text-[11px] font-bold text-[#dfcfab]">{dailyProgress.harvests + dailyProgress.customers} akcji</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Prawa kolumna: statystyki */}
@@ -7093,12 +7122,15 @@ export default function Page() {
                           const _hivB = Math.round(hiveData.level * hiveData.level * 20);
                           const _orchB = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchardState[t.id]?.owned ?? 0), 0);
                           const _barnB = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barnState[a.id]?.owned ?? 0), 0);
+                          const _farmRank = _fp >= 15000 ? "Legenda Plonopolis" : _fp >= 7500 ? "Magnat" : _fp >= 3500 ? "Farmer Premium" : _fp >= 1500 ? "Gospodarz" : _fp >= 500 ? "Rolnik" : "Nowicjusz";
+                          const _farmRankC = _fp >= 15000 ? "text-purple-300" : _fp >= 7500 ? "text-yellow-300" : _fp >= 3500 ? "text-orange-300" : _fp >= 1500 ? "text-green-300" : _fp >= 500 ? "text-blue-300" : "text-[#8b6a3e]";
                           return (
                             <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
-                              <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center justify-between mb-1">
                                 <p className="text-base font-black text-[#f9e7b2]">🏆 Moc farmy</p>
                                 <span className="text-2xl font-black text-yellow-300 tabular-nums">{_fp}</span>
                               </div>
+                              <p className="text-xs mb-3"><span className="text-[#8b6a3e]">Ranga: </span><span className={`font-black ${_farmRankC}`}>{_farmRank}</span></p>
                               <div className="flex flex-wrap gap-2">
                                 {[
                                   { icon:"🌱", label:"Wzrost",    val:`−${_wB.toFixed(1)}%`,  c:"text-green-300"  },
@@ -7136,7 +7168,19 @@ export default function Page() {
                         <div className="mb-4 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/15 to-black/20 p-4">
                           <p className="text-sm font-black text-[#f9e7b2] mb-2">📈 Dziś</p>
                           {(dailyProgress.harvests === 0 && dailyProgress.customers === 0 && dailyProgress.expGained === 0 && dailyProgress.levelsGained === 0) ? (
-                            <p className="text-xs text-[#8b6a3e] italic">Brak aktywności dzisiaj. Czas na zbiory!</p>
+                            <div className="space-y-2">
+                              <p className="text-[11px] text-[#8b6a3e] mb-1">Propozycje na dziś:</p>
+                              {([
+                                { text:"Zbierz pierwszą uprawę" },
+                                { text:"Zrealizuj zamówienie klienta" },
+                                { text:"Użyj kompostu na polu" },
+                              ] as {text:string}[]).map(t => (
+                                <div key={t.text} className="flex items-center gap-2 text-xs text-[#8b6a3e]">
+                                  <span className="shrink-0 text-sm">☐</span>
+                                  <span>{t.text}</span>
+                                </div>
+                              ))}
+                            </div>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {dailyProgress.levelsGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-yellow-900/30 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-300">+{dailyProgress.levelsGained} lvl</span>}
@@ -7211,22 +7255,32 @@ export default function Page() {
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
                                       {!isLocked && val > 0 && (
-                                        <span className="text-xs font-bold text-green-300 ml-auto tabular-nums">{bonusStr}</span>
+                                        <span className="text-sm font-bold text-green-200 ml-auto tabular-nums">{bonusStr}</span>
                                       )}
                                     </div>
                                     {isLocked ? (
                                       <p className="mt-0.5 text-[11px] text-[#8b6a3e]">Odblokuj na poziomie {def.unlockLevel}</p>
                                     ) : (
                                       <>
-                                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/40">
-                                          <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
-                                            style={{ width: `${rankBarFill}%` }} />
+                                        <div className="mt-1 relative h-2 w-full">
+                                          <div className="absolute inset-0 overflow-hidden rounded-full bg-black/40">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
+                                              style={{ width:`${rankBarFill}%` }} />
+                                          </div>
+                                          {[25,50,75].map(pct => (
+                                            <div key={pct} className="absolute top-0 bottom-0 w-px bg-black/60 z-10" style={{ left:`${pct}%` }} />
+                                          ))}
+                                        </div>
+                                        <div className="flex justify-between mt-0.5 px-0">
+                                          {[0,25,50,75,100].map(t => (
+                                            <span key={t} className="text-[9px] text-[#6b4e2e] tabular-nums">{t}</span>
+                                          ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[10px] text-[#6b4e2e]">{def.desc} · {val}/100</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100</span>
                                           {val < 100
-                                            ? <span className="text-[10px] text-[#6b4e2e]">+1 pkt → <span className="text-green-400">+{nextPtBonus}%</span></span>
-                                            : <span className="text-[10px] font-bold text-yellow-400">MAX</span>
+                                            ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
+                                            : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
                                           }
                                         </div>
                                       </>
