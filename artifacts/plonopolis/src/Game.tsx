@@ -8516,12 +8516,7 @@ export default function Page() {
                     <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                     <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
-                          <p className="text-sm text-amber-400/80">Klienci NPC zamawiają u Ciebie produkty</p>
-                        </div>
-                      </div>
+                      <h2 className="text-3xl font-black text-[#f9e7b2] text-center">Lada dla klientów</h2>
                     </div>
 
                     {/* Pasek: czas do następnego klienta */}
