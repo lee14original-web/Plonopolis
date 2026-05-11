@@ -196,12 +196,12 @@ const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path
 // (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
 // niż faktyczny efekt w `getEffectiveGrowthTimeMs`.
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej (max −25%)",   rate: 0.0033 },
-  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Szansa na podwójny zbiór",            rate: 0.004  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Przyspieszenie wzrostu po podlaniu (max −30%)", rate: 0.004  },
-  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Większy zysk z drzew",               rate: 0.005  },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Zwierzęta wolniej głodnieją · szansa na bonus",  rate: 0.003  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Szansa na bonusowy drop",             rate: 0.0025 },
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej", rate: 0.0033, unlockLevel: 1  },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Podwójny zbiór",         rate: 0.004,  unlockLevel: 1  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1  },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Zysk z drzew",           rate: 0.005,  unlockLevel: 10 },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Bonusowy drop",          rate: 0.0025, unlockLevel: 1  },
 ];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
@@ -795,6 +795,13 @@ function barnFmtMs(ms: number): string {
 function calcStatEffect(val: number, rate: number): number {
   const eff = val <= 50 ? val : 50 + (val - 50) * 0.5;
   return Math.round(eff * rate * 1000) / 10;
+}
+function getStatRank(val: number): { name: string; color: string; prevT: number; nextT: number } {
+  if (val >= 75) return { name: "Legenda",    color: "text-yellow-300",  prevT: 75, nextT: 100 };
+  if (val >= 50) return { name: "Mistrz",     color: "text-purple-300",  prevT: 50, nextT: 75  };
+  if (val >= 25) return { name: "Ekspert",    color: "text-blue-300",    prevT: 25, nextT: 50  };
+  if (val >= 10) return { name: "Rolnik",     color: "text-green-300",   prevT: 10, nextT: 25  };
+  return               { name: "Nowicjusz",  color: "text-[#8b6a3e]",   prevT: 0,  nextT: 10  };
 }
 function getStatUpgradeCost(targetLv: number): number {
   const T: [number,number][] = [[1,25],[5,45],[10,78],[20,960],[30,3000],[40,9400],[50,29000],[60,88000],[70,260000],[80,750000],[90,2100000],[100,6000000]];
@@ -1614,6 +1621,7 @@ export default function Page() {
   const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
+  const [statFlash, setStatFlash] = React.useState<string|null>(null);
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
@@ -6974,80 +6982,160 @@ export default function Page() {
 
                       {/* Prawa kolumna: statystyki */}
                       <div className="flex-1">
-                        <div className="mb-6 flex items-center justify-between">
-                          <p className="text-xl font-black text-[#f9e7b2]">🧙 Statystyki gracza</p>
-                          <div className="flex items-center gap-2 mr-8">
-                            <span className="text-sm text-[#8b6a3e]">Dodaj:</span>
+                        {/* ─── Moc farmy + bonusy summary ─── */}
+                        {(() => {
+                          const _wB  = Math.min(25, calcStatEffect(playerStats.wiedza, WIEDZA_RATE));
+                          const _zaB = Math.min(30, calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE));
+                          const _zrB = calcStatEffect(playerStats.zrecznosc, 0.004);
+                          const _saB = calcStatEffect(playerStats.sadownik, 0.005);
+                          const _opB = Math.min(90, playerStats.opieka * 0.3);
+                          const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
+                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * 15);
+                          return (
+                            <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <p className="text-base font-black text-[#f9e7b2]">🏆 Moc farmy</p>
+                                <span className="text-2xl font-black text-yellow-300 tabular-nums">{_fp}</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {[
+                                  { icon:"🌱", label:"Wzrost",    val:`−${_wB.toFixed(1)}%`,  c:"text-green-300"  },
+                                  { icon:"💧", label:"Podlanie",  val:`−${_zaB.toFixed(1)}%`, c:"text-cyan-300"   },
+                                  { icon:"🎯", label:"Zbiór x2",  val:`+${_zrB.toFixed(1)}%`, c:"text-yellow-300" },
+                                  { icon:"🌳", label:"Sad",       val:`+${_saB.toFixed(1)}%`, c:"text-emerald-300"},
+                                  { icon:"🐄", label:"Zwierzęta", val:`−${_opB.toFixed(1)}%`, c:"text-orange-300" },
+                                  { icon:"🍀", label:"Drop",      val:`+${_shB.toFixed(1)}%`, c:"text-green-300"  },
+                                ].map(b => (
+                                  <span key={b.label} className="flex items-center gap-1 rounded-lg bg-black/30 px-2.5 py-1 text-[11px]">
+                                    <span className="text-[#8b6a3e]">{b.icon} {b.label}</span>
+                                    <span className={`font-bold ${b.c}`}>{b.val}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* ─── Nagłówek + selector ─── */}
+                        <div className="mb-3 flex items-center justify-between">
+                          <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
                             {([1,5,10] as const).map(n => (
                               <button key={n} onClick={() => setStatUpgradeAmount(n)}
-                                className={`rounded-lg px-3 py-1 text-sm font-bold border transition ${
+                                className={`rounded-lg px-2.5 py-1 text-xs font-bold border transition ${
                                   statUpgradeAmount === n ? "border-yellow-400 bg-yellow-500/30 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-yellow-600/60 hover:text-yellow-400"
                                 }`}>+{n}</button>
                             ))}
                           </div>
                         </div>
-                        <div className="space-y-5">
+
+                        {/* ─── Karty statystyk ─── */}
+                        <div className="space-y-2">
                           {STATS_DEFS.map(def => {
                             const val = playerStats[def.key];
                             const eff = calcStatEffect(val, def.rate);
+                            const isLocked = displayLevel < def.unlockLevel;
                             const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
-                            const canFree = actualFreeAmt > 0;
+                            const canFree = actualFreeAmt > 0 && !isLocked;
                             let multiCost2 = 0; let actualBuyAmt2 = 0;
                             for (let _i = 0; _i < statUpgradeAmount; _i++) { if (val + _i >= 100) break; multiCost2 += getStatUpgradeCost(val + _i + 1); actualBuyAmt2++; }
-                            const canBuy2 = !canFree && displayMoney >= multiCost2 && val < 100 && actualBuyAmt2 > 0;
-                            const canUp2 = val < 100 && (canFree || canBuy2);
+                            const canBuy2 = !canFree && !isLocked && displayMoney >= multiCost2 && val < 100 && actualBuyAmt2 > 0;
+                            const canUp2 = !isLocked && val < 100 && (canFree || canBuy2);
+                            const rank = getStatRank(val);
+                            const rankBarFill = rank.nextT > rank.prevT ? Math.round((val - rank.prevT) / (rank.nextT - rank.prevT) * 100) : 100;
+                            const nextPtBonus = val < 100
+                              ? def.key === "opieka"
+                                ? (Math.min(90, (val+1)*0.3) - Math.min(90, val*0.3)).toFixed(2)
+                                : (calcStatEffect(val+1, def.rate) - eff).toFixed(2)
+                              : "0.00";
+                            const bonusStr = def.key === "wiedza"    ? `−${Math.min(25, eff).toFixed(1)}% wzrostu`
+                              : def.key === "zrecznosc"  ? `+${eff.toFixed(1)}% szansa`
+                              : def.key === "zaradnosc"  ? `−${Math.min(30, eff).toFixed(1)}% podlanie`
+                              : def.key === "sadownik"   ? `+${eff.toFixed(1)}% drzewa`
+                              : def.key === "opieka"     ? `−${Math.min(90, val*0.3).toFixed(1)}% głód`
+                              : `+${eff.toFixed(1)}% drop`;
+                            const isFlashing = statFlash === def.key;
                             return (
-                              <div key={def.key} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-5">
-                                <div className="flex items-center justify-between">
-                                  <span className="flex items-center gap-2 text-base font-bold text-[#f9e7b2]">
-                                    <img src={def.img} alt={def.label} className="w-32 h-32 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
-                                    <span style={{display:"none"}}>{def.icon}</span>
-                                    {def.label}
-                                  </span>
-                                  <span className="text-sm text-[#8b6a3e]">{val}/100</span>
-                                </div>
-                                <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-black/40">
-                                  <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2]" style={{ width: `${val}%` }} />
-                                </div>
-                                {def.key === "opieka" && val > 0 && (
-                                  <div className="mt-2 rounded-lg border border-green-500/20 bg-green-950/20 px-3 py-1.5 flex flex-col gap-0.5">
-                                    <p className="text-[11px] text-green-300 font-bold">🐄 Efekty Opieki przy {val} pkt:</p>
-                                    <p className="text-[11px] text-[#dfcfab]">🌿 Głód spada wolniej o <span className="font-bold text-green-300">{Math.min(90, val * 0.3).toFixed(1)}%</span></p>
-                                    <p className="text-[11px] text-[#dfcfab]">📦 Szansa na bonus produkt: <span className="font-bold text-yellow-300">+{(val * 0.15).toFixed(1)}%</span></p>
+                              <div key={def.key}
+                                className={`rounded-xl border p-3 transition-all duration-300 ${
+                                  isFlashing  ? "border-yellow-400 bg-yellow-500/10 shadow-lg shadow-yellow-500/10"
+                                  : isLocked  ? "border-[#8b6a3e]/20 bg-black/10 opacity-60"
+                                  : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e]/70"
+                                }`}>
+                                <div className="flex items-center gap-3">
+                                  {/* Ikona */}
+                                  <div className={`shrink-0 w-11 h-11 flex items-center justify-center ${isLocked ? "grayscale" : ""}`}>
+                                    <img src={def.img} alt={def.label} className="w-11 h-11 object-contain" style={{imageRendering:"pixelated"}}
+                                      onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
+                                    <span style={{display:"none"}} className="text-2xl">{def.icon}</span>
                                   </div>
-                                )}
-                                <div className="mt-3 flex items-center justify-between">
-                                  <span className="text-sm opacity-70">{def.desc}</span>
-                                  <button disabled={!canUp2}
-                                    onClick={() => {
-                                      if (!profile?.id) return;
-                                      if (canFree) {
-                                        const next = { ...playerStats, [def.key]: val + actualFreeAmt };
-                                        const nextFsp = freeSkillPoints - actualFreeAmt;
-                                        setFreeSkillPoints(nextFsp); setPlayerStats(next);
-                                        saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
-                                      } else if (canBuy2) {
-                                        const next = { ...playerStats, [def.key]: val + actualBuyAmt2 };
-                                        void (async () => {
-                                          const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost2 }).eq("id", profile.id);
-                                          if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
-                                        })();
+                                  {/* Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-sm font-black text-[#f9e7b2]">{def.label}</span>
+                                      {isLocked
+                                        ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
+                                        : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
-                                    }}
-                                    className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                                      canFree ? "bg-yellow-500/30 text-yellow-200 hover:bg-yellow-500/50"
-                                      : canBuy2 ? "bg-green-900/40 text-green-200 hover:bg-green-800/60"
-                                      : val < 100 && actualBuyAmt2 > 0 ? "cursor-not-allowed opacity-50 bg-black/20 text-[#8b6a3e]"
-                                      : "cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"
-                                    }`}>
-                                    {canFree ? `▲ +${actualFreeAmt} Free` : val >= 100 ? "MAX" : `${multiCost2.toLocaleString("pl-PL")} 💰`}
-                                  </button>
+                                      {!isLocked && val > 0 && (
+                                        <span className="text-xs font-bold text-green-300 ml-auto tabular-nums">{bonusStr}</span>
+                                      )}
+                                    </div>
+                                    {isLocked ? (
+                                      <p className="mt-0.5 text-[11px] text-[#8b6a3e]">Odblokuj na poziomie {def.unlockLevel}</p>
+                                    ) : (
+                                      <>
+                                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-black/40">
+                                          <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
+                                            style={{ width: `${rankBarFill}%` }} />
+                                        </div>
+                                        <div className="flex items-center justify-between mt-0.5">
+                                          <span className="text-[10px] text-[#6b4e2e]">{def.desc} · {val}/100</span>
+                                          {val < 100
+                                            ? <span className="text-[10px] text-[#6b4e2e]">+1 pkt → <span className="text-green-400">+{nextPtBonus}%</span></span>
+                                            : <span className="text-[10px] font-bold text-yellow-400">MAX</span>
+                                          }
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+                                  {/* Przycisk */}
+                                  {!isLocked && (
+                                    <button disabled={!canUp2}
+                                      onClick={() => {
+                                        if (!profile?.id) return;
+                                        if (canFree) {
+                                          const next = { ...playerStats, [def.key]: val + actualFreeAmt };
+                                          const nextFsp = freeSkillPoints - actualFreeAmt;
+                                          setFreeSkillPoints(nextFsp); setPlayerStats(next);
+                                          saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
+                                          setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
+                                        } else if (canBuy2) {
+                                          const next = { ...playerStats, [def.key]: val + actualBuyAmt2 };
+                                          void (async () => {
+                                            const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost2 }).eq("id", profile.id);
+                                            if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
+                                          })();
+                                          setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
+                                        }
+                                      }}
+                                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition whitespace-nowrap border ${
+                                        canFree  ? "border-yellow-500/50 bg-yellow-500/25 text-yellow-200 hover:bg-yellow-500/40"
+                                        : canBuy2 ? "border-green-700/50 bg-green-900/35 text-green-200 hover:bg-green-800/50"
+                                        : val >= 100 ? "border-[#8b6a3e]/20 cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"
+                                        : "border-[#8b6a3e]/20 cursor-not-allowed opacity-40 bg-black/20 text-[#8b6a3e]"
+                                      }`}>
+                                      {canFree ? `▲ +${actualFreeAmt} pkt` : val >= 100 ? "MAX" : `${multiCost2.toLocaleString("pl-PL")} 💰`}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-                        {/* Reset */}
+
+                        {/* ─── Reset ─── */}
                         <button className="mt-4 w-full rounded-xl border border-red-400/30 bg-red-950/30 py-2 text-xs font-bold text-red-300 transition hover:bg-red-950/60"
                           onClick={() => {
                             if (!profile?.id) return;
