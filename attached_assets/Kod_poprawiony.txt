@@ -4885,6 +4885,7 @@ export default function Page() {
   <button
     type="button"
     onClick={() => {
+      setHoveredPolaUprawne(false);
       setIsFieldViewOpen(true);
       setSelectedPlotId((prev) => prev ?? 1);
     }}
@@ -4907,7 +4908,7 @@ export default function Page() {
                         {/* Dom — na drzwiach domu */}
                         <button
                           type="button"
-                          onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
+                          onClick={() => { setHoveredDom(false); setShowDomModal(true); setDomTab("profil"); }}
                           title=""
                           onMouseEnter={() => setHoveredDom(true)}
                           onMouseLeave={() => setHoveredDom(false)}
@@ -4930,6 +4931,7 @@ export default function Page() {
                                   setMessage({ type:"error", title:"🔒 Stodoła zablokowana", text:`Stodoła odblokowuje się od ${BARN_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
                                   return;
                                 }
+                                setHoveredBarnLock(false);
                                 setShowStodolaModal(true);
                               }}
                               className={`pointer-events-auto absolute transition-all duration-300 ${_barnUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
@@ -4963,6 +4965,7 @@ export default function Page() {
                                 setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Ul odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
                                 return;
                               }
+                              setHoveredHiveLock(false);
                               setShowUlModal(true);
                             }}
                             className={`pointer-events-auto absolute transition-all duration-300 ${_hiveUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
@@ -4976,7 +4979,7 @@ export default function Page() {
                         title=""
                         onMouseEnter={() => setHoveredLada(true)}
                         onMouseLeave={() => setHoveredLada(false)}
-                        onClick={() => { setCurrentCustomerIdx(0); setShowLadaModal(true); }}
+                        onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
@@ -4986,7 +4989,7 @@ export default function Page() {
                         title=""
                         onMouseEnter={() => setHoveredKompostownik(true)}
                         onMouseLeave={() => setHoveredKompostownik(false)}
-                        onClick={() => setShowKompostModal(true)}
+                        onClick={() => { setHoveredKompostownik(false); setShowKompostModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
@@ -5006,6 +5009,7 @@ export default function Page() {
                                 setMessage({ type:"error", title:"🔒 Sad zablokowany", text:`Sad odblokowuje się od ${SAD_UNLOCK_LVL} poziomu (masz ${_playerLvl}).` });
                                 return;
                               }
+                              setHoveredSadLock(false);
                               setShowSadModal(true);
                             }}
                             className={`pointer-events-auto absolute transition-all duration-300 ${_sadUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
