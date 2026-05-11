@@ -8421,77 +8421,94 @@ export default function Page() {
                           className="absolute left-0 top-9 pt-2 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4"
                         >
                           <div>
-                            <p className="text-lg font-black text-amber-300 mb-1">🛒 Lada dla klientów — jak to działa?</p>
-                            <p className="text-[13px] text-[#bfa274] leading-relaxed">Klienci NPC pojawiają się automatycznie co kilka minut i zamawiają u Ciebie konkretne produkty (uprawy, owoce, produkty zwierzęce, miód). Każde zlecenie ma <span className="text-amber-300 font-bold">limit czasu</span> — jeśli go przekroczysz, klient odejdzie bez zapłaty. Po realizacji dostajesz <span className="text-yellow-300 font-bold">złoto</span>, <span className="text-blue-300 font-bold">EXP</span>, a czasem dodatkowy <span className="text-purple-300 font-bold">bonus</span>.</p>
+                            <p className="text-lg font-black text-amber-300 mb-2">Lada dla klientów</p>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i chcą kupić różne produkty:</p>
+                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none mb-3">
+                              <li>🌱 uprawy,</li>
+                              <li>🍎 owoce z sadu,</li>
+                              <li>🐔 produkty zwierzęce,</li>
+                              <li>🍯 miód.</li>
+                            </ul>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-1">Każde zamówienie ma limit czasu. Po jego wykonaniu dostajesz:</p>
+                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none">
+                              <li>💰 złoto,</li>
+                              <li>⭐ EXP,</li>
+                              <li>🎁 czasem bonusowy przedmiot.</li>
+                            </ul>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">👥 Rodzaje klientów</p>
-                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym częściej pojawiają się więksi klienci (większy mnożnik nagród, więcej produktów na liście).</p>
-                            <div className="space-y-1.5 text-[12.5px]">
+                            <p className="text-sm font-black text-amber-300 mb-2">👥 Typy klientów</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia.</p>
+                            <div className="space-y-1 text-[12px]">
+                              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
+                                <span>Klient</span><span>Produkty</span><span>Bonus nagród</span><span>Czas</span>
+                              </div>
                               {[
-                                { i:'🧑‍🌾', n:'Sąsiad',                  it:'1 produkt',     m:'×1.00', t:'12h', b:'5%'  },
-                                { i:'🧓',  n:'Gość ze wsi',            it:'1–2 produkty',  m:'×1.15', t:'16h', b:'8%'  },
-                                { i:'🏪',  n:'Mały targ',              it:'2–3 produkty',  m:'×1.35', t:'20h', b:'12%' },
-                                { i:'🏬',  n:'Sklep wiejski',          it:'3–4 produkty',  m:'×1.60', t:'24h', b:'18%' },
-                                { i:'🍽️', n:'Restauracja',            it:'4–5 produktów', m:'×2.00', t:'30h', b:'25%' },
-                                { i:'🏢',  n:'Hurtownia',              it:'5–6 produktów', m:'×2.50', t:'36h', b:'40%' },
-                                { i:'🏛️', n:'Sieć handlowa',          it:'6–8 produktów', m:'×3.20', t:'42h', b:'60%' },
-                                { i:'🏗️', n:'Centrum dystrybucji',    it:'7–9 produktów', m:'×4.00', t:'48h', b:'80%' },
-                                { i:'🌍',  n:'Kontrakt międzynarodowy',it:'8–10 produktów',m:'×5.00', t:'48h', b:'100%' },
+                                { i:'🧑‍🌾', n:'Sąsiad',                   it:'1',      m:'×1.00', t:'12h' },
+                                { i:'🧓',   n:'Gość ze wsi',             it:'1–2',    m:'×1.15', t:'16h' },
+                                { i:'🏪',   n:'Mały targ',               it:'2–3',    m:'×1.35', t:'20h' },
+                                { i:'🏬',   n:'Sklep wiejski',           it:'3–4',    m:'×1.60', t:'24h' },
+                                { i:'🍽️',  n:'Restauracja',             it:'4–5',    m:'×2.00', t:'30h' },
+                                { i:'🏢',   n:'Hurtownia',               it:'5–6',    m:'×2.50', t:'36h' },
+                                { i:'🏛️',  n:'Sieć handlowa',           it:'6–8',    m:'×3.20', t:'42h' },
+                                { i:'🏗️',  n:'Centrum dystrybucji',     it:'7–9',    m:'×4.00', t:'48h' },
+                                { i:'🌍',   n:'Kontrakt międzynarodowy', it:'8–10',   m:'×5.00', t:'48h' },
                               ].map(c => (
-                                <div key={c.n} className="flex items-center gap-2 rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
-                                  <span className="text-base shrink-0">{c.i}</span>
-                                  <span className="font-bold text-[#f9e7b2] flex-1 truncate">{c.n}</span>
-                                  <span className="text-[#bfa274] hidden sm:inline">{c.it}</span>
-                                  <span className="text-amber-300 font-bold w-12 text-right">{c.m}</span>
-                                  <span className="text-[#8b6a3e] w-10 text-right">{c.t}</span>
-                                  <span className="text-purple-300 w-10 text-right">{c.b}</span>
+                                <div key={c.n} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
+                                  <span className="font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
+                                  <span className="text-[#bfa274] text-right">{c.it}</span>
+                                  <span className="text-amber-300 font-bold text-right">{c.m}</span>
+                                  <span className="text-[#8b6a3e] text-right">{c.t}</span>
                                 </div>
                               ))}
                             </div>
-                            <p className="text-[10.5px] text-[#8b6a3e] mt-1.5">Kolumny: ikona · nazwa · liczba pozycji · mnożnik nagród · czas na realizację · szansa na bonus</p>
                           </div>
 
                           <div>
                             <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
-                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
-                              <li><span className="text-yellow-300 font-bold">Złoto</span> = 70% wartości zamówionych produktów × mnożnik klienta</li>
-                              <li><span className="text-blue-300 font-bold">EXP</span> = 3% wartości × mnożnik klienta</li>
-                              <li><span className="text-purple-300 font-bold">Bonus dodatkowy</span> (czasem) — losowy przedmiot: nasiona, kompost, owoce, części wyposażenia, kucnięcia jakości</li>
+                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Podstawowe</p>
+                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab] mb-2">
+                              <li>💰 Gold = wartość produktów × bonus klienta</li>
+                              <li>⭐ EXP = dodatkowa nagroda za wykonanie zamówienia</li>
                             </ul>
+                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Bonusy (losowo)</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-1">Niektórzy klienci mogą dać dodatkowo:</p>
+                            <ul className="text-[12.5px] space-y-0.5 list-none text-[#dfcfab]">
+                              <li>🌿 kompost,</li>
+                              <li>🐔 produkty zwierząt,</li>
+                              <li>🍎 rzadkie owoce,</li>
+                              <li>🎒 materiały do ulepszania,</li>
+                              <li>✨ rzadkie przedmioty.</li>
+                            </ul>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Im większy klient, tym większa szansa na bonus.</p>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów w zamówieniach</p>
+                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów</p>
                             <div className="space-y-1.5 text-[12.5px]">
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🌱 Uprawy (warzywa)</p>
-                                <p className="text-[#bfa274]">zwykła — od początku · <span className="text-amber-300">epicka — od lvl 8</span> · <span className="text-amber-300">legendarna — od lvl 10</span></p>
+                                <p className="font-bold text-emerald-300 mb-0.5">🌱 Uprawy</p>
+                                <p className="text-[#bfa274]">zwykła, epicka, legendarna.</p>
                               </div>
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🍎 Owoce z drzew (sad)</p>
-                                <p className="text-[#bfa274]">zwykły — od początku · <span className="text-amber-300">soczysty — od lvl 14</span> · <span className="text-amber-300">złoty — od lvl 16</span></p>
-                              </div>
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🐔 Produkty zwierzęce</p>
-                                <p className="text-[#bfa274]">odblokowane od lvl 3 (gdy stodoła jest dostępna)</p>
-                              </div>
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🍯 Słoik miodu</p>
-                                <p className="text-[#bfa274]">odblokowany od lvl 10 (gdy ul jest dostępny)</p>
+                                <p className="font-bold text-emerald-300 mb-0.5">🍎 Owoce</p>
+                                <p className="text-[#bfa274]">zwykły, soczysty, złoty.</p>
                               </div>
                             </div>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Klient może wymagać konkretnej jakości produktu.</p>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">📋 Realizacja zamówienia</p>
-                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
-                              <li>Musisz mieć <span className="font-bold text-emerald-300">wszystkie wymagane produkty</span> w odpowiedniej ilości i jakości.</li>
-                              <li>Naciskasz „🤝 Zrealizuj zamówienie" — produkty znikają z magazynu, nagroda trafia na konto.</li>
-                              <li>Jeśli czas na realizację upłynie, klient odejdzie i nic nie dostaniesz.</li>
-                              <li>Nowy klient pojawia się automatycznie po krótkim czasie — odliczanie widać u góry.</li>
-                            </ul>
+                            <p className="text-sm font-black text-amber-300 mb-2">📋 Jak wykonać zamówienie?</p>
+                            <ol className="text-[12.5px] space-y-1 list-decimal list-inside text-[#dfcfab]">
+                              <li>Zbierz wymagane produkty.</li>
+                              <li>Kliknij 🤝 „Zrealizuj".</li>
+                              <li>Produkty znikają z magazynu.</li>
+                              <li>Otrzymujesz nagrody.</li>
+                            </ol>
+                            <p className="text-[12px] text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie.</p>
+                            <p className="text-[12px] text-[#bfa274] mt-1">Nowi klienci pojawiają się automatycznie po pewnym czasie.</p>
                           </div>
                         </div>
                       )}
@@ -8500,7 +8517,6 @@ export default function Page() {
 
                     <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
                       <div className="flex items-center gap-4">
-                        <span className="text-4xl">🛒</span>
                         <div>
                           <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
                           <p className="text-sm text-amber-400/80">Klienci NPC zamawiają u Ciebie produkty</p>
