@@ -8584,11 +8584,9 @@ export default function Page() {
                             <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">🎁 Nagroda:</p>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="rounded-lg border border-yellow-500/40 bg-yellow-950/20 p-2 text-center">
-                                <p className="text-xl">💰</p>
                                 <p className="text-base font-black text-yellow-300">{Number(order.rewards.gold).toFixed(0)} zł</p>
                               </div>
                               <div className="rounded-lg border border-blue-500/40 bg-blue-950/20 p-2 text-center">
-                                <p className="text-xl">⭐</p>
                                 <p className="text-base font-black text-blue-300">+{order.rewards.exp} EXP</p>
                               </div>
                             </div>
