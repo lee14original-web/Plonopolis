@@ -11,6 +11,7 @@ type RankingPlayer = {
   level: number;
   money: number;
   missions_completed: number;
+  farm_power?: number;
   avatar_skin?: number | null;
 };
 
@@ -694,6 +695,29 @@ function defaultBarnState(): BarnState {
   const s: BarnState = {};
   ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 }; });
   return s;
+}
+
+function computeFarmPower(
+  stats: PlayerStatsMap,
+  equipped: CharEquipped,
+  hiveLevel: number,
+  orchard: OrchardState,
+  barn: BarnState,
+): number {
+  const eqPow = (Object.values(equipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => {
+    if (!eq) return s;
+    const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id);
+    const l = d?.unlockLevel ?? 1;
+    const u = eq.upg ?? 0;
+    return s + l * 8 + u * u * 4;
+  }, 0);
+  const orchPow = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchard[t.id]?.owned ?? 0), 0);
+  const barnPow = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barn[a.id]?.owned ?? 0), 0);
+  return Math.round(
+    Object.values(stats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3
+    + hiveLevel * hiveLevel * 20
+    + eqPow + orchPow + barnPow
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1580,7 +1604,7 @@ export default function Page() {
   const [showRankingPanel, setShowRankingPanel] = useState(false);
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
-  const [rankingSort, setRankingSort] = useState<"level"|"money"|"missions"|"name">("level");
+  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower"|"name">("level");
   const [rankingSearch, setRankingSearch] = useState("");
   const [rankingHighlightMe, setRankingHighlightMe] = useState(false);
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
@@ -2048,6 +2072,7 @@ export default function Page() {
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const farmPowerTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const [musicVolume, setMusicVolume] = React.useState(0.4);
@@ -2844,6 +2869,18 @@ export default function Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showMessagePanel, messageTab]);
+
+  // ─── Zapis Mocy farmy do bazy (debounce 1.5s) ───
+  useEffect(() => {
+    if (!profile?.id) return;
+    if (farmPowerTimerRef.current) clearTimeout(farmPowerTimerRef.current);
+    farmPowerTimerRef.current = setTimeout(async () => {
+      const fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
+      await supabase.from("profiles").update({ farm_power: fp }).eq("id", profile.id);
+    }, 1500);
+    return () => { if (farmPowerTimerRef.current) clearTimeout(farmPowerTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerStats, charEquipped, hiveData.level, orchardState, barnState, profile?.id]);
 
 
   useEffect(() => {
@@ -5846,9 +5883,9 @@ export default function Page() {
                       className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Pieniądze
                     </button>
-                    <button onClick={() => setRankingSort("missions")}
-                      className={rankingSort==="missions" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Misje
+                    <button onClick={() => setRankingSort("farmpower")}
+                      className={rankingSort==="farmpower" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Moc farmy
                     </button>
                     <button onClick={() => setRankingSort("name")}
                       className={rankingSort==="name" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
@@ -5902,14 +5939,14 @@ export default function Page() {
                             <th className="py-3 pr-4">Gildia</th>
                             <th className="py-3 pr-4 text-right">Poziom</th>
                             <th className="py-3 pr-4 text-right">Pieniądze</th>
-                            <th className="py-3 text-right">Misje</th>
+                            <th className="py-3 text-right">Moc farmy</th>
                           </tr>
                         </thead>
                         <tbody>
                           {[...rankingData].sort((a,b) => {
                             if (rankingSort==="level") return b.level-a.level||b.money-a.money;
                             if (rankingSort==="money") return b.money-a.money;
-                            if (rankingSort==="missions") return b.missions_completed-a.missions_completed;
+                            if (rankingSort==="farmpower") return (b.farm_power ?? 0)-(a.farm_power ?? 0);
                             return a.player_name.localeCompare(b.player_name,"pl");
                           }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
                             const isMe = p.user_id === profile?.id;
@@ -5936,7 +5973,11 @@ export default function Page() {
                               <td className="py-3 pr-4 text-right text-[#a8e890]">
                                 {new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(p.money)}
                               </td>
-                              <td className="py-3 text-right text-[#f3e6c8]">{p.missions_completed}</td>
+                              <td className="py-3 text-right">
+                                <span className={`font-bold ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
+                                  {(p.farm_power ?? 0).toLocaleString("pl-PL")}
+                                </span>
+                              </td>
                             </tr>
                             );
                           })}
@@ -7020,10 +7061,7 @@ export default function Page() {
                           const _saB = calcStatEffect(playerStats.sadownik, 0.005);
                           const _opB = Math.min(90, playerStats.opieka * 0.3);
                           const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
-                          const _eqPow = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => eq ? s + 15 + (eq.upg ?? 0) * 5 : s, 0);
-                          const _orchPow = getOrchardTotalOwned(orchardState) * 8;
-                          const _barnPow = ANIMALS.reduce((s, a) => s + (barnState[a.id]?.owned ?? 0) * 10, 0);
-                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * 20 + _eqPow + _orchPow + _barnPow);
+                          const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
                           return (
                             <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
                               <div className="flex items-center justify-between mb-3">
