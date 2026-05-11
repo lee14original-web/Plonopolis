@@ -7046,14 +7046,35 @@ export default function Page() {
                                 <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
                               </span>}
                         </button>
-                        <div className="text-center">
+                        <div className="w-full text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
-                          <p className="text-sm text-[#8b6a3e]">Poziom {displayLevel}</p>
-                          <p className="mt-1 text-sm text-[#8b6a3e]">{Number(displayMoney).toFixed(2)} 💰</p>
+                          {freeSkillPoints > 0 && (
+                            <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
+                          )}
                         </div>
-                        {freeSkillPoints > 0 && (
-                          <span className="rounded-xl bg-yellow-500/20 px-4 py-2 text-sm font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
-                        )}
+                        <div className="w-full rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 space-y-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8b6a3e]">Poziom</span>
+                            <span className="font-black text-[#f9e7b2]">⭐ {displayLevel}</span>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between text-[11px] mb-1">
+                              <span className="text-[#8b6a3e]">EXP</span>
+                              <span className="text-[#dfcfab] tabular-nums">{displayXp.toLocaleString("pl-PL")} / {displayXpToNextLevel.toLocaleString("pl-PL")}</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-blue-700 to-blue-400 transition-all" style={{ width:`${displayXpToNextLevel > 0 ? Math.min(100, Math.round(displayXp / displayXpToNextLevel * 100)) : 100}%` }} />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8b6a3e]">PLN</span>
+                            <span className="font-bold text-green-300 tabular-nums">{Number(displayMoney).toLocaleString("pl-PL")} zł</span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-[#8b6a3e]/20 pt-2">
+                            <span className="text-[#8b6a3e]">Moc farmy</span>
+                            <span className="font-black text-yellow-300 tabular-nums">{computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState)}</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Prawa kolumna: statystyki */}
@@ -7067,6 +7088,11 @@ export default function Page() {
                           const _opB = Math.min(90, playerStats.opieka * 0.3);
                           const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
                           const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
+                          const _statsPow = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3);
+                          const _eqB = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => { if (!eq) return s; const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id); return s + (d?.unlockLevel ?? 1) * 8 + (eq.upg ?? 0) * (eq.upg ?? 0) * 4; }, 0);
+                          const _hivB = Math.round(hiveData.level * hiveData.level * 20);
+                          const _orchB = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchardState[t.id]?.owned ?? 0), 0);
+                          const _barnB = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barnState[a.id]?.owned ?? 0), 0);
                           return (
                             <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
                               <div className="flex items-center justify-between mb-3">
@@ -7082,10 +7108,24 @@ export default function Page() {
                                   { icon:"🐄", label:"Zwierzęta", val:`−${_opB.toFixed(1)}%`, c:"text-orange-300" },
                                   { icon:"🍀", label:"Drop",      val:`+${_shB.toFixed(1)}%`, c:"text-green-300"  },
                                 ].map(b => (
-                                  <span key={b.label} className="flex items-center gap-1 rounded-lg bg-black/30 px-2.5 py-1 text-[11px]">
+                                  <span key={b.label} className="flex items-center gap-1 rounded-lg bg-black/30 px-3 py-1.5 text-xs font-medium">
                                     <span className="text-[#8b6a3e]">{b.icon} {b.label}</span>
                                     <span className={`font-bold ${b.c}`}>{b.val}</span>
                                   </span>
+                                ))}
+                              </div>
+                              <div className="mt-2 grid grid-cols-5 gap-1.5 text-center">
+                                {([
+                                  { label:"Staty",   val:_statsPow },
+                                  { label:"Ekwip.",  val:_eqB      },
+                                  { label:"Ul",      val:_hivB     },
+                                  { label:"Sad",     val:_orchB    },
+                                  { label:"Zwierz.", val:_barnB    },
+                                ] as {label:string;val:number}[]).map(c => (
+                                  <div key={c.label} className="rounded-lg bg-black/30 py-1.5">
+                                    <div className="text-[10px] text-[#8b6a3e]">{c.label}</div>
+                                    <div className="text-xs font-black text-yellow-200 tabular-nums">{c.val}</div>
+                                  </div>
                                 ))}
                               </div>
                             </div>
@@ -7093,18 +7133,20 @@ export default function Page() {
                         })()}
 
                         {/* ─── Historia postępu: dziś ─── */}
-                        {(dailyProgress.harvests > 0 || dailyProgress.customers > 0 || dailyProgress.expGained > 0 || dailyProgress.levelsGained > 0) && (
-                          <div className="mb-4 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/15 to-black/20 p-4">
-                            <p className="text-sm font-black text-[#f9e7b2] mb-2">📈 Dziś</p>
+                        <div className="mb-4 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/15 to-black/20 p-4">
+                          <p className="text-sm font-black text-[#f9e7b2] mb-2">📈 Dziś</p>
+                          {(dailyProgress.harvests === 0 && dailyProgress.customers === 0 && dailyProgress.expGained === 0 && dailyProgress.levelsGained === 0) ? (
+                            <p className="text-xs text-[#8b6a3e] italic">Brak aktywności dzisiaj. Czas na zbiory!</p>
+                          ) : (
                             <div className="flex flex-wrap gap-2">
-                              {dailyProgress.levelsGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-yellow-900/30 border border-yellow-500/30 px-2.5 py-1 text-[11px] font-bold text-yellow-300">+{dailyProgress.levelsGained} lvl</span>}
-                              {dailyProgress.expGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-blue-900/30 border border-blue-500/30 px-2.5 py-1 text-[11px] font-bold text-blue-300">+{dailyProgress.expGained.toLocaleString("pl-PL")} EXP</span>}
-                              {dailyProgress.moneyGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-green-900/30 border border-green-500/30 px-2.5 py-1 text-[11px] font-bold text-green-300">+{dailyProgress.moneyGained.toLocaleString("pl-PL")} zł</span>}
-                              {dailyProgress.customers > 0 && <span className="flex items-center gap-1 rounded-lg bg-purple-900/30 border border-purple-500/30 px-2.5 py-1 text-[11px] font-bold text-purple-300">+{dailyProgress.customers} klientów</span>}
-                              {dailyProgress.harvests > 0 && <span className="flex items-center gap-1 rounded-lg bg-[#8b6a3e]/30 border border-[#8b6a3e]/50 px-2.5 py-1 text-[11px] font-bold text-[#dfcfab]">+{dailyProgress.harvests} zbiorów</span>}
+                              {dailyProgress.levelsGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-yellow-900/30 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-300">+{dailyProgress.levelsGained} lvl</span>}
+                              {dailyProgress.expGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-blue-900/30 border border-blue-500/30 px-3 py-1.5 text-xs font-bold text-blue-300">+{dailyProgress.expGained.toLocaleString("pl-PL")} EXP</span>}
+                              {dailyProgress.moneyGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-green-900/30 border border-green-500/30 px-3 py-1.5 text-xs font-bold text-green-300">+{dailyProgress.moneyGained.toLocaleString("pl-PL")} zł</span>}
+                              {dailyProgress.customers > 0 && <span className="flex items-center gap-1 rounded-lg bg-purple-900/30 border border-purple-500/30 px-3 py-1.5 text-xs font-bold text-purple-300">+{dailyProgress.customers} klientów</span>}
+                              {dailyProgress.harvests > 0 && <span className="flex items-center gap-1 rounded-lg bg-[#8b6a3e]/30 border border-[#8b6a3e]/50 px-3 py-1.5 text-xs font-bold text-[#dfcfab]">+{dailyProgress.harvests} zbiorów</span>}
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
 
                         {/* ─── Nagłówek + selector ─── */}
                         <div className="mb-3 flex items-center justify-between">
@@ -7163,7 +7205,7 @@ export default function Page() {
                                   {/* Info */}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-sm font-black text-[#f9e7b2]">{def.label}</span>
+                                      <span className="text-[15px] font-black text-[#f9e7b2]">{def.label}</span>
                                       {isLocked
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
@@ -7226,7 +7268,7 @@ export default function Page() {
                         </div>
 
                         {/* ─── Reset ─── */}
-                        <button className="mt-4 w-full rounded-xl border border-red-400/30 bg-red-950/30 py-2 text-xs font-bold text-red-300 transition hover:bg-red-950/60"
+                        <button className="mt-3 block ml-auto rounded-lg border border-red-400/20 bg-red-950/15 px-3 py-1.5 text-[11px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
                           onClick={() => {
                             if (!profile?.id) return;
                             const resetCost = 50000;
