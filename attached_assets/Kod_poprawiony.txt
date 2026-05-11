@@ -1503,6 +1503,35 @@ export default function Page() {
     }
   };
   const handleFhMouseUp = () => { fhDragRef.current = null; fhResizeRef.current = null; };
+
+  // ── Edytor pozycji przycisków narzędzi (konewka/zbierz) na obrazie pola ──
+  const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
+  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 2.0, t: 44.0, w: 8.0, h: 10.0 });
+  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 2.0, t: 56.0, w: 8.0, h: 10.0 });
+  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
+  const handleFvToolMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!fvToolDragRef.current || !fhContainerRef.current) return;
+    const rect = fhContainerRef.current.getBoundingClientRect();
+    const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+    const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+    const d = fvToolDragRef.current;
+    const setter = d.btn === "konewka" ? setFvKonewkaPos : setFvZbierzPos;
+    if (d.mode === "move") {
+      setter(() => ({
+        l: parseFloat(Math.max(0, d.startL + (pctX - d.startMX)).toFixed(1)),
+        t: parseFloat(Math.max(0, d.startT + (pctY - d.startMY)).toFixed(1)),
+        w: d.startW,
+        h: d.startH,
+      }));
+    } else {
+      setter(prev => ({
+        ...prev,
+        w: parseFloat(Math.max(2, d.startW + (pctX - d.startMX)).toFixed(1)),
+        h: parseFloat(Math.max(2, d.startH + (pctY - d.startMY)).toFixed(1)),
+      }));
+    }
+  };
+  const handleFvToolMouseUp = () => { fvToolDragRef.current = null; };
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -5447,40 +5476,6 @@ export default function Page() {
                           {/* ZAKŁADKA: UPRAWY */}
                           {backpackTab === "uprawy" && (
                             <>
-                              <div className="mt-3 grid w-full grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedTool((prev) => (prev === "watering_can" ? null : "watering_can"));
-                                    setSelectedSeedId(null);
-                                  }}
-                                  onMouseEnter={() => setHoveredWateringCan(true)}
-                                  onMouseLeave={() => setHoveredWateringCan(false)}
-                                  className={`flex min-h-[59px] flex-col items-center justify-center gap-1 rounded-2xl border px-3 py-2 text-center transition ${selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/30 shadow-[0_0_24px_rgba(80,200,255,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
-                                >
-                                  <img src="/watering_can_transparent.png" alt="Konewka" className="h-10 w-10 object-contain" style={{ imageRendering: "pixelated" }} />
-                                  <div className="text-center">
-                                    <p className="text-sm font-black text-[#f9e7b2]">Konewka</p>
-                                  </div>
-                                </button>
-                                <button
-                                  type="button"
-                                  onMouseEnter={() => setHoveredSickle(true)}
-                                  onMouseLeave={() => setHoveredSickle(false)}
-                                  onClick={() => {
-                                    setSelectedTool((prev) => (prev === "sickle" ? null : "sickle"));
-                                    setSelectedSeedId(null);
-                                  }}
-                                  className={`flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 text-center transition ${selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/30 shadow-[0_0_24px_rgba(255,220,120,0.25)]" : "border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] hover:bg-[rgba(30,18,10,0.9)]"}`}
-                                >
-                                  <img src="/sierp.png" alt="Zbierz" className="h-12 w-12 object-contain" style={{ imageRendering: "pixelated" }} />
-                                  <div className="text-center">
-                                    <p className="text-sm font-black text-[#f9e7b2]">Zbierz</p>
-                                    <p className="text-xs text-[#dfcfab]">Zbiór gotowej uprawy</p>
-                                  </div>
-                                </button>
-                              </div>
-
                               <div className="mt-3 flex items-center gap-2">
                                 <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
                                 <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
@@ -9403,27 +9398,43 @@ export default function Page() {
                     <div>
                       <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                       <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
-                      <p className="mt-2 text-sm text-[#dfcfab]">
-                        Wybierz nasiono z plecaka albo konewkę, a potem kliknij pole. Możesz też używać WASD i strzałek.
-                      </p>
+                      {fvToolEditMode ? (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-[11px] text-purple-300 font-bold uppercase tracking-wider">Tryb edycji przycisków — przeciągaj, resize w rogu</p>
+                          <pre className="text-[11px] text-green-300 font-mono select-all whitespace-pre-wrap">{`konewka: l=${fvKonewkaPos.l} t=${fvKonewkaPos.t} w=${fvKonewkaPos.w} h=${fvKonewkaPos.h}\nzbierz:  l=${fvZbierzPos.l} t=${fvZbierzPos.t} w=${fvZbierzPos.w} h=${fvZbierzPos.h}`}</pre>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm text-[#dfcfab]">
+                          Wybierz nasiono z plecaka, konewkę lub sierp, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                        </p>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setFieldHitboxEditMode(m => !m)}
-                      className={`shrink-0 mt-1 flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${fieldHitboxEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
-                    >
-                      🎯 {fieldHitboxEditMode ? "Zakończ edycję" : "Edytuj hitboxy pól"}
-                    </button>
+                    <div className="shrink-0 mt-1 flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFieldHitboxEditMode(m => !m)}
+                        className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${fieldHitboxEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                      >
+                        🎯 {fieldHitboxEditMode ? "Zakończ edycję" : "Edytuj hitboxy pól"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFvToolEditMode(m => !m)}
+                        className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${fvToolEditMode ? "border-purple-400 bg-purple-900/80 text-purple-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
+                      >
+                        🔧 {fvToolEditMode ? "Zakończ pozycję" : "Pozycja przycisków"}
+                      </button>
+                    </div>
                   </div>
 
                   <div className={fieldHitboxEditMode ? "flex gap-3 items-start" : ""}>
                   <div
                     ref={fhContainerRef}
                     className="relative overflow-hidden rounded-[20px] border border-[#8b6a3e] bg-black/20 flex-1"
-                    onMouseMove={fieldHitboxEditMode ? handleFhMouseMove : undefined}
-                    onMouseUp={fieldHitboxEditMode ? handleFhMouseUp : undefined}
-                    onMouseLeave={fieldHitboxEditMode ? handleFhMouseUp : undefined}
-                    style={fieldHitboxEditMode ? { userSelect: "none" } : {}}
+                    onMouseMove={(e) => { if (fieldHitboxEditMode) handleFhMouseMove(e); if (fvToolEditMode) handleFvToolMouseMove(e); }}
+                    onMouseUp={() => { handleFhMouseUp(); handleFvToolMouseUp(); }}
+                    onMouseLeave={() => { handleFhMouseUp(); handleFvToolMouseUp(); }}
+                    style={(fieldHitboxEditMode || fvToolEditMode) ? { userSelect: "none" } : {}}
                   >
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
@@ -9692,6 +9703,72 @@ export default function Page() {
                                 }}
                                 className="absolute bottom-0 right-0 z-50 h-4 w-4 cursor-se-resize rounded-tl-md bg-orange-500 opacity-80 hover:opacity-100"
                                 title="Przeciągnij, aby zmienić rozmiar"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+
+                      {/* ── Przyciski Konewka i Zbierz nakładane na obraz pola ── */}
+                      {(["konewka", "zbierz"] as const).map(btn => {
+                        const pos = btn === "konewka" ? fvKonewkaPos : fvZbierzPos;
+                        const isActive = btn === "konewka" ? selectedTool === "watering_can" : selectedTool === "sickle";
+                        return (
+                          <button
+                            key={btn}
+                            type="button"
+                            onMouseDown={fvToolEditMode ? (e) => {
+                              if ((e.target as HTMLElement).dataset.resizeHandle) return;
+                              e.preventDefault();
+                              const rect = fhContainerRef.current?.getBoundingClientRect();
+                              if (!rect) return;
+                              const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+                              const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+                              fvToolDragRef.current = { btn, mode: "move", startMX: pctX, startMY: pctY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                            } : undefined}
+                            onClick={fvToolEditMode ? undefined : () => {
+                              if (btn === "konewka") {
+                                setSelectedTool(prev => prev === "watering_can" ? null : "watering_can");
+                              } else {
+                                setSelectedTool(prev => prev === "sickle" ? null : "sickle");
+                              }
+                              setSelectedSeedId(null);
+                            }}
+                            onMouseEnter={btn === "konewka" ? () => setHoveredWateringCan(true) : () => setHoveredSickle(true)}
+                            onMouseLeave={btn === "konewka" ? () => setHoveredWateringCan(false) : () => setHoveredSickle(false)}
+                            className={`absolute z-30 flex flex-col items-center justify-center rounded-xl border-2 transition-all ${
+                              fvToolEditMode
+                                ? "cursor-move border-purple-400/80 bg-purple-900/40"
+                                : isActive
+                                ? (btn === "konewka"
+                                    ? "border-cyan-300 bg-cyan-900/50 shadow-[0_0_16px_rgba(80,200,255,0.4)]"
+                                    : "border-yellow-300 bg-yellow-900/50 shadow-[0_0_16px_rgba(255,220,120,0.4)]")
+                                : "border-[#8b6a3e]/70 bg-[rgba(20,12,8,0.75)] hover:bg-[rgba(30,18,10,0.9)]"
+                            }`}
+                            style={{ left: `${pos.l}%`, top: `${pos.t}%`, width: `${pos.w}%`, height: `${pos.h}%` }}
+                          >
+                            <img
+                              src={btn === "konewka" ? "/watering_can_transparent.png" : "/sierp.png"}
+                              alt={btn === "konewka" ? "Konewka" : "Zbierz"}
+                              className="h-[50%] w-[50%] object-contain pointer-events-none"
+                              style={{ imageRendering: "pixelated" }}
+                            />
+                            <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">
+                              {btn === "konewka" ? "Konewka" : "Zbierz"}
+                            </p>
+                            {fvToolEditMode && (
+                              <div
+                                data-resize-handle="1"
+                                onMouseDown={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  const rect = fhContainerRef.current?.getBoundingClientRect();
+                                  if (!rect) return;
+                                  const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+                                  const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+                                  fvToolDragRef.current = { btn, mode: "resize", startMX: pctX, startMY: pctY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                                }}
+                                className="absolute bottom-0 right-0 h-3 w-3 cursor-se-resize rounded-tl-sm bg-purple-400 opacity-80 hover:opacity-100 pointer-events-auto"
                               />
                             )}
                           </button>
