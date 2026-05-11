@@ -7020,10 +7020,16 @@ export default function Page() {
                           const _saB = calcStatEffect(playerStats.sadownik, 0.005);
                           const _opB = Math.min(90, playerStats.opieka * 0.3);
                           const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
-                          const _eqPow = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => eq ? s + 15 + (eq.upg ?? 0) * 5 : s, 0);
-                          const _orchPow = getOrchardTotalOwned(orchardState) * 8;
-                          const _barnPow = ANIMALS.reduce((s, a) => s + (barnState[a.id]?.owned ?? 0) * 10, 0);
-                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * 20 + _eqPow + _orchPow + _barnPow);
+                          const _eqPow = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => {
+                            if (!eq) return s;
+                            const _def = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id);
+                            const _lvl = _def?.unlockLevel ?? 1;
+                            const _upg = eq.upg ?? 0;
+                            return s + _lvl * 8 + _upg * _upg * 4;
+                          }, 0);
+                          const _orchPow = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchardState[t.id]?.owned ?? 0), 0);
+                          const _barnPow = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barnState[a.id]?.owned ?? 0), 0);
+                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * hiveData.level * 20 + _eqPow + _orchPow + _barnPow);
                           return (
                             <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
                               <div className="flex items-center justify-between mb-3">
