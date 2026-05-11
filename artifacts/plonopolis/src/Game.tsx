@@ -9023,6 +9023,7 @@ export default function Page() {
               const bonusUnits = collected - baseCollected;
               const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + collected};
               saveBarnItems(newItems);
+              if (profile?.id) void supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
               saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
               const bonusMsg = bonusUnits > 0 ? ` 🎁 +${bonusUnits} z eq (+${(rewardBonus*100).toFixed(1)}%)` : "";
               setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})${bonusMsg}`});
@@ -9044,6 +9045,7 @@ export default function Page() {
               });
               if (!changed) return;
               saveBarnItems(newItems); saveBarnState(newState);
+              if (profile?.id) void supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
               setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów. Sprzedaj je w Ladzie dla klientów.`});
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
@@ -9331,6 +9333,7 @@ export default function Page() {
                 }
               });
               saveFruitInventory(inv);
+              if (profile?.id) void supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: inv });
               saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: Date.now() } });
               const parts: string[] = [];
               if (st.storage.zwykly > 0)          parts.push(`${st.storage.zwykly} zwykłych`);
@@ -9356,6 +9359,7 @@ export default function Page() {
               });
               if (totalAll === 0) return;
               saveFruitInventory(inv); saveOrchardState(newOrch);
+              if (profile?.id) void supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: inv });
               setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
             };
             const calcInvValue = () => {
@@ -9385,6 +9389,7 @@ export default function Page() {
                   if (k.endsWith("_zgnile") && Number(v) > 0) keepZgnile[k] = Number(v);
                 });
                 saveFruitInventory(keepZgnile);
+                await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: keepZgnile });
                 await loadProfile(profile.id);
                 setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
               })();
