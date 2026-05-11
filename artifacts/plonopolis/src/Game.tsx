@@ -4705,13 +4705,14 @@ export default function Page() {
   }
 
   return (
-    <main className="overflow-hidden bg-black" style={{width:"100vw",height:"100vh"}} onMouseMove={(e)=>setMousePos({x:e.clientX,y:e.clientY})}>
+    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black" onMouseMove={(e)=>setMousePos({x:e.clientX,y:e.clientY})}>
       <div
         ref={mapContainerRef}
         className="relative overflow-hidden"
         style={{
-          width: "100vw",
-          height: "100vh",
+          aspectRatio: "3 / 2",
+          width: "min(100vw, calc(100vh * 1.5))",
+          height: "min(100vh, calc(100vw / 1.5))",
         }}
       >
         {/* Tło mapy — zmienia się wraz z poziomem gracza */}
