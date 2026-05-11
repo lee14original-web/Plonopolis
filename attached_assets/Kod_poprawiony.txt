@@ -1474,16 +1474,18 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhCols, setFhCols] = React.useState<number[]>([15.8,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]);
-  const [fhRows, setFhRows] = React.useState<number[]>([12.9,21.1,28.8,36.8,44.6,52.7,60.8,68.7,76.8,84.9]);
+  const [fhOffsetX, setFhOffsetX] = React.useState(15.8);
+  const [fhOffsetY, setFhOffsetY] = React.useState(12.9);
   const [fhCellW, setFhCellW] = React.useState(6.9);
   const [fhCellH, setFhCellH] = React.useState(8.2);
+  const fhCols = Array.from({length:10},(_,i)=>parseFloat((fhOffsetX+i*fhCellW).toFixed(2)));
+  const fhRows = Array.from({length:10},(_,i)=>parseFloat((fhOffsetY+i*fhCellH).toFixed(2)));
   const [fhLockAxis, setFhLockAxis] = React.useState<"none"|"x"|"y">("none");
   const fhHoldRef = React.useRef<ReturnType<typeof setInterval>|null>(null);
   const fhStopHold = () => { if (fhHoldRef.current) { clearInterval(fhHoldRef.current); fhHoldRef.current = null; } };
   const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
   const fhContainerRef = React.useRef<HTMLDivElement>(null);
-  const fhDragRef = React.useRef<{startMouseX:number,startMouseY:number,startCols:number[],startRows:number[]}|null>(null);
+  const fhDragRef = React.useRef<{startMouseX:number,startMouseY:number,startOffsetX:number,startOffsetY:number}|null>(null);
   const fhResizeRef = React.useRef<{startMouseX:number,startMouseY:number,startW:number,startH:number}|null>(null);
   const handleFhMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!fhContainerRef.current) return;
@@ -1491,11 +1493,9 @@ export default function Page() {
     const pctX = ((e.clientX - rect.left) / rect.width) * 100;
     const pctY = ((e.clientY - rect.top) / rect.height) * 100;
     if (fhDragRef.current) {
-      const { startMouseX, startMouseY, startCols, startRows } = fhDragRef.current;
-      const dX = pctX - startMouseX;
-      const dY = pctY - startMouseY;
-      if (fhLockAxis !== "y") setFhCols(startCols.map(v => parseFloat((v + dX).toFixed(2))));
-      if (fhLockAxis !== "x") setFhRows(startRows.map(v => parseFloat((v + dY).toFixed(2))));
+      const { startMouseX, startMouseY, startOffsetX, startOffsetY } = fhDragRef.current;
+      if (fhLockAxis !== "y") setFhOffsetX(parseFloat((startOffsetX + (pctX - startMouseX)).toFixed(2)));
+      if (fhLockAxis !== "x") setFhOffsetY(parseFloat((startOffsetY + (pctY - startMouseY)).toFixed(2)));
     }
     if (fhResizeRef.current) {
       const { startMouseX, startMouseY, startW, startH } = fhResizeRef.current;
@@ -9476,7 +9476,7 @@ export default function Page() {
                               if (!rect) return;
                               const pctX = ((e.clientX - rect.left) / rect.width) * 100;
                               const pctY = ((e.clientY - rect.top) / rect.height) * 100;
-                              fhDragRef.current = { startMouseX: pctX, startMouseY: pctY, startCols: [...fhCols], startRows: [...fhRows] };
+                              fhDragRef.current = { startMouseX: pctX, startMouseY: pctY, startOffsetX: fhOffsetX, startOffsetY: fhOffsetY };
                             } : undefined}
                             onClick={() => {
                               if (fieldHitboxEditMode) return;
@@ -9915,19 +9915,19 @@ export default function Page() {
 
                     <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
                       <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Skopiuj do kodu:</p>
-                      <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{`const _COLS = [${fhCols.map(v=>v.toFixed(1)).join(",")}];\nconst _ROWS = [${fhRows.map(v=>v.toFixed(1)).join(",")}];\nwidth: "${fhCellW.toFixed(1)}%"\nheight: "${fhCellH.toFixed(1)}%"`}</pre>
+                      <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{`offsetX=${fhOffsetX.toFixed(2)} offsetY=${fhOffsetY.toFixed(2)}\ncellW=${fhCellW.toFixed(2)}% cellH=${fhCellH.toFixed(2)}%\n\nconst _COLS=[${fhCols.map(v=>v.toFixed(1)).join(",")}];\nconst _ROWS=[${fhRows.map(v=>v.toFixed(1)).join(",")}];\nwidth:"${fhCellW.toFixed(1)}%" height:"${fhCellH.toFixed(1)}%"`}</pre>
                     </div>
                     <div className="flex gap-4 text-[13px] text-orange-200">
                       <span>Szer: <span className="font-black">{fhCellW.toFixed(1)}%</span></span>
                       <span>Wys: <span className="font-black">{fhCellH.toFixed(1)}%</span></span>
                     </div>
                     <button type="button"
-                      onClick={() => { setFhCols([2.3,11.6,20.9,30.2,39.5,48.8,58.1,67.4,76.7,86.0]); setFhRows([2.5,12.3,22.1,31.9,41.7,51.5,61.3,71.1,80.9,90.2]); setFhCellW(9.3); setFhCellH(9.8); }}
+                      onClick={() => { setFhOffsetX(2.3); setFhOffsetY(2.5); setFhCellW(9.3); setFhCellH(9.8); }}
                       className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition w-full">
                       ↩ Reset do domyślnych
                     </button>
                     <button type="button"
-                      onClick={() => { setFhCols([15.8,22.7,29.5,36.4,43.3,50.1,56.9,63.8,70.6,77.5]); setFhRows([12.9,21.1,28.8,36.8,44.6,52.7,60.8,68.7,76.8,84.9]); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
+                      onClick={() => { setFhOffsetX(15.8); setFhOffsetY(12.9); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
                       className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
                       ↺ Przywróć moje wartości
                     </button>
