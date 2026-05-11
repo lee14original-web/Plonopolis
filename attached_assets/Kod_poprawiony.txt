@@ -1580,7 +1580,7 @@ export default function Page() {
   const [showRankingPanel, setShowRankingPanel] = useState(false);
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
-  const [rankingSort, setRankingSort] = useState<"level"|"money"|"missions"|"name">("level");
+  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower"|"name">("level");
   const [rankingSearch, setRankingSearch] = useState("");
   const [rankingHighlightMe, setRankingHighlightMe] = useState(false);
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
@@ -5846,9 +5846,9 @@ export default function Page() {
                       className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Pieniądze
                     </button>
-                    <button onClick={() => setRankingSort("missions")}
-                      className={rankingSort==="missions" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Misje
+                    <button onClick={() => setRankingSort("farmpower")}
+                      className={rankingSort==="farmpower" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Moc farmy
                     </button>
                     <button onClick={() => setRankingSort("name")}
                       className={rankingSort==="name" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
@@ -5902,14 +5902,14 @@ export default function Page() {
                             <th className="py-3 pr-4">Gildia</th>
                             <th className="py-3 pr-4 text-right">Poziom</th>
                             <th className="py-3 pr-4 text-right">Pieniądze</th>
-                            <th className="py-3 text-right">Misje</th>
+                            <th className="py-3 text-right">Moc farmy</th>
                           </tr>
                         </thead>
                         <tbody>
                           {[...rankingData].sort((a,b) => {
                             if (rankingSort==="level") return b.level-a.level||b.money-a.money;
                             if (rankingSort==="money") return b.money-a.money;
-                            if (rankingSort==="missions") return b.missions_completed-a.missions_completed;
+                            if (rankingSort==="farmpower") return b.level-a.level||b.money-a.money;
                             return a.player_name.localeCompare(b.player_name,"pl");
                           }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
                             const isMe = p.user_id === profile?.id;
@@ -5936,7 +5936,21 @@ export default function Page() {
                               <td className="py-3 pr-4 text-right text-[#a8e890]">
                                 {new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(p.money)}
                               </td>
-                              <td className="py-3 text-right text-[#f3e6c8]">{p.missions_completed}</td>
+                              <td className="py-3 text-right text-[#f3e6c8]">
+                                {isMe ? (() => {
+                                  const _eqP = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => {
+                                    if (!eq) return s;
+                                    const _d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id);
+                                    const _l = _d?.unlockLevel ?? 1;
+                                    const _u = eq.upg ?? 0;
+                                    return s + _l * 8 + _u * _u * 4;
+                                  }, 0);
+                                  const _orP = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchardState[t.id]?.owned ?? 0), 0);
+                                  const _baP = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barnState[a.id]?.owned ?? 0), 0);
+                                  const _fp = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * hiveData.level * 20 + _eqP + _orP + _baP);
+                                  return <span className="font-bold text-yellow-300">{_fp.toLocaleString("pl-PL")}</span>;
+                                })() : <span className="text-[#8b6a3e]">—</span>}
+                              </td>
                             </tr>
                             );
                           })}
