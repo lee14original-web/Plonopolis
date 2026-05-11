@@ -1,0 +1,202 @@
+UI ma już bardzo dobry klimat.
+Naprawdę wygląda jak gra, a nie placeholdery. Szczególnie:
+
+kolory,
+pixel-art,
+złoto/czerń,
+duże ikonki statystyk,
+hover domku.
+
+To już robi feeling gry premium.
+
+ALE widzę kilka rzeczy, które bardzo poprawią:
+
+czytelność,
+motywację,
+feeling progresji,
+dopamine hits.
+🔥 NAJWIĘKSZY PROBLEM TEGO OKNA
+
+Aktualnie:
+
+to jest bardziej lista
+
+niż:
+
+centrum progresji gracza
+
+Brakuje:
+
+feedbacku,
+odczucia rozwoju,
+„ooo chce to ulepszyć”.
+🔥 1. DODAJ REALNY BONUS PRZY STATYSTYCE
+
+Teraz jest:
+
+Rośliny rosną szybciej
+
+Ale gracz NIE WIE ile dokładnie.
+
+ZAMIAST:
+Rośliny rosną szybciej
+DAJ:
+🌱 Aktualny bonus:
+-6.5% czasu wzrostu
+
+i:
+
+Następny punkt:
+-0.5%
+🔥 2. PROGRESS BAR DO NASTĘPNEGO EFEKTU
+
+MEGA ważne psychologicznie.
+
+Np:
+
+██████░░░░
+13/20
+Następny bonus za 7 pkt
+🔥 3. KOLOROWE PROCENTY
+
+Np:
+
+-12.5%
+
+na zielono.
+
+🔥 4. ZMIEŃ „+1 FREE”
+
+Bo wygląda tymczasowo/mobile-devowo.
+
+LEPIEJ:
+➕ Dodaj punkt
+
+lub:
+
++1 pkt
+🔥 5. DODAJ SUMMARY U GÓRY
+
+To bardzo potrzebne.
+
+Np pod profilem:
+
+🌾 Bonusy farmy
+🌱 Wzrost: -8%
+🍀 Extra plon: +5%
+🐄 Zwierzęta: +12%
+🌳 Sad: +7%
+
+To daje:
+
+"moja postać jest coraz mocniejsza"
+🔥 6. DODAJ RANKI STATYSTYK
+
+Np:
+
+Punkty	Ranga
+10	Początkujący
+25	Rolnik
+50	Ekspert
+75	Mistrz
+100	Legenda
+
+I np:
+
+🌱 Wiedza — Ekspert
+
+To daje gigantyczny feeling progresji.
+
+🔥 7. ANIMACJE PRZY DODAWANIU PUNKTÓW
+
+MAŁA rzecz.
+
+Ogromny impact.
+
+Np:
+
+błysk,
+floating text,
+progress fill.
+🔥 8. TOOLTIPY
+
+Po najechaniu:
+
+Każdy punkt:
+-0.5% czasu wzrostu
+🔥 9. OPISY SĄ ZA DŁUGIE
+
+Np:
+
+Przyspieszenie wzrostu po podlaniu
+
+jest mało dynamiczne.
+
+LEPIEJ:
+💧 Bonus podlewania
+🔥 10. ZMIEŃ UKŁAD KART
+
+Aktualnie są:
+
+bardzo wysokie
+
+przez co dużo scrolla.
+
+LEPIEJ:
+
+bardziej kompaktowe.
+
+Np:
+
+ikona po lewej,
+info środek,
+przycisk prawa strona.
+🔥 11. DODAJ „BUILDY”
+
+MEGA SYSTEM.
+
+Np:
+
+Preset 1:
+🌱 farmer EXP
+Preset 2:
+🐄 hodowca
+🔥 12. OPIEKA I SADOWNIK SĄ ZA WCZEŚNIE
+
+Na lvl 6:
+
+gracz jeszcze nie ma sensownego sadu,
+zwierzęta pewnie też dopiero zaczyna.
+
+Więc staty:
+
+wydają się martwe
+JA BYM:
+
+blokował:
+
+Sadownik do lvl 10,
+Opieka do lvl 8.
+
+i pokazał:
+
+🔒 Odblokowuje się na lvl 10
+🔥 13. NAJWIĘKSZA RZECZ
+
+DODAJ:
+
+Całkowita moc farmy
+
+Np:
+
+🏆 Moc farmy: 1240
+
+i licz:
+
+staty,
+eq,
+ul,
+sad,
+zwierzęta.
+
+Ludzie KOCHAJĄ takie liczby.
