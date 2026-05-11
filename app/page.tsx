@@ -207,6 +207,15 @@ type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
 const DEFAULT_STATS: PlayerStatsMap = { wiedza:0, zrecznosc:0, zaradnosc:0, sadownik:0, opieka:0, szczescie:0 };
 
+type DailyProgress = { date: string; harvests: number; customers: number; expGained: number; moneyGained: number; levelsGained: number; };
+const DP_LS_KEY = (uid: string) => `plonopolis_dp_${uid}`;
+function todayStr(): string { return new Date().toISOString().slice(0, 10); }
+function emptyDP(): DailyProgress { return { date: todayStr(), harvests: 0, customers: 0, expGained: 0, moneyGained: 0, levelsGained: 0 }; }
+function loadDP(uid: string): DailyProgress {
+  try { const r = localStorage.getItem(DP_LS_KEY(uid)); if (!r) return emptyDP(); const p = JSON.parse(r) as DailyProgress; return p.date === todayStr() ? p : emptyDP(); } catch { return emptyDP(); }
+}
+function saveDP(uid: string, dp: DailyProgress): void { try { localStorage.setItem(DP_LS_KEY(uid), JSON.stringify(dp)); } catch {} }
+
 interface HiveData {
   level: number;
   bees_progress: number;
@@ -424,7 +433,7 @@ const COMPOST_DEFS: Record<CompostType, { id:string; name:string; icon:string; d
   yield:  { id:"compost_yield",  name:"Kompost Urodzaju", icon:"🌾", desc:"Zwiększa plon przy zbiorze", effectLabel:"🌾 Większy plon",     bonusValues:[1,2,3],    bonusLabel:(v)=>`+${v} sztuk plonu`,     tierName:(v)=>v<=1?"Słaby":v<=2?"Średni":"Mocny" },
   exp:    { id:"compost_exp",    name:"Kompost Nauki",    icon:"⭐", desc:"Daje więcej EXP przy zbiorze", effectLabel:"⭐ Więcej EXP",     bonusValues:[10,20,30], bonusLabel:(v)=>`+${v}% EXP`,            tierName:(v)=>v<=10?"Słaby":v<=20?"Średni":"Mocny" },
 };
-// Wagi losowania tieru: 50% słaby, 35% średni, 15% mocny
+// Wagi losowania tieru: 50% słaby, 35% śrni, 15% mocny
 const COMPOST_TIER_WEIGHTS = [50, 35, 15];
 function isCompostKey(key: string) { return key.startsWith("compost_"); }
 function compostTypeFromKey(key: string): CompostType | null {
@@ -1622,6 +1631,7 @@ export default function Page() {
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statFlash, setStatFlash] = React.useState<string|null>(null);
+  const [dailyProgress, setDailyProgress] = React.useState<DailyProgress>(emptyDP());
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
   const [showStodolaModal, setShowStodolaModal] = React.useState(false);
@@ -2237,6 +2247,7 @@ export default function Page() {
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
     setBarnState_(lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState));
     setOrchardState_(lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState));
+    setDailyProgress(loadDP(uid));
     // Kompost: migracja starego formatu (płaski licznik) + migracja klucza globalnego → userId
     const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
       const arr = JSON.parse(s);
@@ -3284,6 +3295,15 @@ export default function Page() {
     } else {
       await loadProfile(profile.id);
     }
+    // ─── Historia postępu: klient ───
+    if (profile?.id) {
+      const _dp = loadDP(profile.id);
+      _dp.customers += 1;
+      _dp.expGained += Number(data.exp) || 0;
+      _dp.moneyGained += Number(data.gold) || 0;
+      saveDP(profile.id, _dp);
+      setDailyProgress({ ..._dp });
+    }
     // Jeśli klient dał dodatkowy bonus → pokaż średni modal z dropem (z tooltipami)
     if (bonusList.length > 0) {
       const order = customerOrders.find(o => o.id === orderId);
@@ -4319,6 +4339,16 @@ export default function Page() {
         ...prev.filter(e => _now2 - e.timestamp < 25000),
         ..._logEvents,
       ]);
+    }
+    // ─── Historia postępu: zbiór ───
+    if (profile?.id) {
+      const _rpcLvl = rpcProf?.level ?? previousLevel;
+      const _dp = loadDP(profile.id);
+      _dp.harvests += 1;
+      _dp.expGained += actualExp;
+      _dp.levelsGained += Math.max(0, _rpcLvl - previousLevel);
+      saveDP(profile.id, _dp);
+      setDailyProgress({ ..._dp });
     }
   }
 
@@ -6990,7 +7020,10 @@ export default function Page() {
                           const _saB = calcStatEffect(playerStats.sadownik, 0.005);
                           const _opB = Math.min(90, playerStats.opieka * 0.3);
                           const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
-                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * 15);
+                          const _eqPow = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => eq ? s + 15 + (eq.upg ?? 0) * 5 : s, 0);
+                          const _orchPow = getOrchardTotalOwned(orchardState) * 8;
+                          const _barnPow = ANIMALS.reduce((s, a) => s + (barnState[a.id]?.owned ?? 0) * 10, 0);
+                          const _fp  = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3 + hiveData.level * 20 + _eqPow + _orchPow + _barnPow);
                           return (
                             <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
                               <div className="flex items-center justify-between mb-3">
@@ -7015,6 +7048,20 @@ export default function Page() {
                             </div>
                           );
                         })()}
+
+                        {/* ─── Historia postępu: dziś ─── */}
+                        {(dailyProgress.harvests > 0 || dailyProgress.customers > 0 || dailyProgress.expGained > 0 || dailyProgress.levelsGained > 0) && (
+                          <div className="mb-4 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/15 to-black/20 p-4">
+                            <p className="text-sm font-black text-[#f9e7b2] mb-2">📈 Dziś</p>
+                            <div className="flex flex-wrap gap-2">
+                              {dailyProgress.levelsGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-yellow-900/30 border border-yellow-500/30 px-2.5 py-1 text-[11px] font-bold text-yellow-300">+{dailyProgress.levelsGained} lvl</span>}
+                              {dailyProgress.expGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-blue-900/30 border border-blue-500/30 px-2.5 py-1 text-[11px] font-bold text-blue-300">+{dailyProgress.expGained.toLocaleString("pl-PL")} EXP</span>}
+                              {dailyProgress.moneyGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-green-900/30 border border-green-500/30 px-2.5 py-1 text-[11px] font-bold text-green-300">+{dailyProgress.moneyGained.toLocaleString("pl-PL")} zł</span>}
+                              {dailyProgress.customers > 0 && <span className="flex items-center gap-1 rounded-lg bg-purple-900/30 border border-purple-500/30 px-2.5 py-1 text-[11px] font-bold text-purple-300">+{dailyProgress.customers} klientów</span>}
+                              {dailyProgress.harvests > 0 && <span className="flex items-center gap-1 rounded-lg bg-[#8b6a3e]/30 border border-[#8b6a3e]/50 px-2.5 py-1 text-[11px] font-bold text-[#dfcfab]">+{dailyProgress.harvests} zbiorów</span>}
+                            </div>
+                          </div>
+                        )}
 
                         {/* ─── Nagłówek + selector ─── */}
                         <div className="mb-3 flex items-center justify-between">
