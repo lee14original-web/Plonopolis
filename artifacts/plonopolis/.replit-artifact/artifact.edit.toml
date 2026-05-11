@@ -1,0 +1,16 @@
+kind = "web"
+previewPath = "/"
+title = "Plonopolis"
+version = "1.0.0"
+id = "plonopolis-game"
+
+[[services]]
+localPort = 8082
+name = "Plonopolis"
+paths = ["/"]
+
+[services.env]
+PORT = "8082"
+
+[services.development]
+run = "pnpm --filter @workspace/plonopolis run dev"
