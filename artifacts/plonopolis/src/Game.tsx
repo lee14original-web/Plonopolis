@@ -7245,9 +7245,7 @@ export default function Page() {
                                 <div className="flex items-center gap-3">
                                   {/* Ikona */}
                                   <div className={`shrink-0 w-11 h-11 flex items-center justify-center ${isLocked ? "grayscale" : ""}`}>
-                                    <img src={def.img} alt={def.label} className="w-11 h-11 object-contain" style={{imageRendering:"pixelated"}}
-                                      onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
-                                    <span style={{display:"none"}} className="text-2xl">{def.icon}</span>
+                                    <span className="text-2xl">{def.icon}</span>
                                   </div>
                                   {/* Info */}
                                   <div className="flex-1 min-w-0">
