@@ -1474,10 +1474,10 @@ export default function Page() {
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
   const [isFieldViewOpen, setIsFieldViewOpen] = useState(false);
   const [fieldHitboxEditMode, setFieldHitboxEditMode] = React.useState(false);
-  const [fhOffsetX, setFhOffsetX] = React.useState(15.8);
-  const [fhOffsetY, setFhOffsetY] = React.useState(12.9);
-  const [fhCellW, setFhCellW] = React.useState(6.9);
-  const [fhCellH, setFhCellH] = React.useState(8.2);
+  const [fhOffsetX, setFhOffsetX] = React.useState(16.83);
+  const [fhOffsetY, setFhOffsetY] = React.useState(4.15);
+  const [fhCellW, setFhCellW] = React.useState(6.59);
+  const [fhCellH, setFhCellH] = React.useState(9.01);
   const fhCols = Array.from({length:10},(_,i)=>parseFloat((fhOffsetX+i*fhCellW).toFixed(2)));
   const fhRows = Array.from({length:10},(_,i)=>parseFloat((fhOffsetY+i*fhCellH).toFixed(2)));
   const [fhLockAxis, setFhLockAxis] = React.useState<"none"|"x"|"y">("none");
@@ -1507,8 +1507,8 @@ export default function Page() {
 
   // ── Edytor pozycji przycisków narzędzi (konewka/zbierz) na obrazie pola ──
   const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
-  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 60, t: 380, w: 80, h: 90 });
-  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 60, t: 480, w: 80, h: 90 });
+  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 1849, t: 198, w: 192, h: 179 });
+  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 1852, t: 408, w: 190, h: 176 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -9404,37 +9404,12 @@ export default function Page() {
                     ×
                   </button>
 
-                  <div className="mb-4 pr-14 flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                      <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
-                      {fvToolEditMode ? (
-                        <div className="mt-2 space-y-1">
-                          <p className="text-[11px] text-purple-300 font-bold uppercase tracking-wider">Tryb edycji przycisków — przeciągaj, resize w rogu</p>
-                          <pre className="text-[11px] text-green-300 font-mono select-all whitespace-pre-wrap">{`konewka: l=${fvKonewkaPos.l} t=${fvKonewkaPos.t} w=${fvKonewkaPos.w} h=${fvKonewkaPos.h}\nzbierz:  l=${fvZbierzPos.l} t=${fvZbierzPos.t} w=${fvZbierzPos.w} h=${fvZbierzPos.h}`}</pre>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-sm text-[#dfcfab]">
-                          Wybierz nasiono z plecaka, konewkę lub sierp, a potem kliknij pole. Możesz też używać WASD i strzałek.
-                        </p>
-                      )}
-                    </div>
-                    <div className="shrink-0 mt-1 flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFieldHitboxEditMode(m => !m)}
-                        className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${fieldHitboxEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
-                      >
-                        🎯 {fieldHitboxEditMode ? "Zakończ edycję" : "Edytuj hitboxy pól"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFvToolEditMode(m => !m)}
-                        className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${fvToolEditMode ? "border-purple-400 bg-purple-900/80 text-purple-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
-                      >
-                        🔧 {fvToolEditMode ? "Zakończ pozycję" : "Pozycja przycisków"}
-                      </button>
-                    </div>
+                  <div className="mb-4 pr-14">
+                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
+                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
+                    <p className="mt-2 text-sm text-[#dfcfab]">
+                      Wybierz nasiono z plecaka, konewkę lub sierp, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                    </p>
                   </div>
 
                   <div>
@@ -9890,49 +9865,6 @@ export default function Page() {
                     )}
                   </div>
                 </div>
-                {fieldHitboxEditMode && (
-                  <div className="fixed right-4 top-4 z-[9998] w-72 rounded-2xl border border-orange-500/60 bg-[rgba(20,10,3,0.97)] p-4 text-[#dfcfab] text-sm space-y-4 shadow-2xl max-h-[calc(100vh-2rem)] overflow-y-auto">
-                    <p className="font-black text-orange-300 text-base">Pozycje hitboxów</p>
-                    <p className="text-[11px] text-[#8b6a3e] leading-relaxed">Przeciągnij kafelek myszką, aby zmienić pozycję kolumny i wiersza. Uchwyt w prawym dolnym rogu zmienia rozmiar wszystkich pól.</p>
-
-                    {/* Blokada osi */}
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1.5">Blokada ruchu</p>
-                      <div className="flex gap-2">
-                        {([["Brak", "none"], ["Tylko poziom →", "y"], ["Tylko pion ↕", "x"]] as [string, "none"|"x"|"y"][]).map(([lbl, val]) => (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => setFhLockAxis(val)}
-                            className={`flex-1 rounded-lg border px-2 py-1.5 text-[11px] font-black transition ${fhLockAxis === val ? "border-orange-400 bg-orange-900/60 text-orange-200" : "border-orange-700/30 bg-black/20 text-[#8b6a3e] hover:border-orange-500/50"}`}
-                          >{lbl}</button>
-                        ))}
-                      </div>
-                      <p className="mt-1 text-[10px] text-[#6b4e2e]">
-                        {fhLockAxis === "y" ? "Ruch tylko w poziomie — pion zablokowany" : fhLockAxis === "x" ? "Ruch tylko w pionie — poziom zablokowany" : "Ruch swobodny w obu kierunkach"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-orange-700/40 bg-black/30 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Skopiuj do kodu:</p>
-                      <pre className="text-[11px] text-green-300 font-mono whitespace-pre-wrap select-all">{`offsetX=${fhOffsetX.toFixed(2)} offsetY=${fhOffsetY.toFixed(2)}\ncellW=${fhCellW.toFixed(2)}% cellH=${fhCellH.toFixed(2)}%\n\nconst _COLS=[${fhCols.map(v=>v.toFixed(1)).join(",")}];\nconst _ROWS=[${fhRows.map(v=>v.toFixed(1)).join(",")}];\nwidth:"${fhCellW.toFixed(1)}%" height:"${fhCellH.toFixed(1)}%"`}</pre>
-                    </div>
-                    <div className="flex gap-4 text-[13px] text-orange-200">
-                      <span>Szer: <span className="font-black">{fhCellW.toFixed(1)}%</span></span>
-                      <span>Wys: <span className="font-black">{fhCellH.toFixed(1)}%</span></span>
-                    </div>
-                    <button type="button"
-                      onClick={() => { setFhOffsetX(2.3); setFhOffsetY(2.5); setFhCellW(9.3); setFhCellH(9.8); }}
-                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-1.5 text-xs text-[#dfcfab] hover:border-orange-500/50 transition w-full">
-                      ↩ Reset do domyślnych
-                    </button>
-                    <button type="button"
-                      onClick={() => { setFhOffsetX(15.8); setFhOffsetY(12.9); setFhCellW(6.9); setFhCellH(8.2); setFhLockAxis("none"); }}
-                      className="rounded-xl border border-orange-700/40 bg-orange-950/30 px-4 py-1.5 text-xs text-orange-300 hover:border-orange-500/60 transition w-full">
-                      ↺ Przywróć moje wartości
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -10189,7 +10121,7 @@ export default function Page() {
       {hoveredSickle && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
           <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
@@ -10312,7 +10244,7 @@ export default function Page() {
       {hoveredWateringCan && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 100) }}
         >
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
