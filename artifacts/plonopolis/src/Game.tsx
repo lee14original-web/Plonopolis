@@ -5816,12 +5816,17 @@ export default function Page() {
                                   const tree = TREES.find(t => t.fruitId === fid);
                                   if (!tree) return null;
                                   const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                                  const borderColor = q === "zwykly" ? "#8b6a3e" : q === "soczysty" ? "rgba(34,211,238,0.6)" : "rgba(234,179,8,0.6)";
-                                  const bgColor = q === "zwykly" ? "rgba(20,12,8,0.65)" : q === "soczysty" ? "rgba(8,30,40,0.65)" : "rgba(40,30,5,0.65)";
-                                  const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#67e8f9" : "#fcd34d";
+                                  const borderColor = q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const bgColor = q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                                  const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                                   return (
                                     <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
-                                      style={{ borderColor, background: bgColor }}>
+                                      style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                                      {q === "zloty" && (
+                                        <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                          <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                        </span>
+                                      )}
                                       <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
@@ -6967,12 +6972,17 @@ export default function Page() {
                             const tree = TREES.find(t => t.fruitId === fid);
                             if (!tree) return null;
                             const qLabel = q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                            const borderColor = q === "zwykly" ? "#8b6a3e" : q === "soczysty" ? "rgba(34,211,238,0.6)" : "rgba(234,179,8,0.6)";
-                            const bgColor = q === "zwykly" ? "rgba(20,12,8,0.65)" : q === "soczysty" ? "rgba(8,30,40,0.65)" : "rgba(40,30,5,0.65)";
-                            const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#67e8f9" : "#fcd34d";
+                            const borderColor = q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const bgColor = q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                            const labelColor = q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                             return (
                               <div key={key} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-default"
-                                style={{ borderColor, background: bgColor }}>
+                                style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                                {q === "zloty" && (
+                                  <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                    <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                  </span>
+                                )}
                                 <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
