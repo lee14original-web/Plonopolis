@@ -1634,6 +1634,9 @@ export default function Page() {
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
+  const [hoveredStodola, setHoveredStodola] = React.useState(false);
+  const [hoveredUl, setHoveredUl] = React.useState(false);
+  const [hoveredSad, setHoveredSad] = React.useState(false);
   const [hoveredLada, setHoveredLada] = React.useState(false);
   const [hoveredDom, setHoveredDom] = React.useState(false);
   const [hoveredKompostownik, setHoveredKompostownik] = React.useState(false);
@@ -4921,9 +4924,9 @@ export default function Page() {
                           return (
                             <button
                               type="button"
-                              title={_barnUnlocked ? "Stodoła" : ""}
-                              onMouseEnter={() => { if (!_barnUnlocked) setHoveredBarnLock(true); }}
-                              onMouseLeave={() => setHoveredBarnLock(false)}
+                              title=""
+                              onMouseEnter={() => { if (_barnUnlocked) setHoveredStodola(true); else setHoveredBarnLock(true); }}
+                              onMouseLeave={() => { setHoveredBarnLock(false); setHoveredStodola(false); }}
                               onClick={() => {
                                 if (!_barnUnlocked) {
                                   setHoveredBarnLock(false);
@@ -4955,9 +4958,9 @@ export default function Page() {
                         return (
                           <button
                             type="button"
-                            title={_hiveUnlocked ? "Ul" : ""}
-                            onMouseEnter={() => { if (!_hiveUnlocked) setHoveredHiveLock(true); }}
-                            onMouseLeave={() => setHoveredHiveLock(false)}
+                            title=""
+                            onMouseEnter={() => { if (_hiveUnlocked) setHoveredUl(true); else setHoveredHiveLock(true); }}
+                            onMouseLeave={() => { setHoveredHiveLock(false); setHoveredUl(false); }}
                             onClick={() => {
                               if (!_hiveUnlocked) {
                                 setHoveredHiveLock(false);
@@ -4999,9 +5002,9 @@ export default function Page() {
                         return (
                           <button
                             type="button"
-                            title={_sadUnlocked ? "Sad" : ""}
-                            onMouseEnter={() => { if (!_sadUnlocked) setHoveredSadLock(true); }}
-                            onMouseLeave={() => setHoveredSadLock(false)}
+                            title=""
+                            onMouseEnter={() => { if (_sadUnlocked) setHoveredSad(true); else setHoveredSadLock(true); }}
+                            onMouseLeave={() => { setHoveredSadLock(false); setHoveredSad(false); }}
                             onClick={() => {
                               if (!_sadUnlocked) {
                                 setHoveredSadLock(false);
@@ -10436,6 +10439,30 @@ export default function Page() {
           <p className="mb-2 font-black text-amber-300">🔒 Sad — zablokowany</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
+        </div>
+      )}
+    {/* Tooltip Stodoła (odblokowana) */}
+      {hoveredStodola && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🐔 Stodoła</p>
+          <p className="mb-1 text-[14px]">Hoduj zwierzęta i zbieraj ich produkty.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Kury, świnie, krowy i inne — każde zwierzę daje inne surowce.</p>
+        </div>
+      )}
+    {/* Tooltip Ul (odblokowany) */}
+      {hoveredUl && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🍯 Ul</p>
+          <p className="mb-1 text-[14px]">Hoduj pszczoły i produkuj miód.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Miód sprzedasz klientom przy Ladzie lub w Targu w mieście.</p>
+        </div>
+      )}
+    {/* Tooltip Sad (odblokowany) */}
+      {hoveredSad && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🌳 Sad</p>
+          <p className="mb-1 text-[14px]">Uprawiaj drzewa owocowe i zbieraj owoce.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
         </div>
       )}
     {/* Tooltip Lada dla klientów */}
