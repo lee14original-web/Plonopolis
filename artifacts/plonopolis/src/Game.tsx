@@ -9675,7 +9675,39 @@ export default function Page() {
                     ×
                   </button>
 
-                  <div className="mb-4 pr-14">
+                  {/* Konewka */}
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); }}
+                    onMouseEnter={() => setHoveredWateringCan(true)}
+                    onMouseLeave={() => setHoveredWateringCan(false)}
+                    className={`absolute right-4 top-16 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
+                      selectedTool === "watering_can"
+                        ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
+                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
+                    }`}
+                  >
+                    <img src="/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
+                  </button>
+
+                  {/* Zbierz */}
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); }}
+                    onMouseEnter={() => setHoveredSickle(true)}
+                    onMouseLeave={() => setHoveredSickle(false)}
+                    className={`absolute right-4 top-44 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
+                      selectedTool === "sickle"
+                        ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]"
+                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
+                    }`}
+                  >
+                    <img src="/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
+                  </button>
+
+                  <div className="mb-4 pr-28">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                     <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                     <p className="mt-2 text-sm text-[#dfcfab]">
@@ -10142,67 +10174,6 @@ export default function Page() {
           </div>
         )}
 
-          {/* ── Przyciski Konewka i Zbierz — portal do document.body, poza każdym stacking context ── */}
-          {isFieldViewOpen && isOnFarmMap && typeof document !== "undefined" && ReactDOM.createPortal(
-            (["konewka", "zbierz"] as const).map(btn => {
-              const pos = btn === "konewka" ? fvKonewkaPos : fvZbierzPos;
-              const isActive = btn === "konewka" ? selectedTool === "watering_can" : selectedTool === "sickle";
-              return (
-                <button
-                  key={btn}
-                  type="button"
-                  onMouseDown={(e) => {
-                    if ((e.target as HTMLElement).dataset.resizeHandle) return;
-                    if (!fvToolEditMode) return;
-                    e.preventDefault();
-                    fvToolDragRef.current = { btn, mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                  }}
-                  onClick={fvToolEditMode ? undefined : () => {
-                    if (btn === "konewka") {
-                      setSelectedTool(prev => prev === "watering_can" ? null : "watering_can");
-                    } else {
-                      setSelectedTool(prev => prev === "sickle" ? null : "sickle");
-                    }
-                    setSelectedSeedId(null);
-                  }}
-                  onMouseEnter={btn === "konewka" ? () => setHoveredWateringCan(true) : () => setHoveredSickle(true)}
-                  onMouseLeave={btn === "konewka" ? () => setHoveredWateringCan(false) : () => setHoveredSickle(false)}
-                  className={`fixed z-[9999] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${
-                    fvToolEditMode
-                      ? "cursor-move border-purple-400/80 bg-purple-900/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]"
-                      : isActive
-                      ? (btn === "konewka"
-                          ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
-                          : "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]")
-                      : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
-                  }`}
-                  style={{ left: pos.l, top: pos.t, width: pos.w, height: pos.h }}
-                >
-                  <img
-                    src={btn === "konewka" ? "/watering_can_transparent.png" : "/sierp.png"}
-                    alt={btn === "konewka" ? "Konewka" : "Zbierz"}
-                    className="h-[50%] w-[50%] object-contain pointer-events-none"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                  <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">
-                    {btn === "konewka" ? "Konewka" : "Zbierz"}
-                  </p>
-                  {fvToolEditMode && (
-                    <div
-                      data-resize-handle="1"
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        fvToolDragRef.current = { btn, mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                      }}
-                      className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl-md bg-purple-400 opacity-80 hover:opacity-100 pointer-events-auto"
-                    />
-                  )}
-                </button>
-              );
-            }),
-            document.body
-          )}
 
           {farmUpgradeModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
