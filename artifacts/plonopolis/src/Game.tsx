@@ -7197,26 +7197,6 @@ export default function Page() {
                                 <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
                               </span>}
                         </button>
-                        {avatarSkin >= 0 && (() => {
-                          const _meta = AVATAR_META[avatarSkin];
-                          const _bonus = getAvatarBonus(avatarSkin);
-                          const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
-                          const _entries = (Object.entries(_bonus) as [string,number][]).filter(([,v])=>v>0);
-                          if (!_meta) return null;
-                          return (
-                            <div className="w-full rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-center">
-                              <p className="text-[11px] font-black text-amber-300 mb-0.5">{_meta.name}</p>
-                              <p className="text-[10px] text-[#8b6a3e] italic mb-1.5">{_meta.style}</p>
-                              {_entries.length > 0 && (
-                                <div className="flex flex-wrap justify-center gap-1">
-                                  {_entries.map(([k,v]) => (
-                                    <span key={k} className="rounded-md bg-amber-900/30 border border-amber-600/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
                         <div className="w-full text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
                           {freeSkillPoints > 0 && (
@@ -7422,12 +7402,15 @@ export default function Page() {
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
-                                      {!isLocked && effVal > 0 && (
+                                      {effVal > 0 && (
                                         <span className="text-sm font-bold text-green-200 ml-auto tabular-nums">{bonusStr}</span>
                                       )}
                                     </div>
                                     {isLocked ? (
-                                      <p className="mt-0.5 text-[11px] text-[#8b6a3e]">Odblokuj na poziomie {def.unlockLevel}</p>
+                                      <div className="mt-0.5 space-y-0.5">
+                                        <p className="text-[11px] text-[#8b6a3e]">Ulepszanie odblokuje sie na poziomie {def.unlockLevel}</p>
+                                        {_avBonus > 0 && <p className="text-[11px] font-bold text-amber-400">+{_avBonus} z avatara — juz aktywne!</p>}
+                                      </div>
                                     ) : (
                                       <>
                                         <div className="mt-1 relative h-2 w-full">
@@ -10841,10 +10824,10 @@ export default function Page() {
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
           <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{(() => {
-            const _zb = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+            const _zb = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
             const _we = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
             return (Math.min(WATER_BONUS_MAX, _zb * (1 + _we)) * 100).toFixed(1);
-          })()}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
+          })()}%</span> (twoja Zaradność: {effectiveStats.zaradnosc}/100{effectiveStats.zaradnosc !== playerStats.zaradnosc ? `, w tym +${effectiveStats.zaradnosc - playerStats.zaradnosc} z avatara` : ""})</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
@@ -10868,7 +10851,7 @@ export default function Page() {
             {(() => {
               const _baseMs = hoveredCrop.growthTimeMs;
               // Te same wzory co w getEffectiveGrowthTimeMs (bez bonusów per-pole: woda/kompost)
-              const _wiedzaEff   = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+              const _wiedzaEff   = (effectiveStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
               const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE); // % redukcji surowy
               const _wiedzaPct   = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw); // cap
               const _hivePct     = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
@@ -10879,7 +10862,7 @@ export default function Page() {
               const _totalMultDry = _wiedzaMult * _hiveMult * _equipMult;
               const _effMs       = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultDry));
               // Bonus z wody (jeśli podlejesz) — orientacyjnie z aktualnymi statami/eq
-              const _zaradnosc   = playerStats.zaradnosc ?? 0;
+              const _zaradnosc   = effectiveStats.zaradnosc ?? 0;
               const _zaradBonus  = calcStatEffect(_zaradnosc, ZARADNOSC_RATE);
               const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
               const _waterTotalPct = Math.min(WATER_BONUS_MAX * 100, _zaradBonus * (1 + _waterEqPct / 100));
