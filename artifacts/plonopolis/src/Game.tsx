@@ -5887,10 +5887,8 @@ export default function Page() {
                                 const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
                                 const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
                                 if (!hasAny) return (
-                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                    <p className="text-2xl mb-2">🎒</p>
-                                    <p>Brak przedmiotów.</p>
-                                    <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
+                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                    Plecak jest pusty.
                                   </div>
                                 );
                                 return (
@@ -5902,9 +5900,12 @@ export default function Page() {
                                         <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                           onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                           onMouseLeave={() => setCardTip(null)}>
-                                          <span className="text-4xl leading-none">{it.icon}</span>
+                                          <div className="relative h-12 w-12 flex items-center justify-center">
+                                            <span className="text-4xl leading-none">{it.icon}</span>
+                                            <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                          </div>
                                           <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
-                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                         </div>
                                       );
                                     })}
@@ -5912,14 +5913,14 @@ export default function Page() {
                                       <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
                                         <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
-                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.empty_jars}</span>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
                                       </div>
                                     )}
                                     {hasHoneyJars && (
                                       <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
                                         <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
-                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.honey_jars}</span>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
                                       </div>
                                     )}
                                     {hasSuit && (
@@ -5979,10 +5980,8 @@ export default function Page() {
                             const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
                             if (entries.length === 0) {
                               return (
-                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                  <p className="text-2xl mb-2">🍎</p>
-                                  <p>Brak owoców w plecaku.</p>
-                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup drzewa w Sklepie → 🌳 Drzewa, a potem zbierz owoce w Sadzie.</p>
+                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                  Plecak jest pusty.
                                 </div>
                               );
                             }
@@ -6018,7 +6017,10 @@ export default function Page() {
                                           <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                         </span>
                                       )}
-                                      <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                      <div className="relative h-12 w-12 flex items-center justify-center">
+                                        <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                        <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                      </div>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                     </div>
@@ -7025,10 +7027,8 @@ export default function Page() {
                           const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
                           const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
                           if (!hasAny) return (
-                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                              <p className="text-2xl mb-2">🎒</p>
-                              <p>Brak przedmiotów.</p>
-                              <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
+                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                              Plecak jest pusty.
                             </div>
                           );
                           return (
@@ -7040,9 +7040,12 @@ export default function Page() {
                                   <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                     onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                     onMouseLeave={() => setCardTip(null)}>
-                                    <span className="text-4xl leading-none">{it.icon}</span>
+                                    <div className="relative h-12 w-12 flex items-center justify-center">
+                                      <span className="text-4xl leading-none">{it.icon}</span>
+                                      <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                    </div>
                                     <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
-                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                   </div>
                                 );
                               })}
@@ -7050,14 +7053,14 @@ export default function Page() {
                                 <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
                                   <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
-                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.empty_jars}</span>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
                                 </div>
                               )}
                               {hasHoneyJars && (
                                 <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
                                   <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
-                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{hiveData.honey_jars}</span>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
                                 </div>
                               )}
                               {hasSuit && (
@@ -7115,10 +7118,8 @@ export default function Page() {
                       const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
                       if (entries.length === 0) {
                         return (
-                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-center text-xs text-[#dfcfab]">
-                            <p className="text-2xl mb-1">🍎</p>
-                            <p>Brak owoców w plecaku.</p>
-                            <p className="mt-1 text-[10px] text-[#8b6a3e]">Posadź drzewa w Sklepie i zbieraj w Sadzie.</p>
+                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                            Plecak jest pusty.
                           </div>
                         );
                       }
@@ -7154,7 +7155,10 @@ export default function Page() {
                                     <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                   </span>
                                 )}
-                                <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                <div className="relative h-12 w-12 flex items-center justify-center">
+                                  <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                  <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                </div>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                               </div>
