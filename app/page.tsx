@@ -8227,11 +8227,11 @@ export default function Page() {
                                   const rarityDef = ITEM_TIER_RARITY[itemTierIdx];
                                   const tipNode = (
                                     <>
-                                      <p className="text-xs font-black" style={{ color: rarityDef.border }}>Przedmiot — {rarityDef.label}</p>
-                                      <p className="text-[11px] font-bold text-amber-100">{r.itemIcon} {r.itemName}</p>
-                                      {it && <p className="text-[10px] text-amber-300/80">Poziom: {it.unlockLevel} · Slot: {EQUIP_SLOT_META[it.slot]?.label}</p>}
-                                      {it && <p className="text-[10px] text-cyan-300">{bonusLine(it.bonuses, 0)}</p>}
-                                      <p className="text-[10px] text-emerald-300 mt-1">Trafil do Twojego ekwipunku</p>
+                                      <p className="text-[17px] font-black" style={{ color: rarityDef.border }}>Przedmiot — {rarityDef.label}</p>
+                                      <p className="text-[15px] font-bold text-amber-100">{r.itemIcon} {r.itemName}</p>
+                                      {it && <p className="text-[14px] text-amber-300/80">Poziom: {it.unlockLevel} · Slot: {EQUIP_SLOT_META[it.slot]?.label}</p>}
+                                      {it && <p className="text-[14px] text-cyan-300">{bonusLine(it.bonuses, 0)}</p>}
+                                      <p className="text-[14px] text-emerald-300 mt-1">Trafil do Twojego ekwipunku</p>
                                     </>
                                   );
                                   const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -8258,11 +8258,11 @@ export default function Page() {
                                 const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa";
                                 const tipNode = (
                                   <>
-                                    <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
-                                    <p className="text-[10px] text-emerald-300/80">{def.desc}</p>
-                                    <p className="text-[11px] font-black mt-1" style={{ color: tierColor }}>Tier: {def.tierName(r.value)}</p>
-                                    <p className="text-[11px] font-black" style={{ color: tierColor }}>Bonus: {def.bonusLabel(r.value)}</p>
-                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij na pole z uprawą w plecaku</p>
+                                    <p className="text-[17px] font-black text-emerald-200">{def.icon} {def.name}</p>
+                                    <p className="text-[14px] text-emerald-300/80">{def.desc}</p>
+                                    <p className="text-[15px] font-black mt-1" style={{ color: tierColor }}>Tier: {def.tierName(r.value)}</p>
+                                    <p className="text-[15px] font-black" style={{ color: tierColor }}>Bonus: {def.bonusLabel(r.value)}</p>
+                                    <p className="text-[14px] text-amber-300 mt-1">Przeciagnij na pole z uprawa w plecaku</p>
                                   </>
                                 );
                                 const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -8298,8 +8298,8 @@ export default function Page() {
                     </div>
                     {/* Fixed-position tooltip — poza overflow-hidden panelu */}
                     {kompostHoverTip && (() => {
-                      const TIP_W = 240;
-                      const TIP_H_EST = 130;
+                      const TIP_W = 336;
+                      const TIP_H_EST = 182;
                       const margin = 10;
                       const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
                       const vh = typeof window !== "undefined" ? window.innerHeight : 720;
@@ -8311,7 +8311,7 @@ export default function Page() {
                       top = Math.max(margin, Math.min(vh - TIP_H_EST - margin, top));
                       return (
                         <div
-                          className="pointer-events-none fixed z-[9999] flex flex-col gap-1 rounded-xl border-2 px-3 py-2 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
+                          className="pointer-events-none fixed z-[9999] flex flex-col gap-1.5 rounded-xl border-2 px-4 py-3 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
                           style={{ left, top, width: TIP_W, borderColor: kompostHoverTip.color }}>
                           {kompostHoverTip.node}
                         </div>
