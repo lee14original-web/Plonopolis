@@ -6761,7 +6761,7 @@ export default function Page() {
                             const disc = isSuper ? 0.8 : isNormal ? 0.9 : 1;
                             const effPrice = Math.round(basePrice * disc * 100) / 100;
                             const qty = shopCart[crop.id] ?? 0;
-                            const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
+                            const owned = Object.entries(seedInventory).filter(([k]) => k === crop.id || k.startsWith(crop.id + "_")).reduce((s, [, v]) => s + (v ?? 0), 0);
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
                               <div key={crop.id} className={`flex flex-col rounded-xl border p-3 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
