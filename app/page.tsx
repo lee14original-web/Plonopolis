@@ -7007,6 +7007,7 @@ export default function Page() {
                               <p className="text-[10px] text-[#8b6a3e]">{qty as number} x {ep.toFixed(2)} 💰</p>
                             </div>
                             <p className="text-xs font-black text-yellow-300 shrink-0">{(ep * (qty as number)).toFixed(2)}</p>
+                            <button onClick={() => setShopCart(c => { const n = {...c}; delete n[id]; return n; })} className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-red-500/40 bg-red-900/20 text-red-300 hover:bg-red-900/50 hover:text-red-200 transition-all text-[10px] font-black">×</button>
                           </div>
                         );
                       })}
