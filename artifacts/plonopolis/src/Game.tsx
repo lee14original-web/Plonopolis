@@ -196,6 +196,91 @@ const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] 
 const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
 
+// ─── BONUSY STARTOWE AVATARÓW ────────────────────────────────────────────────
+const AVATAR_BONUSES: Record<number, Partial<PlayerStatsMap>> = {
+  // Mężczyźni (0-9)
+  0:  { wiedza:4, opieka:3, szczescie:3 },
+  1:  { zrecznosc:5, zaradnosc:3, wiedza:2 },
+  2:  { wiedza:6, zaradnosc:2, szczescie:2 },
+  3:  { zrecznosc:4, szczescie:4, wiedza:2 },
+  4:  { zaradnosc:5, wiedza:3, sadownik:2 },
+  5:  { wiedza:5, zrecznosc:3, zaradnosc:2 },
+  6:  { sadownik:6, szczescie:2, wiedza:2 },
+  7:  { opieka:6, szczescie:2, zaradnosc:2 },
+  8:  { szczescie:6, zrecznosc:2, opieka:2 },
+  9:  { opieka:4, zrecznosc:3, szczescie:3 },
+  // Kobiety (10-19)
+  10: { opieka:5, szczescie:3, zaradnosc:2 },
+  11: { wiedza:5, zrecznosc:3, zaradnosc:2 },
+  12: { sadownik:4, wiedza:3, szczescie:3 },
+  13: { zaradnosc:4, wiedza:3, opieka:3 },
+  14: { wiedza:6, szczescie:2, zrecznosc:2 },
+  15: { wiedza:3, zrecznosc:3, zaradnosc:2, szczescie:2 },
+  16: { szczescie:5, zaradnosc:3, sadownik:2 },
+  17: { zrecznosc:5, wiedza:3, zaradnosc:2 },
+  18: { opieka:6, szczescie:2, zaradnosc:2 },
+  19: { wiedza:4, opieka:3, sadownik:3 },
+  // Epickie (20-24)
+  20: { wiedza:12, szczescie:10, zrecznosc:8 },
+  21: { zaradnosc:12, szczescie:10, sadownik:8 },
+  22: { wiedza:6, zrecznosc:6, zaradnosc:6, sadownik:6, opieka:3, szczescie:3 },
+  23: { zrecznosc:14, wiedza:10, szczescie:6 },
+  24: { opieka:14, sadownik:8, szczescie:8 },
+};
+const AVATAR_META: Record<number, { name: string; style: string }> = {
+  0:  { name:"Stary Farmer",              style:"zbalansowany farmer"     },
+  1:  { name:"Farmer z widlami",          style:"szybki zbior"            },
+  2:  { name:"Farmer z rzodkiewkami",     style:"mistrz upraw"            },
+  3:  { name:"Mlody farmer",              style:"szybkosc i lupy"         },
+  4:  { name:"Kierowca traktora",         style:"ekonomia"                },
+  5:  { name:"Farmer w traktorze",        style:"specjalista pol"         },
+  6:  { name:"Sadownik",                  style:"sad i drzewa"            },
+  7:  { name:"Hodowca",                   style:"hodowla zwierzat"        },
+  8:  { name:"Chlopiec z kotem",          style:"rzadkie dropy"           },
+  9:  { name:"Farmer przy kurach",        style:"poczatkujacy hodowca"    },
+  10: { name:"Farmerka z pieskiem",       style:"zwierzeta i szczescie"   },
+  11: { name:"Farmerka z motyka",         style:"szybkie farmienie"       },
+  12: { name:"Ogrodniczka z kwiatami",    style:"sad i kwiaty"            },
+  13: { name:"Kucharka farmy",            style:"wydajna farma"           },
+  14: { name:"Farmerka z koszem warzyw",  style:"specjalistka upraw"      },
+  15: { name:"Farmerka w stodole",        style:"zbalansowany rozwoj"     },
+  16: { name:"Handlarka farmy",           style:"handel i dropy"          },
+  17: { name:"Farmerka sadzaca rosliny",  style:"szybki zbior"            },
+  18: { name:"Hodowczyni zwierzat",       style:"mistrzyni zwierzat"      },
+  19: { name:"Babcia farmerka",           style:"doswiadczona farmerka"   },
+  20: { name:"Krol Marchewek",            style:"mistrz upraw"            },
+  21: { name:"Zielona Moc",               style:"ekonomia i handel"       },
+  22: { name:"Plon Bogow",                style:"idealny balans"          },
+  23: { name:"Wladca Pol",                style:"szybki rozwoj"           },
+  24: { name:"Legenda Farmy",             style:"mistrz hodowli"          },
+};
+// Koszt i cooldown zmiany avatara — indeks = numer zmiany (0-based)
+// Pierwsze 2 zmiany gratis, potem koszt rośnie
+const AVATAR_CHANGE_TIERS: { cost: number; cooldownMs: number }[] = [
+  { cost: 0,     cooldownMs: 0                },  // 1. zmiana gratis
+  { cost: 0,     cooldownMs: 0                },  // 2. zmiana gratis
+  { cost: 5000,  cooldownMs: 1 * 3600 * 1000  },  // 3. zmiana
+  { cost: 15000, cooldownMs: 3 * 3600 * 1000  },  // 4. zmiana
+];
+function getAvatarChangeTier(changeCount: number) {
+  if (changeCount < AVATAR_CHANGE_TIERS.length) return AVATAR_CHANGE_TIERS[changeCount];
+  return { cost: 50000, cooldownMs: 12 * 3600 * 1000 };
+}
+function getAvatarBonus(skin: number): Partial<PlayerStatsMap> {
+  return AVATAR_BONUSES[skin] ?? {};
+}
+function mergeAvatarBonus(base: PlayerStatsMap, skin: number): PlayerStatsMap {
+  const b = getAvatarBonus(skin);
+  return {
+    wiedza:    (base.wiedza    ?? 0) + (b.wiedza    ?? 0),
+    zrecznosc: (base.zrecznosc ?? 0) + (b.zrecznosc ?? 0),
+    zaradnosc: (base.zaradnosc ?? 0) + (b.zaradnosc ?? 0),
+    sadownik:  (base.sadownik  ?? 0) + (b.sadownik  ?? 0),
+    opieka:    (base.opieka    ?? 0) + (b.opieka    ?? 0),
+    szczescie: (base.szczescie ?? 0) + (b.szczescie ?? 0),
+  };
+}
+
 // UWAGA: rate dla "wiedza" i "zaradnosc" muszą być zgodne z WIEDZA_RATE/ZARADNOSC_RATE
 // (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
 // niż faktyczny efekt w `getEffectiveGrowthTimeMs`.
@@ -854,20 +939,24 @@ function getStatUpgradeCost(targetLv: number): number {
   }
   return 6000000;
 }
-function loadAvatarDataLS(userId: string): { skin: number; stats: PlayerStatsMap; fsp: number; prevLevel: number } {
+function loadAvatarDataLS(userId: string): { skin: number; stats: PlayerStatsMap; fsp: number; prevLevel: number; changeCount: number; lastChangeAt: number } {
   const skin = parseInt(localStorage.getItem(`plonopolis_skin_${userId}`) ?? "-1");
   const statsRaw = localStorage.getItem(`plonopolis_stats_${userId}`);
   const stats: PlayerStatsMap = statsRaw ? JSON.parse(statsRaw) : { ...DEFAULT_STATS };
   const fspRaw = localStorage.getItem(`plonopolis_fsp_${userId}`);
   const fsp = fspRaw !== null ? parseInt(fspRaw) : 3;
   const prevLevel = parseInt(localStorage.getItem(`plonopolis_prevlv_${userId}`) ?? "0");
-  return { skin, stats, fsp, prevLevel };
+  const changeCount = parseInt(localStorage.getItem(`plonopolis_avatar_changes_${userId}`) ?? "0");
+  const lastChangeAt = parseInt(localStorage.getItem(`plonopolis_avatar_last_change_${userId}`) ?? "0");
+  return { skin, stats, fsp, prevLevel, changeCount, lastChangeAt };
 }
-function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
+function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number, changeCount?: number, lastChangeAt?: number) {
   localStorage.setItem(`plonopolis_skin_${userId}`, String(skin));
   localStorage.setItem(`plonopolis_stats_${userId}`, JSON.stringify(stats));
   localStorage.setItem(`plonopolis_fsp_${userId}`, String(fsp));
   localStorage.setItem(`plonopolis_prevlv_${userId}`, String(prevLevel));
+  if (changeCount !== undefined) localStorage.setItem(`plonopolis_avatar_changes_${userId}`, String(changeCount));
+  if (lastChangeAt !== undefined) localStorage.setItem(`plonopolis_avatar_last_change_${userId}`, String(lastChangeAt));
 }
 function saveHouseData(userId: string, slots: number, eq: string[]) {
   localStorage.setItem(`plonopolis_eqslots_${userId}`, String(slots));
@@ -1666,6 +1755,9 @@ export default function Page() {
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statFlash, setStatFlash] = React.useState<string|null>(null);
+  const [avatarChangeCount, setAvatarChangeCount] = React.useState(0);
+  const [lastAvatarChangeAt, setLastAvatarChangeAt] = React.useState(0);
+  const effectiveStats = React.useMemo(() => mergeAvatarBonus(playerStats, avatarSkin), [playerStats, avatarSkin]);
   const [dailyProgress, setDailyProgress] = React.useState<DailyProgress>(emptyDP());
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
@@ -1959,7 +2051,7 @@ export default function Page() {
   React.useEffect(() => {
     let changed = false;
     const next: BarnState = {};
-    const opiekaPts = playerStats?.opieka ?? 0;
+    const opiekaPts = effectiveStats.opieka;
     const bonusChance = opiekaPts * 0.0015; // +0.15%/pkt
     const bonusMessages: string[] = [];
     ANIMALS.forEach(a => {
@@ -2011,9 +2103,9 @@ export default function Page() {
     const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped) / 100;
     const speedMult = Math.max(0.30, 1 - treeSpeedPct);
     // Skill Sadownik (rate 0.005) → mnożnik liczby owoców (więcej owoców z drzewa)
-    const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005) / 100;
+    const sadownikBonus = calcStatEffect(effectiveStats.sadownik, 0.005) / 100;
     // Szczęście + eq "% bonus drop" → szansa na rare/golden
-    const luckPct = calcStatEffect(playerStats?.szczescie ?? 0, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+    const luckPct = calcStatEffect(effectiveStats.szczescie, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
     TREES.forEach(t => {
       const st = next[t.id];
       if (!st || st.owned === 0) return;
@@ -2243,6 +2335,8 @@ export default function Page() {
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
+      setAvatarChangeCount(d.changeCount);
+      setLastAvatarChangeAt(d.lastChangeAt);
       // Ekwipunek
       const hasEqSlotsLS = localStorage.getItem(`plonopolis_eqslots_${source.id}`) !== null;
       const hasEqLS = localStorage.getItem(`plonopolis_eq_${source.id}`) !== null;
@@ -2259,7 +2353,7 @@ export default function Page() {
       // Epickie avatary — zawsze z DB (nie z localStorage)
       setUnlockedEpicAvatars(Array.isArray(source.unlocked_epic_avatars) ? source.unlocked_epic_avatars : []);
       // Zawsze aktualizuj localStorage
-      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
+      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel, d.changeCount, d.lastChangeAt);
       // Zsynchronizuj Supabase tylko gdy skin jest prawidłowy (nie zapisuj -1 do bazy)
       if (skin >= 0) {
         void supabase.rpc("game_save_avatar_data", {
@@ -2423,7 +2517,7 @@ export default function Page() {
     if (!crop) return 0;
 
     // Wiedza efektywna = bazowa + flat bonus z eq (np. Kapelusz Mistrza Farmy +5)
-    const wiedzaEffective = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+    const wiedzaEffective = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
     const wiedzaBonus = calcStatEffect(wiedzaEffective, WIEDZA_RATE) / 100;
     const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
@@ -2437,7 +2531,7 @@ export default function Page() {
     const equipGrowthMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - equipGrowthPct);
     let totalMult: number;
     if (plot.watered) {
-      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+      const zaradnoscBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
       // Bonus z eq: % efekt podlewania + % efekt wody (boost siły zaradności)
       const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
       const totalWaterReduction = Math.min(WATER_BONUS_MAX, zaradnoscBonus * (1 + waterEqPct));
@@ -2574,15 +2668,15 @@ export default function Page() {
       });
     }
 
-    const _zaradBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+    const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
     const _zaradPct = Math.min(WATER_BONUS_MAX, _zaradBonus * (1 + _waterEqPct)) * 100;
     setMessage({
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
-        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${playerStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
-        : `${crop.name} podlana. Rozwijaj Zaradność, aby przyspieszać wzrost.`,
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${effectiveStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
+        : `${crop.name} podlana. Rozwijaj Zaradnosc, aby przyspieszac wzrost.`,
     });
   }
 
@@ -3709,6 +3803,44 @@ export default function Page() {
     }
   }
 
+  async function handleAvatarSelect(idx: number) {
+    if (!profile?.id) return;
+    const tier = getAvatarChangeTier(avatarChangeCount);
+    const now = Date.now();
+    if (tier.cooldownMs > 0 && lastAvatarChangeAt > 0) {
+      const elapsed = now - lastAvatarChangeAt;
+      if (elapsed < tier.cooldownMs) {
+        const remainMins = Math.ceil((tier.cooldownMs - elapsed) / 60000);
+        const hrs = Math.floor(remainMins / 60);
+        const mins = remainMins % 60;
+        const timeStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`;
+        setMessage({ type: "error", title: "Cooldown aktywny", text: `Nastepna zmiana avatara dostepna za ${timeStr}.` });
+        return;
+      }
+    }
+    if (tier.cost > 0) {
+      if (displayMoney < tier.cost) {
+        setMessage({ type: "error", title: "Za malo pieniedzy", text: `Zmiana avatara kosztuje ${tier.cost.toLocaleString("pl-PL")} zl.` });
+        return;
+      }
+      const { error } = await supabase.from("profiles").update({ money: displayMoney - tier.cost }).eq("id", profile.id);
+      if (error) { setMessage({ type: "error", title: "Blad platnosci", text: error.message }); return; }
+      await loadProfile(profile.id);
+    }
+    const newCount = avatarChangeCount + 1;
+    setAvatarSkin(idx);
+    setAvatarChangeCount(newCount);
+    setLastAvatarChangeAt(now);
+    saveAvatarDataLS(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current, newCount, now);
+    void supabase.rpc("game_save_avatar_data", {
+      p_avatar_skin: idx,
+      p_player_stats: playerStats as Record<string, number>,
+      p_free_skill_points: freeSkillPoints,
+      p_prev_level: prevLevelRef.current,
+    });
+    setShowSkinModal(false);
+  }
+
   async function handleAddHoneyJars(amount: number) {
     if (!profile?.id) return;
     const newHive: HiveData = { ...hiveData, honey_jars: hiveData.honey_jars + amount };
@@ -3762,7 +3894,8 @@ export default function Page() {
       setUnlockedPlots(freshUnlockedPlots);
       setPlotObstacles({});
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
-      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      setAvatarChangeCount(0); setLastAvatarChangeAt(0);
+      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1, 0, 0);
       // Czyszczenie LS ekwipunku — bez tego applyProfileState przywróciłby stary stan z cache
       saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
       saveItemUpg({});
@@ -7064,6 +7197,26 @@ export default function Page() {
                                 <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
                               </span>}
                         </button>
+                        {avatarSkin >= 0 && (() => {
+                          const _meta = AVATAR_META[avatarSkin];
+                          const _bonus = getAvatarBonus(avatarSkin);
+                          const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+                          const _entries = (Object.entries(_bonus) as [string,number][]).filter(([,v])=>v>0);
+                          if (!_meta) return null;
+                          return (
+                            <div className="w-full rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-center">
+                              <p className="text-[11px] font-black text-amber-300 mb-0.5">{_meta.name}</p>
+                              <p className="text-[10px] text-[#8b6a3e] italic mb-1.5">{_meta.style}</p>
+                              {_entries.length > 0 && (
+                                <div className="flex flex-wrap justify-center gap-1">
+                                  {_entries.map(([k,v]) => (
+                                    <span key={k} className="rounded-md bg-amber-900/30 border border-amber-600/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div className="w-full text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
                           {freeSkillPoints > 0 && (
@@ -7129,12 +7282,12 @@ export default function Page() {
                       <div className="flex-1">
                         {/* ─── Moc farmy + bonusy summary ─── */}
                         {(() => {
-                          const _wB  = Math.min(25, calcStatEffect(playerStats.wiedza, WIEDZA_RATE));
-                          const _zaB = Math.min(30, calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE));
-                          const _zrB = calcStatEffect(playerStats.zrecznosc, 0.004);
-                          const _saB = calcStatEffect(playerStats.sadownik, 0.005);
-                          const _opB = Math.min(90, playerStats.opieka * 0.3);
-                          const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
+                          const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza, WIEDZA_RATE));
+                          const _zaB = Math.min(30, calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE));
+                          const _zrB = calcStatEffect(effectiveStats.zrecznosc, 0.004);
+                          const _saB = calcStatEffect(effectiveStats.sadownik, 0.005);
+                          const _opB = Math.min(90, effectiveStats.opieka * 0.3);
+                          const _shB = calcStatEffect(effectiveStats.szczescie, 0.0025);
                           const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
                           const _statsPow = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3);
                           const _eqB = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => { if (!eq) return s; const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id); return s + (d?.unlockLevel ?? 1) * 8 + (eq.upg ?? 0) * (eq.upg ?? 0) * 4; }, 0);
@@ -8946,7 +9099,7 @@ export default function Page() {
 
           {showStodolaModal && (() => {
             const lvl = profile?.level ?? 0;
-            const opiekaPts = playerStats?.opieka ?? 0;
+            const opiekaPts = effectiveStats.opieka;
             const bonusChancePct = (opiekaPts * 0.15).toFixed(1);
             const hungerReducePct = (opiekaPts * 0.3).toFixed(1);
             const handleBuyAnimal = async (a: AnimalDef) => {
@@ -9538,7 +9691,33 @@ export default function Page() {
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
               <div className="relative max-h-[90vh] w-full max-w-[1100px] overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
                 <button onClick={() => setShowSkinModal(false)} className="absolute right-4 top-4 text-[#8b6a3e] text-xl hover:text-red-400">✕</button>
-                <h2 className="mb-5 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                <h2 className="mb-3 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                {/* Koszt/cooldown zmiany avatara */}
+                {(() => {
+                  const tier = getAvatarChangeTier(avatarChangeCount);
+                  const now = Date.now();
+                  const cooldownLeft = tier.cooldownMs > 0 && lastAvatarChangeAt > 0 ? Math.max(0, tier.cooldownMs - (now - lastAvatarChangeAt)) : 0;
+                  const cMins = Math.ceil(cooldownLeft / 60000);
+                  const cHrs = Math.floor(cMins / 60);
+                  const cMinRem = cMins % 60;
+                  const timeStr = cHrs > 0 ? `${cHrs}h ${cMinRem}min` : `${cMins}min`;
+                  const isFree = tier.cost === 0;
+                  const freeLeft = Math.max(0, 2 - avatarChangeCount);
+                  return (
+                    <div className={`mb-4 mx-auto max-w-md rounded-xl border px-4 py-2 text-center text-xs font-medium ${
+                      cooldownLeft > 0 ? "border-red-500/40 bg-red-950/20 text-red-300"
+                      : isFree ? "border-green-500/40 bg-green-950/15 text-green-300"
+                      : "border-yellow-500/40 bg-yellow-950/15 text-yellow-300"
+                    }`}>
+                      {cooldownLeft > 0
+                        ? `Cooldown — kolejna zmiana za ${timeStr}`
+                        : isFree
+                          ? `Zmiana avatara bezplatna${freeLeft > 0 ? ` (${freeLeft} gratis pozostalo)` : ""}`
+                          : `Zmiana avatara: ${tier.cost.toLocaleString("pl-PL")} zl — posiadasz: ${displayMoney.toLocaleString("pl-PL")} zl`
+                      }
+                    </div>
+                  );
+                })()}
                 {/* Zakładki */}
                 <div className="mb-6 flex gap-2 justify-center flex-wrap">
                   {(["mezczyzni","kobiety","epickie","wszystkie"] as const).map(tab => (
@@ -9558,12 +9737,22 @@ export default function Page() {
                   <>
                     {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👨 Mężczyźni</p>}
                     <div className={`${skinTab === "wszystkie" ? "mb-4" : ""} grid grid-cols-5 gap-2`}>
-                      {SKINS_MALE.map((src, i) => (
-                        <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                          <img src={src} alt={`Postać ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                        </button>
-                      ))}
+                      {SKINS_MALE.map((src, i) => {
+                        const _b = getAvatarBonus(i);
+                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+                        const _sl: Record<string,string> = { wiedza:"W",zrecznosc:"Zr",zaradnosc:"Za",sadownik:"S",opieka:"O",szczescie:"Sz" };
+                        return (
+                          <button key={i} onClick={() => handleAvatarSelect(i)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                            <img src={src} alt={`Postac ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                            {_e.length > 0 && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/75 px-1 py-1 flex flex-wrap justify-center gap-1">
+                                {_e.map(([k,v]) => <span key={k} className="text-[9px] font-black text-amber-300">+{v} {_sl[k]??k}</span>)}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -9573,12 +9762,23 @@ export default function Page() {
                   <>
                     {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👩 Kobiety</p>}
                     <div className="grid grid-cols-5 gap-2">
-                      {SKINS_FEMALE.map((src, i) => (
-                        <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                          <img src={src} alt={`Postać ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                        </button>
-                      ))}
+                      {SKINS_FEMALE.map((src, i) => {
+                        const _idx = i + 10;
+                        const _b = getAvatarBonus(_idx);
+                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+                        const _sl: Record<string,string> = { wiedza:"W",zrecznosc:"Zr",zaradnosc:"Za",sadownik:"S",opieka:"O",szczescie:"Sz" };
+                        return (
+                          <button key={_idx} onClick={() => handleAvatarSelect(_idx)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
+                            <img src={src} alt={`Postac ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                            {_e.length > 0 && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/75 px-1 py-1 flex flex-wrap justify-center gap-1">
+                                {_e.map(([k,v]) => <span key={k} className="text-[9px] font-black text-pink-300">+{v} {_sl[k]??k}</span>)}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -9598,9 +9798,7 @@ export default function Page() {
                           <button key={idx}
                             onClick={() => {
                               if (isUnlocked) {
-                                setAvatarSkin(idx);
-                                if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current);
-                                setShowSkinModal(false);
+                                void handleAvatarSelect(idx);
                               } else {
                                 setEpicPurchaseTarget(idx);
                               }
