@@ -4364,7 +4364,7 @@ export default function Page() {
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
-      p_zrecznosc: playerStats.zrecznosc ?? 0,
+      p_zrecznosc: effectiveStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
       // -1 = wymuś 0 EXP (leg. opcja 0/1 — tylko plony); 0 = jakość decyduje; >0 = dokładny mnożnik
@@ -10003,9 +10003,10 @@ export default function Page() {
                   {/* Zbierz */}
                   <button
                     type="button"
-                    onClick={() => { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); }}
+                    onClick={() => { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); }}
                     onMouseEnter={() => setHoveredSickle(true)}
                     onMouseLeave={() => setHoveredSickle(false)}
+                    onMouseDown={() => setHoveredSickle(false)}
                     className={`absolute right-4 top-44 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
                       selectedTool === "sickle"
                         ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]"
@@ -10676,10 +10677,10 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
           <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
-          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(playerStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
-          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({playerStats.zrecznosc}/100)</p>
-          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(playerStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
-          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({playerStats.szczescie}/100)</p>
+          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(effectiveStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({effectiveStats.zrecznosc}/100{effectiveStats.zrecznosc !== playerStats.zrecznosc ? `, w tym +${effectiveStats.zrecznosc - playerStats.zrecznosc} z avatara` : ""})</p>
+          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(effectiveStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({effectiveStats.szczescie}/100{effectiveStats.szczescie !== playerStats.szczescie ? `, w tym +${effectiveStats.szczescie - playerStats.szczescie} z avatara` : ""})</p>
         </div>
       )}
     {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
