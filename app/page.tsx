@@ -2152,6 +2152,15 @@ export default function Page() {
     return () => clearInterval(t);
   }, []);
   React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (marketPickerOpen) { setMarketPickerOpen(false); return; }
+      if (showMarketModal) { setShowMarketModal(false); return; }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [marketPickerOpen, showMarketModal]);
+  React.useEffect(() => {
     let changed = false;
     const next: BarnState = {};
     const opiekaPts = effectiveStats.opieka;
@@ -5693,7 +5702,7 @@ export default function Page() {
                       />
                       <button
                         type="button"
-                        onClick={() => handleChangeMap("city_market")}
+                        onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
                         onMouseEnter={() => setHoveredTarg(true)}
                         onMouseLeave={() => setHoveredTarg(false)}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
@@ -11316,25 +11325,7 @@ export default function Page() {
         </div>
       )}
 
-      {/* ─── TARG GRACZY: przycisk wejścia (widoczny tylko na city_market) ─── */}
-      {profile && currentMap === "city_market" && !showMarketModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-[80] pointer-events-none">
-          <div className="pointer-events-auto flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
-              className="px-10 py-5 rounded-2xl border-2 border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-2xl font-black text-[#2f1b0c] shadow-2xl hover:brightness-110 transition"
-            >
-              Wejdz na Targ
-            </button>
-            {pendingReturnCount > 0 && (
-              <span className="rounded-xl bg-[#ef4444] px-3 py-1.5 text-sm font-black text-white shadow-lg">
-                {pendingReturnCount} {pendingReturnCount === 1 ? "rzecz" : "rzeczy"} do odbioru
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ─── TARG GRACZY: przycisk wejścia — usunięty, otwiera się bezpośrednio ─── */}
 
       {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
       {showMarketModal && (
