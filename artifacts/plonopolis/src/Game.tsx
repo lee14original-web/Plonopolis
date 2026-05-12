@@ -1286,8 +1286,19 @@ const CROPS: Crop[] = [
 ];
 
 // ── Dzienne promocje deterministyczne (seed z UTC-dnia) ──────────────────────
+function getPolandDayNumber(): number {
+  const dateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Warsaw' }); // 'YYYY-MM-DD'
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+function getMsToPolandMidnight(): number {
+  const warsawStr = new Date().toLocaleString('sv', { timeZone: 'Europe/Warsaw' }); // 'YYYY-MM-DD HH:mm:ss'
+  const timePart = warsawStr.split(' ')[1];
+  const [hh, mm, ss] = timePart.split(':').map(Number);
+  return 86400000 - (hh * 3600 + mm * 60 + ss) * 1000;
+}
 function getDailyPromos(): { normal: string[]; super_: string[] } {
-  const day = Math.floor(Date.now() / 86400000);
+  const day = getPolandDayNumber();
   const eligible = CROPS.filter(c => c.id !== "test_nasiono");
   const arr = [...eligible];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -1296,10 +1307,6 @@ function getDailyPromos(): { normal: string[]; super_: string[] } {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return { normal: arr.slice(0,3).map(c=>c.id), super_: [arr[3].id] };
-}
-function getMsToMidnightUTC(): number {
-  const nextMidnight = (Math.floor(Date.now() / 86400000) + 1) * 86400000;
-  return nextMidnight - Date.now();
 }
 function formatShopCountdown(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -1948,7 +1955,7 @@ export default function Page() {
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
-  const [promoCountdown, setPromoCountdown] = React.useState(() => formatShopCountdown(getMsToMidnightUTC()));
+  const [promoCountdown, setPromoCountdown] = React.useState(() => formatShopCountdown(getMsToPolandMidnight()));
   const dailyPromos = React.useMemo(() => getDailyPromos(), []);
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"owoce">("uprawy");
@@ -3231,7 +3238,7 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showShopModal]);
   React.useEffect(() => {
-    const iv = setInterval(() => setPromoCountdown(formatShopCountdown(getMsToMidnightUTC())), 1000);
+    const iv = setInterval(() => setPromoCountdown(formatShopCountdown(getMsToPolandMidnight())), 1000);
     return () => clearInterval(iv);
   }, []);
   React.useEffect(() => {
