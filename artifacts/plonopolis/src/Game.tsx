@@ -43,6 +43,8 @@ type Profile = {
   barn_items?: Record<string, number> | null;
   fruit_inventory?: Record<string, number> | null;
   plot_obstacles?: Record<string, { type: string; cost: number }> | null;
+  orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
+  barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -2279,8 +2281,26 @@ export default function Page() {
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
-    setBarnState_(lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState));
-    setOrchardState_(lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState));
+    // Barn: ładuj z localStorage, nadpisz owned/slots/prodStart z DB (DB autorytarne dla timingów)
+    const _lsBarn = lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState);
+    const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
+    const _dbBarnHasData = !!(_dbBarn && Object.values(_dbBarn).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
+    if (_dbBarnHasData) {
+      ANIMALS.forEach(a => { const d = (_dbBarn as Record<string,{owned:number;slots:number;prodStart:number}>)[a.id]; if (d) { if (typeof d.owned === "number") _lsBarn[a.id].owned = d.owned; if (typeof d.slots === "number") _lsBarn[a.id].slots = d.slots; if (typeof d.prodStart === "number" && d.prodStart > 0) _lsBarn[a.id].prodStart = d.prodStart; } });
+    } else if (uid) {
+      ANIMALS.forEach(a => { const st = _lsBarn[a.id]; if (st && st.owned > 0) void supabase.rpc("sync_barn_owned", { p_user_id: uid, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots }); });
+    }
+    setBarnState_(_lsBarn);
+    // Sad: ładuj z localStorage, nadpisz owned/prodStart z DB (DB autorytarne dla timingów)
+    const _lsOrch = lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState);
+    const _dbOrch = source.orchard_state as Record<string, { owned: number; prodStart: number }> | null | undefined;
+    const _dbOrchHasData = !!(_dbOrch && Object.values(_dbOrch).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
+    if (_dbOrchHasData) {
+      TREES.forEach(t => { const d = (_dbOrch as Record<string,{owned:number;prodStart:number}>)[t.id]; if (d) { if (typeof d.owned === "number") _lsOrch[t.id].owned = d.owned; if (typeof d.prodStart === "number" && d.prodStart > 0) _lsOrch[t.id].prodStart = d.prodStart; } });
+    } else if (uid) {
+      TREES.forEach(t => { const st = _lsOrch[t.id]; if (st && st.owned > 0) void supabase.rpc("sync_orchard_owned", { p_user_id: uid, p_tree_id: t.id, p_new_owned: st.owned }); });
+    }
+    setOrchardState_(_lsOrch);
     setDailyProgress(loadDP(uid));
     // Kompost: migracja starego formatu (płaski licznik) + migracja klucza globalnego → userId
     const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
@@ -6662,6 +6682,7 @@ export default function Page() {
                         const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
                         if (error) return;
                         saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+                        void supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
                         await loadProfile(profile.id);
                         setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
                       };
@@ -6762,6 +6783,7 @@ export default function Page() {
                                         if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
                                         const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } };
                                         saveOrchardState({ ...orchardState, [t.id]: { ...cur, owned: cur.owned + 1, prodStart: cur.prodStart || Date.now() } });
+                                        void supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned + 1 });
                                         await loadProfile(profile.id);
                                         setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
                                       })();
@@ -8984,6 +9006,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
               await loadProfile(profile.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
@@ -8996,6 +9019,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
+              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
               await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
@@ -9013,40 +9037,44 @@ export default function Page() {
               setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
-              const st = barnState[a.id];
-              if (st.storage === 0 || st.owned === 0) return;
-              const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-              // 1 cykl storage = owned sztuk produktu
-              const baseCollected = st.storage * st.owned;
-              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
-              const collected = Math.floor(baseCollected * (1 + rewardBonus));
-              const bonusUnits = collected - baseCollected;
-              const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + collected};
-              saveBarnItems(newItems);
-              if (profile?.id) void supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
-              saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
-              const bonusMsg = bonusUnits > 0 ? ` 🎁 +${bonusUnits} z eq (+${(rewardBonus*100).toFixed(1)}%)` : "";
-              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})${bonusMsg}`});
+              if (!profile?.id) return;
+              void (async () => {
+                const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+                let rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+                if (rpc.error?.message?.includes("sync_barn_owned")) {
+                  const st = barnState[a.id];
+                  if (!st || st.owned === 0) { setMessage({type:"error",title:"Błąd!",text:"Brak zwierząt do synchronizacji."}); return; }
+                  await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+                  rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+                }
+                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+                const res = rpc.data as { ok: boolean; collected: number; item_id: string; new_prod_start: number; new_barn_items: Record<string,number> };
+                if (res.collected === 0) { setMessage({type:"info",title:`${a.icon} Brak produktów`,text:`${a.name} jeszcze pracuje — wróć później.`}); return; }
+                saveBarnItems(res.new_barn_items);
+                saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start}});
+                setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${res.collected} ${item.name}`});
+              })();
             };
             const handleCollectAll = () => {
-              let changed = false; const newItems = {...barnItems}; const newState = {...barnState};
-              let totalItems = 0;
-              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
-              ANIMALS.forEach(a => {
-                const st = barnState[a.id];
-                if (st.storage > 0 && st.owned > 0) {
-                  const baseCollected = st.storage * st.owned;
-                  const collected = Math.floor(baseCollected * (1 + rewardBonus));
-                  newItems[a.itemId] = (newItems[a.itemId]??0) + collected;
-                  newState[a.id] = {...st, storage:0, prodStart: barnNow};
-                  totalItems += collected;
-                  changed = true;
+              if (!profile?.id) return;
+              void (async () => {
+                let rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
+                if (rpc.error?.message?.includes("sync_barn_owned")) {
+                  for (const a of ANIMALS) {
+                    const st = barnState[a.id];
+                    if (st && st.owned > 0) await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+                  }
+                  rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
                 }
-              });
-              if (!changed) return;
-              saveBarnItems(newItems); saveBarnState(newState);
-              if (profile?.id) void supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
-              setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów. Sprzedaj je w Ladzie dla klientów.`});
+                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+                const res = rpc.data as { ok: boolean; results: Array<{animal_id:string;item_id:string;collected:number;new_prod_start:number}>; total: number; new_barn_items: Record<string,number> };
+                if (res.total === 0) { setMessage({type:"info",title:"Nic do odbioru",text:"Żadne zwierzę nie jest jeszcze gotowe."}); return; }
+                saveBarnItems(res.new_barn_items);
+                const newState = {...barnState};
+                res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start}; });
+                saveBarnState(newState);
+                setMessage({type:"success",title:"Odebrano wszystko!",text:`+${res.total} produktów. Sprzedaj je w Ladzie dla klientów.`});
+              })();
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
             const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
@@ -9321,46 +9349,54 @@ export default function Page() {
               return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
             };
             const handleHarvestTree = (t: TreeDef) => {
-              const st = orchardState[t.id];
-              if (!st) return;
-              const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
-              if (total === 0) return;
-              const inv = { ...fruitInventory };
-              (["zwykly","soczysty","zloty","zgnile"] as const).forEach(q => {
-                if ((st.storage[q] ?? 0) > 0) {
-                  const k = `${t.fruitId}_${q}`;
-                  inv[k] = (inv[k] ?? 0) + st.storage[q];
+              if (!profile?.id) return;
+              void (async () => {
+                setOrchardError("");
+                let rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
+                if (rpc.error?.message?.includes("sync_orchard_owned")) {
+                  const cur = orchardState[t.id];
+                  if (!cur || cur.owned === 0) { setOrchardError("Brak drzew do zebrania."); return; }
+                  await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned });
+                  rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
                 }
-              });
-              saveFruitInventory(inv);
-              if (profile?.id) void supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: inv });
-              saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: Date.now() } });
-              const parts: string[] = [];
-              if (st.storage.zwykly > 0)          parts.push(`${st.storage.zwykly} zwykłych`);
-              if (st.storage.soczysty > 0)         parts.push(`💧${st.storage.soczysty} soczystych`);
-              if (st.storage.zloty > 0)            parts.push(`✨${st.storage.zloty} złotych`);
-              if ((st.storage.zgnile ?? 0) > 0)   parts.push(`🍂${st.storage.zgnile} zgniłych`);
-              setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+                const res = rpc.data as { ok: boolean; added: Record<string,number>; new_prod_start: number; new_fruit_inventory: Record<string,number> };
+                const total = Object.values(res.added ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+                if (total === 0) { setOrchardError(`${t.icon} Drzewo jeszcze rośnie — wróć za chwilę.`); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+                saveOrchardState({ ...orchardState, [t.id]: { ...orchardState[t.id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: res.new_prod_start } });
+                const a = res.added; const parts: string[] = [];
+                if ((a[`${t.fruitId}_zwykly`]   ?? 0) > 0) parts.push(`${a[`${t.fruitId}_zwykly`]} zwykłych`);
+                if ((a[`${t.fruitId}_soczysty`] ?? 0) > 0) parts.push(`💧${a[`${t.fruitId}_soczysty`]} soczystych`);
+                if ((a[`${t.fruitId}_zloty`]    ?? 0) > 0) parts.push(`✨${a[`${t.fruitId}_zloty`]} złotych`);
+                if ((a[`${t.fruitId}_zgnile`]   ?? 0) > 0) parts.push(`🍂${a[`${t.fruitId}_zgnile`]} zgniłych`);
+                setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+              })();
             };
             const handleHarvestAll = () => {
-              const inv = { ...fruitInventory };
-              const newOrch = { ...orchardState };
-              let totalAll = 0; const partsAll: string[] = [];
-              TREES.forEach(t => {
-                const st = newOrch[t.id]; if (!st) return;
-                const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
-                if (total === 0) return;
-                (["zwykly","soczysty","zloty","zgnile"] as const).forEach(q => {
-                  if ((st.storage[q] ?? 0) > 0) { const k = `${t.fruitId}_${q}`; inv[k] = (inv[k] ?? 0) + st.storage[q]; }
-                });
-                newOrch[t.id] = { ...st, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: Date.now() };
-                totalAll += total;
-                partsAll.push(`${t.fruitIcon}×${total}`);
-              });
-              if (totalAll === 0) return;
-              saveFruitInventory(inv); saveOrchardState(newOrch);
-              if (profile?.id) void supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: inv });
-              setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+              if (!profile?.id) return;
+              void (async () => {
+                setOrchardError("");
+                let rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+                if (rpc.error?.message?.includes("sync_orchard_owned")) {
+                  for (const t of TREES) {
+                    const st = orchardState[t.id];
+                    if (st && st.owned > 0) await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: st.owned });
+                  }
+                  rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+                }
+                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+                const res = rpc.data as { ok: boolean; results: Array<{tree_id:string;added:Record<string,number>;new_prod_start:number}>; added_all: Record<string,number>; new_fruit_inventory: Record<string,number> };
+                const totalAll = Object.values(res.added_all ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+                if (totalAll === 0) { setOrchardError("Brak owoców — drzewa jeszcze rosną."); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+                const newOrch = { ...orchardState };
+                res.results.forEach(r => { if (newOrch[r.tree_id]) newOrch[r.tree_id] = { ...newOrch[r.tree_id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: r.new_prod_start }; });
+                saveOrchardState(newOrch);
+                const partsAll: string[] = [];
+                TREES.forEach(t => { const n = Object.entries(res.added_all ?? {}).filter(([k]) => k.startsWith(t.fruitId+"_")).reduce((s,[,v]) => s+(Number(v)||0), 0); if (n > 0) partsAll.push(`${t.fruitIcon}×${n}`); });
+                setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+              })();
             };
             const calcInvValue = () => {
               let v = 0;
@@ -9376,22 +9412,15 @@ export default function Page() {
             };
             const handleSellAll = () => {
               if (!profile?.id) return;
-              const value = calcInvValue();
-              if (value === 0) { setOrchardError("Brak owoców do sprzedaży (zgniłe owoce nie mają wartości)."); return; }
               setOrchardError("");
               void (async () => {
-                const newMoney = (profile.money ?? 0) + value;
-                const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
+                const { data, error } = await supabase.rpc("sell_fruits", { p_user_id: profile.id });
                 if (error) { setOrchardError("Błąd sprzedaży: " + error.message); return; }
-                // zachowaj zgniłe owoce — nie można ich sprzedać
-                const keepZgnile: Record<string, number> = {};
-                Object.entries(fruitInventory).forEach(([k, v]) => {
-                  if (k.endsWith("_zgnile") && Number(v) > 0) keepZgnile[k] = Number(v);
-                });
-                saveFruitInventory(keepZgnile);
-                await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: keepZgnile });
+                const res = data as { ok: boolean; reason?: string; sold_value: number; new_money: number; new_fruit_inventory: Record<string,number> };
+                if (!res.ok) { setOrchardError(res.reason ?? "Brak owoców do sprzedaży (zgniłe owoce nie mają wartości)."); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
                 await loadProfile(profile.id);
-                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
+                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${res.sold_value.toLocaleString()} 💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
               })();
             };
             const invValue = calcInvValue();
