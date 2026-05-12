@@ -3707,7 +3707,7 @@ export default function Page() {
     const { data, error } = await supabase.rpc("test_add_fruits", { p_user_id: profile.id, p_amount: amount });
     if (!error && data) {
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "Dodano owoce!", text: `+${amount} × ${TREES.length} gatunków × 3 jakości (zwykły/soczysty/złoty).` });
+      setMessage({ type: "success", title: "Dodano owoce!", text: `+${amount} × ${TREES.length} gatunków × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
     } else {
       setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono test_add_fruits w Supabase SQL Editor." });
     }
