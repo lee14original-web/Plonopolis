@@ -6765,40 +6765,41 @@ export default function Page() {
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
                               <div key={crop.id} className={`flex flex-col rounded-xl border p-3 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
-                                {/* Ikona z nazwą nachodzącą */}
-                                <div className="relative flex justify-center w-full mb-1">
-                                  <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
-                                  <p className={`absolute bottom-0 left-0 right-0 text-[16px] font-black leading-tight text-center px-1 py-0.5 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`} style={{textShadow:"0 1px 3px #000,0 1px 3px #000"}}>{crop.name}</p>
-                                </div>
-                                {/* Odznaki + cena w jednym rzędzie */}
-                                <div className="flex items-start justify-between w-full mb-1 gap-1">
-                                  {/* Odznaki / countdown po lewej */}
-                                  <div className="flex flex-col gap-0.5">
+                                {/* Górny rząd: promo lewo | nazwa środek | cena prawo */}
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-start w-full mb-2 gap-1">
+                                  {/* Lewa: promocja + czas */}
+                                  <div className="flex flex-col gap-0.5 items-start">
                                     {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
                                     {isSuper && !locked && (
                                       <>
                                         <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
-                                        <span className="text-[14px] text-green-400/80 font-black">{promoCountdown}</span>
+                                        <span className="text-[13px] text-green-400/80 font-black">{promoCountdown}</span>
                                       </>
                                     )}
                                     {isNormal && !locked && (
                                       <>
                                         <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
-                                        <span className="text-[14px] text-amber-400/80 font-black">{promoCountdown}</span>
+                                        <span className="text-[13px] text-amber-400/80 font-black">{promoCountdown}</span>
                                       </>
                                     )}
                                   </div>
-                                  {/* Cena po prawej */}
-                                  <div className="text-right shrink-0">
+                                  {/* Środek: nazwa */}
+                                  <p className={`text-[15px] font-black leading-tight text-center ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                  {/* Prawa: cena */}
+                                  <div className="flex flex-col items-end">
                                     {(isNormal || isSuper) && !locked ? (
                                       <>
-                                        <p className="text-[12px] text-[#8b6a3e] line-through leading-tight">{basePrice.toFixed(2)} 💰</p>
-                                        <p className={`text-[16px] font-black leading-tight ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
+                                        <p className="text-[11px] text-[#8b6a3e] line-through leading-tight">{basePrice.toFixed(2)} 💰</p>
+                                        <p className={`text-[15px] font-black leading-tight ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
                                       </>
                                     ) : (
-                                      <p className="text-[16px] font-black text-[#8b6a3e] leading-tight">{effPrice.toFixed(2)} 💰</p>
+                                      <p className="text-[15px] font-black text-[#8b6a3e] leading-tight">{effPrice.toFixed(2)} 💰</p>
                                     )}
                                   </div>
+                                </div>
+                                {/* Ikona wyśrodkowana */}
+                                <div className="flex justify-center w-full mb-2">
+                                  <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
                                 </div>
                                 {/* Masz — dół wycentrowane */}
                                 <p className="text-[16px] font-bold text-emerald-400 text-center mb-2">Masz: {owned}</p>
