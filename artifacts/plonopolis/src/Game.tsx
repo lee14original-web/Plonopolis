@@ -7972,12 +7972,18 @@ export default function Page() {
                       <p className="text-[10px] text-[#8b6a3e]/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
 
                       {/* Preview szans nagrody */}
-                      <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-2.5">
-                        <div className="flex flex-wrap gap-1.5 mb-2">
+                      <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2">
+                        <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Szanse na nagrodę</p>
+                        <div className="flex gap-2 flex-wrap">
                           {currentTierChances.map((chance, i) => chance > 0 && (
                             <div
                               key={i}
-                              className="flex items-center gap-1 rounded-lg px-2 py-0.5 bg-black/30 border border-white/5 cursor-help hover:brightness-125 transition"
+                              className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 cursor-help hover:scale-105 transition"
+                              style={{
+                                background: `${ITEM_TIER_RARITY[i].border}18`,
+                                border: `1px solid ${ITEM_TIER_RARITY[i].border}70`,
+                                boxShadow: `0 0 8px ${ITEM_TIER_RARITY[i].shadow}`
+                              }}
                               onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
                                 const minLvl = i * 5 + 1;
@@ -7998,9 +8004,9 @@ export default function Page() {
                                 setKompostTierHoverTip({ x: rect.left + rect.width / 2, y: rect.bottom, node: tipNode, color: rarity.border });
                               }}
                               onMouseLeave={() => setKompostTierHoverTip(null)}>
-                              <span className="text-[10px]">{ITEM_TIER_RARITY[i].dot}</span>
-                              <span className="text-[10px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>I{i+1}:</span>
-                              <span className="text-[11px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                              <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
+                              <span className="text-[17px] font-black leading-tight" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                              <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
                             </div>
                           ))}
                         </div>
