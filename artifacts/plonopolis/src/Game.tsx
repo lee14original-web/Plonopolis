@@ -7974,6 +7974,9 @@ export default function Page() {
                       {/* Preview szans nagrody */}
                       <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2">
                         <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Szanse na nagrodę</p>
+                        {readyRewards > 0 ? (
+                          <p className="text-[11px] text-[#8b6a3e] italic py-1">Odbierz gotowe nagrody, żeby zobaczyć szanse nowej partii.</p>
+                        ) : (
                         <div className="flex gap-2 flex-wrap">
                           {currentTierChances.map((chance, i) => chance > 0 && (
                             <div
@@ -8010,6 +8013,7 @@ export default function Page() {
                             </div>
                           ))}
                         </div>
+                        )}
                       </div>
 
                       {/* Bonus różnorodności */}
