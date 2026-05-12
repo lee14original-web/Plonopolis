@@ -179,19 +179,19 @@ function parseQualityKey(key: string): { baseCropId: string; quality: CropQualit
 }
 
 const SKINS_MALE = [
-  "/avatar_m1.png","/avatar_m2.png","/avatar_m3.png","/avatar_m4.png","/avatar_m5.png",
-  "/avatar_m6.png","/avatar_m7.png","/avatar_m8.png","/avatar_m9.png","/avatar_m10.png",
+  "/avatary/avatar_m1.png","/avatary/avatar_m2.png","/avatary/avatar_m3.png","/avatary/avatar_m4.png","/avatary/avatar_m5.png",
+  "/avatary/avatar_m6.png","/avatary/avatar_m7.png","/avatary/avatar_m8.png","/avatary/avatar_m9.png","/avatary/avatar_m10.png",
 ];
 const SKINS_FEMALE = [
-  "/avatar_f1.png","/avatar_f2.png","/avatar_f3.png","/avatar_f4.png","/avatar_f5.png",
-  "/avatar_f6.png","/avatar_f7.png","/avatar_f8.png","/avatar_f9.png","/avatar_f10.png",
+  "/avatary/avatar_f1.png","/avatary/avatar_f2.png","/avatary/avatar_f3.png","/avatary/avatar_f4.png","/avatary/avatar_f5.png",
+  "/avatary/avatar_f6.png","/avatary/avatar_f7.png","/avatary/avatar_f8.png","/avatary/avatar_f9.png","/avatary/avatar_f10.png",
 ];
 const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] = [
-  { path: "/avatar_epic1.png", name: "Król Marchewek", cost: { "carrot_good": 500 } },
-  { path: "/avatar_epic2.png", name: "Zielona Moc",    cost: { "carrot_epic": 20 } },
-  { path: "/avatar_epic3.png", name: "Plon Bogów",     cost: { "carrot_legendary": 1 } },
-  { path: "/avatar_epic4.png", name: "Władca Pól",     cost: { "potato_epic": 5, "carrot_epic": 5 } },
-  { path: "/avatar_epic5.png", name: "Legenda Farmy",  cost: { "potato_legendary": 1 } },
+  { path: "/avatary/avatar_epic1.png", name: "Król Marchewek", cost: { "carrot_good": 500 } },
+  { path: "/avatary/avatar_epic2.png", name: "Zielona Moc",    cost: { "carrot_epic": 20 } },
+  { path: "/avatary/avatar_epic3.png", name: "Plon Bogów",     cost: { "carrot_legendary": 1 } },
+  { path: "/avatary/avatar_epic4.png", name: "Władca Pól",     cost: { "potato_epic": 5, "carrot_epic": 5 } },
+  { path: "/avatary/avatar_epic5.png", name: "Legenda Farmy",  cost: { "potato_legendary": 1 } },
 ];
 const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
@@ -285,12 +285,12 @@ function mergeAvatarBonus(base: PlayerStatsMap, skin: number): PlayerStatsMap {
 // (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
 // niż faktyczny efekt w `getEffectiveGrowthTimeMs`.
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/skill_wiedza.png",    desc: "Rośliny rosną szybciej", rate: 0.0033, unlockLevel: 1  },
-  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/skill_zrecznosc.png", desc: "Podwójny zbiór",         rate: 0.004,  unlockLevel: 1  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1  },
-  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/skill_sadownik.png",  desc: "Zysk z drzew",           rate: 0.005,  unlockLevel: 10 },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/skill_szczescie.png", desc: "Bonusowy drop",          rate: 0.0025, unlockLevel: 1  },
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/ekwipunek/skill_wiedza.png",    desc: "Rośliny rosną szybciej", rate: 0.0033, unlockLevel: 1  },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/ekwipunek/skill_zrecznosc.png", desc: "Podwójny zbiór",         rate: 0.004,  unlockLevel: 1  },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/ekwipunek/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1  },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/ekwipunek/skill_sadownik.png",  desc: "Zysk z drzew",           rate: 0.005,  unlockLevel: 10 },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/ekwipunek/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/ekwipunek/skill_szczescie.png", desc: "Bonusowy drop",          rate: 0.0025, unlockLevel: 1  },
 ];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
@@ -5902,7 +5902,7 @@ export default function Page() {
                                           onMouseLeave={() => setCardTip(null)}>
                                           <div className="relative h-16 w-16 flex items-center justify-center">
                                             <span className="text-4xl leading-none">{it.icon}</span>
-                                            <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                            <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                           </div>
                                           <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
                                           <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
@@ -5911,14 +5911,14 @@ export default function Page() {
                                     })}
                                     {hasEmptyJars && (
                                       <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
-                                        <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <img src="/przedmioty/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
                                         <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
                                       </div>
                                     )}
                                     {hasHoneyJars && (
                                       <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
-                                        <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <img src="/przedmioty/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
                                         <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
                                       </div>
@@ -5927,7 +5927,7 @@ export default function Page() {
                                       <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                         onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
                                         onMouseLeave={() => setCardTip(null)}>
-                                        <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
                                         <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
                                           <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
@@ -6019,7 +6019,7 @@ export default function Page() {
                                       )}
                                       <div className="relative h-16 w-16 flex items-center justify-center">
                                         <span className="text-4xl leading-none">{tree.fruitIcon}</span>
-                                        <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                        <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                       </div>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
@@ -6740,10 +6740,10 @@ export default function Page() {
                     )}
                     {shopTab === "przedmioty" && (() => {
                       const SHOP_ITEMS = [
-                        { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/beekeeper_suit.png", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
-                        { id:"jar_empty_1",    label:"Słoik × 1",         img:"/jar_pack_1.png",     desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
-                        { id:"jar_empty_8",    label:"Słoik × 8",         img:"/jar_pack_8.png",     desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
-                        { id:"jar_empty_15",   label:"Słoik × 15",        img:"/jar_pack_15.png",    desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
+                        { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/przedmioty/beekeeper_suit.png", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
+                        { id:"jar_empty_1",    label:"Słoik × 1",         img:"/przedmioty/jar_pack_1.png",     desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
+                        { id:"jar_empty_8",    label:"Słoik × 8",         img:"/przedmioty/jar_pack_8.png",     desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
+                        { id:"jar_empty_15",   label:"Słoik × 15",        img:"/przedmioty/jar_pack_15.png",    desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
                       ];
                       return (
                         <div className="flex flex-col gap-3 p-4 overflow-y-auto">
@@ -7042,7 +7042,7 @@ export default function Page() {
                                     onMouseLeave={() => setCardTip(null)}>
                                     <div className="relative h-16 w-16 flex items-center justify-center">
                                       <span className="text-4xl leading-none">{it.icon}</span>
-                                      <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                      <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                     </div>
                                     <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
                                     <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
@@ -7051,14 +7051,14 @@ export default function Page() {
                               })}
                               {hasEmptyJars && (
                                 <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
-                                  <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/przedmioty/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
                                   <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
                                 </div>
                               )}
                               {hasHoneyJars && (
                                 <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
-                                  <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/przedmioty/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
                                   <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
                                 </div>
@@ -7067,7 +7067,7 @@ export default function Page() {
                                 <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                   onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
                                   onMouseLeave={() => setCardTip(null)}>
-                                  <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
                                   <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
                                     <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
@@ -7157,7 +7157,7 @@ export default function Page() {
                                 )}
                                 <div className="relative h-16 w-16 flex items-center justify-center">
                                   <span className="text-4xl leading-none">{tree.fruitIcon}</span>
-                                  <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                  <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                 </div>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
@@ -7604,7 +7604,7 @@ export default function Page() {
                         <div className="flex flex-col gap-3">
                           {/* Grafika postaci z hitboxami — plik: public/ekwip_postac.png */}
                           <div className="relative w-full rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ aspectRatio:"1536/1024", background:"rgba(10,6,2,0.6)" }}>
-                            <img src="/ekwip_postac.png" alt="Postać" draggable={false}
+                            <img src="/ekwipunek/ekwip_postac.png" alt="Postać" draggable={false}
                               className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
                             {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
                               const box = SLOT_BOX[slot];
@@ -8366,7 +8366,7 @@ export default function Page() {
             const canCollect = honeyStarted && honeyAvailable > 0 && hiveData.empty_jars > 0 && hiveData.suit_durability > 0;
             const suitPct = Math.round((hiveData.suit_durability / 100) * 100);
             const hiveBonusPct = hlvl * 2;
-            const hiveImg = `/ul_${hlvl}.png`;
+            const hiveImg = `/ul/ul_${hlvl}.png`;
             const playerMoney = profile?.money ?? 0;
             const buyHive = async () => {
               if (!profile?.id) return;
@@ -8510,14 +8510,14 @@ export default function Page() {
                   {hlvl > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                      <img src="/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                      <img src="/przedmioty/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
                       <div>
                         <p className="text-xs text-[#8b6a3e]">Puste słoiki</p>
                         <p className="font-black text-[#f9e7b2]">{hiveData.empty_jars}</p>
                       </div>
                     </div>
                     <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                      <img src="/jar_honey.png" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                      <img src="/przedmioty/jar_honey.png" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
                       <div>
                         <p className="text-xs text-[#8b6a3e]">Słoiki z miodem</p>
                         <p className="font-black text-[#f9e7b2]">{hiveData.honey_jars}</p>
@@ -8529,7 +8529,7 @@ export default function Page() {
                   {hlvl > 0 && (
                   <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3">
                     <div className="flex items-center gap-3 mb-2">
-                      <img src="/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                      <img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                       <div className="flex-1">
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-[#dfcfab]">Strój pszczelarza</span>
