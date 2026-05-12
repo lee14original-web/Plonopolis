@@ -5902,9 +5902,9 @@ export default function Page() {
                                           onMouseLeave={() => setCardTip(null)}>
                                           <div className="relative h-16 w-16 flex items-center justify-center">
                                             <span className="text-4xl leading-none">{it.icon}</span>
-                                            <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                            <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                           </div>
-                                          <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                          
                                           <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                         </div>
                                       );
@@ -6019,7 +6019,7 @@ export default function Page() {
                                       )}
                                       <div className="relative h-16 w-16 flex items-center justify-center">
                                         <span className="text-4xl leading-none">{tree.fruitIcon}</span>
-                                        <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                        <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                       </div>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
@@ -7042,9 +7042,9 @@ export default function Page() {
                                     onMouseLeave={() => setCardTip(null)}>
                                     <div className="relative h-16 w-16 flex items-center justify-center">
                                       <span className="text-4xl leading-none">{it.icon}</span>
-                                      <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                      <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                     </div>
-                                    <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                    
                                     <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                   </div>
                                 );
@@ -7157,7 +7157,7 @@ export default function Page() {
                                 )}
                                 <div className="relative h-16 w-16 flex items-center justify-center">
                                   <span className="text-4xl leading-none">{tree.fruitIcon}</span>
-                                  <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                  <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                 </div>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
