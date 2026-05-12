@@ -5719,8 +5719,9 @@ export default function Page() {
                       </div>
                       <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                       <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl max-w-[200px]">
-                          💡 Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span>
+                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] w-[130px] h-[130px] flex flex-col items-center justify-center text-center text-[13px] text-[#dfcfab] shadow-xl gap-1">
+                          <span className="text-xl">💡</span>
+                          <span>Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span></span>
                         </div>
                       </div>
                     </div>
