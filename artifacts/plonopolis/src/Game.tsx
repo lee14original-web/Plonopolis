@@ -7975,7 +7975,32 @@ export default function Page() {
                       <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2">
                         <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Szanse na nagrodę</p>
                         {readyRewards > 0 ? (
-                          <p className="text-[11px] text-[#8b6a3e] italic py-1">Odbierz gotowe nagrody, żeby zobaczyć szanse nowej partii.</p>
+                          <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                            {readyBatchesUI.map((batch, bIdx) => {
+                              const bScore = batch.scoreSum / batch.fill;
+                              const bQuality = getCompostQualityFromScore(bScore);
+                              const bQualityDef = getCompostQualityDef(bQuality);
+                              const bTierChances = ITEM_TIER_BY_QUALITY[bQuality];
+                              return (
+                                <div key={bIdx} className="rounded-lg border border-[#8b6a3e]/30 bg-black/20 px-2 py-1.5">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[9px] font-black text-[#8b6a3e]/60 uppercase tracking-wider">Partia #{bIdx + 1}</span>
+                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ color: bQualityDef.color, border: `1px solid ${bQualityDef.border}70` }}>{bQualityDef.label}</span>
+                                    <span className="ml-auto text-[9px] text-amber-300 font-bold">🎁 {itemDropChancePct}% item</span>
+                                  </div>
+                                  <div className="flex gap-1 flex-wrap">
+                                    {bTierChances.map((chance, i) => chance > 0 && (
+                                      <div key={i} className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5"
+                                        style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}60` }}>
+                                        <span className="text-[10px]">{ITEM_TIER_RARITY[i].dot}</span>
+                                        <span className="text-[10px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         ) : (
                         <div className="flex gap-2 flex-wrap">
                           {currentTierChances.map((chance, i) => chance > 0 && (
