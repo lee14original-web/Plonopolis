@@ -3704,20 +3704,12 @@ export default function Page() {
 
   async function handleAddFruits(amount: number) {
     if (!profile?.id) return;
-    const newInv: Record<string, number> = { ...fruitInventory };
-    TREES.forEach(t => {
-      (["zwykly", "soczysty", "zloty", "zgnile"] as const).forEach(q => {
-        const k = `${t.fruitId}_${q}`;
-        newInv[k] = (newInv[k] ?? 0) + amount;
-      });
-    });
-    const { error } = await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: newInv });
-    if (!error) {
-      saveFruitInventory(newInv);
+    const { data, error } = await supabase.rpc("test_add_fruits", { p_user_id: profile.id, p_amount: amount });
+    if (!error && data) {
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
+      setMessage({ type: "success", title: "Dodano owoce!", text: `+${amount} × ${TREES.length} gatunków × 3 jakości (zwykły/soczysty/złoty).` });
     } else {
-      setMessage({ type: "error", title: "Błąd", text: error.message });
+      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono test_add_fruits w Supabase SQL Editor." });
     }
   }
 
