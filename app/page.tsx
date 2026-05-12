@@ -6772,7 +6772,7 @@ export default function Page() {
                                 {/* Ikona z nazwą nachodzącą */}
                                 <div className="relative flex justify-center w-full mb-1">
                                   <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
-                                  <p className={`absolute bottom-0 left-0 right-0 text-xs font-black leading-tight text-center px-1 py-0.5 rounded-b bg-black/50 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                  <p className={`absolute bottom-0 left-0 right-0 text-xs font-black leading-tight text-center px-1 py-0.5 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`} style={{textShadow:"0 1px 3px #000,0 1px 3px #000"}}>{crop.name}</p>
                                 </div>
                                 {/* Odznaki */}
                                 <div className="flex flex-wrap justify-center gap-0.5 mb-2">
