@@ -6769,10 +6769,11 @@ export default function Page() {
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
                               <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-rose-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
-                                {/* Ikona wyśrodkowana */}
-                                <img src={crop.spritePath} alt={crop.name} className="h-[64px] w-[64px] object-contain mb-2" style={{imageRendering:"pixelated"}} />
-                                {/* Nazwa */}
-                                <p className={`text-sm font-black leading-tight mb-1 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                {/* Ikona z nazwą nachodzącą */}
+                                <div className="relative flex justify-center w-full mb-1">
+                                  <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
+                                  <p className={`absolute bottom-0 left-0 right-0 text-xs font-black leading-tight text-center px-1 py-0.5 rounded-b bg-black/50 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                </div>
                                 {/* Odznaki */}
                                 <div className="flex flex-wrap justify-center gap-0.5 mb-2">
                                   {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
