@@ -3689,17 +3689,12 @@ export default function Page() {
 
   async function handleAddBarnItems(amount: number) {
     if (!profile?.id) return;
-    const newItems: Record<string, number> = { ...barnItems };
-    ANIMAL_ITEMS.forEach(it => {
-      newItems[it.id] = (newItems[it.id] ?? 0) + amount;
-    });
-    const { error } = await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
-    if (!error) {
-      saveBarnItems(newItems);
+    const { data, error } = await supabase.rpc("test_add_barn_items", { p_user_id: profile.id, p_amount: amount });
+    if (!error && data) {
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🐄 Dodano produkty!", text: `+${amount} każdego z ${ANIMAL_ITEMS.length} produktów ze zwierząt.` });
+      setMessage({ type: "success", title: "Dodano produkty!", text: `+${amount} × ${ANIMAL_ITEMS.length} rodzajów produktów ze zwierząt.` });
     } else {
-      setMessage({ type: "error", title: "Błąd", text: error.message });
+      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono sql_test_add_barn_items.sql w Supabase SQL Editor." });
     }
   }
 
