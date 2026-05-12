@@ -2142,6 +2142,7 @@ export default function Page() {
   const [coDuration, setCoDuration] = React.useState<24|48>(24);
   const [coLoading, setCoLoading] = React.useState(false);
   const [buyingOfferId, setBuyingOfferId] = React.useState<string|null>(null);
+  const [buyQtyMap, setBuyQtyMap] = React.useState<Record<string, number>>({});
   const [cancellingOfferId, setCancellingOfferId] = React.useState<string|null>(null);
   const [claimingReturns, setClaimingReturns] = React.useState(false);
   const [marketPickerOpen, setMarketPickerOpen] = React.useState(false);
@@ -4923,15 +4924,16 @@ export default function Page() {
     setCreateOfferOpen(false); setCoItemKey(""); setCoQty(1); setCoPrice(10); setCoDuration(24);
     await Promise.all([loadProfile(), loadMarketData()]);
   }
-  async function handleBuyOffer(offerId: string) {
+  async function handleBuyOffer(offerId: string, qty: number) {
     if (!profile) return;
     setBuyingOfferId(offerId);
-    const { data, error } = await supabase.rpc("market_buy_offer", { p_offer_id: offerId });
+    const { data, error } = await supabase.rpc("market_buy_offer", { p_offer_id: offerId, p_quantity: qty });
     setBuyingOfferId(null);
     if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
     const result = data as { error?: string; success?: boolean; item_name?: string; quantity?: number; paid?: number };
     if (result?.error) { setMessage({ type: "error", title: "Błąd zakupu", text: result.error }); return; }
-    setMessage({ type: "success", title: "Zakup udany!", text: `Kupiono: ${result.item_name} ×${result.quantity} za ${result.paid} zł.` });
+    setBuyQtyMap(prev => { const n = { ...prev }; delete n[offerId]; return n; });
+    setMessage({ type: "success", title: "Zakup udany!", text: `Kupiono: ${result.item_name} ×${result.quantity} za ${result.paid?.toLocaleString("pl-PL")} zł.` });
     await Promise.all([loadProfile(), loadMarketData()]);
   }
   async function handleCancelOffer(offerId: string) {
@@ -11409,22 +11411,49 @@ export default function Page() {
                         const timeLeft = Math.max(0, new Date(offer.expires_at).getTime() - Date.now());
                         const hoursLeft = Math.floor(timeLeft / 3600000);
                         const minsLeft  = Math.floor((timeLeft % 3600000) / 60000);
-                        const total = offer.price_per_unit * offer.quantity;
+                        const buyQty = Math.min(buyQtyMap[offer.id] ?? 1, offer.quantity);
+                        const buyTotal = offer.price_per_unit * buyQty;
                         return (
                           <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/60 bg-black/65 px-4 py-3">
                             <span className="text-2xl shrink-0">{offer.item_icon || "📦"}</span>
                             <div className="flex-1 min-w-0">
                               <p className="text-base font-bold text-[#f9e7b2] truncate">{offer.item_name}</p>
-                              <p className="text-sm font-medium text-[#f0d48a]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt. &middot; <span className="font-bold text-[#ffe082]">{total.toLocaleString("pl-PL")} zł</span></p>
+                              <p className="text-sm font-medium text-[#f0d48a]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
                               <p className="text-sm text-[#c9a96e]">{offer.seller_name ?? "Nieznany"} &middot; wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
                             </div>
                             {isOwn ? (
                               <span className="rounded-lg border border-[#c9a96e]/60 bg-black/40 px-3 py-1 text-sm font-bold text-[#c9a96e] shrink-0">Twoja</span>
                             ) : (
-                              <button type="button" disabled={buyingOfferId === offer.id}
-                                onClick={() => void handleBuyOffer(offer.id)}
-                                className="shrink-0 rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] shadow hover:brightness-110 transition disabled:opacity-50"
-                              >{buyingOfferId === offer.id ? "..." : "Kup"}</button>
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                {/* Stepper ilości */}
+                                {offer.quantity > 1 && (
+                                  <div className="flex items-center rounded-xl border border-[#8b6a3e]/60 bg-black/40 overflow-hidden">
+                                    <button type="button"
+                                      onClick={() => setBuyQtyMap(prev => ({ ...prev, [offer.id]: Math.max(1, (prev[offer.id] ?? 1) - 1) }))}
+                                      className="px-2 py-1.5 text-base font-black text-[#f0d48a] hover:bg-white/10 transition disabled:opacity-40"
+                                      disabled={buyQty <= 1}
+                                    >−</button>
+                                    <input
+                                      type="number" min={1} max={offer.quantity}
+                                      value={buyQty}
+                                      onChange={e => setBuyQtyMap(prev => ({ ...prev, [offer.id]: Math.min(offer.quantity, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                                      className="w-12 bg-transparent text-center text-sm font-bold text-[#f9e7b2] outline-none"
+                                    />
+                                    <button type="button"
+                                      onClick={() => setBuyQtyMap(prev => ({ ...prev, [offer.id]: Math.min(offer.quantity, (prev[offer.id] ?? 1) + 1) }))}
+                                      className="px-2 py-1.5 text-base font-black text-[#f0d48a] hover:bg-white/10 transition disabled:opacity-40"
+                                      disabled={buyQty >= offer.quantity}
+                                    >+</button>
+                                  </div>
+                                )}
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <button type="button" disabled={buyingOfferId === offer.id}
+                                    onClick={() => void handleBuyOffer(offer.id, buyQty)}
+                                    className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] shadow hover:brightness-110 transition disabled:opacity-50"
+                                  >{buyingOfferId === offer.id ? "..." : "Kup"}</button>
+                                  <p className="text-xs font-bold text-[#ffe082]">{buyTotal.toLocaleString("pl-PL")} zł</p>
+                                </div>
+                              </div>
                             )}
                           </div>
                         );
