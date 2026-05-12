@@ -4930,9 +4930,12 @@ export default function Page() {
     const { data, error } = await supabase.rpc("market_buy_offer", { p_offer_id: offerId, p_quantity: qty });
     setBuyingOfferId(null);
     if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
-    const result = data as { error?: string; success?: boolean; item_name?: string; quantity?: number; paid?: number };
+    const result = data as { error?: string; success?: boolean; item_name?: string; item_type?: string; item_key?: string; quantity?: number; paid?: number };
     if (result?.error) { setMessage({ type: "error", title: "Błąd zakupu", text: result.error }); return; }
     setBuyQtyMap(prev => { const n = { ...prev }; delete n[offerId]; return n; });
+    if (result?.item_type === "equipment" && result.item_key) {
+      saveOwnedEqItems({ ...ownedEqItems, [result.item_key]: true });
+    }
     setMessage({ type: "success", title: "Zakup udany!", text: `Kupiono: ${result.item_name} ×${result.quantity} za ${result.paid?.toLocaleString("pl-PL")} zł.` });
     await Promise.all([loadProfile(), loadMarketData()]);
   }
@@ -4953,8 +4956,13 @@ export default function Page() {
     const { data, error } = await supabase.rpc("market_claim_all_returns");
     setClaimingReturns(false);
     if (error) { setMessage({ type: "error", title: "Błąd odbioru", text: error.message }); return; }
-    const result = data as { error?: string; success?: boolean; gold_claimed?: number; items_claimed?: number };
+    const result = data as { error?: string; success?: boolean; gold_claimed?: number; items_claimed?: number; equipment_keys?: string[] };
     if (result?.error) { setMessage({ type: "error", title: "Błąd odbioru", text: result.error }); return; }
+    if (result?.equipment_keys && result.equipment_keys.length > 0) {
+      const next = { ...ownedEqItems };
+      result.equipment_keys.forEach(k => { next[k] = true; });
+      saveOwnedEqItems(next);
+    }
     let claimMsg = "";
     if ((result.gold_claimed ?? 0) > 0) claimMsg += `+${result.gold_claimed?.toLocaleString("pl-PL")} zł. `;
     if ((result.items_claimed ?? 0) > 0) claimMsg += `Odebrano ${result.items_claimed} szt. przedmiotów.`;

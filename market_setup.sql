@@ -8,7 +8,7 @@
 CREATE TABLE IF NOT EXISTS market_offers (
   id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   seller_id        UUID          NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  item_type        TEXT          NOT NULL CHECK (item_type IN ('crop','compost','barn_item','fruit','honey')),
+  item_type        TEXT          NOT NULL CHECK (item_type IN ('crop','compost','barn_item','fruit','honey','equipment')),
   item_key         TEXT          NOT NULL,
   item_name        TEXT          NOT NULL,
   item_icon        TEXT          NOT NULL DEFAULT '',
@@ -174,8 +174,11 @@ BEGIN
   IF p_quantity <= 0 THEN RETURN jsonb_build_object('error','Ilość musi być dodatnia'); END IF;
   IF p_price_per_unit <= 0 THEN RETURN jsonb_build_object('error','Cena musi być dodatnia'); END IF;
   IF p_duration_hours NOT IN (24, 48) THEN RETURN jsonb_build_object('error','Czas oferty: 24h lub 48h'); END IF;
-  IF p_item_type NOT IN ('crop','compost','barn_item','fruit','honey') THEN
+  IF p_item_type NOT IN ('crop','compost','barn_item','fruit','honey','equipment') THEN
     RETURN jsonb_build_object('error','Nieznany typ przedmiotu');
+  END IF;
+  IF p_item_type = 'equipment' AND p_quantity != 1 THEN
+    RETURN jsonb_build_object('error','Wyposażenie można wystawić tylko po 1 szt.');
   END IF;
 
   -- Minimalna cena (backend — frontend nie może tego ominąć)
@@ -254,6 +257,13 @@ BEGIN
       hive_data = jsonb_set(hive_data, '{honey_jars}', to_jsonb(GREATEST(0, (v_current_qty - p_quantity)::INTEGER))),
       money = money - v_ext_fee
     WHERE id = v_uid;
+
+  ELSIF p_item_type = 'equipment' THEN
+    -- Własność ekwipunku śledzona po stronie klienta (localStorage/ownedEqItems).
+    -- Serwer tworzy ofertę w dobrej wierze; frontend zdejmuje z ownedEqItems po sukcesie.
+    IF v_ext_fee > 0 THEN
+      UPDATE profiles SET money = money - v_ext_fee WHERE id = v_uid;
+    END IF;
   END IF;
 
   -- Utwórz ofertę
@@ -356,6 +366,10 @@ BEGIN
         to_jsonb(COALESCE((hive_data->>'honey_jars')::INTEGER, 0) + v_qty)
       )
     WHERE id = v_buyer_id;
+
+  ELSIF v_offer.item_type = 'equipment' THEN
+    NULL; -- Własność ekwipunku śledzona w localStorage (ownedEqItems) po stronie klienta.
+          -- Frontend odbiera item_key z odpowiedzi i sam dodaje do ownedEqItems.
   END IF;
 
   -- Aktualizuj ofertę: całkowita sprzedaż → sold, częściowa → zmniejsz ilość
@@ -390,6 +404,8 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'item_name', v_offer.item_name,
+    'item_type', v_offer.item_type,
+    'item_key', v_offer.item_key,
     'quantity', v_qty,
     'paid', v_total,
     'tax', v_tax,
@@ -426,10 +442,11 @@ $$;
 CREATE OR REPLACE FUNCTION market_claim_all_returns()
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_uid        UUID    := auth.uid();
-  v_ret        market_returns%ROWTYPE;
-  v_gold_total NUMERIC := 0;
-  v_items_cnt  INTEGER := 0;
+  v_uid          UUID    := auth.uid();
+  v_ret          market_returns%ROWTYPE;
+  v_gold_total   NUMERIC := 0;
+  v_items_cnt    INTEGER := 0;
+  v_equip_keys   TEXT[]  := '{}';
 BEGIN
   IF v_uid IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany'); END IF;
 
@@ -479,6 +496,10 @@ BEGIN
             to_jsonb(COALESCE((hive_data->>'honey_jars')::INTEGER, 0) + v_ret.quantity)
           )
         WHERE id = v_uid;
+
+      ELSIF v_ret.item_type = 'equipment' THEN
+        -- Własność ekwipunku śledzona w localStorage — zwracamy klucze do klienta
+        v_equip_keys := array_append(v_equip_keys, v_ret.item_key);
       END IF;
     END IF;
   END LOOP;
@@ -488,7 +509,12 @@ BEGIN
     UPDATE profiles SET money = money + v_gold_total WHERE id = v_uid;
   END IF;
 
-  RETURN jsonb_build_object('success', true, 'gold_claimed', v_gold_total, 'items_claimed', v_items_cnt);
+  RETURN jsonb_build_object(
+    'success', true,
+    'gold_claimed', v_gold_total,
+    'items_claimed', v_items_cnt,
+    'equipment_keys', v_equip_keys
+  );
 END;
 $$;
 
