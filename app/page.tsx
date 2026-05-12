@@ -8137,7 +8137,7 @@ export default function Page() {
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={sprite} alt={crop.name} className="w-14 h-14 object-contain" />
+                                  <img src={sprite} alt={crop.name} className="w-24 h-24 object-contain" />
                                 ) : (
                                   <span className="text-5xl">🌱</span>
                                 )}
