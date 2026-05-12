@@ -82,6 +82,42 @@ type GameMessage = {
   created_at: string;
 };
 
+// ─── TARG GRACZY ────────────────────────────────────────────────────────────
+type MarketItemType = "crop" | "compost" | "barn_item" | "fruit" | "honey";
+type MarketOffer = {
+  id: string;
+  seller_id: string;
+  seller_name?: string;
+  seller_avatar?: number | null;
+  item_type: MarketItemType;
+  item_key: string;
+  item_name: string;
+  item_icon: string;
+  quantity: number;
+  price_per_unit: number;
+  duration_hours: number;
+  status: "active" | "sold" | "expired" | "cancelled";
+  created_at: string;
+  expires_at: string;
+  sold_at?: string | null;
+  buyer_id?: string | null;
+};
+type MarketReturn = {
+  id: string;
+  user_id: string;
+  return_type: "gold" | "item";
+  item_key?: string | null;
+  item_type?: string | null;
+  item_name?: string | null;
+  item_icon?: string | null;
+  quantity: number;
+  gold_amount?: number | null;
+  reason: "sold" | "expired" | "cancelled";
+  offer_id?: string | null;
+  created_at: string;
+  claimed: boolean;
+};
+
 type FarmUpgradeModal = {
   level: number;
   title: string;
@@ -2089,6 +2125,25 @@ export default function Page() {
   const FRUIT_INV_KEY = "plonopolis_fruit_inv";
   const [fruitInventory, setFruitInventory_] = React.useState<Record<string,number>>({});
   const saveFruitInventory = (next: Record<string,number>) => { setFruitInventory_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(FRUIT_INV_KEY, uid), JSON.stringify(next)); } catch {} };
+  // ─── TARG GRACZY: stan ───────────────────────────────────────────────────────
+  const [showMarketModal, setShowMarketModal] = React.useState(false);
+  const [marketTab, setMarketTab] = React.useState<"browse"|"my_offers"|"returns">("browse");
+  const [marketBrowse, setMarketBrowse] = React.useState<MarketOffer[]>([]);
+  const [myMarketOffers, setMyMarketOffers] = React.useState<MarketOffer[]>([]);
+  const [marketReturns, setMarketReturns] = React.useState<MarketReturn[]>([]);
+  const [marketLoading, setMarketLoading] = React.useState(false);
+  const [marketBrowseFilter, setMarketBrowseFilter] = React.useState<MarketItemType|"all">("all");
+  const [pendingReturnCount, setPendingReturnCount] = React.useState(0);
+  const [createOfferOpen, setCreateOfferOpen] = React.useState(false);
+  const [coItemType, setCoItemType] = React.useState<MarketItemType>("crop");
+  const [coItemKey, setCoItemKey] = React.useState("");
+  const [coQty, setCoQty] = React.useState(1);
+  const [coPrice, setCoPrice] = React.useState(10);
+  const [coDuration, setCoDuration] = React.useState<24|48>(24);
+  const [coLoading, setCoLoading] = React.useState(false);
+  const [buyingOfferId, setBuyingOfferId] = React.useState<string|null>(null);
+  const [cancellingOfferId, setCancellingOfferId] = React.useState<string|null>(null);
+  const [claimingReturns, setClaimingReturns] = React.useState(false);
   React.useEffect(() => {
     const t = setInterval(() => setBarnNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -4676,6 +4731,171 @@ export default function Page() {
       saveDP(profile.id, _dp);
       setDailyProgress({ ..._dp });
     }
+  }
+
+  // ─── TARG GRACZY: helpery ─────────────────────────────────────────────────
+  function marketMinPrice(type: string, key: string): number {
+    if (type === "crop") {
+      if (key.endsWith("_legendary")) return 5000;
+      if (key.endsWith("_epic")) return 500;
+      if (key.endsWith("_good")) return 10;
+      return 1;
+    }
+    if (type === "compost") {
+      if (["compost_growth_15","compost_yield_3","compost_exp_30"].includes(key)) return 1000;
+      if (["compost_growth_10","compost_yield_2","compost_exp_20"].includes(key)) return 300;
+      return 50;
+    }
+    if (type === "barn_item") return 20;
+    if (type === "fruit") {
+      if (key.endsWith("_zloty")) return 500;
+      if (key.endsWith("_soczysty")) return 100;
+      if (key.endsWith("_zgnile")) return 1;
+      return 20;
+    }
+    if (type === "honey") return 100;
+    return 1;
+  }
+  function marketItemLabel(type: string, key: string): { name: string; icon: string } {
+    if (type === "crop") {
+      const { baseCropId, quality } = parseQualityKey(key);
+      const crop = CROPS.find(c => c.id === baseCropId);
+      const qDef = quality ? CROP_QUALITY_DEFS[quality] : null;
+      return { name: `${crop?.name ?? baseCropId} (${qDef?.label ?? quality ?? ""})`, icon: qDef?.badge ?? "" };
+    }
+    if (type === "compost") {
+      const ct = compostTypeFromKey(key);
+      const val = compostValueFromKey(key);
+      if (ct) { const def = COMPOST_DEFS[ct]; return { name: `${def.name} (${def.tierName(val)})`, icon: def.icon }; }
+      return { name: key, icon: "🌿" };
+    }
+    if (type === "barn_item") {
+      const ai = ANIMAL_ITEMS.find(a => a.id === key);
+      return { name: ai?.name ?? key, icon: ai?.icon ?? "🐾" };
+    }
+    if (type === "fruit") {
+      const qualSuffix = (["_zloty","_soczysty","_zgnile","_zwykly"] as const).find(s => key.endsWith(s));
+      if (qualSuffix) {
+        const treeId = key.slice(0, -qualSuffix.length);
+        const tree = TREES.find(t => t.id === treeId);
+        const qDef = FRUIT_QUALITY_DEFS[qualSuffix.slice(1) as FruitQuality];
+        return { name: `${tree?.fruitName ?? treeId} (${qDef?.label ?? ""})`, icon: (tree?.fruitIcon ?? "🍎") + (qDef?.icon ?? "") };
+      }
+      return { name: key, icon: "🍎" };
+    }
+    if (type === "honey") return { name: "Słoik miodu", icon: "🍯" };
+    return { name: key, icon: "📦" };
+  }
+  function buildSellableItems() {
+    const items: { type: MarketItemType; key: string; name: string; icon: string; qty: number; minPrice: number }[] = [];
+    Object.entries(seedInventory).forEach(([key, qty]) => {
+      if ((qty as number) <= 0) return;
+      const iType: MarketItemType = isCompostKey(key) ? "compost" : "crop";
+      const { name, icon } = marketItemLabel(iType, key);
+      items.push({ type: iType, key, name, icon, qty: qty as number, minPrice: marketMinPrice(iType, key) });
+    });
+    Object.entries(barnItems).forEach(([key, qty]) => {
+      if ((qty as number) <= 0) return;
+      const { name, icon } = marketItemLabel("barn_item", key);
+      items.push({ type: "barn_item", key, name, icon, qty: qty as number, minPrice: 20 });
+    });
+    Object.entries(fruitInventory).forEach(([key, qty]) => {
+      if ((qty as number) <= 0) return;
+      const { name, icon } = marketItemLabel("fruit", key);
+      items.push({ type: "fruit", key, name, icon, qty: qty as number, minPrice: marketMinPrice("fruit", key) });
+    });
+    const honeyJars = typeof (profile?.hive_data as Record<string,unknown> | null | undefined)?.honey_jars === "number"
+      ? (profile!.hive_data as Record<string,unknown>).honey_jars as number : 0;
+    if (honeyJars > 0) {
+      items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", qty: honeyJars, minPrice: 100 });
+    }
+    return items;
+  }
+  async function loadMarketData() {
+    if (!profile) return;
+    setMarketLoading(true);
+    try {
+      const filterParam = marketBrowseFilter === "all" ? null : marketBrowseFilter;
+      const [browseRes, myOffersRes, returnsRes] = await Promise.all([
+        supabase.rpc("market_browse", { p_item_type: filterParam }),
+        supabase.rpc("market_get_my_offers"),
+        supabase.rpc("market_get_returns"),
+      ]);
+      if (browseRes.data) setMarketBrowse(Array.isArray(browseRes.data) ? browseRes.data as MarketOffer[] : []);
+      if (myOffersRes.data) setMyMarketOffers(Array.isArray(myOffersRes.data) ? myOffersRes.data as MarketOffer[] : []);
+      if (returnsRes.data) {
+        const ret = Array.isArray(returnsRes.data) ? returnsRes.data as MarketReturn[] : [];
+        setMarketReturns(ret);
+        setPendingReturnCount(ret.length);
+      }
+    } finally {
+      setMarketLoading(false);
+    }
+  }
+  async function handleMarketBrowseFilter(filter: MarketItemType | "all") {
+    setMarketBrowseFilter(filter);
+    setMarketLoading(true);
+    try {
+      const { data } = await supabase.rpc("market_browse", { p_item_type: filter === "all" ? null : filter });
+      setMarketBrowse(Array.isArray(data) ? data as MarketOffer[] : []);
+    } finally {
+      setMarketLoading(false);
+    }
+  }
+  async function handleCreateOffer() {
+    if (!profile || !coItemKey) return;
+    const minP = marketMinPrice(coItemType, coItemKey);
+    if (coPrice < minP) { setMessage({ type: "error", title: "Zbyt niska cena", text: `Minimalna cena: ${minP} zł/szt.` }); return; }
+    if (coQty <= 0) { setMessage({ type: "error", title: "Błąd", text: "Ilość musi być dodatnia." }); return; }
+    setCoLoading(true);
+    const { name, icon } = marketItemLabel(coItemType, coItemKey);
+    const { data, error } = await supabase.rpc("market_create_offer", {
+      p_item_type: coItemType, p_item_key: coItemKey, p_item_name: name, p_item_icon: icon,
+      p_quantity: coQty, p_price_per_unit: coPrice, p_duration_hours: coDuration,
+    });
+    setCoLoading(false);
+    if (error) { setMessage({ type: "error", title: "Błąd wystawienia", text: error.message }); return; }
+    const result = data as { error?: string; success?: boolean };
+    if (result?.error) { setMessage({ type: "error", title: "Błąd wystawienia", text: result.error }); return; }
+    setMessage({ type: "success", title: "Oferta wystawiona!", text: `${name} ×${coQty} za ${coPrice} zł/szt.` });
+    setCreateOfferOpen(false); setCoItemKey(""); setCoQty(1); setCoPrice(10); setCoDuration(24);
+    await Promise.all([loadProfile(), loadMarketData()]);
+  }
+  async function handleBuyOffer(offerId: string) {
+    if (!profile) return;
+    setBuyingOfferId(offerId);
+    const { data, error } = await supabase.rpc("market_buy_offer", { p_offer_id: offerId });
+    setBuyingOfferId(null);
+    if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
+    const result = data as { error?: string; success?: boolean; item_name?: string; quantity?: number; paid?: number };
+    if (result?.error) { setMessage({ type: "error", title: "Błąd zakupu", text: result.error }); return; }
+    setMessage({ type: "success", title: "Zakup udany!", text: `Kupiono: ${result.item_name} ×${result.quantity} za ${result.paid} zł.` });
+    await Promise.all([loadProfile(), loadMarketData()]);
+  }
+  async function handleCancelOffer(offerId: string) {
+    if (!profile) return;
+    setCancellingOfferId(offerId);
+    const { data, error } = await supabase.rpc("market_cancel_offer", { p_offer_id: offerId });
+    setCancellingOfferId(null);
+    if (error) { setMessage({ type: "error", title: "Błąd anulowania", text: error.message }); return; }
+    const result = data as { error?: string; success?: boolean };
+    if (result?.error) { setMessage({ type: "error", title: "Błąd anulowania", text: result.error }); return; }
+    setMessage({ type: "success", title: "Oferta anulowana", text: "Przedmiot trafi do zakładki Do Odbioru." });
+    await loadMarketData();
+  }
+  async function handleClaimAllReturns() {
+    if (!profile) return;
+    setClaimingReturns(true);
+    const { data, error } = await supabase.rpc("market_claim_all_returns");
+    setClaimingReturns(false);
+    if (error) { setMessage({ type: "error", title: "Błąd odbioru", text: error.message }); return; }
+    const result = data as { error?: string; success?: boolean; gold_claimed?: number; items_claimed?: number };
+    if (result?.error) { setMessage({ type: "error", title: "Błąd odbioru", text: result.error }); return; }
+    let claimMsg = "";
+    if ((result.gold_claimed ?? 0) > 0) claimMsg += `+${result.gold_claimed?.toLocaleString("pl-PL")} zł. `;
+    if ((result.items_claimed ?? 0) > 0) claimMsg += `Odebrano ${result.items_claimed} szt. przedmiotów.`;
+    setMessage({ type: "success", title: "Odebrano!", text: claimMsg || "Odebrano wszystko z targu." });
+    await Promise.all([loadProfile(), loadMarketData()]);
   }
 
   async function handleChangeMap(targetMap: string) {
@@ -11056,6 +11276,324 @@ export default function Page() {
           </>}
         </div>
       )}
+
+      {/* ─── TARG GRACZY: przycisk wejścia (widoczny tylko na city_market) ─── */}
+      {profile && currentMap === "city_market" && !showMarketModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-[80] pointer-events-none">
+          <div className="pointer-events-auto flex flex-col items-center gap-3">
+            <button
+              type="button"
+              onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
+              className="px-10 py-5 rounded-2xl border-2 border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-2xl font-black text-[#2f1b0c] shadow-2xl hover:brightness-110 transition"
+            >
+              Wejdz na Targ
+            </button>
+            {pendingReturnCount > 0 && (
+              <span className="rounded-xl bg-[#ef4444] px-3 py-1.5 text-sm font-black text-white shadow-lg">
+                {pendingReturnCount} {pendingReturnCount === 1 ? "rzecz" : "rzeczy"} do odbioru
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
+      {showMarketModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,5,0.98)] shadow-2xl mx-2">
+            {/* Nagłówek */}
+            <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[#d8ba7a] opacity-80">Miasto</p>
+                <h2 className="text-2xl font-black text-[#f9e7b2]">Targ Graczy</h2>
+              </div>
+              <button type="button" onClick={() => setShowMarketModal(false)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#8b6a3e] text-[#dfcfab] hover:bg-[rgba(80,50,20,0.5)] transition font-bold text-xl">X</button>
+            </div>
+            {/* Zakładki */}
+            <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/40 bg-black/20 px-4 pt-3 pb-0">
+              {([
+                { id: "browse" as const,    label: "Przeglądaj" },
+                { id: "my_offers" as const, label: "Moje Oferty" },
+                { id: "returns" as const,   label: `Do Odbioru${pendingReturnCount > 0 ? ` (${pendingReturnCount})` : ""}` },
+              ]).map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setMarketTab(t.id)}
+                  className={`rounded-t-xl px-5 py-2 text-sm font-bold transition ${marketTab === t.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "text-[#dfcfab] hover:bg-white/5"} ${t.id === "returns" && pendingReturnCount > 0 ? "!text-[#fbbf24]" : ""}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <button type="button" onClick={() => void loadMarketData()} disabled={marketLoading} className="ml-auto mb-1 rounded-xl border border-[#8b6a3e]/50 px-3 py-1 text-xs text-[#dfcfab] hover:bg-white/5 transition disabled:opacity-40">
+                {marketLoading ? "Wczytuję..." : "Odswież"}
+              </button>
+            </div>
+
+            {/* Treść */}
+            <div className="flex-1 overflow-y-auto p-4">
+
+              {/* ── PRZEGLĄDAJ ── */}
+              {marketTab === "browse" && (
+                <div>
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    {([
+                      { id: "all" as const,       label: "Wszystkie" },
+                      { id: "crop" as const,       label: "Uprawy" },
+                      { id: "compost" as const,    label: "Kompost" },
+                      { id: "barn_item" as const,  label: "Zwierzeta" },
+                      { id: "fruit" as const,      label: "Owoce" },
+                      { id: "honey" as const,      label: "Miod" },
+                    ]).map(f => (
+                      <button key={f.id} type="button"
+                        onClick={() => void handleMarketBrowseFilter(f.id)}
+                        className={`rounded-xl px-3 py-1 text-xs font-bold transition ${marketBrowseFilter === f.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#8b6a3e]/50 text-[#dfcfab] hover:bg-white/5"}`}
+                      >{f.label}</button>
+                    ))}
+                  </div>
+                  {marketLoading && <p className="py-10 text-center text-[#dfcfab]">Wczytuję oferty...</p>}
+                  {!marketLoading && marketBrowse.length === 0 && (
+                    <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-10 text-center text-[#dfcfab]">
+                      Brak aktywnych ofert w tej kategorii.
+                    </div>
+                  )}
+                  {!marketLoading && marketBrowse.length > 0 && (
+                    <div className="space-y-2">
+                      {marketBrowse.map(offer => {
+                        const isOwn = offer.seller_id === profile?.id;
+                        const timeLeft = Math.max(0, new Date(offer.expires_at).getTime() - Date.now());
+                        const hoursLeft = Math.floor(timeLeft / 3600000);
+                        const minsLeft  = Math.floor((timeLeft % 3600000) / 60000);
+                        const total = offer.price_per_unit * offer.quantity;
+                        return (
+                          <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                            <span className="text-2xl shrink-0">{offer.item_icon || "📦"}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-[#f3e6c8] truncate">{offer.item_name}</p>
+                              <p className="text-xs text-[#dfcfab]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt. &middot; <span className="font-bold text-[#f9e7b2]">{total.toLocaleString("pl-PL")} zł</span></p>
+                              <p className="text-xs text-[#8b6a3e]">{offer.seller_name ?? "Nieznany"} &middot; wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
+                            </div>
+                            {isOwn ? (
+                              <span className="rounded-lg border border-[#8b6a3e]/40 px-3 py-1 text-xs text-[#8b6a3e] shrink-0">Twoja</span>
+                            ) : (
+                              <button type="button" disabled={buyingOfferId === offer.id}
+                                onClick={() => void handleBuyOffer(offer.id)}
+                                className="shrink-0 rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] shadow hover:brightness-110 transition disabled:opacity-50"
+                              >{buyingOfferId === offer.id ? "..." : "Kup"}</button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── MOJE OFERTY ── */}
+              {marketTab === "my_offers" && (() => {
+                const activeOffers  = myMarketOffers.filter(o => o.status === "active");
+                const historyOffers = myMarketOffers.filter(o => o.status !== "active");
+                const lvl = profile?.level ?? 1;
+                const maxOffers = lvl >= 25 ? 10 : lvl >= 20 ? 8 : lvl >= 10 ? 5 : 3;
+                return (
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-sm text-[#dfcfab]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-xs text-[#8b6a3e]">(poziom {lvl})</span></p>
+                      {activeOffers.length < maxOffers && (
+                        <button type="button" onClick={() => setCreateOfferOpen(true)}
+                          className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition"
+                        >+ Dodaj ofertę</button>
+                      )}
+                    </div>
+
+                    {/* Formularz nowej oferty */}
+                    {createOfferOpen && (() => {
+                      const sellable     = buildSellableItems();
+                      const selectedItem = sellable.find(i => i.key === coItemKey && i.type === coItemType);
+                      const maxQty       = selectedItem?.qty ?? 1;
+                      const minP         = marketMinPrice(coItemType, coItemKey);
+                      const total        = coQty * coPrice;
+                      const sellerGets   = Math.round(total * 0.9);
+                      const extFee       = coDuration === 48 ? Math.round(total * 0.05) : 0;
+                      return (
+                        <div className="mb-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="font-bold text-[#d8ba7a]">Nowa oferta</p>
+                            <button type="button" onClick={() => setCreateOfferOpen(false)} className="text-[#dfcfab] hover:text-white font-bold">X</button>
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Przedmiot</label>
+                            {sellable.length === 0 ? (
+                              <p className="text-sm text-[#8b6a3e]">Brak przedmiotów do wystawienia.</p>
+                            ) : (
+                              <select
+                                value={coItemKey ? `${coItemType}::${coItemKey}` : ""}
+                                onChange={e => {
+                                  const [t, k] = e.target.value.split("::");
+                                  setCoItemType(t as MarketItemType); setCoItemKey(k); setCoQty(1);
+                                  const it = sellable.find(i => i.key === k && i.type === t);
+                                  setCoPrice(it ? it.minPrice : 10);
+                                }}
+                                className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
+                              >
+                                <option value="">— wybierz —</option>
+                                {sellable.map(i => (
+                                  <option key={`${i.type}::${i.key}`} value={`${i.type}::${i.key}`}>
+                                    {i.icon} {i.name} (masz: {i.qty} szt.)
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                          {coItemKey && (
+                            <>
+                              <div className="flex gap-3">
+                                <div className="flex-1">
+                                  <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Ilość (max {maxQty})</label>
+                                  <input type="number" min={1} max={maxQty} value={coQty}
+                                    onChange={e => setCoQty(Math.min(maxQty, Math.max(1, parseInt(e.target.value)||1)))}
+                                    className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Cena/szt. (min {minP} zł)</label>
+                                  <input type="number" min={minP} value={coPrice}
+                                    onChange={e => setCoPrice(Math.max(minP, parseInt(e.target.value)||minP))}
+                                    className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Czas trwania</label>
+                                <div className="flex gap-2">
+                                  {([24, 48] as const).map(d => (
+                                    <button key={d} type="button" onClick={() => setCoDuration(d)}
+                                      className={`flex-1 rounded-xl border py-2 text-sm font-bold transition ${coDuration === d ? "border-[#f4cf78] bg-[rgba(242,202,105,0.15)] text-[#f9e7b2]" : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"}`}
+                                    >{d === 24 ? "24h (darmowe)" : `48h (+${extFee > 0 ? extFee.toLocaleString("pl-PL") : "5%"} zł opłaty)`}</button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[#8b6a3e]/30 p-3 text-xs text-[#dfcfab] space-y-1">
+                                <p>Łączna cena: <span className="text-[#f9e7b2] font-bold">{total.toLocaleString("pl-PL")} zł</span></p>
+                                <p>Podatek rynku (10%): <span className="text-[#fca5a5]">-{Math.round(total*0.1).toLocaleString("pl-PL")} zł</span></p>
+                                {extFee > 0 && <p>Opłata za 48h (5%): <span className="text-[#fca5a5]">-{extFee.toLocaleString("pl-PL")} zł</span></p>}
+                                <p>Otrzymasz po sprzedaży: <span className="text-[#86efac] font-bold">{sellerGets.toLocaleString("pl-PL")} zł</span></p>
+                              </div>
+                              <button type="button"
+                                disabled={coLoading || !coItemKey || coQty <= 0 || coPrice < minP}
+                                onClick={() => void handleCreateOffer()}
+                                className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] py-3 font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-50"
+                              >{coLoading ? "Wystawianie..." : "Wystaw ofertę"}</button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Lista aktywnych ofert */}
+                    {activeOffers.length === 0 && !createOfferOpen && (
+                      <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-8 text-center text-[#dfcfab]">Nie masz aktywnych ofert.</div>
+                    )}
+                    {activeOffers.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <p className="text-xs uppercase tracking-wider text-[#8b6a3e] mb-1">Aktywne</p>
+                        {activeOffers.map(offer => {
+                          const timeLeft = Math.max(0, new Date(offer.expires_at).getTime() - Date.now());
+                          const hoursLeft = Math.floor(timeLeft / 3600000);
+                          const minsLeft  = Math.floor((timeLeft % 3600000) / 60000);
+                          return (
+                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                              <span className="text-xl shrink-0">{offer.item_icon || "📦"}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-[#f3e6c8] truncate">{offer.item_name}</p>
+                                <p className="text-xs text-[#dfcfab]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
+                                <p className="text-xs text-[#8b6a3e]">wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
+                              </div>
+                              <button type="button" disabled={cancellingOfferId === offer.id}
+                                onClick={() => void handleCancelOffer(offer.id)}
+                                className="shrink-0 rounded-xl border border-[#8b6a3e] px-3 py-2 text-xs text-[#dfcfab] hover:bg-[rgba(80,50,20,0.5)] transition disabled:opacity-50"
+                              >{cancellingOfferId === offer.id ? "..." : "Anuluj"}</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Historia */}
+                    {historyOffers.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-wider text-[#8b6a3e] mb-1">Historia</p>
+                        {historyOffers.slice(0, 20).map(offer => {
+                          const statusColor = offer.status === "sold" ? "#86efac" : offer.status === "expired" ? "#fca5a5" : "#d8ba7a";
+                          const statusLabel = offer.status === "sold" ? "Sprzedano" : offer.status === "expired" ? "Wygasła" : "Anulowano";
+                          return (
+                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/20 bg-[rgba(255,255,255,0.01)] px-4 py-2 opacity-70">
+                              <span className="text-lg shrink-0">{offer.item_icon || "📦"}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-[#dfcfab] truncate">{offer.item_name}</p>
+                                <p className="text-xs text-[#8b6a3e]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
+                              </div>
+                              <span className="text-xs font-bold shrink-0" style={{ color: statusColor }}>{statusLabel}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ── DO ODBIORU ── */}
+              {marketTab === "returns" && (
+                <div>
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm text-[#dfcfab]">Czeka na odbiór: <span className="font-bold text-[#f9e7b2]">{marketReturns.length}</span></p>
+                    {marketReturns.length > 0 && (
+                      <button type="button" disabled={claimingReturns}
+                        onClick={() => void handleClaimAllReturns()}
+                        className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-50"
+                      >{claimingReturns ? "Odbieram..." : "Odbierz wszystko"}</button>
+                    )}
+                  </div>
+                  {marketReturns.length === 0 && (
+                    <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-10 text-center text-[#dfcfab]">
+                      Nic tu nie czeka. Sprzedaj coś na targu albo anuluj ofertę.
+                    </div>
+                  )}
+                  {marketReturns.length > 0 && (
+                    <div className="space-y-2">
+                      {marketReturns.map(ret => {
+                        const reasonLabel = ret.reason === "sold" ? "Sprzedano" : ret.reason === "expired" ? "Wygasła" : "Anulowano";
+                        const reasonColor = ret.reason === "sold" ? "#86efac" : ret.reason === "expired" ? "#fca5a5" : "#d8ba7a";
+                        return (
+                          <div key={ret.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                            <span className="text-2xl shrink-0">{ret.return_type === "gold" ? "💰" : (ret.item_icon || "📦")}</span>
+                            <div className="flex-1">
+                              {ret.return_type === "gold" ? (
+                                <>
+                                  <p className="font-bold text-[#f9e7b2]">+{(ret.gold_amount ?? 0).toLocaleString("pl-PL")} zł</p>
+                                  <p className="text-xs" style={{ color: reasonColor }}>{reasonLabel}</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-bold text-[#f3e6c8]">{ret.item_name ?? ret.item_key} x{ret.quantity}</p>
+                                  <p className="text-xs" style={{ color: reasonColor }}>{reasonLabel}</p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
       </main>
   );
 }  
