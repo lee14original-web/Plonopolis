@@ -8040,6 +8040,7 @@ export default function Page() {
                             })}
                           </div>
                         ) : (
+                        <>
                         <div className="flex gap-2 flex-wrap">
                           {currentTierChances.map((chance, i) => chance > 0 && (
                             <div
@@ -8076,21 +8077,21 @@ export default function Page() {
                             </div>
                           ))}
                         </div>
-                        {currentBatch.fill > 0 && (() => {
-                          const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
-                          const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                          const cChance = 100 - itemDropChancePct;
-                          return (
-                            <div className="flex items-center gap-1 flex-wrap mt-2">
-                              <span className="text-[9px] text-[#8b6a3e]/60">🌱 {cChance}% kompost:</span>
-                              {(["growth","yield","exp"] as const).map(ct => (
+                        {currentBatch.fill > 0 && (
+                          <div className="flex items-center gap-1 flex-wrap mt-2">
+                            <span className="text-[9px] text-[#8b6a3e]/60">🌱 {100 - itemDropChancePct}% kompost:</span>
+                            {(["growth","yield","exp"] as const).map(ct => {
+                              const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
+                              const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
+                              return (
                                 <span key={ct} className="text-[9px] font-bold" style={{ color: cColor }}>
                                   {COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}
                                 </span>
-                              ))}
-                            </div>
-                          );
-                        })()}
+                              );
+                            })}
+                          </div>
+                        )}
+                        </>
                         )}
                       </div>
 
