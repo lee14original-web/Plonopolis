@@ -43,6 +43,8 @@ type Profile = {
   barn_items?: Record<string, number> | null;
   fruit_inventory?: Record<string, number> | null;
   plot_obstacles?: Record<string, { type: string; cost: number }> | null;
+  orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
+  barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -193,6 +195,91 @@ const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] 
 ];
 const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
+
+// ─── BONUSY STARTOWE AVATARÓW ────────────────────────────────────────────────
+const AVATAR_BONUSES: Record<number, Partial<PlayerStatsMap>> = {
+  // Mężczyźni (0-9)
+  0:  { wiedza:4, opieka:3, szczescie:3 },
+  1:  { zrecznosc:5, zaradnosc:3, wiedza:2 },
+  2:  { wiedza:6, zaradnosc:2, szczescie:2 },
+  3:  { zrecznosc:4, szczescie:4, wiedza:2 },
+  4:  { zaradnosc:5, wiedza:3, sadownik:2 },
+  5:  { wiedza:5, zrecznosc:3, zaradnosc:2 },
+  6:  { sadownik:6, szczescie:2, wiedza:2 },
+  7:  { opieka:6, szczescie:2, zaradnosc:2 },
+  8:  { szczescie:6, zrecznosc:2, opieka:2 },
+  9:  { opieka:4, zrecznosc:3, szczescie:3 },
+  // Kobiety (10-19)
+  10: { opieka:5, szczescie:3, zaradnosc:2 },
+  11: { wiedza:5, zrecznosc:3, zaradnosc:2 },
+  12: { sadownik:4, wiedza:3, szczescie:3 },
+  13: { zaradnosc:4, wiedza:3, opieka:3 },
+  14: { wiedza:6, szczescie:2, zrecznosc:2 },
+  15: { wiedza:3, zrecznosc:3, zaradnosc:2, szczescie:2 },
+  16: { szczescie:5, zaradnosc:3, sadownik:2 },
+  17: { zrecznosc:5, wiedza:3, zaradnosc:2 },
+  18: { opieka:6, szczescie:2, zaradnosc:2 },
+  19: { wiedza:4, opieka:3, sadownik:3 },
+  // Epickie (20-24)
+  20: { wiedza:12, szczescie:10, zrecznosc:8 },
+  21: { zaradnosc:12, szczescie:10, sadownik:8 },
+  22: { wiedza:6, zrecznosc:6, zaradnosc:6, sadownik:6, opieka:3, szczescie:3 },
+  23: { zrecznosc:14, wiedza:10, szczescie:6 },
+  24: { opieka:14, sadownik:8, szczescie:8 },
+};
+const AVATAR_META: Record<number, { name: string; style: string }> = {
+  0:  { name:"Stary Farmer",              style:"zbalansowany farmer"     },
+  1:  { name:"Farmer z widlami",          style:"szybki zbior"            },
+  2:  { name:"Farmer z rzodkiewkami",     style:"mistrz upraw"            },
+  3:  { name:"Mlody farmer",              style:"szybkosc i lupy"         },
+  4:  { name:"Kierowca traktora",         style:"ekonomia"                },
+  5:  { name:"Farmer w kombajnie",          style:"specjalista pol"         },
+  6:  { name:"Sadownik",                  style:"sad i drzewa"            },
+  7:  { name:"Hodowca",                   style:"hodowla zwierzat"        },
+  8:  { name:"Chlopiec z kotem",          style:"rzadkie dropy"           },
+  9:  { name:"Farmer przy kurach",        style:"poczatkujacy hodowca"    },
+  10: { name:"Farmerka z pieskiem",       style:"zwierzeta i szczescie"   },
+  11: { name:"Farmerka z motyka",         style:"szybkie farmienie"       },
+  12: { name:"Ogrodniczka z kwiatami",    style:"sad i kwiaty"            },
+  13: { name:"Kucharka farmy",            style:"wydajna farma"           },
+  14: { name:"Farmerka z koszem warzyw",  style:"specjalistka upraw"      },
+  15: { name:"Farmerka w stodole",        style:"zbalansowany rozwoj"     },
+  16: { name:"Handlarka farmy",           style:"handel i dropy"          },
+  17: { name:"Farmerka sadzaca rosliny",  style:"szybki zbior"            },
+  18: { name:"Hodowczyni zwierzat",       style:"mistrzyni zwierzat"      },
+  19: { name:"Babcia farmerka",           style:"doswiadczona farmerka"   },
+  20: { name:"Krol Marchewek",            style:"mistrz upraw"            },
+  21: { name:"Zielona Moc",               style:"ekonomia i handel"       },
+  22: { name:"Plon Bogow",                style:"idealny balans"          },
+  23: { name:"Wladca Pol",                style:"szybki rozwoj"           },
+  24: { name:"Legenda Farmy",             style:"mistrz hodowli"          },
+};
+// Koszt i cooldown zmiany avatara — indeks = numer zmiany (0-based)
+// Pierwsze 2 zmiany gratis, potem koszt rośnie
+const AVATAR_CHANGE_TIERS: { cost: number; cooldownMs: number }[] = [
+  { cost: 0,     cooldownMs: 0                },  // 1. zmiana gratis
+  { cost: 0,     cooldownMs: 0                },  // 2. zmiana gratis
+  { cost: 5000,  cooldownMs: 1 * 3600 * 1000  },  // 3. zmiana
+  { cost: 15000, cooldownMs: 3 * 3600 * 1000  },  // 4. zmiana
+];
+function getAvatarChangeTier(changeCount: number) {
+  if (changeCount < AVATAR_CHANGE_TIERS.length) return AVATAR_CHANGE_TIERS[changeCount];
+  return { cost: 50000, cooldownMs: 12 * 3600 * 1000 };
+}
+function getAvatarBonus(skin: number): Partial<PlayerStatsMap> {
+  return AVATAR_BONUSES[skin] ?? {};
+}
+function mergeAvatarBonus(base: PlayerStatsMap, skin: number): PlayerStatsMap {
+  const b = getAvatarBonus(skin);
+  return {
+    wiedza:    (base.wiedza    ?? 0) + (b.wiedza    ?? 0),
+    zrecznosc: (base.zrecznosc ?? 0) + (b.zrecznosc ?? 0),
+    zaradnosc: (base.zaradnosc ?? 0) + (b.zaradnosc ?? 0),
+    sadownik:  (base.sadownik  ?? 0) + (b.sadownik  ?? 0),
+    opieka:    (base.opieka    ?? 0) + (b.opieka    ?? 0),
+    szczescie: (base.szczescie ?? 0) + (b.szczescie ?? 0),
+  };
+}
 
 // UWAGA: rate dla "wiedza" i "zaradnosc" muszą być zgodne z WIEDZA_RATE/ZARADNOSC_RATE
 // (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
@@ -724,20 +811,25 @@ function computeFarmPower(
 // ═══════════════════════════════════════════════════════════════════════
 // SAD — drzewa owocowe (cykliczna produkcja owoców z lossowaną jakością)
 // ═══════════════════════════════════════════════════════════════════════
-type FruitQuality = "zwykly" | "soczysty" | "zloty";
+type FruitQuality = "zwykly" | "soczysty" | "zloty" | "zgnile";
 const FRUIT_QUALITY_DEFS: Record<FruitQuality, { label:string; mult:number; color:string; icon:string; baseChance:number }> = {
-  zwykly:   { label:"Zwykły",   mult:1, color:"#86efac", icon:"",   baseChance:0.85 },
+  zwykly:   { label:"Zwykły",   mult:1, color:"#86efac", icon:"",   baseChance:0.78 },
   soczysty: { label:"Soczysty", mult:2, color:"#22d3ee", icon:"💧", baseChance:0.12 },
   zloty:    { label:"Złoty",    mult:5, color:"#fde047", icon:"✨", baseChance:0.03 },
+  zgnile:   { label:"Zgniłe",   mult:0, color:"#6b7280", icon:"",   baseChance:0.10 },
 };
 // luckPct = bonus % (np. ze skilla Szczęście + eq "% bonus drop")
 function rollFruitQuality(luckPct: number = 0): FruitQuality {
   const r = Math.random();
+  // zgniłe: stałe 10% — nie zależy od szczęścia
+  const zgnileChance = FRUIT_QUALITY_DEFS.zgnile.baseChance;
+  if (r < zgnileChance) return "zgnile";
   const lf = 1 + Math.max(0, luckPct) / 100;
   const zlotyChance    = Math.min(0.50, FRUIT_QUALITY_DEFS.zloty.baseChance * lf);
   const soczystyChance = Math.min(0.60, FRUIT_QUALITY_DEFS.soczysty.baseChance * lf);
-  if (r < zlotyChance) return "zloty";
-  if (r < zlotyChance + soczystyChance) return "soczysty";
+  const rr = (r - zgnileChance) / (1 - zgnileChance);
+  if (rr < zlotyChance) return "zloty";
+  if (rr < zlotyChance + soczystyChance) return "soczysty";
   return "zwykly";
 }
 interface TreeDef {
@@ -778,7 +870,7 @@ type OrchardTreeState = { owned:number; prodStart:number; storage: Record<FruitQ
 type OrchardState = Record<string, OrchardTreeState>;
 function defaultOrchardState(): OrchardState {
   const s: OrchardState = {};
-  TREES.forEach(t => { s[t.id] = { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } }; });
+  TREES.forEach(t => { s[t.id] = { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } }; });
   return s;
 }
 function migrateOrchardState(raw: unknown): OrchardState {
@@ -796,6 +888,7 @@ function migrateOrchardState(raw: unknown): OrchardState {
         zwykly:   typeof s.storage?.zwykly   === "number" ? s.storage.zwykly   : 0,
         soczysty: typeof s.storage?.soczysty === "number" ? s.storage.soczysty : 0,
         zloty:    typeof s.storage?.zloty    === "number" ? s.storage.zloty    : 0,
+        zgnile:   typeof s.storage?.zgnile   === "number" ? s.storage.zgnile   : 0,
       },
     };
   });
@@ -846,20 +939,24 @@ function getStatUpgradeCost(targetLv: number): number {
   }
   return 6000000;
 }
-function loadAvatarDataLS(userId: string): { skin: number; stats: PlayerStatsMap; fsp: number; prevLevel: number } {
+function loadAvatarDataLS(userId: string): { skin: number; stats: PlayerStatsMap; fsp: number; prevLevel: number; changeCount: number; lastChangeAt: number } {
   const skin = parseInt(localStorage.getItem(`plonopolis_skin_${userId}`) ?? "-1");
   const statsRaw = localStorage.getItem(`plonopolis_stats_${userId}`);
   const stats: PlayerStatsMap = statsRaw ? JSON.parse(statsRaw) : { ...DEFAULT_STATS };
   const fspRaw = localStorage.getItem(`plonopolis_fsp_${userId}`);
   const fsp = fspRaw !== null ? parseInt(fspRaw) : 3;
   const prevLevel = parseInt(localStorage.getItem(`plonopolis_prevlv_${userId}`) ?? "0");
-  return { skin, stats, fsp, prevLevel };
+  const changeCount = parseInt(localStorage.getItem(`plonopolis_avatar_changes_${userId}`) ?? "0");
+  const lastChangeAt = parseInt(localStorage.getItem(`plonopolis_avatar_last_change_${userId}`) ?? "0");
+  return { skin, stats, fsp, prevLevel, changeCount, lastChangeAt };
 }
-function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number) {
+function saveAvatarDataLS(userId: string, skin: number, stats: PlayerStatsMap, fsp: number, prevLevel: number, changeCount?: number, lastChangeAt?: number) {
   localStorage.setItem(`plonopolis_skin_${userId}`, String(skin));
   localStorage.setItem(`plonopolis_stats_${userId}`, JSON.stringify(stats));
   localStorage.setItem(`plonopolis_fsp_${userId}`, String(fsp));
   localStorage.setItem(`plonopolis_prevlv_${userId}`, String(prevLevel));
+  if (changeCount !== undefined) localStorage.setItem(`plonopolis_avatar_changes_${userId}`, String(changeCount));
+  if (lastChangeAt !== undefined) localStorage.setItem(`plonopolis_avatar_last_change_${userId}`, String(lastChangeAt));
 }
 function saveHouseData(userId: string, slots: number, eq: string[]) {
   localStorage.setItem(`plonopolis_eqslots_${userId}`, String(slots));
@@ -1634,6 +1731,9 @@ export default function Page() {
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
+  const [hoveredStodola, setHoveredStodola] = React.useState(false);
+  const [hoveredUl, setHoveredUl] = React.useState(false);
+  const [hoveredSad, setHoveredSad] = React.useState(false);
   const [hoveredLada, setHoveredLada] = React.useState(false);
   const [hoveredDom, setHoveredDom] = React.useState(false);
   const [hoveredKompostownik, setHoveredKompostownik] = React.useState(false);
@@ -1652,9 +1752,13 @@ export default function Page() {
   const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("mezczyzni");
   const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
   const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
+  const [hoveredNormalSkin, setHoveredNormalSkin] = React.useState<number|null>(null);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statFlash, setStatFlash] = React.useState<string|null>(null);
+  const [avatarChangeCount, setAvatarChangeCount] = React.useState(0);
+  const [lastAvatarChangeAt, setLastAvatarChangeAt] = React.useState(0);
+  const effectiveStats = React.useMemo(() => mergeAvatarBonus(playerStats, avatarSkin), [playerStats, avatarSkin]);
   const [dailyProgress, setDailyProgress] = React.useState<DailyProgress>(emptyDP());
   const [statUpgradeAmount, setStatUpgradeAmount] = React.useState<1|5|10>(1);
   const [showDomModal, setShowDomModal] = React.useState(false);
@@ -1918,6 +2022,7 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showKompostModal, kompostRewards]);
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
+  const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
@@ -1947,7 +2052,7 @@ export default function Page() {
   React.useEffect(() => {
     let changed = false;
     const next: BarnState = {};
-    const opiekaPts = playerStats?.opieka ?? 0;
+    const opiekaPts = effectiveStats.opieka;
     const bonusChance = opiekaPts * 0.0015; // +0.15%/pkt
     const bonusMessages: string[] = [];
     ANIMALS.forEach(a => {
@@ -1999,9 +2104,9 @@ export default function Page() {
     const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped) / 100;
     const speedMult = Math.max(0.30, 1 - treeSpeedPct);
     // Skill Sadownik (rate 0.005) → mnożnik liczby owoców (więcej owoców z drzewa)
-    const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005) / 100;
+    const sadownikBonus = calcStatEffect(effectiveStats.sadownik, 0.005) / 100;
     // Szczęście + eq "% bonus drop" → szansa na rare/golden
-    const luckPct = calcStatEffect(playerStats?.szczescie ?? 0, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+    const luckPct = calcStatEffect(effectiveStats.szczescie, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
     TREES.forEach(t => {
       const st = next[t.id];
       if (!st || st.owned === 0) return;
@@ -2012,7 +2117,7 @@ export default function Page() {
       if (elapsed >= effMs) {
         // Liczba pełnych cykli (offline-safe). Limit storage = ~5 cykli per drzewo (żeby nie nazbierało za dużo).
         const STORAGE_CYCLE_CAP = 5;
-        const totalStored = ns.storage.zwykly + ns.storage.soczysty + ns.storage.zloty;
+        const totalStored = ns.storage.zwykly + ns.storage.soczysty + ns.storage.zloty + (ns.storage.zgnile ?? 0);
         const avgDropPerCycle = (t.dropMin + t.dropMax) / 2 * ns.owned;
         const freeCycles = Math.max(0, Math.floor((STORAGE_CYCLE_CAP * avgDropPerCycle - totalStored) / Math.max(1, avgDropPerCycle)));
         const fullCycles = Math.min(Math.floor(elapsed / effMs), freeCycles);
@@ -2231,6 +2336,8 @@ export default function Page() {
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
+      setAvatarChangeCount(d.changeCount);
+      setLastAvatarChangeAt(d.lastChangeAt);
       // Ekwipunek
       const hasEqSlotsLS = localStorage.getItem(`plonopolis_eqslots_${source.id}`) !== null;
       const hasEqLS = localStorage.getItem(`plonopolis_eq_${source.id}`) !== null;
@@ -2247,7 +2354,7 @@ export default function Page() {
       // Epickie avatary — zawsze z DB (nie z localStorage)
       setUnlockedEpicAvatars(Array.isArray(source.unlocked_epic_avatars) ? source.unlocked_epic_avatars : []);
       // Zawsze aktualizuj localStorage
-      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel);
+      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel, d.changeCount, d.lastChangeAt);
       // Zsynchronizuj Supabase tylko gdy skin jest prawidłowy (nie zapisuj -1 do bazy)
       if (skin >= 0) {
         void supabase.rpc("game_save_avatar_data", {
@@ -2270,8 +2377,26 @@ export default function Page() {
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
-    setBarnState_(lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState));
-    setOrchardState_(lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState));
+    // Barn: ładuj z localStorage, nadpisz owned/slots/prodStart z DB (DB autorytarne dla timingów)
+    const _lsBarn = lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState);
+    const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
+    const _dbBarnHasData = !!(_dbBarn && Object.values(_dbBarn).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
+    if (_dbBarnHasData) {
+      ANIMALS.forEach(a => { const d = (_dbBarn as Record<string,{owned:number;slots:number;prodStart:number}>)[a.id]; if (d) { if (typeof d.owned === "number") _lsBarn[a.id].owned = d.owned; if (typeof d.slots === "number") _lsBarn[a.id].slots = d.slots; if (typeof d.prodStart === "number" && d.prodStart > 0) _lsBarn[a.id].prodStart = d.prodStart; } });
+    } else if (uid) {
+      ANIMALS.forEach(a => { const st = _lsBarn[a.id]; if (st && st.owned > 0) void supabase.rpc("sync_barn_owned", { p_user_id: uid, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots }); });
+    }
+    setBarnState_(_lsBarn);
+    // Sad: ładuj z localStorage, nadpisz owned/prodStart z DB (DB autorytarne dla timingów)
+    const _lsOrch = lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState);
+    const _dbOrch = source.orchard_state as Record<string, { owned: number; prodStart: number }> | null | undefined;
+    const _dbOrchHasData = !!(_dbOrch && Object.values(_dbOrch).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
+    if (_dbOrchHasData) {
+      TREES.forEach(t => { const d = (_dbOrch as Record<string,{owned:number;prodStart:number}>)[t.id]; if (d) { if (typeof d.owned === "number") _lsOrch[t.id].owned = d.owned; if (typeof d.prodStart === "number" && d.prodStart > 0) _lsOrch[t.id].prodStart = d.prodStart; } });
+    } else if (uid) {
+      TREES.forEach(t => { const st = _lsOrch[t.id]; if (st && st.owned > 0) void supabase.rpc("sync_orchard_owned", { p_user_id: uid, p_tree_id: t.id, p_new_owned: st.owned }); });
+    }
+    setOrchardState_(_lsOrch);
     setDailyProgress(loadDP(uid));
     // Kompost: migracja starego formatu (płaski licznik) + migracja klucza globalnego → userId
     const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
@@ -2393,7 +2518,7 @@ export default function Page() {
     if (!crop) return 0;
 
     // Wiedza efektywna = bazowa + flat bonus z eq (np. Kapelusz Mistrza Farmy +5)
-    const wiedzaEffective = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+    const wiedzaEffective = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
     const wiedzaBonus = calcStatEffect(wiedzaEffective, WIEDZA_RATE) / 100;
     const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
@@ -2407,7 +2532,7 @@ export default function Page() {
     const equipGrowthMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - equipGrowthPct);
     let totalMult: number;
     if (plot.watered) {
-      const zaradnoscBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+      const zaradnoscBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
       // Bonus z eq: % efekt podlewania + % efekt wody (boost siły zaradności)
       const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
       const totalWaterReduction = Math.min(WATER_BONUS_MAX, zaradnoscBonus * (1 + waterEqPct));
@@ -2544,15 +2669,15 @@ export default function Page() {
       });
     }
 
-    const _zaradBonus = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+    const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
     const _zaradPct = Math.min(WATER_BONUS_MAX, _zaradBonus * (1 + _waterEqPct)) * 100;
     setMessage({
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
-        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${playerStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
-        : `${crop.name} podlana. Rozwijaj Zaradność, aby przyspieszać wzrost.`,
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${effectiveStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
+        : `${crop.name} podlana. Rozwijaj Zaradnosc, aby przyspieszac wzrost.`,
     });
   }
 
@@ -3092,6 +3217,17 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [currentMap]);
   React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setHoveredSickle(false);
+        setHoveredWateringCan(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -3201,7 +3337,7 @@ export default function Page() {
         return { name: crop.name + qLabel, icon: '🌱', spritePath: sprite };
       }
     }
-    const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty)$/);
+    const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty|zgnile)$/);
     if (fruitM) {
       const tree = TREES.find(t => t.fruitId === fruitM[1]);
       const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
@@ -3659,37 +3795,62 @@ export default function Page() {
 
   async function handleAddBarnItems(amount: number) {
     if (!profile?.id) return;
-    const newItems: Record<string, number> = { ...barnItems };
-    ANIMAL_ITEMS.forEach(it => {
-      newItems[it.id] = (newItems[it.id] ?? 0) + amount;
-    });
-    const { error } = await supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: newItems });
-    if (!error) {
-      saveBarnItems(newItems);
+    const { data, error } = await supabase.rpc("test_add_barn_items", { p_user_id: profile.id, p_amount: amount });
+    if (!error && data) {
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🐄 Dodano produkty!", text: `+${amount} każdego z ${ANIMAL_ITEMS.length} produktów ze zwierząt.` });
+      setMessage({ type: "success", title: "Dodano produkty!", text: `+${amount} × ${ANIMAL_ITEMS.length} rodzajów produktów ze zwierząt.` });
     } else {
-      setMessage({ type: "error", title: "Błąd", text: error.message });
+      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono sql_test_add_barn_items.sql w Supabase SQL Editor." });
     }
   }
 
   async function handleAddFruits(amount: number) {
     if (!profile?.id) return;
-    const newInv: Record<string, number> = { ...fruitInventory };
-    TREES.forEach(t => {
-      (["zwykly", "soczysty", "zloty"] as const).forEach(q => {
-        const k = `${t.fruitId}_${q}`;
-        newInv[k] = (newInv[k] ?? 0) + amount;
-      });
-    });
-    const { error } = await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: newInv });
-    if (!error) {
-      saveFruitInventory(newInv);
+    const { data, error } = await supabase.rpc("test_add_fruits", { p_user_id: profile.id, p_amount: amount });
+    if (!error && data) {
       await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🍎 Dodano owoce!", text: `+${amount} każdego z ${TREES.length} owoców × 3 jakości (zwykły/soczysty/złoty).` });
+      setMessage({ type: "success", title: "Dodano owoce!", text: `+${amount} × ${TREES.length} gatunków × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
     } else {
-      setMessage({ type: "error", title: "Błąd", text: error.message });
+      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono test_add_fruits w Supabase SQL Editor." });
     }
+  }
+
+  async function handleAvatarSelect(idx: number) {
+    if (!profile?.id) return;
+    const tier = getAvatarChangeTier(avatarChangeCount);
+    const now = Date.now();
+    if (tier.cooldownMs > 0 && lastAvatarChangeAt > 0) {
+      const elapsed = now - lastAvatarChangeAt;
+      if (elapsed < tier.cooldownMs) {
+        const remainMins = Math.ceil((tier.cooldownMs - elapsed) / 60000);
+        const hrs = Math.floor(remainMins / 60);
+        const mins = remainMins % 60;
+        const timeStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`;
+        setMessage({ type: "error", title: "Cooldown aktywny", text: `Nastepna zmiana avatara dostepna za ${timeStr}.` });
+        return;
+      }
+    }
+    if (tier.cost > 0) {
+      if (displayMoney < tier.cost) {
+        setMessage({ type: "error", title: "Za malo pieniedzy", text: `Zmiana avatara kosztuje ${tier.cost.toLocaleString("pl-PL")} zl.` });
+        return;
+      }
+      const { error } = await supabase.from("profiles").update({ money: displayMoney - tier.cost }).eq("id", profile.id);
+      if (error) { setMessage({ type: "error", title: "Blad platnosci", text: error.message }); return; }
+      await loadProfile(profile.id);
+    }
+    const newCount = avatarChangeCount + 1;
+    setAvatarSkin(idx);
+    setAvatarChangeCount(newCount);
+    setLastAvatarChangeAt(now);
+    saveAvatarDataLS(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current, newCount, now);
+    void supabase.rpc("game_save_avatar_data", {
+      p_avatar_skin: idx,
+      p_player_stats: playerStats as Record<string, number>,
+      p_free_skill_points: freeSkillPoints,
+      p_prev_level: prevLevelRef.current,
+    });
+    setShowSkinModal(false);
   }
 
   async function handleAddHoneyJars(amount: number) {
@@ -3745,7 +3906,8 @@ export default function Page() {
       setUnlockedPlots(freshUnlockedPlots);
       setPlotObstacles({});
       setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
-      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1);
+      setAvatarChangeCount(0); setLastAvatarChangeAt(0);
+      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1, 0, 0);
       // Czyszczenie LS ekwipunku — bez tego applyProfileState przywróciłby stary stan z cache
       saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
       saveItemUpg({});
@@ -3951,6 +4113,52 @@ export default function Page() {
       saveKompostBatches(batches);
       if (profile?.id) {
         await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+      }
+    } finally {
+      kompostBusyRef.current = false;
+    }
+  }
+
+  // ─── KOMPOSTOWNIK: wrzuć zgniłe owoce → +1 do bieżącej partii (score: cena owocu × 0.25) ───
+  async function depositFruitToCompost(fruitKey: string, count: number = 1) {
+    if (kompostBusyRef.current) return;
+    kompostBusyRef.current = true;
+    try {
+      const have = fruitInventory[fruitKey] ?? 0;
+      if (have <= 0) return;
+      // Parsuj fruitId z klucza np. "jablko_zgnile" → fruitId="jablko"
+      const lastU = fruitKey.lastIndexOf("_");
+      const fruitId = fruitKey.slice(0, lastU);
+      const tree = TREES.find(t => t.fruitId === fruitId);
+      // Score = cena owocu × 0.25 (jak "rotten" uprawa — najsłabszy kompost)
+      const valuePerFruit = tree ? tree.pricePerFruit * COMPOST_RARITY_MULT.rotten : 1.0;
+
+      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum }));
+      let remaining = Math.min(count, have);
+      let added = 0;
+      while (remaining > 0) {
+        let last = batches[batches.length - 1];
+        if (!last || last.fill >= 10) {
+          if (batches.length >= KOMPOST_MAX_BATCHES) break;
+          last = { fill: 0, scoreSum: 0 };
+          batches.push(last);
+        }
+        const room = 10 - last.fill;
+        const take = Math.min(remaining, room);
+        last.fill += take;
+        last.scoreSum += take * valuePerFruit;
+        remaining -= take;
+        added += take;
+      }
+      if (added <= 0) return;
+
+      const nextInv = { ...fruitInventory };
+      nextInv[fruitKey] = have - added;
+      if (nextInv[fruitKey] <= 0) delete nextInv[fruitKey];
+      saveFruitInventory(nextInv);
+      saveKompostBatches(batches);
+      if (profile?.id) {
+        await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: nextInv });
       }
     } finally {
       kompostBusyRef.current = false;
@@ -4168,7 +4376,7 @@ export default function Page() {
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
-      p_zrecznosc: playerStats.zrecznosc ?? 0,
+      p_zrecznosc: effectiveStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
       // -1 = wymuś 0 EXP (leg. opcja 0/1 — tylko plony); 0 = jakość decyduje; >0 = dokładny mnożnik
@@ -4782,7 +4990,7 @@ export default function Page() {
               )}
 
               {/* ═══ MUZYKA ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "165px" }}>
+              <div className="fixed right-4 z-[92]" style={{ top: "240px" }}>
                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] px-3 py-3 shadow-2xl backdrop-blur-sm w-[72px]">
                   {/* Ikona dźwięku */}
                   <button
@@ -4921,9 +5129,9 @@ export default function Page() {
                           return (
                             <button
                               type="button"
-                              title={_barnUnlocked ? "Stodoła" : ""}
-                              onMouseEnter={() => { if (!_barnUnlocked) setHoveredBarnLock(true); }}
-                              onMouseLeave={() => setHoveredBarnLock(false)}
+                              title=""
+                              onMouseEnter={() => { if (_barnUnlocked) setHoveredStodola(true); else setHoveredBarnLock(true); }}
+                              onMouseLeave={() => { setHoveredBarnLock(false); setHoveredStodola(false); }}
                               onClick={() => {
                                 if (!_barnUnlocked) {
                                   setHoveredBarnLock(false);
@@ -4955,9 +5163,9 @@ export default function Page() {
                         return (
                           <button
                             type="button"
-                            title={_hiveUnlocked ? "Ul" : ""}
-                            onMouseEnter={() => { if (!_hiveUnlocked) setHoveredHiveLock(true); }}
-                            onMouseLeave={() => setHoveredHiveLock(false)}
+                            title=""
+                            onMouseEnter={() => { if (_hiveUnlocked) setHoveredUl(true); else setHoveredHiveLock(true); }}
+                            onMouseLeave={() => { setHoveredHiveLock(false); setHoveredUl(false); }}
                             onClick={() => {
                               if (!_hiveUnlocked) {
                                 setHoveredHiveLock(false);
@@ -4999,9 +5207,9 @@ export default function Page() {
                         return (
                           <button
                             type="button"
-                            title={_sadUnlocked ? "Sad" : ""}
-                            onMouseEnter={() => { if (!_sadUnlocked) setHoveredSadLock(true); }}
-                            onMouseLeave={() => setHoveredSadLock(false)}
+                            title=""
+                            onMouseEnter={() => { if (_sadUnlocked) setHoveredSad(true); else setHoveredSadLock(true); }}
+                            onMouseLeave={() => { setHoveredSadLock(false); setHoveredSad(false); }}
                             onClick={() => {
                               if (!_sadUnlocked) {
                                 setHoveredSadLock(false);
@@ -5511,7 +5719,7 @@ export default function Page() {
                       </div>
                       <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                       <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl whitespace-nowrap">
+                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl max-w-[200px]">
                           💡 Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span>
                         </div>
                       </div>
@@ -5519,12 +5727,12 @@ export default function Page() {
                     </div>
                     {/* Panel plecaka — rozsuwa się w dół, nie przesuwa avatara */}
                     <div
-                      className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-500 ease-out ${
+                      className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-150 ease-out ${
                         isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
                       }`}
                     >
                       <div
-                        className={`max-h-[80vh] w-[440px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-500 ease-out ${
+                        className={`max-h-[80vh] w-[440px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-150 ease-out ${
                           isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
                         }`}
                       >
@@ -5547,7 +5755,7 @@ export default function Page() {
 
                         {/* Zakładki Uprawy / Przedmioty */}
                           <div className="mt-3 flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                            {(["uprawy","przedmioty","owoce"] as const).map(tab => (
+                            {(["uprawy","owoce","przedmioty"] as const).map(tab => (
                               <button
                                 key={tab}
                                 type="button"
@@ -5670,132 +5878,100 @@ export default function Page() {
                           )}
 
                           {backpackTab === "przedmioty" && (
-                            <div className="mt-2 flex flex-col gap-2">
-                              {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                            <div className="mt-3">
                               {(() => {
-                                const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
-                                if (owned.length === 0) return null;
+                                const ownedAnimals = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                                const hasEmptyJars = hiveData.empty_jars > 0;
+                                const hasHoneyJars = hiveData.honey_jars > 0;
+                                const hasSuit = hiveData.suit_durability > 0;
+                                const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
+                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                                if (!hasAny) return (
+                                  <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                    Plecak jest pusty.
+                                  </div>
+                                );
                                 return (
                                   <div className="grid grid-cols-4 gap-2">
-                                    {owned.map(it => {
+                                    {ownedAnimals.map(it => {
                                       const animal = ANIMALS.find(a => a.itemId === it.id);
                                       const cnt = barnItems[it.id] ?? 0;
                                       return (
-                                        <div key={it.id}
-                                          className="group relative flex h-24 w-24 items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
-                                          <span className="text-5xl leading-none">{it.icon}</span>
-                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                            <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                              <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
-                                              {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
-                                            </div>
-                                            <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                        <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                          onMouseLeave={() => setCardTip(null)}>
+                                          <div className="relative h-16 w-16 flex items-center justify-center">
+                                            <span className="text-4xl leading-none">{it.icon}</span>
+                                            <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                           </div>
+                                          <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                          <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                         </div>
                                       );
                                     })}
+                                    {hasEmptyJars && (
+                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                        <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
+                                      </div>
+                                    )}
+                                    {hasHoneyJars && (
+                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
+                                        <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
+                                        <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
+                                      </div>
+                                    )}
+                                    {hasSuit && (
+                                      <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                        onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
+                                        onMouseLeave={() => setCardTip(null)}>
+                                        <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                        <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
+                                        <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {compostKeys
+                                      .sort((a,b) => {
+                                        const ta = compostTypeFromKey(a) ?? "growth";
+                                        const tb = compostTypeFromKey(b) ?? "growth";
+                                        const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
+                                        if (order[ta] !== order[tb]) return order[ta] - order[tb];
+                                        return compostValueFromKey(a) - compostValueFromKey(b);
+                                      })
+                                      .map(cid => {
+                                        const cnt = seedInventory[cid];
+                                        const t = compostTypeFromKey(cid)!;
+                                        const def = COMPOST_DEFS[t];
+                                        const value = compostValueFromKey(cid);
+                                        const tierIdx = def.bonusValues.indexOf(value);
+                                        const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                        const isSel = selectedSeedId === cid;
+                                        return (
+                                          <div key={cid}
+                                            draggable
+                                            onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                                            onDragEnd={() => setDraggedSeedId(null)}
+                                            onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                            onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                            onMouseLeave={() => setCardTip(null)}
+                                            className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                            style={isSel
+                                              ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                              : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
+                                            <span className="text-4xl leading-none">{def.icon}</span>
+                                            <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
+                                            {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                            <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                          </div>
+                                        );
+                                      })}
                                   </div>
                                 );
                               })()}
-                              {/* Puste słoiki */}
-                              {hiveData.empty_jars > 0 && (
-                                <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
-                                  </div>
-                                  <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
-                                </div>
-                              )}
-                              {/* Słoiki z miodem */}
-                              {hiveData.honey_jars > 0 && (
-                                <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                                  <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
-                                  </div>
-                                  <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
-                                </div>
-                              )}
-                              {/* Strój pszczelarza */}
-                              {hiveData.suit_durability > 0 && (
-                                <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                                  <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
-                                    <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                                      <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                                    </div>
-                                  </div>
-                                  <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
-                                  {/* Tooltip */}
-                                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                      <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                      <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                      <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                                    </div>
-                                    <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                  </div>
-                                </div>
-                              )}
-                              {/* Kompost — przeciągalny na pola (z zaszytą wartością tieru) */}
-                              {Object.keys(seedInventory)
-                                .filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0)
-                                .sort((a,b) => {
-                                  const ta = compostTypeFromKey(a) ?? "growth";
-                                  const tb = compostTypeFromKey(b) ?? "growth";
-                                  const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
-                                  if (order[ta] !== order[tb]) return order[ta] - order[tb];
-                                  return compostValueFromKey(a) - compostValueFromKey(b);
-                                })
-                                .map(cid => {
-                                  const cnt = seedInventory[cid];
-                                  const t = compostTypeFromKey(cid)!;
-                                  const def = COMPOST_DEFS[t];
-                                  const value = compostValueFromKey(cid);
-                                  const tierIdx = def.bonusValues.indexOf(value);
-                                  const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
-                                  const isSel = selectedSeedId === cid;
-                                  return (
-                                    <div key={cid}
-                                      draggable
-                                      onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
-                                      onDragEnd={() => setDraggedSeedId(null)}
-                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                      className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
-                                      style={isSel
-                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
-                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
-                                      <span className="text-3xl">{def.icon}</span>
-                                      <div className="flex-1">
-                                        <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
-                                        <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
-                                        {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY · klik w pole = nałóż</p>}
-                                      </div>
-                                      <span className="text-base font-black text-emerald-300">×{cnt}</span>
-                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                        <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                          <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                          <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                          <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !Object.keys(seedInventory).some(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0) && (
-                                <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                  <p className="text-2xl mb-2">🎒</p>
-                                  <p>Brak przedmiotów.</p>
-                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
-                                </div>
-                              )}
                             </div>
                           )}
 
@@ -5804,44 +5980,53 @@ export default function Page() {
                             const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
                             if (entries.length === 0) {
                               return (
-                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                                  <p className="text-2xl mb-2">🍎</p>
-                                  <p>Brak owoców w plecaku.</p>
-                                  <p className="mt-1 text-xs text-[#8b6a3e]">Kup drzewa w Sklepie → 🌳 Drzewa, a potem zbierz owoce w Sadzie.</p>
+                                <div className="mt-3 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                                  Plecak jest pusty.
                                 </div>
                               );
                             }
-                            const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
-                            entries.forEach(([k,c]) => {
-                              const lastUnd = k.lastIndexOf("_");
-                              const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
-                              if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
-                              grouped[fid][q] = Number(c);
+                            const _qOrd: Record<string, number> = { zgnile: 0, zwykly: 1, soczysty: 2, zloty: 3 };
+                            const sorted = [...entries].sort(([aKey], [bKey]) => {
+                              const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
+                              const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
+                              const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                              const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                              if (aLv !== bLv) return aLv - bLv;
+                              return (_qOrd[aQ] ?? 0) - (_qOrd[bQ] ?? 0);
                             });
                             return (
-                              <div className="mt-3 flex flex-col gap-2">
-                                {Object.entries(grouped).map(([fid,q]) => {
-                                  const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
-                                  const total = q.zwykly + q.soczysty + q.zloty;
-                                  const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                              <div className="mt-3 grid grid-cols-4 gap-2">
+                                {sorted.map(([key, cnt]) => {
+                                  const lastU = key.lastIndexOf("_");
+                                  const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
+                                  const tree = TREES.find(t => t.fruitId === fid);
+                                  if (!tree) return null;
+                                  const isZgnile = q === "zgnile";
+                                  const qLabel = isZgnile ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                                  const borderColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const bgColor = isZgnile ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                                  const labelColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                                   return (
-                                    <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 px-3 py-2">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-3xl">{tree.fruitIcon}</span>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
-                                          <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
-                                            {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1.5 py-0.5 font-bold text-emerald-300">{q.zwykly}×zwykły</span>}
-                                            {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1.5 py-0.5 font-bold text-cyan-300">💧{q.soczysty}×soczysty</span>}
-                                            {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1.5 py-0.5 font-bold text-yellow-300">✨{q.zloty}×złoty</span>}
-                                          </div>
-                                        </div>
-                                        <span className="text-xs font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                                    <div key={key} className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed" : "cursor-default"}`}
+                                      style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p><p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>{isZgnile && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}</>)}
+                                      onMouseLeave={() => setCardTip(null)}>
+                                      {isZgnile && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
+                                      {q === "zloty" && (
+                                        <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                          <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                        </span>
+                                      )}
+                                      <div className="relative h-16 w-16 flex items-center justify-center">
+                                        <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                        <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                       </div>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
+                                      <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                     </div>
                                   );
                                 })}
-                                <p className="mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie").</p>
+                                <p className="col-span-4 mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie"). Zgniłe idą do kompostu.</p>
                               </div>
                             );
                           })()}
@@ -6451,7 +6636,7 @@ export default function Page() {
                     <p className="mt-1 text-[10px] text-[#8b6a3e]">🥚 jajka · 🐇 futra · 🥛 mleko · 🪶 pióra · 🧶 wełna · 💩 nawóz · 🥛 mleko kozie · 🪶 duże pióra · ⚡ energia · 🦴 rogi byka</p>
                   </div>
                   <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 3 jakości)</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 4 jakości)</p>
                     <div className="flex flex-wrap gap-2">
                       {[5,10,50].map(amt => (
                         <button key={amt} onClick={() => handleAddFruits(amt)}
@@ -6607,6 +6792,7 @@ export default function Page() {
                         const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
                         if (error) return;
                         saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+                        void supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
                         await loadProfile(profile.id);
                         setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
                       };
@@ -6705,8 +6891,9 @@ export default function Page() {
                                         const newMoney = (profile.money ?? 0) - t.buyPrice;
                                         const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
                                         if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
-                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0 } };
+                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } };
                                         saveOrchardState({ ...orchardState, [t.id]: { ...cur, owned: cur.owned + 1, prodStart: cur.prodStart || Date.now() } });
+                                        void supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned + 1 });
                                         await loadProfile(profile.id);
                                         setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
                                       })();
@@ -6765,7 +6952,7 @@ export default function Page() {
                   </div>
                   <div className="px-3 pt-3">
                     <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
-                      {(["uprawy","przedmioty","owoce"] as const).map(tab => (
+                      {(["uprawy","owoce","przedmioty"] as const).map(tab => (
                         <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
                           {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
@@ -6831,172 +7018,153 @@ export default function Page() {
                       );
                     })()}
                     {backpackTab === "przedmioty" && (
-                      <div className="flex flex-col gap-2 mt-1">
-                        {/* Produkty ze stodoły — siatka kafelków z tooltipem */}
+                      <div className="mt-2">
                         {(() => {
-                          const owned = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
-                          if (owned.length === 0) return null;
+                          const ownedAnimals = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                          const hasEmptyJars = hiveData.empty_jars > 0;
+                          const hasHoneyJars = hiveData.honey_jars > 0;
+                          const hasSuit = hiveData.suit_durability > 0;
+                          const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
+                          const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                          if (!hasAny) return (
+                            <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                              Plecak jest pusty.
+                            </div>
+                          );
                           return (
-                            <div className="grid grid-cols-3 gap-2">
-                              {owned.map(it => {
+                            <div className="grid grid-cols-4 gap-2">
+                              {ownedAnimals.map(it => {
                                 const animal = ANIMALS.find(a => a.itemId === it.id);
                                 const cnt = barnItems[it.id] ?? 0;
                                 return (
-                                  <div key={it.id}
-                                    className="group relative flex h-20 w-full items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
-                                    <span className="text-4xl leading-none">{it.icon}</span>
-                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                      <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                        <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
-                                        {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">💰 {it.sellPrice} zł/szt · masz {cnt} szt.</p>
-                                      </div>
-                                      <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                                  <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                    onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                    onMouseLeave={() => setCardTip(null)}>
+                                    <div className="relative h-16 w-16 flex items-center justify-center">
+                                      <span className="text-4xl leading-none">{it.icon}</span>
+                                      <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                     </div>
+                                    <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                   </div>
                                 );
                               })}
+                              {hasEmptyJars && (
+                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                  <img src="/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span>
+                                </div>
+                              )}
+                              {hasHoneyJars && (
+                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default">
+                                  <img src="/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p>
+                                  <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span>
+                                </div>
+                              )}
+                              {hasSuit && (
+                                <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                  onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
+                                  onMouseLeave={() => setCardTip(null)}>
+                                  <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                                  <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
+                                  <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
+                                    <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
+                                  </div>
+                                </div>
+                              )}
+                              {compostKeys
+                                .sort((a,b) => {
+                                  const ta = compostTypeFromKey(a) ?? "growth";
+                                  const tb = compostTypeFromKey(b) ?? "growth";
+                                  const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
+                                  if (order[ta] !== order[tb]) return order[ta] - order[tb];
+                                  return compostValueFromKey(a) - compostValueFromKey(b);
+                                })
+                                .map(cid => {
+                                  const cnt = seedInventory[cid];
+                                  const t = compostTypeFromKey(cid)!;
+                                  const def = COMPOST_DEFS[t];
+                                  const value = compostValueFromKey(cid);
+                                  const tierIdx = def.bonusValues.indexOf(value);
+                                  const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                  const isSel = selectedSeedId === cid;
+                                  return (
+                                    <div key={cid}
+                                      draggable
+                                      onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
+                                      onDragEnd={() => setDraggedSeedId(null)}
+                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                      onMouseLeave={() => setCardTip(null)}
+                                      className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                      style={isSel
+                                        ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
+                                        : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
+                                      <span className="text-4xl leading-none">{def.icon}</span>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
+                                      {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           );
                         })()}
-                        {hiveData.empty_jars > 0 && (
-                          <div className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_empty.png" alt="Słoik" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Puste słoiki</p>
-                              <p className="text-[10px] text-[#8b6a3e]">Do zbierania miodu</p>
-                            </div>
-                            <span className="text-base font-black text-amber-300">×{hiveData.empty_jars}</span>
-                          </div>
-                        )}
-                        {hiveData.honey_jars > 0 && (
-                          <div className="flex items-center gap-3 rounded-xl border border-amber-600/40 bg-black/20 px-3 py-2">
-                            <img src="/jar_honey.png" alt="Miód" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Słoiki z miodem</p>
-                              <p className="text-[10px] text-[#8b6a3e]">Sprzedaj w Ladzie</p>
-                            </div>
-                            <span className="text-base font-black text-amber-300">×{hiveData.honey_jars}</span>
-                          </div>
-                        )}
-                        {hiveData.suit_durability > 0 && (
-                          <div className="group relative flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 cursor-default">
-                            <img src="/beekeeper_suit.png" alt="Strój" className="w-16 h-16 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-[#f9e7b2]">Strój pszczelarza</p>
-                              <div className="mt-1 h-1.5 w-full rounded-full bg-black/40 overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                              </div>
-                            </div>
-                            <span className="text-xs font-black" style={{color: hiveData.suit_durability > 30 ? "#86efac" : "#fca5a5"}}>{hiveData.suit_durability}/100</span>
-                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                              <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                              </div>
-                              <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                            </div>
-                          </div>
-                        )}
-                        {/* Kompost — przeciągalny na pola (z zaszytą wartością tieru) */}
-                        {Object.keys(seedInventory)
-                          .filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0)
-                          .sort((a,b) => {
-                            const ta = compostTypeFromKey(a) ?? "growth";
-                            const tb = compostTypeFromKey(b) ?? "growth";
-                            const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
-                            if (order[ta] !== order[tb]) return order[ta] - order[tb];
-                            return compostValueFromKey(a) - compostValueFromKey(b);
-                          })
-                          .map(cid => {
-                            const cnt = seedInventory[cid];
-                            const t = compostTypeFromKey(cid)!;
-                            const def = COMPOST_DEFS[t];
-                            const value = compostValueFromKey(cid);
-                            const tierIdx = def.bonusValues.indexOf(value);
-                            const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
-                            const isSel = selectedSeedId === cid;
-                            return (
-                              <div key={cid}
-                                draggable
-                                onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
-                                onDragEnd={() => setDraggedSeedId(null)}
-                                onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                className="group relative flex items-center gap-3 rounded-xl border px-3 py-2 cursor-pointer active:cursor-grabbing transition"
-                                style={isSel
-                                  ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
-                                  : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
-                                <span className="text-3xl">{def.icon}</span>
-                                <div className="flex-1">
-                                  <p className="text-xs font-bold text-emerald-200">{def.name} <span className="font-black" style={{color: tierColor}}>· {def.tierName(value)}</span></p>
-                                  <p className="text-[10px]" style={{color: tierColor}}>{def.bonusLabel(value)}</p>
-                                  {isSel && <p className="text-[9px] font-black text-amber-300 mt-0.5">✓ ZAZNACZONY</p>}
-                                </div>
-                                <span className="text-base font-black text-emerald-300">×{cnt}</span>
-                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                  <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                    <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                    <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                    <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                    <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        {hiveData.empty_jars === 0 && hiveData.honey_jars === 0 && hiveData.suit_durability === 0 && !Object.keys(seedInventory).some(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0) && (
-                          <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-4 text-center text-sm text-[#dfcfab]">
-                            <p className="text-2xl mb-2">🎒</p>
-                            <p>Brak przedmiotów.</p>
-                            <p className="mt-1 text-xs text-[#8b6a3e]">Kup słoiki i strój pszczelarza w Sklepie lub zdobądź kompost w Kompostowniku.</p>
-                          </div>
-                        )}
                       </div>
                     )}
                     {backpackTab === "owoce" && (() => {
                       const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
                       if (entries.length === 0) {
                         return (
-                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-center text-xs text-[#dfcfab]">
-                            <p className="text-2xl mb-1">🍎</p>
-                            <p>Brak owoców w plecaku.</p>
-                            <p className="mt-1 text-[10px] text-[#8b6a3e]">Posadź drzewa w Sklepie i zbieraj w Sadzie.</p>
+                          <div className="mt-1 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
+                            Plecak jest pusty.
                           </div>
                         );
                       }
-                      const grouped: Record<string, { zwykly:number; soczysty:number; zloty:number }> = {};
-                      entries.forEach(([k,c]) => {
-                        const lastUnd = k.lastIndexOf("_");
-                        const fid = k.slice(0,lastUnd); const q = k.slice(lastUnd+1) as FruitQuality;
-                        if (!grouped[fid]) grouped[fid] = { zwykly:0, soczysty:0, zloty:0 };
-                        grouped[fid][q] = Number(c);
+                      const _qOrd2: Record<string, number> = { zgnile: 0, zwykly: 1, soczysty: 2, zloty: 3 };
+                      const sorted2 = [...entries].sort(([aKey], [bKey]) => {
+                        const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
+                        const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
+                        const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                        const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                        if (aLv !== bLv) return aLv - bLv;
+                        return (_qOrd2[aQ] ?? 0) - (_qOrd2[bQ] ?? 0);
                       });
                       return (
-                        <div className="flex flex-col gap-2 mt-1">
-                          {Object.entries(grouped).map(([fid,q]) => {
-                            const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
-                            const total = q.zwykly + q.soczysty + q.zloty;
-                            const value = q.zwykly * tree.pricePerFruit + q.soczysty * tree.pricePerFruit * 2 + q.zloty * tree.pricePerFruit * 5;
+                        <div className="mt-1 grid grid-cols-4 gap-2">
+                          {sorted2.map(([key, cnt]) => {
+                            const lastU = key.lastIndexOf("_");
+                            const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
+                            const tree = TREES.find(t => t.fruitId === fid);
+                            if (!tree) return null;
+                            const isZgnile2 = q === "zgnile";
+                            const qLabel = isZgnile2 ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                            const borderColor = isZgnile2 ? "#ffffff" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const bgColor = isZgnile2 ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                            const labelColor = isZgnile2 ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                             return (
-                              <div key={fid} className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-2xl">{tree.fruitIcon}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{tree.fruitName} <span className="text-[10px] font-normal text-[#8b6a3e]">×{total}</span></p>
-                                    <div className="mt-0.5 flex flex-wrap gap-1 text-[9px]">
-                                      {q.zwykly>0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-1 py-0.5 font-bold text-emerald-300">{q.zwykly}</span>}
-                                      {q.soczysty>0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-1 py-0.5 font-bold text-cyan-300">💧{q.soczysty}</span>}
-                                      {q.zloty>0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-1 py-0.5 font-bold text-yellow-300">✨{q.zloty}</span>}
-                                    </div>
-                                  </div>
-                                  <span className="text-[10px] font-black text-amber-300 shrink-0">~{value.toLocaleString()}💰</span>
+                              <div key={key} className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed" : "cursor-default"}`}
+                                style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}
+                                onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p><p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>{isZgnile2 && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}</>)}
+                                onMouseLeave={() => setCardTip(null)}>
+                                {isZgnile2 && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
+                                {q === "zloty" && (
+                                  <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                    <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                  </span>
+                                )}
+                                <div className="relative h-16 w-16 flex items-center justify-center">
+                                  <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                  <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                 </div>
+                                <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
+                                <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                               </div>
                             );
                           })}
-                          <p className="text-[9px] text-[#8b6a3e] text-center mt-1">Sprzedaż w Sadzie</p>
+                          <p className="col-span-4 mt-1 text-[9px] text-[#8b6a3e] text-center">Sprzedaż w Sadzie · Zgniłe idą do kompostu</p>
                         </div>
                       );
                     })()}
@@ -7084,7 +7252,8 @@ export default function Page() {
                             ];
                             const top = [...systems].sort((a,b)=>b.val-a.val)[0];
                             const statLabels: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zręczność",zaradnosc:"Zaradność",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczęście" };
-                            const bestStat = (Object.entries(playerStats) as [string,number][]).reduce((a,b)=>a[1]>=b[1]?a:b);
+                            const _statEntries = Object.entries(playerStats) as [string,number][];
+                            const bestStat = _statEntries.length > 0 ? _statEntries.reduce((a,b)=>a[1]>=b[1]?a:b) : ["wiedza",0] as [string,number];
                             return (
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
@@ -7109,12 +7278,12 @@ export default function Page() {
                       <div className="flex-1">
                         {/* ─── Moc farmy + bonusy summary ─── */}
                         {(() => {
-                          const _wB  = Math.min(25, calcStatEffect(playerStats.wiedza, WIEDZA_RATE));
-                          const _zaB = Math.min(30, calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE));
-                          const _zrB = calcStatEffect(playerStats.zrecznosc, 0.004);
-                          const _saB = calcStatEffect(playerStats.sadownik, 0.005);
-                          const _opB = Math.min(90, playerStats.opieka * 0.3);
-                          const _shB = calcStatEffect(playerStats.szczescie, 0.0025);
+                          const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza, WIEDZA_RATE));
+                          const _zaB = Math.min(30, calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE));
+                          const _zrB = calcStatEffect(effectiveStats.zrecznosc, 0.004);
+                          const _saB = calcStatEffect(effectiveStats.sadownik, 0.005);
+                          const _opB = Math.min(90, effectiveStats.opieka * 0.3);
+                          const _shB = calcStatEffect(effectiveStats.szczescie, 0.0025);
                           const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
                           const _statsPow = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3);
                           const _eqB = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => { if (!eq) return s; const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id); return s + (d?.unlockLevel ?? 1) * 8 + (eq.upg ?? 0) * (eq.upg ?? 0) * 4; }, 0);
@@ -7209,7 +7378,9 @@ export default function Page() {
                         <div className="space-y-2">
                           {STATS_DEFS.map(def => {
                             const val = playerStats[def.key];
-                            const eff = calcStatEffect(val, def.rate);
+                            const _avBonus = (getAvatarBonus(avatarSkin)[def.key as keyof PlayerStatsMap] ?? 0) as number;
+                            const effVal = val + _avBonus;
+                            const eff = calcStatEffect(effVal, def.rate);
                             const isLocked = displayLevel < def.unlockLevel;
                             const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
                             const canFree = actualFreeAmt > 0 && !isLocked;
@@ -7228,7 +7399,7 @@ export default function Page() {
                               : def.key === "zrecznosc"  ? `+${eff.toFixed(1)}% szansa`
                               : def.key === "zaradnosc"  ? `−${Math.min(30, eff).toFixed(1)}% podlanie`
                               : def.key === "sadownik"   ? `+${eff.toFixed(1)}% drzewa`
-                              : def.key === "opieka"     ? `−${Math.min(90, val*0.3).toFixed(1)}% głód`
+                              : def.key === "opieka"     ? `−${Math.min(90, effVal*0.3).toFixed(1)}% głód`
                               : `+${eff.toFixed(1)}% drop`;
                             const isFlashing = statFlash === def.key;
                             return (
@@ -7239,12 +7410,6 @@ export default function Page() {
                                   : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e]/70"
                                 }`}>
                                 <div className="flex items-center gap-3">
-                                  {/* Ikona */}
-                                  <div className={`shrink-0 w-11 h-11 flex items-center justify-center ${isLocked ? "grayscale" : ""}`}>
-                                    <img src={def.img} alt={def.label} className="w-11 h-11 object-contain" style={{imageRendering:"pixelated"}}
-                                      onError={e => { (e.currentTarget as HTMLImageElement).style.display="none"; (e.currentTarget.nextSibling as HTMLElement).style.display="inline"; }} />
-                                    <span style={{display:"none"}} className="text-2xl">{def.icon}</span>
-                                  </div>
                                   {/* Info */}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -7253,12 +7418,15 @@ export default function Page() {
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
-                                      {!isLocked && val > 0 && (
+                                      {effVal > 0 && (
                                         <span className="text-sm font-bold text-green-200 ml-auto tabular-nums">{bonusStr}</span>
                                       )}
                                     </div>
                                     {isLocked ? (
-                                      <p className="mt-0.5 text-[11px] text-[#8b6a3e]">Odblokuj na poziomie {def.unlockLevel}</p>
+                                      <div className="mt-0.5 space-y-0.5">
+                                        <p className="text-[11px] text-[#8b6a3e]">Ulepszanie odblokuje sie na poziomie {def.unlockLevel}</p>
+                                        {_avBonus > 0 && <p className="text-[11px] font-bold text-amber-400">+{_avBonus} z avatara — juz aktywne!</p>}
+                                      </div>
                                     ) : (
                                       <>
                                         <div className="mt-1 relative h-2 w-full">
@@ -7276,7 +7444,7 @@ export default function Page() {
                                           ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}</span>
                                           {val < 100
                                             ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
@@ -7981,6 +8149,48 @@ export default function Page() {
                         </div>
                       );
                     })()}
+
+                    {/* Zgniłe owoce */}
+                    {(() => {
+                      const zgnileEntries = (Object.entries(fruitInventory).filter(
+                        ([k, amt]) => Number(amt) > 0 && k.endsWith("_zgnile")
+                      ) as Array<[string, number]>);
+                      if (zgnileEntries.length === 0) return null;
+                      const sortedFruits = [...zgnileEntries].sort(([aKey], [bKey]) => {
+                        const aFid = aKey.slice(0, aKey.lastIndexOf("_"));
+                        const bFid = bKey.slice(0, bKey.lastIndexOf("_"));
+                        const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                        const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                        return aLv - bLv;
+                      });
+                      return (
+                        <div className="mt-4">
+                          <p className="text-[11px] font-bold text-gray-400 mb-2">🍂 Zgniłe owoce (nie do sprzedaży)</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {sortedFruits.map(([fruitKey, amount]) => {
+                              const fid = fruitKey.slice(0, fruitKey.lastIndexOf("_"));
+                              const tree = TREES.find(t => t.fruitId === fid);
+                              if (!tree) return null;
+                              const qty = kompostQty === "max" ? amount : Math.min(kompostQty, amount);
+                              return (
+                                <button
+                                  key={fruitKey}
+                                  onClick={() => void depositFruitToCompost(fruitKey, qty)}
+                                  disabled={batchSlotsFull}
+                                  title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
+                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2">
+                                  <span className="text-3xl">{tree.fruitIcon}</span>
+                                  <span className="mt-1 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
+                                  <span className="text-[9px] font-black text-white">Zgniłe</span>
+                                  <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-gray-300">×{amount}</span>
+                                  <span className="absolute bottom-1 right-1 rounded bg-gray-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="px-6 py-3 border-t border-emerald-800/40 text-center">
@@ -8108,6 +8318,18 @@ export default function Page() {
               </div>
             );
           })()}
+
+          {/* Fixed card tooltip — owoce, przedmioty, kompost — nad kursorem */}
+          {cardTip && (
+            <div
+              className="pointer-events-none fixed z-[9999] flex flex-col items-center"
+              style={{ left: mousePos.x, top: mousePos.y - 14, transform: "translate(-50%, -100%)" }}>
+              <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-2xl max-w-[220px]">
+                {cardTip}
+              </div>
+              <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] -mt-1" />
+            </div>
+          )}
 
           {/* ═══ POWIADOMIENIE KOMPOSTU ═══ */}
           {compostNotice && (() => {
@@ -8389,7 +8611,7 @@ export default function Page() {
               const haveFor = (id: string): number => {
                 if (id === 'honey_jar') return hiveData.honey_jars;
                 if (/_(good|epic|legendary)$/.test(id)) return seedInventory[id] ?? 0;
-                if (/_(zwykly|soczysty|zloty)$/.test(id)) return fruitInventory[id] ?? 0;
+                if (/_(zwykly|soczysty|zloty|zgnile)$/.test(id)) return fruitInventory[id] ?? 0;
                 return barnItems[id] ?? 0;
               };
               const mergedItems = order ? mergeOrderItems(order.items) : [];
@@ -8423,77 +8645,94 @@ export default function Page() {
                           className="absolute left-0 top-9 pt-2 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4"
                         >
                           <div>
-                            <p className="text-lg font-black text-amber-300 mb-1">🛒 Lada dla klientów — jak to działa?</p>
-                            <p className="text-[13px] text-[#bfa274] leading-relaxed">Klienci NPC pojawiają się automatycznie co kilka minut i zamawiają u Ciebie konkretne produkty (uprawy, owoce, produkty zwierzęce, miód). Każde zlecenie ma <span className="text-amber-300 font-bold">limit czasu</span> — jeśli go przekroczysz, klient odejdzie bez zapłaty. Po realizacji dostajesz <span className="text-yellow-300 font-bold">złoto</span>, <span className="text-blue-300 font-bold">EXP</span>, a czasem dodatkowy <span className="text-purple-300 font-bold">bonus</span>.</p>
+                            <p className="text-lg font-black text-amber-300 mb-2">Lada dla klientów</p>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i chcą kupić różne produkty:</p>
+                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none mb-3">
+                              <li>🌱 uprawy,</li>
+                              <li>🍎 owoce z sadu,</li>
+                              <li>🐔 produkty zwierzęce,</li>
+                              <li>🍯 miód.</li>
+                            </ul>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-1">Każde zamówienie ma limit czasu. Po jego wykonaniu dostajesz:</p>
+                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none">
+                              <li>💰 złoto,</li>
+                              <li>⭐ EXP,</li>
+                              <li>🎁 czasem bonusowy przedmiot.</li>
+                            </ul>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">👥 Rodzaje klientów</p>
-                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym częściej pojawiają się więksi klienci (większy mnożnik nagród, więcej produktów na liście).</p>
-                            <div className="space-y-1.5 text-[12.5px]">
+                            <p className="text-sm font-black text-amber-300 mb-2">👥 Typy klientów</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia.</p>
+                            <div className="space-y-1 text-[12px]">
+                              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
+                                <span>Klient</span><span>Produkty</span><span>Bonus nagród</span><span>Czas</span>
+                              </div>
                               {[
-                                { i:'🧑‍🌾', n:'Sąsiad',                  it:'1 produkt',     m:'×1.00', t:'12h', b:'5%'  },
-                                { i:'🧓',  n:'Gość ze wsi',            it:'1–2 produkty',  m:'×1.15', t:'16h', b:'8%'  },
-                                { i:'🏪',  n:'Mały targ',              it:'2–3 produkty',  m:'×1.35', t:'20h', b:'12%' },
-                                { i:'🏬',  n:'Sklep wiejski',          it:'3–4 produkty',  m:'×1.60', t:'24h', b:'18%' },
-                                { i:'🍽️', n:'Restauracja',            it:'4–5 produktów', m:'×2.00', t:'30h', b:'25%' },
-                                { i:'🏢',  n:'Hurtownia',              it:'5–6 produktów', m:'×2.50', t:'36h', b:'40%' },
-                                { i:'🏛️', n:'Sieć handlowa',          it:'6–8 produktów', m:'×3.20', t:'42h', b:'60%' },
-                                { i:'🏗️', n:'Centrum dystrybucji',    it:'7–9 produktów', m:'×4.00', t:'48h', b:'80%' },
-                                { i:'🌍',  n:'Kontrakt międzynarodowy',it:'8–10 produktów',m:'×5.00', t:'48h', b:'100%' },
+                                { i:'🧑‍🌾', n:'Sąsiad',                   it:'1',      m:'×1.00', t:'12h' },
+                                { i:'🧓',   n:'Gość ze wsi',             it:'1–2',    m:'×1.15', t:'16h' },
+                                { i:'🏪',   n:'Mały targ',               it:'2–3',    m:'×1.35', t:'20h' },
+                                { i:'🏬',   n:'Sklep wiejski',           it:'3–4',    m:'×1.60', t:'24h' },
+                                { i:'🍽️',  n:'Restauracja',             it:'4–5',    m:'×2.00', t:'30h' },
+                                { i:'🏢',   n:'Hurtownia',               it:'5–6',    m:'×2.50', t:'36h' },
+                                { i:'🏛️',  n:'Sieć handlowa',           it:'6–8',    m:'×3.20', t:'42h' },
+                                { i:'🏗️',  n:'Centrum dystrybucji',     it:'7–9',    m:'×4.00', t:'48h' },
+                                { i:'🌍',   n:'Kontrakt międzynarodowy', it:'8–10',   m:'×5.00', t:'48h' },
                               ].map(c => (
-                                <div key={c.n} className="flex items-center gap-2 rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
-                                  <span className="text-base shrink-0">{c.i}</span>
-                                  <span className="font-bold text-[#f9e7b2] flex-1 truncate">{c.n}</span>
-                                  <span className="text-[#bfa274] hidden sm:inline">{c.it}</span>
-                                  <span className="text-amber-300 font-bold w-12 text-right">{c.m}</span>
-                                  <span className="text-[#8b6a3e] w-10 text-right">{c.t}</span>
-                                  <span className="text-purple-300 w-10 text-right">{c.b}</span>
+                                <div key={c.n} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
+                                  <span className="font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
+                                  <span className="text-[#bfa274] text-right">{c.it}</span>
+                                  <span className="text-amber-300 font-bold text-right">{c.m}</span>
+                                  <span className="text-[#8b6a3e] text-right">{c.t}</span>
                                 </div>
                               ))}
                             </div>
-                            <p className="text-[10.5px] text-[#8b6a3e] mt-1.5">Kolumny: ikona · nazwa · liczba pozycji · mnożnik nagród · czas na realizację · szansa na bonus</p>
                           </div>
 
                           <div>
                             <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
-                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
-                              <li><span className="text-yellow-300 font-bold">Złoto</span> = 70% wartości zamówionych produktów × mnożnik klienta</li>
-                              <li><span className="text-blue-300 font-bold">EXP</span> = 3% wartości × mnożnik klienta</li>
-                              <li><span className="text-purple-300 font-bold">Bonus dodatkowy</span> (czasem) — losowy przedmiot: nasiona, kompost, owoce, części wyposażenia, kucnięcia jakości</li>
+                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Podstawowe</p>
+                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab] mb-2">
+                              <li>💰 Gold = wartość produktów × bonus klienta</li>
+                              <li>⭐ EXP = dodatkowa nagroda za wykonanie zamówienia</li>
                             </ul>
+                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Bonusy (losowo)</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-1">Niektórzy klienci mogą dać dodatkowo:</p>
+                            <ul className="text-[12.5px] space-y-0.5 list-none text-[#dfcfab]">
+                              <li>🌿 kompost,</li>
+                              <li>🐔 produkty zwierząt,</li>
+                              <li>🍎 rzadkie owoce,</li>
+                              <li>🎒 materiały do ulepszania,</li>
+                              <li>✨ rzadkie przedmioty.</li>
+                            </ul>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Im większy klient, tym większa szansa na bonus.</p>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów w zamówieniach</p>
+                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów</p>
                             <div className="space-y-1.5 text-[12.5px]">
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🌱 Uprawy (warzywa)</p>
-                                <p className="text-[#bfa274]">zwykła — od początku · <span className="text-amber-300">epicka — od lvl 8</span> · <span className="text-amber-300">legendarna — od lvl 10</span></p>
+                                <p className="font-bold text-emerald-300 mb-0.5">🌱 Uprawy</p>
+                                <p className="text-[#bfa274]">zwykła, epicka, legendarna.</p>
                               </div>
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🍎 Owoce z drzew (sad)</p>
-                                <p className="text-[#bfa274]">zwykły — od początku · <span className="text-amber-300">soczysty — od lvl 14</span> · <span className="text-amber-300">złoty — od lvl 16</span></p>
-                              </div>
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🐔 Produkty zwierzęce</p>
-                                <p className="text-[#bfa274]">odblokowane od lvl 3 (gdy stodoła jest dostępna)</p>
-                              </div>
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300">🍯 Słoik miodu</p>
-                                <p className="text-[#bfa274]">odblokowany od lvl 10 (gdy ul jest dostępny)</p>
+                                <p className="font-bold text-emerald-300 mb-0.5">🍎 Owoce</p>
+                                <p className="text-[#bfa274]">zwykły, soczysty, złoty.</p>
                               </div>
                             </div>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Klient może wymagać konkretnej jakości produktu.</p>
                           </div>
 
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">📋 Realizacja zamówienia</p>
-                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab]">
-                              <li>Musisz mieć <span className="font-bold text-emerald-300">wszystkie wymagane produkty</span> w odpowiedniej ilości i jakości.</li>
-                              <li>Naciskasz „🤝 Zrealizuj zamówienie" — produkty znikają z magazynu, nagroda trafia na konto.</li>
-                              <li>Jeśli czas na realizację upłynie, klient odejdzie i nic nie dostaniesz.</li>
-                              <li>Nowy klient pojawia się automatycznie po krótkim czasie — odliczanie widać u góry.</li>
-                            </ul>
+                            <p className="text-sm font-black text-amber-300 mb-2">📋 Jak wykonać zamówienie?</p>
+                            <ol className="text-[12.5px] space-y-1 list-decimal list-inside text-[#dfcfab]">
+                              <li>Zbierz wymagane produkty.</li>
+                              <li>Kliknij 🤝 „Zrealizuj".</li>
+                              <li>Produkty znikają z magazynu.</li>
+                              <li>Otrzymujesz nagrody.</li>
+                            </ol>
+                            <p className="text-[12px] text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie.</p>
+                            <p className="text-[12px] text-[#bfa274] mt-1">Nowi klienci pojawiają się automatycznie po pewnym czasie.</p>
                           </div>
                         </div>
                       )}
@@ -8501,13 +8740,7 @@ export default function Page() {
                     <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                     <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
-                      <div className="flex items-center gap-4">
-                        <span className="text-4xl">🛒</span>
-                        <div>
-                          <h2 className="text-2xl font-black text-[#f9e7b2]">Lada dla klientów</h2>
-                          <p className="text-sm text-amber-400/80">Klienci NPC zamawiają u Ciebie produkty</p>
-                        </div>
-                      </div>
+                      <h2 className="text-3xl font-black text-[#f9e7b2] text-center">Lada dla klientów</h2>
                     </div>
 
                     {/* Pasek: czas do następnego klienta */}
@@ -8586,11 +8819,9 @@ export default function Page() {
                             <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">🎁 Nagroda:</p>
                             <div className="grid grid-cols-2 gap-2">
                               <div className="rounded-lg border border-yellow-500/40 bg-yellow-950/20 p-2 text-center">
-                                <p className="text-xl">💰</p>
                                 <p className="text-base font-black text-yellow-300">{Number(order.rewards.gold).toFixed(0)} zł</p>
                               </div>
                               <div className="rounded-lg border border-blue-500/40 bg-blue-950/20 p-2 text-center">
-                                <p className="text-xl">⭐</p>
                                 <p className="text-base font-black text-blue-300">+{order.rewards.exp} EXP</p>
                               </div>
                             </div>
@@ -8761,7 +8992,7 @@ export default function Page() {
                 }
               }
               // Owoc
-              const fruitM = lookupId.match(/^(.+)_(zwykly|soczysty|zloty)$/);
+              const fruitM = lookupId.match(/^(.+)_(zwykly|soczysty|zloty|zgnile)$/);
               if (fruitM) {
                 const tree = TREES.find(t => t.fruitId === fruitM[1]);
                 const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
@@ -8869,7 +9100,7 @@ export default function Page() {
 
           {showStodolaModal && (() => {
             const lvl = profile?.level ?? 0;
-            const opiekaPts = playerStats?.opieka ?? 0;
+            const opiekaPts = effectiveStats.opieka;
             const bonusChancePct = (opiekaPts * 0.15).toFixed(1);
             const hungerReducePct = (opiekaPts * 0.3).toFixed(1);
             const handleBuyAnimal = async (a: AnimalDef) => {
@@ -8879,6 +9110,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
+              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
               await loadProfile(profile.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
@@ -8891,6 +9123,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
+              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
               await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
@@ -8908,38 +9141,44 @@ export default function Page() {
               setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
-              const st = barnState[a.id];
-              if (st.storage === 0 || st.owned === 0) return;
-              const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-              // 1 cykl storage = owned sztuk produktu
-              const baseCollected = st.storage * st.owned;
-              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
-              const collected = Math.floor(baseCollected * (1 + rewardBonus));
-              const bonusUnits = collected - baseCollected;
-              const newItems = {...barnItems, [a.itemId]: (barnItems[a.itemId]??0) + collected};
-              saveBarnItems(newItems);
-              saveBarnState({...barnState, [a.id]: {...st, storage: 0, prodStart: barnNow}});
-              const bonusMsg = bonusUnits > 0 ? ` 🎁 +${bonusUnits} z eq (+${(rewardBonus*100).toFixed(1)}%)` : "";
-              setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${collected} ${item.name} (${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()})${bonusMsg}`});
+              if (!profile?.id) return;
+              void (async () => {
+                const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+                let rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+                if (rpc.error?.message?.includes("sync_barn_owned")) {
+                  const st = barnState[a.id];
+                  if (!st || st.owned === 0) { setMessage({type:"error",title:"Błąd!",text:"Brak zwierząt do synchronizacji."}); return; }
+                  await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+                  rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+                }
+                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+                const res = rpc.data as { ok: boolean; collected: number; item_id: string; new_prod_start: number; new_barn_items: Record<string,number> };
+                if (res.collected === 0) { setMessage({type:"info",title:`${a.icon} Brak produktów`,text:`${a.name} jeszcze pracuje — wróć później.`}); return; }
+                saveBarnItems(res.new_barn_items);
+                saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start}});
+                setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${res.collected} ${item.name}`});
+              })();
             };
             const handleCollectAll = () => {
-              let changed = false; const newItems = {...barnItems}; const newState = {...barnState};
-              let totalItems = 0;
-              const rewardBonus = getEquipBonusPct("% reward zwierząt", charEquipped) / 100;
-              ANIMALS.forEach(a => {
-                const st = barnState[a.id];
-                if (st.storage > 0 && st.owned > 0) {
-                  const baseCollected = st.storage * st.owned;
-                  const collected = Math.floor(baseCollected * (1 + rewardBonus));
-                  newItems[a.itemId] = (newItems[a.itemId]??0) + collected;
-                  newState[a.id] = {...st, storage:0, prodStart: barnNow};
-                  totalItems += collected;
-                  changed = true;
+              if (!profile?.id) return;
+              void (async () => {
+                let rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
+                if (rpc.error?.message?.includes("sync_barn_owned")) {
+                  for (const a of ANIMALS) {
+                    const st = barnState[a.id];
+                    if (st && st.owned > 0) await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+                  }
+                  rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
                 }
-              });
-              if (!changed) return;
-              saveBarnItems(newItems); saveBarnState(newState);
-              setMessage({type:"success",title:"Odebrano wszystko!",text:`+${totalItems} produktów. Sprzedaj je w Ladzie dla klientów.`});
+                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+                const res = rpc.data as { ok: boolean; results: Array<{animal_id:string;item_id:string;collected:number;new_prod_start:number}>; total: number; new_barn_items: Record<string,number> };
+                if (res.total === 0) { setMessage({type:"info",title:"Nic do odbioru",text:"Żadne zwierzę nie jest jeszcze gotowe."}); return; }
+                saveBarnItems(res.new_barn_items);
+                const newState = {...barnState};
+                res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start}; });
+                saveBarnState(newState);
+                setMessage({type:"success",title:"Odebrano wszystko!",text:`+${res.total} produktów. Sprzedaj je w Ladzie dla klientów.`});
+              })();
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
             const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
@@ -9214,43 +9453,54 @@ export default function Page() {
               return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
             };
             const handleHarvestTree = (t: TreeDef) => {
-              const st = orchardState[t.id];
-              if (!st) return;
-              const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
-              if (total === 0) return;
-              const inv = { ...fruitInventory };
-              (["zwykly","soczysty","zloty"] as const).forEach(q => {
-                if (st.storage[q] > 0) {
-                  const k = `${t.fruitId}_${q}`;
-                  inv[k] = (inv[k] ?? 0) + st.storage[q];
+              if (!profile?.id) return;
+              void (async () => {
+                setOrchardError("");
+                let rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
+                if (rpc.error?.message?.includes("sync_orchard_owned")) {
+                  const cur = orchardState[t.id];
+                  if (!cur || cur.owned === 0) { setOrchardError("Brak drzew do zebrania."); return; }
+                  await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned });
+                  rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
                 }
-              });
-              saveFruitInventory(inv);
-              saveOrchardState({ ...orchardState, [t.id]: { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() } });
-              const parts: string[] = [];
-              if (st.storage.zwykly > 0)   parts.push(`${st.storage.zwykly} zwykłych`);
-              if (st.storage.soczysty > 0) parts.push(`💧${st.storage.soczysty} soczystych`);
-              if (st.storage.zloty > 0)    parts.push(`✨${st.storage.zloty} złotych`);
-              setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+                const res = rpc.data as { ok: boolean; added: Record<string,number>; new_prod_start: number; new_fruit_inventory: Record<string,number> };
+                const total = Object.values(res.added ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+                if (total === 0) { setOrchardError(`${t.icon} Drzewo jeszcze rośnie — wróć za chwilę.`); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+                saveOrchardState({ ...orchardState, [t.id]: { ...orchardState[t.id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: res.new_prod_start } });
+                const a = res.added; const parts: string[] = [];
+                if ((a[`${t.fruitId}_zwykly`]   ?? 0) > 0) parts.push(`${a[`${t.fruitId}_zwykly`]} zwykłych`);
+                if ((a[`${t.fruitId}_soczysty`] ?? 0) > 0) parts.push(`💧${a[`${t.fruitId}_soczysty`]} soczystych`);
+                if ((a[`${t.fruitId}_zloty`]    ?? 0) > 0) parts.push(`✨${a[`${t.fruitId}_zloty`]} złotych`);
+                if ((a[`${t.fruitId}_zgnile`]   ?? 0) > 0) parts.push(`🍂${a[`${t.fruitId}_zgnile`]} zgniłych`);
+                setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+              })();
             };
             const handleHarvestAll = () => {
-              const inv = { ...fruitInventory };
-              const newOrch = { ...orchardState };
-              let totalAll = 0; const partsAll: string[] = [];
-              TREES.forEach(t => {
-                const st = newOrch[t.id]; if (!st) return;
-                const total = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
-                if (total === 0) return;
-                (["zwykly","soczysty","zloty"] as const).forEach(q => {
-                  if (st.storage[q] > 0) { const k = `${t.fruitId}_${q}`; inv[k] = (inv[k] ?? 0) + st.storage[q]; }
-                });
-                newOrch[t.id] = { ...st, storage:{ zwykly:0, soczysty:0, zloty:0 }, prodStart: Date.now() };
-                totalAll += total;
-                partsAll.push(`${t.fruitIcon}×${total}`);
-              });
-              if (totalAll === 0) return;
-              saveFruitInventory(inv); saveOrchardState(newOrch);
-              setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+              if (!profile?.id) return;
+              void (async () => {
+                setOrchardError("");
+                let rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+                if (rpc.error?.message?.includes("sync_orchard_owned")) {
+                  for (const t of TREES) {
+                    const st = orchardState[t.id];
+                    if (st && st.owned > 0) await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: st.owned });
+                  }
+                  rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+                }
+                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+                const res = rpc.data as { ok: boolean; results: Array<{tree_id:string;added:Record<string,number>;new_prod_start:number}>; added_all: Record<string,number>; new_fruit_inventory: Record<string,number> };
+                const totalAll = Object.values(res.added_all ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+                if (totalAll === 0) { setOrchardError("Brak owoców — drzewa jeszcze rosną."); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+                const newOrch = { ...orchardState };
+                res.results.forEach(r => { if (newOrch[r.tree_id]) newOrch[r.tree_id] = { ...newOrch[r.tree_id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: r.new_prod_start }; });
+                saveOrchardState(newOrch);
+                const partsAll: string[] = [];
+                TREES.forEach(t => { const n = Object.entries(res.added_all ?? {}).filter(([k]) => k.startsWith(t.fruitId+"_")).reduce((s,[,v]) => s+(Number(v)||0), 0); if (n > 0) partsAll.push(`${t.fruitIcon}×${n}`); });
+                setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+              })();
             };
             const calcInvValue = () => {
               let v = 0;
@@ -9260,21 +9510,21 @@ export default function Page() {
                   const cnt = fruitInventory[k] ?? 0;
                   if (cnt > 0) v += cnt * t.pricePerFruit * FRUIT_QUALITY_DEFS[q].mult;
                 });
+                // zgniłe: mult=0, nie wliczamy do wartości
               });
               return v;
             };
             const handleSellAll = () => {
               if (!profile?.id) return;
-              const value = calcInvValue();
-              if (value === 0) { setOrchardError("Brak owoców do sprzedaży."); return; }
               setOrchardError("");
               void (async () => {
-                const newMoney = (profile.money ?? 0) + value;
-                const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
+                const { data, error } = await supabase.rpc("sell_fruits", { p_user_id: profile.id });
                 if (error) { setOrchardError("Błąd sprzedaży: " + error.message); return; }
-                saveFruitInventory({});
+                const res = data as { ok: boolean; reason?: string; sold_value: number; new_money: number; new_fruit_inventory: Record<string,number> };
+                if (!res.ok) { setOrchardError(res.reason ?? "Brak owoców do sprzedaży (zgniłe owoce nie mają wartości)."); return; }
+                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
                 await loadProfile(profile.id);
-                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${value.toLocaleString()}💰`, text:"Owoce trafiły na rynek." });
+                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${res.sold_value.toLocaleString()} 💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
               })();
             };
             const invValue = calcInvValue();
@@ -9311,7 +9561,7 @@ export default function Page() {
                           const effMs = Math.max(60_000, Math.round(t.growthTimeMs * Math.max(0.30, 1 - treeSpeedPct/100)));
                           const elapsed = st.prodStart > 0 ? barnNow - st.prodStart : 0;
                           const remaining = Math.max(0, effMs - elapsed);
-                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty;
+                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
                           const cycleEarnings = (st.storage.zwykly * t.pricePerFruit) + (st.storage.soczysty * t.pricePerFruit * 2) + (st.storage.zloty * t.pricePerFruit * 5);
                           return (
                             <div key={t.id} className="rounded-2xl border border-[#8b6a3e]/50 bg-black/30 p-4">
@@ -9338,9 +9588,10 @@ export default function Page() {
                                     <p className="text-[10px] uppercase tracking-widest text-emerald-400">✅ Gotowe do zbioru!</p>
                                     <p className="mt-1 text-base font-black text-[#f9e7b2]">{totalStored} {t.fruitIcon}</p>
                                     <div className="mt-1 flex flex-wrap gap-1.5 text-[10px]">
-                                      {st.storage.zwykly > 0   && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
-                                      {st.storage.soczysty > 0 && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
-                                      {st.storage.zloty > 0    && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
+                                      {st.storage.zwykly > 0          && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
+                                      {st.storage.soczysty > 0         && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
+                                      {st.storage.zloty > 0            && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
+                                      {(st.storage.zgnile ?? 0) > 0   && <span className="rounded bg-gray-900/40 border border-gray-600/40 px-2 py-0.5 font-bold text-gray-400">🍂 {st.storage.zgnile} zgniłe</span>}
                                     </div>
                                     <p className="mt-1 text-[10px] text-amber-400">≈ {cycleEarnings.toLocaleString()}💰 wartości</p>
                                   </div>
@@ -9441,7 +9692,33 @@ export default function Page() {
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
               <div className="relative max-h-[90vh] w-full max-w-[1100px] overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
                 <button onClick={() => setShowSkinModal(false)} className="absolute right-4 top-4 text-[#8b6a3e] text-xl hover:text-red-400">✕</button>
-                <h2 className="mb-5 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                <h2 className="mb-3 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
+                {/* Koszt/cooldown zmiany avatara */}
+                {(() => {
+                  const tier = getAvatarChangeTier(avatarChangeCount);
+                  const now = Date.now();
+                  const cooldownLeft = tier.cooldownMs > 0 && lastAvatarChangeAt > 0 ? Math.max(0, tier.cooldownMs - (now - lastAvatarChangeAt)) : 0;
+                  const cMins = Math.ceil(cooldownLeft / 60000);
+                  const cHrs = Math.floor(cMins / 60);
+                  const cMinRem = cMins % 60;
+                  const timeStr = cHrs > 0 ? `${cHrs}h ${cMinRem}min` : `${cMins}min`;
+                  const isFree = tier.cost === 0;
+                  const freeLeft = Math.max(0, 2 - avatarChangeCount);
+                  return (
+                    <div className={`mb-4 mx-auto max-w-md rounded-xl border px-4 py-2 text-center text-xs font-medium ${
+                      cooldownLeft > 0 ? "border-red-500/40 bg-red-950/20 text-red-300"
+                      : isFree ? "border-green-500/40 bg-green-950/15 text-green-300"
+                      : "border-yellow-500/40 bg-yellow-950/15 text-yellow-300"
+                    }`}>
+                      {cooldownLeft > 0
+                        ? `Cooldown — kolejna zmiana za ${timeStr}`
+                        : isFree
+                          ? `Zmiana avatara bezplatna${freeLeft > 0 ? ` (${freeLeft} gratis pozostalo)` : ""}`
+                          : `Zmiana avatara: ${tier.cost.toLocaleString("pl-PL")} zl — posiadasz: ${displayMoney.toLocaleString("pl-PL")} zl`
+                      }
+                    </div>
+                  );
+                })()}
                 {/* Zakładki */}
                 <div className="mb-6 flex gap-2 justify-center flex-wrap">
                   {(["mezczyzni","kobiety","epickie","wszystkie"] as const).map(tab => (
@@ -9461,12 +9738,20 @@ export default function Page() {
                   <>
                     {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👨 Mężczyźni</p>}
                     <div className={`${skinTab === "wszystkie" ? "mb-4" : ""} grid grid-cols-5 gap-2`}>
-                      {SKINS_MALE.map((src, i) => (
-                        <button key={i} onClick={() => { setAvatarSkin(i); if (profile?.id) saveAvatarData(profile.id, i, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 bg-yellow-900/30 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                          <img src={src} alt={`Postać ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                        </button>
-                      ))}
+                      {SKINS_MALE.map((src, i) => {
+                        const _b = getAvatarBonus(i);
+                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+                        const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+                        const _meta = AVATAR_META[i];
+                        return (
+                          <button key={i} onClick={() => handleAvatarSelect(i)}
+                            onMouseEnter={() => setHoveredNormalSkin(i)}
+                            onMouseLeave={() => setHoveredNormalSkin(null)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            <img src={src} alt={`Postac ${i+1}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -9476,12 +9761,21 @@ export default function Page() {
                   <>
                     {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👩 Kobiety</p>}
                     <div className="grid grid-cols-5 gap-2">
-                      {SKINS_FEMALE.map((src, i) => (
-                        <button key={i+10} onClick={() => { const idx=i+10; setAvatarSkin(idx); if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current); setShowSkinModal(false); }}
-                          className={`flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i+10 ? "border-pink-400 bg-pink-900/30 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 bg-black/20 hover:border-[#8b6a3e] hover:bg-black/40"}`}>
-                          <img src={src} alt={`Postać ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                        </button>
-                      ))}
+                      {SKINS_FEMALE.map((src, i) => {
+                        const _idx = i + 10;
+                        const _b = getAvatarBonus(_idx);
+                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+                        const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+                        const _meta = AVATAR_META[_idx];
+                        return (
+                          <button key={_idx} onClick={() => handleAvatarSelect(_idx)}
+                            onMouseEnter={() => setHoveredNormalSkin(_idx)}
+                            onMouseLeave={() => setHoveredNormalSkin(null)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            <img src={src} alt={`Postac ${i+11}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 )}
@@ -9501,9 +9795,7 @@ export default function Page() {
                           <button key={idx}
                             onClick={() => {
                               if (isUnlocked) {
-                                setAvatarSkin(idx);
-                                if (profile?.id) saveAvatarData(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current);
-                                setShowSkinModal(false);
+                                void handleAvatarSelect(idx);
                               } else {
                                 setEpicPurchaseTarget(idx);
                               }
@@ -9555,30 +9847,45 @@ export default function Page() {
             const isUnlocked = unlockedEpicAvatars.includes(hoveredEpicSkin);
             const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
             return (
-              <div className="pointer-events-none fixed z-[9999] w-64 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-4 shadow-2xl backdrop-blur-sm"
-                style={{ left: mousePos.x + 20, top: Math.max(8, mousePos.y - 160) }}>
+              <div className="pointer-events-none fixed z-[9999] w-80 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-5 shadow-2xl backdrop-blur-sm"
+                style={{ left: mousePos.x + 20, top: Math.max(8, mousePos.y - 200) }}>
                 {/* Podgląd skina */}
                 <div className="mb-3 flex justify-center">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
+                  <div className="relative h-32 w-32 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
                     <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(80%) brightness(0.5)" }} />
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-3xl">🔒</span>
+                        <span className="text-4xl">🔒</span>
                       </div>
                     )}
                   </div>
                 </div>
                 {/* Nazwa */}
-                <p className="mb-1 text-center text-[15px] font-black text-green-300">⭐ {es.name}</p>
+                <p className="mb-1 text-center text-[20px] font-black text-green-300">⭐ {es.name}</p>
                 {/* Status */}
                 {isUnlocked
-                  ? <p className="mb-2 text-center text-[11px] font-bold text-green-400">✓ Odblokowany — kliknij, aby wybrać</p>
-                  : <p className="mb-2 text-center text-[11px] text-[#8b6a3e]">Zablokowany — kliknij, aby odblokować</p>
+                  ? <p className="mb-2 text-center text-[14px] font-bold text-green-400">✓ Odblokowany — kliknij, aby wybrać</p>
+                  : <p className="mb-2 text-center text-[14px] text-[#8b6a3e]">Zablokowany — kliknij, aby odblokować</p>
                 }
+                {/* Bonusy statystyk */}
+                {(() => {
+                  const _b = getAvatarBonus(hoveredEpicSkin!);
+                  const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+                  const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+                  if (!_e.length) return null;
+                  return (
+                    <div className="mb-2 rounded-xl border border-green-700/40 bg-green-950/20 px-3 py-2">
+                      <p className="mb-1.5 text-[12px] font-black uppercase tracking-widest text-green-500">Bonusy statystyk:</p>
+                      <div className="flex flex-wrap justify-center gap-1.5">
+                        {_e.map(([k,v]) => <span key={k} className="rounded bg-green-900/40 border border-green-600/30 px-2 py-0.5 text-[13px] font-bold text-green-200">+{v} {_sl[k]??k}</span>)}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* Koszty */}
                 {!isUnlocked && (
                   <div className="rounded-xl border border-green-800/40 bg-black/30 p-3">
-                    <p className="mb-1.5 text-[10px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
+                    <p className="mb-1.5 text-[13px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
                     {Object.entries(es.cost).map(([k, v]) => {
                       const { baseCropId, quality } = parseQualityKey(k);
                       const crop = CROPS.find(c => c.id === baseCropId);
@@ -9595,6 +9902,28 @@ export default function Page() {
                     {canAfford && <p className="mt-1.5 text-center text-[11px] font-black text-green-400">Masz wystarczająco!</p>}
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* ═══ TOOLTIP NORMALNEGO SKINA (M/K) ═══ */}
+          {hoveredNormalSkin !== null && showSkinModal && (() => {
+            const _b = getAvatarBonus(hoveredNormalSkin);
+            const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+            if (!_e.length) return null;
+            const _meta = AVATAR_META[hoveredNormalSkin];
+            const isFemale = hoveredNormalSkin >= 10 && hoveredNormalSkin < EPIC_SKIN_START;
+            const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+            const borderColor = isFemale ? "border-pink-500/70" : "border-amber-500/70";
+            const nameColor = isFemale ? "text-pink-300" : "text-amber-300";
+            const badgeBg = isFemale ? "bg-pink-900/40 border-pink-600/30 text-pink-200" : "bg-amber-900/40 border-amber-600/30 text-amber-200";
+            return (
+              <div className={`pointer-events-none fixed z-[9999] w-64 rounded-[18px] border ${borderColor} bg-[rgba(18,10,2,0.98)] px-4 py-3 text-center shadow-2xl backdrop-blur-sm`}
+                style={{ left: Math.min(mousePos.x + 16, (typeof window !== "undefined" ? window.innerWidth : 1920) - 272), top: Math.max(8, mousePos.y - 120) }}>
+                {_meta && <p className={`text-[18px] font-black ${nameColor} mb-2`}>{_meta.name}</p>}
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {_e.map(([k,v]) => <span key={k} className={`rounded border px-2 py-0.5 text-[15px] font-bold ${badgeBg}`}>+{v} {_sl[k]??k}</span>)}
+                </div>
               </div>
             );
           })()}
@@ -9677,7 +10006,40 @@ export default function Page() {
                     ×
                   </button>
 
-                  <div className="mb-4 pr-14">
+                  {/* Konewka */}
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); }}
+                    onMouseEnter={() => setHoveredWateringCan(true)}
+                    onMouseLeave={() => setHoveredWateringCan(false)}
+                    className={`absolute right-4 top-16 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
+                      selectedTool === "watering_can"
+                        ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
+                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
+                    }`}
+                  >
+                    <img src="/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
+                  </button>
+
+                  {/* Zbierz */}
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); }}
+                    onMouseEnter={() => setHoveredSickle(true)}
+                    onMouseLeave={() => setHoveredSickle(false)}
+                    onMouseDown={() => setHoveredSickle(false)}
+                    className={`absolute right-4 top-44 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
+                      selectedTool === "sickle"
+                        ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]"
+                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
+                    }`}
+                  >
+                    <img src="/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
+                  </button>
+
+                  <div className="mb-4 pr-28">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                     <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                     <p className="mt-2 text-sm text-[#dfcfab]">
@@ -10144,67 +10506,6 @@ export default function Page() {
           </div>
         )}
 
-          {/* ── Przyciski Konewka i Zbierz — portal do document.body, poza każdym stacking context ── */}
-          {isFieldViewOpen && isOnFarmMap && typeof document !== "undefined" && ReactDOM.createPortal(
-            (["konewka", "zbierz"] as const).map(btn => {
-              const pos = btn === "konewka" ? fvKonewkaPos : fvZbierzPos;
-              const isActive = btn === "konewka" ? selectedTool === "watering_can" : selectedTool === "sickle";
-              return (
-                <button
-                  key={btn}
-                  type="button"
-                  onMouseDown={(e) => {
-                    if ((e.target as HTMLElement).dataset.resizeHandle) return;
-                    if (!fvToolEditMode) return;
-                    e.preventDefault();
-                    fvToolDragRef.current = { btn, mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                  }}
-                  onClick={fvToolEditMode ? undefined : () => {
-                    if (btn === "konewka") {
-                      setSelectedTool(prev => prev === "watering_can" ? null : "watering_can");
-                    } else {
-                      setSelectedTool(prev => prev === "sickle" ? null : "sickle");
-                    }
-                    setSelectedSeedId(null);
-                  }}
-                  onMouseEnter={btn === "konewka" ? () => setHoveredWateringCan(true) : () => setHoveredSickle(true)}
-                  onMouseLeave={btn === "konewka" ? () => setHoveredWateringCan(false) : () => setHoveredSickle(false)}
-                  className={`fixed z-[9999] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${
-                    fvToolEditMode
-                      ? "cursor-move border-purple-400/80 bg-purple-900/50 shadow-[0_0_16px_rgba(168,85,247,0.5)]"
-                      : isActive
-                      ? (btn === "konewka"
-                          ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
-                          : "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]")
-                      : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
-                  }`}
-                  style={{ left: pos.l, top: pos.t, width: pos.w, height: pos.h }}
-                >
-                  <img
-                    src={btn === "konewka" ? "/watering_can_transparent.png" : "/sierp.png"}
-                    alt={btn === "konewka" ? "Konewka" : "Zbierz"}
-                    className="h-[50%] w-[50%] object-contain pointer-events-none"
-                    style={{ imageRendering: "pixelated" }}
-                  />
-                  <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">
-                    {btn === "konewka" ? "Konewka" : "Zbierz"}
-                  </p>
-                  {fvToolEditMode && (
-                    <div
-                      data-resize-handle="1"
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        fvToolDragRef.current = { btn, mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
-                      }}
-                      className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl-md bg-purple-400 opacity-80 hover:opacity-100 pointer-events-auto"
-                    />
-                  )}
-                </button>
-              );
-            }),
-            document.body
-          )}
 
           {farmUpgradeModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
@@ -10398,10 +10699,10 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-yellow-300">🌾 Sierp — Zbierz</p>
           <p className="mb-3 text-[14px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
-          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(playerStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
-          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({playerStats.zrecznosc}/100)</p>
-          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(playerStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
-          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({playerStats.szczescie}/100)</p>
+          <p className="mb-1">🎯 Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(effectiveStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e] mb-2">z Zręczności ({effectiveStats.zrecznosc}/100{effectiveStats.zrecznosc !== playerStats.zrecznosc ? `, w tym +${effectiveStats.zrecznosc - playerStats.zrecznosc} z avatara` : ""})</p>
+          <p className="mb-1">🍀 Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(effectiveStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
+          <p className="text-[13px] text-[#8b6a3e]">ze Szczęścia ({effectiveStats.szczescie}/100{effectiveStats.szczescie !== playerStats.szczescie ? `, w tym +${effectiveStats.szczescie - playerStats.szczescie} z avatara` : ""})</p>
         </div>
       )}
     {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
@@ -10435,6 +10736,30 @@ export default function Page() {
           <p className="mb-2 font-black text-amber-300">🔒 Sad — zablokowany</p>
           <p className="mb-1">📈 Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[13px] text-[#8b6a3e]">🌳 Drzewa kupisz w Sklepie → 🌳 Drzewa.</p>
+        </div>
+      )}
+    {/* Tooltip Stodoła (odblokowana) */}
+      {hoveredStodola && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🐔 Stodoła</p>
+          <p className="mb-1 text-[14px]">Hoduj zwierzęta i zbieraj ich produkty.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Kury, świnie, krowy i inne — każde zwierzę daje inne surowce.</p>
+        </div>
+      )}
+    {/* Tooltip Ul (odblokowany) */}
+      {hoveredUl && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🍯 Ul</p>
+          <p className="mb-1 text-[14px]">Hoduj pszczoły i produkuj miód.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Miód sprzedasz klientom przy Ladzie lub w Targu w mieście.</p>
+        </div>
+      )}
+    {/* Tooltip Sad (odblokowany) */}
+      {hoveredSad && isOnFarmMap && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[17px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-300">🌳 Sad</p>
+          <p className="mb-1 text-[14px]">Uprawiaj drzewa owocowe i zbieraj owoce.</p>
+          <p className="text-[13px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
         </div>
       )}
     {/* Tooltip Lada dla klientów */}
@@ -10522,10 +10847,10 @@ export default function Page() {
           <p className="mb-1 font-black text-cyan-300">💧 Konewka</p>
           <p className="mb-2 text-[14px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
           <p>⏱ Skraca czas wzrostu o <span className="font-bold text-cyan-300">{(() => {
-            const _zb = calcStatEffect(playerStats.zaradnosc, ZARADNOSC_RATE) / 100;
+            const _zb = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
             const _we = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
             return (Math.min(WATER_BONUS_MAX, _zb * (1 + _we)) * 100).toFixed(1);
-          })()}%</span> (twoja Zaradność: {playerStats.zaradnosc}/100)</p>
+          })()}%</span> (twoja Zaradność: {effectiveStats.zaradnosc}/100{effectiveStats.zaradnosc !== playerStats.zaradnosc ? `, w tym +${effectiveStats.zaradnosc - playerStats.zaradnosc} z avatara` : ""})</p>
           <p className="mt-1">🚿 Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
@@ -10549,7 +10874,7 @@ export default function Page() {
             {(() => {
               const _baseMs = hoveredCrop.growthTimeMs;
               // Te same wzory co w getEffectiveGrowthTimeMs (bez bonusów per-pole: woda/kompost)
-              const _wiedzaEff   = (playerStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+              const _wiedzaEff   = (effectiveStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
               const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE); // % redukcji surowy
               const _wiedzaPct   = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw); // cap
               const _hivePct     = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
@@ -10560,7 +10885,7 @@ export default function Page() {
               const _totalMultDry = _wiedzaMult * _hiveMult * _equipMult;
               const _effMs       = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultDry));
               // Bonus z wody (jeśli podlejesz) — orientacyjnie z aktualnymi statami/eq
-              const _zaradnosc   = playerStats.zaradnosc ?? 0;
+              const _zaradnosc   = effectiveStats.zaradnosc ?? 0;
               const _zaradBonus  = calcStatEffect(_zaradnosc, ZARADNOSC_RATE);
               const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
               const _waterTotalPct = Math.min(WATER_BONUS_MAX * 100, _zaradBonus * (1 + _waterEqPct / 100));
