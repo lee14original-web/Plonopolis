@@ -2048,6 +2048,7 @@ export default function Page() {
     | { kind:"compost"; compostType: CompostType; value: number };
   const [kompostRewards, setKompostRewards] = React.useState<KompostRewardEntry[] | null>(null);
   const [kompostDropHistory, setKompostDropHistory] = React.useState<Array<{label: string; color: string; icon: string}>>([]);
+  const [showKompostHistory, setShowKompostHistory] = React.useState(false);
   // ESC zamyka modal kompostownika (najpierw panel nagród, potem cały modal)
   React.useEffect(() => {
     if (!showKompostModal) return;
@@ -7929,6 +7930,28 @@ export default function Page() {
             ];
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+                {/* Pływający przycisk historii — po lewej stronie modala */}
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-start gap-2" style={{ maxWidth: 220 }}>
+                  <button
+                    onClick={() => setShowKompostHistory(v => !v)}
+                    className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.95)] px-3 py-2 text-[11px] font-black text-[#dfcfab] shadow-lg hover:border-[#dfcfab]/50 transition">
+                    📜 Ostatnie nagrody
+                    {kompostDropHistory.length > 0 && <span className="rounded-full bg-[#8b6a3e] px-1.5 text-[10px] text-white">{kompostDropHistory.length}</span>}
+                    <span className="ml-auto opacity-50 text-[10px]">{showKompostHistory ? "▲" : "▼"}</span>
+                  </button>
+                  {showKompostHistory && (
+                    <div className="w-full rounded-xl border border-[#8b6a3e]/50 bg-[rgba(14,8,4,0.97)] p-3 shadow-xl">
+                      {kompostDropHistory.length === 0
+                        ? <p className="text-[10px] text-[#8b6a3e]/60 italic">Brak historii w tej sesji.</p>
+                        : <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-1">
+                            {kompostDropHistory.map((h, i) => (
+                              <p key={i} className="text-[11px] font-bold leading-snug" style={{ color: h.color }}>{h.icon} {h.label}</p>
+                            ))}
+                          </div>
+                      }
+                    </div>
+                  )}
+                </div>
                 <div className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col">
                   <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
@@ -8090,17 +8113,6 @@ export default function Page() {
                         }
                       </div>
 
-                      {/* Historia ostatnich dropow */}
-                      {kompostDropHistory.length > 0 && (
-                        <div className="mt-2 rounded-xl border border-[#8b6a3e]/30 bg-black/15 p-2">
-                          <p className="text-[9px] font-bold text-[#8b6a3e]/70 mb-1 uppercase tracking-wider">Ostatnie nagrody</p>
-                          <div className="flex flex-col gap-0.5 max-h-[60px] overflow-hidden">
-                            {kompostDropHistory.slice(0, 5).map((h, i) => (
-                              <p key={i} className="text-[10px] font-bold truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                     {/* Przycisk odbioru nagród — zawsze widoczny żeby uniknąć layout shift */}
                     <button
