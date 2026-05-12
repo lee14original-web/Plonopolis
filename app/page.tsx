@@ -2047,7 +2047,7 @@ export default function Page() {
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
     | { kind:"compost"; compostType: CompostType; value: number };
   const [kompostRewards, setKompostRewards] = React.useState<KompostRewardEntry[] | null>(null);
-  const [kompostDropHistory, setKompostDropHistory] = React.useState<Array<{label: string; color: string; icon: string}>>([]);
+  const [kompostDropHistory, setKompostDropHistory] = React.useState<Array<{label: string; color: string; icon: string; ts: number; count: number}>>([]);
   const [showKompostHistory, setShowKompostHistory] = React.useState(false);
   // ESC zamyka modal kompostownika (najpierw panel nagród, potem cały modal)
   React.useEffect(() => {
@@ -4253,7 +4253,7 @@ export default function Page() {
           if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
           else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
-          newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨" });
+          newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨", ts: Date.now(), count: 1 });
           continue;
         }
       }
@@ -4278,7 +4278,7 @@ export default function Page() {
           if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
           else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
-          newHistoryEntries.push({ label: item.name, color: rarityDef.border, icon: item.icon });
+          newHistoryEntries.push({ label: item.name, color: rarityDef.border, icon: item.icon, ts: Date.now(), count: 1 });
           continue;
         }
         // Brak dostępnego przedmiotu → fallback do kompostu
@@ -4296,7 +4296,7 @@ export default function Page() {
       rewards.push({ kind:"compost", compostType, value });
       const cDef = COMPOST_DEFS[compostType];
       const tColor = compostTierIdx === 0 ? "#9ca3af" : compostTierIdx === 1 ? "#22c55e" : "#a78bfa";
-      newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon });
+      newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon, ts: Date.now(), count: 1 });
     }
 
     const remainingBatches = kompostBatches.filter(b => b.fill < 10);
@@ -4309,7 +4309,20 @@ export default function Page() {
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
     }
-    setKompostDropHistory(prev => [...newHistoryEntries.reverse(), ...prev].slice(0, 8));
+    setKompostDropHistory(prev => {
+      const now = Date.now();
+      const WINDOW = 15 * 60 * 1000;
+      let updated = prev.filter(e => now - e.ts <= WINDOW);
+      for (const ne of newHistoryEntries) {
+        const idx = updated.findIndex(e => e.label === ne.label);
+        if (idx !== -1) {
+          updated = [{ ...updated[idx], count: updated[idx].count + 1, ts: now }, ...updated.filter((_, i) => i !== idx)];
+        } else {
+          updated = [ne, ...updated];
+        }
+      }
+      return updated;
+    });
     setKompostRewards(rewards);
     } finally {
       kompostBusyRef.current = false;
@@ -7936,7 +7949,7 @@ export default function Page() {
                     onClick={() => setShowKompostHistory(v => !v)}
                     className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.95)] px-3 py-2 text-[11px] font-black text-[#dfcfab] shadow-lg hover:border-[#dfcfab]/50 transition">
                     📜 Ostatnie nagrody
-                    {kompostDropHistory.length > 0 && <span className="rounded-full bg-[#8b6a3e] px-1.5 text-[10px] text-white">{kompostDropHistory.length}</span>}
+                    {kompostDropHistory.length > 0 && <span className="rounded-full bg-[#8b6a3e] px-1.5 text-[10px] text-white">{kompostDropHistory.reduce((s, e) => s + e.count, 0)}</span>}
                     <span className="ml-auto opacity-50 text-[10px]">{showKompostHistory ? "▲" : "▼"}</span>
                   </button>
                   {showKompostHistory && (
@@ -7945,7 +7958,10 @@ export default function Page() {
                         ? <p className="text-[10px] text-[#8b6a3e]/60 italic">Brak historii w tej sesji.</p>
                         : <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-1">
                             {kompostDropHistory.map((h, i) => (
-                              <p key={i} className="text-[11px] font-bold leading-snug" style={{ color: h.color }}>{h.icon} {h.label}</p>
+                              <div key={i} className="flex items-center justify-between gap-2">
+                                <p className="text-[11px] font-bold leading-snug truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
+                                {h.count > 1 && <span className="shrink-0 rounded-full bg-white/10 px-1.5 text-[10px] font-black" style={{ color: h.color }}>x{h.count}</span>}
+                              </div>
                             ))}
                           </div>
                       }
