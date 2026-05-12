@@ -3216,6 +3216,17 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [currentMap]);
   React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setHoveredSickle(false);
+        setHoveredWateringCan(false);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
     return () => clearInterval(t);
