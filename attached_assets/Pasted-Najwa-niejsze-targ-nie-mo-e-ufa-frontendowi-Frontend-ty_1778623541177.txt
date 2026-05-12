@@ -1,0 +1,135 @@
+Najważniejsze: targ nie może ufać frontendowi.
+Frontend tylko pokazuje UI, a cała logika kupna/sprzedaży musi być po stronie backendu/Supabase RPC.
+
+🔒 Zabezpieczenia targu
+1. Sprzedaż tylko przez funkcję backendową
+
+Gracz nie powinien sam edytować tabel typu:
+
+market_offers
+inventory
+money
+
+Tylko wywołuje np.:
+
+market_create_offer(...)
+market_buy_offer(...)
+market_claim_returns(...)
+2. Przy wystawianiu item znika z ekwipunku
+
+Flow:
+
+Gracz wystawia item
+↓
+Backend sprawdza czy go ma
+↓
+Backend zabiera item z inventory
+↓
+Backend tworzy ofertę
+
+Dzięki temu nie da się:
+
+wystawić tego samego itemu kilka razy,
+sprzedać itemu i dalej go mieć,
+kopiować itemów.
+3. Kupno musi być transakcją
+
+Kupno musi zrobić wszystko naraz:
+
+sprawdź ofertę
+sprawdź cenę
+sprawdź kupującego
+zabierz gold kupującemu
+przenieś item do kupującego
+dodaj gold sprzedającemu do odbioru
+oznacz ofertę jako sprzedaną
+
+Jeśli cokolwiek się nie uda — całość się cofa.
+
+4. Blokada oferty podczas kupna
+
+Żeby dwóch graczy nie kupiło tego samego itemu:
+
+SELECT ... FOR UPDATE
+
+albo aktualizacja warunkowa:
+
+UPDATE market_offers
+SET status = 'sold'
+WHERE id = offer_id
+AND status = 'active'
+
+Jeśli 0 rows affected, oferta już została kupiona.
+
+5. Cena z bazy, nie z frontendu
+
+Frontend nie może wysyłać:
+
+kupuję za 10 zł
+
+Tylko:
+
+kupuję ofertę ID 123
+
+Backend sam pobiera cenę z bazy.
+
+6. Minimalna cena liczona na backendzie
+
+Przy wystawianiu:
+
+backend liczy minimalPrice
+
+Nie frontend.
+
+Jeśli cena < minimalPrice:
+
+odrzuć ofertę
+7. Nie pozwalaj kupić własnej oferty
+
+Backend sprawdza:
+
+buyer_id != seller_id
+8. Odbiór z „Do odbioru” też przez backend
+
+Nie dawaj automatycznego dopisywania z frontu.
+
+market_claim_item()
+market_claim_gold()
+
+Backend sprawdza właściciela i status.
+
+9. RLS w Supabase
+
+Ustaw zasady:
+
+gracze mogą czytać aktywne oferty,
+gracze nie mogą ręcznie insert/update/delete ofert,
+zmiany robią tylko RPC/funkcje,
+gracz może widzieć tylko swoje rzeczy w „Do odbioru”.
+10. Logi transakcji
+
+Zapisuj historię:
+
+kto sprzedał
+kto kupił
+co
+za ile
+kiedy
+tax
+status
+
+To pomaga wykrywać exploity.
+
+Najważniejszy schemat
+Frontend = tylko przyciski i widok
+Backend = cała prawda gry
+
+Czyli gracz klika „Kup”, ale backend decyduje:
+
+czy oferta istnieje,
+czy cena się zgadza,
+czy kupujący ma gold,
+czy item może zostać przeniesiony,
+czy oferta nie została już kupiona.
+
+To jest podstawa, żeby nie dało się kopiować itemów ani kupować taniej niż pokazuje.

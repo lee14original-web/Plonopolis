@@ -1,0 +1,128 @@
+# 🏛️ Targ graczy — system handlu
+
+Targ pozwala graczom sprzedawać i kupować przedmioty od innych graczy.
+
+Można handlować:
+- 🌱 uprawami,
+- 🍎 owocami,
+- 🐔 produktami zwierzęcymi,
+- 🍯 miodem,
+- 🌿 kompostem,
+- ⚔️ ekwipunkiem,
+- 🔧 materiałami ulepszeń.
+
+---
+
+# 💰 Podatek targu
+
+Każda sprzedana oferta ma podatek:
+
+10% od ceny sprzedaży
+
+Przykład:
+- cena sprzedaży: 100 000 zł
+- podatek: 10 000 zł
+- sprzedający dostaje: 90 000 zł
+
+Podatek usuwa gold z gry i pomaga stabilizować ekonomię.
+
+---
+
+# 📉 Minimalna cena
+
+Każdy przedmiot ma minimalną cenę wystawienia.
+
+Cel:
+- ochrona ekonomii,
+- brak rozdawania itemów za 1 zł,
+- ograniczenie transferów między kontami,
+- brak psucia rynku.
+
+Nie ma maksymalnej ceny — gracze sami tworzą rynek.
+
+---
+
+# ⏳ Czas ofert
+
+Gracz może wybrać:
+
+- 24h (1 dzień) — standard
+- 48h (2 dni) — za dodatkową opłatą
+
+## Opłata za 48h
+
+5% ceny wystawienia
+
+Przykład:
+- oferta: 100 000 zł
+- koszt przedłużenia: 5 000 zł
+
+Opłata nie jest zwracana.
+
+---
+
+# 📦 Magazyn targu — „Do odbioru”
+
+Targ posiada osobną zakładkę:
+
+```text
+📦 Do odbioru
+
+Trafiają tam:
+
+💰 gold ze sprzedanych ofert,
+📦 niesprzedane przedmioty,
+⌛ wygasłe oferty.
+
+Gracz może odebrać wszystko w dowolnym momencie.
+
+🔔 Powiadomienia systemowe
+
+Gra wysyła informacje do:
+
+🔔 Systemowe
+
+Przykłady:
+
+Sprzedano ofertę
+💰 Twoja oferta została sprzedana!
+Odbierz 92 500 zł z targu.
+Oferta wygasła
+📦 Twoja oferta wygasła.
+Przedmiot czeka w „Do odbioru”.
+📊 Statusy ofert
+🟢 Sprzedane
+
+Oferta została kupiona.
+
+🔴 Wygasłe
+
+Czas minął — przedmiot wraca do magazynu targu.
+
+🟡 Aktywne
+
+Oferta nadal widoczna na rynku.
+
+📈 Limit aktywnych ofert
+lvl 1–9 → 3 oferty
+lvl 10–19 → 5 ofert
+lvl 20–24 → 8 ofert
+lvl 25+ → 10 ofert
+🚫 Czego NIE można sprzedawać
+
+Nie można wystawiać:
+
+pieniędzy,
+punktów statystyk,
+aktywnych pól,
+drzew,
+zwierząt,
+założonego ekwipunku.
+🎯 Cel systemu
+
+Targ ma:
+
+stworzyć żywą ekonomię między graczami,
+nadać wartość rare itemom,
+zwiększyć handel i interakcję,
+działać jako endgame economy system.
