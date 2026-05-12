@@ -5900,12 +5900,12 @@ export default function Page() {
                                         <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                           onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                           onMouseLeave={() => setCardTip(null)}>
-                                          <div className="relative h-12 w-12 flex items-center justify-center">
+                                          <div className="relative h-16 w-16 flex items-center justify-center">
                                             <span className="text-4xl leading-none">{it.icon}</span>
                                             <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                           </div>
-                                          <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
-                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
+                                          <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                          <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                         </div>
                                       );
                                     })}
@@ -6017,12 +6017,12 @@ export default function Page() {
                                           <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                         </span>
                                       )}
-                                      <div className="relative h-12 w-12 flex items-center justify-center">
+                                      <div className="relative h-16 w-16 flex items-center justify-center">
                                         <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                         <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                       </div>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
-                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
+                                      <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                     </div>
                                   );
                                 })}
@@ -7040,12 +7040,12 @@ export default function Page() {
                                   <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
                                     onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                     onMouseLeave={() => setCardTip(null)}>
-                                    <div className="relative h-12 w-12 flex items-center justify-center">
+                                    <div className="relative h-16 w-16 flex items-center justify-center">
                                       <span className="text-4xl leading-none">{it.icon}</span>
                                       <img src={`/item_${it.id}.png`} alt={it.name} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                     </div>
-                                    <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
-                                    <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
+                                    <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
+                                    <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
                                   </div>
                                 );
                               })}
@@ -7155,12 +7155,12 @@ export default function Page() {
                                     <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                   </span>
                                 )}
-                                <div className="relative h-12 w-12 flex items-center justify-center">
+                                <div className="relative h-16 w-16 flex items-center justify-center">
                                   <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                   <img src={`/owoc_${fid}.png`} alt={tree.fruitName} className="absolute inset-0 h-full w-full object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                 </div>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
-                                <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
+                                <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                               </div>
                             );
                           })}
