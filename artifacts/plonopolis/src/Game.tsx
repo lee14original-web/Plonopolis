@@ -11334,15 +11334,15 @@ export default function Page() {
           <div className="relative flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] shadow-2xl mx-2"
             style={{ background: `url('/mapy/targ_tlo.png') center/cover no-repeat, rgba(18,10,5,0.98)` }}>
             {/* Nagłówek */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.97),rgba(76,48,23,0.97))] px-6 py-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#d8ba7a] opacity-80">Miasto</p>
-                <h2 className="text-2xl font-black text-[#f9e7b2]">Targ Graczy</h2>
+                <p className="text-sm uppercase tracking-[0.3em] text-[#f0d48a] font-bold">Miasto</p>
+                <h2 className="text-3xl font-black text-[#f9e7b2]">Targ Graczy</h2>
               </div>
-              <button type="button" onClick={() => setShowMarketModal(false)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#8b6a3e] text-[#dfcfab] hover:bg-[rgba(80,50,20,0.5)] transition font-bold text-xl">X</button>
+              <button type="button" onClick={() => setShowMarketModal(false)} className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#8b6a3e] text-[#f9e7b2] hover:bg-[rgba(80,50,20,0.5)] transition font-black text-2xl">X</button>
             </div>
             {/* Zakładki */}
-            <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/40 bg-black/20 px-4 pt-3 pb-0">
+            <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/60 bg-black/60 px-4 pt-3 pb-0">
               {([
                 { id: "browse" as const,    label: "Przeglądaj" },
                 { id: "my_offers" as const, label: "Moje Oferty" },
@@ -11352,12 +11352,12 @@ export default function Page() {
                   key={t.id}
                   type="button"
                   onClick={() => setMarketTab(t.id)}
-                  className={`rounded-t-xl px-5 py-2 text-sm font-bold transition ${marketTab === t.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "text-[#dfcfab] hover:bg-white/5"} ${t.id === "returns" && pendingReturnCount > 0 ? "!text-[#fbbf24]" : ""}`}
+                  className={`rounded-t-xl px-5 py-2.5 text-base font-bold transition ${marketTab === t.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "text-[#f0d48a] hover:bg-white/10"} ${t.id === "returns" && pendingReturnCount > 0 ? "!text-[#fbbf24]" : ""}`}
                 >
                   {t.label}
                 </button>
               ))}
-              <button type="button" onClick={() => void loadMarketData()} disabled={marketLoading} className="ml-auto mb-1 rounded-xl border border-[#8b6a3e]/50 px-3 py-1 text-xs text-[#dfcfab] hover:bg-white/5 transition disabled:opacity-40">
+              <button type="button" onClick={() => void loadMarketData()} disabled={marketLoading} className="ml-auto mb-1 rounded-xl border border-[#8b6a3e]/70 bg-black/30 px-4 py-1.5 text-sm font-bold text-[#f0d48a] hover:bg-white/10 transition disabled:opacity-40">
                 {marketLoading ? "Wczytuję..." : "Odswież"}
               </button>
             </div>
@@ -11378,13 +11378,13 @@ export default function Page() {
                     ]).map(f => (
                       <button key={f.id} type="button"
                         onClick={() => void handleMarketBrowseFilter(f.id)}
-                        className={`rounded-xl px-3 py-1 text-xs font-bold transition ${marketBrowseFilter === f.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#8b6a3e]/50 text-[#dfcfab] hover:bg-white/5"}`}
+                        className={`rounded-xl px-4 py-1.5 text-sm font-bold transition ${marketBrowseFilter === f.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/70 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
                       >{f.label}</button>
                     ))}
                   </div>
-                  {marketLoading && <p className="py-10 text-center text-[#dfcfab]">Wczytuję oferty...</p>}
+                  {marketLoading && <p className="py-10 text-center text-base font-bold text-[#f0d48a]">Wczytuję oferty...</p>}
                   {!marketLoading && marketBrowse.length === 0 && (
-                    <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-10 text-center text-[#dfcfab]">
+                    <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/60 p-10 text-center text-base font-bold text-[#f0d48a]">
                       Brak aktywnych ofert w tej kategorii.
                     </div>
                   )}
@@ -11397,15 +11397,15 @@ export default function Page() {
                         const minsLeft  = Math.floor((timeLeft % 3600000) / 60000);
                         const total = offer.price_per_unit * offer.quantity;
                         return (
-                          <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                          <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/60 bg-black/65 px-4 py-3">
                             <span className="text-2xl shrink-0">{offer.item_icon || "📦"}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-[#f3e6c8] truncate">{offer.item_name}</p>
-                              <p className="text-xs text-[#dfcfab]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt. &middot; <span className="font-bold text-[#f9e7b2]">{total.toLocaleString("pl-PL")} zł</span></p>
-                              <p className="text-xs text-[#8b6a3e]">{offer.seller_name ?? "Nieznany"} &middot; wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
+                              <p className="text-base font-bold text-[#f9e7b2] truncate">{offer.item_name}</p>
+                              <p className="text-sm font-medium text-[#f0d48a]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt. &middot; <span className="font-bold text-[#ffe082]">{total.toLocaleString("pl-PL")} zł</span></p>
+                              <p className="text-sm text-[#c9a96e]">{offer.seller_name ?? "Nieznany"} &middot; wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
                             </div>
                             {isOwn ? (
-                              <span className="rounded-lg border border-[#8b6a3e]/40 px-3 py-1 text-xs text-[#8b6a3e] shrink-0">Twoja</span>
+                              <span className="rounded-lg border border-[#c9a96e]/60 bg-black/40 px-3 py-1 text-sm font-bold text-[#c9a96e] shrink-0">Twoja</span>
                             ) : (
                               <button type="button" disabled={buyingOfferId === offer.id}
                                 onClick={() => void handleBuyOffer(offer.id)}
@@ -11429,7 +11429,7 @@ export default function Page() {
                 return (
                   <div>
                     <div className="mb-4 flex items-center justify-between">
-                      <p className="text-sm text-[#dfcfab]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-xs text-[#8b6a3e]">(poziom {lvl})</span></p>
+                      <p className="text-base font-medium text-[#f0d48a]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-sm text-[#c9a96e]">(poziom {lvl})</span></p>
                       {activeOffers.length < maxOffers && (
                         <button type="button"
                           onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
@@ -11525,26 +11525,26 @@ export default function Page() {
 
                     {/* Lista aktywnych ofert */}
                     {activeOffers.length === 0 && !createOfferOpen && (
-                      <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-8 text-center text-[#dfcfab]">Nie masz aktywnych ofert.</div>
+                      <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/60 p-8 text-center text-base font-bold text-[#f0d48a]">Nie masz aktywnych ofert.</div>
                     )}
                     {activeOffers.length > 0 && (
                       <div className="space-y-2 mb-4">
-                        <p className="text-xs uppercase tracking-wider text-[#8b6a3e] mb-1">Aktywne</p>
+                        <p className="text-sm font-bold uppercase tracking-wider text-[#c9a96e] mb-1">Aktywne</p>
                         {activeOffers.map(offer => {
                           const timeLeft = Math.max(0, new Date(offer.expires_at).getTime() - Date.now());
                           const hoursLeft = Math.floor(timeLeft / 3600000);
                           const minsLeft  = Math.floor((timeLeft % 3600000) / 60000);
                           return (
-                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/60 bg-black/65 px-4 py-3">
                               <span className="text-xl shrink-0">{offer.item_icon || "📦"}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="font-bold text-[#f3e6c8] truncate">{offer.item_name}</p>
-                                <p className="text-xs text-[#dfcfab]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
-                                <p className="text-xs text-[#8b6a3e]">wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
+                                <p className="text-base font-bold text-[#f9e7b2] truncate">{offer.item_name}</p>
+                                <p className="text-sm font-medium text-[#f0d48a]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
+                                <p className="text-sm text-[#c9a96e]">wygasa za {hoursLeft > 0 ? `${hoursLeft}h ` : ""}{minsLeft}min</p>
                               </div>
                               <button type="button" disabled={cancellingOfferId === offer.id}
                                 onClick={() => void handleCancelOffer(offer.id)}
-                                className="shrink-0 rounded-xl border border-[#8b6a3e] px-3 py-2 text-xs text-[#dfcfab] hover:bg-[rgba(80,50,20,0.5)] transition disabled:opacity-50"
+                                className="shrink-0 rounded-xl border border-[#c9a96e]/70 bg-black/40 px-3 py-2 text-sm font-bold text-[#f0d48a] hover:bg-[rgba(80,50,20,0.5)] transition disabled:opacity-50"
                               >{cancellingOfferId === offer.id ? "..." : "Anuluj"}</button>
                             </div>
                           );
@@ -11555,18 +11555,18 @@ export default function Page() {
                     {/* Historia */}
                     {historyOffers.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-wider text-[#8b6a3e] mb-1">Historia</p>
+                        <p className="text-sm font-bold uppercase tracking-wider text-[#c9a96e] mb-1">Historia</p>
                         {historyOffers.slice(0, 20).map(offer => {
                           const statusColor = offer.status === "sold" ? "#86efac" : offer.status === "expired" ? "#fca5a5" : "#d8ba7a";
                           const statusLabel = offer.status === "sold" ? "Sprzedano" : offer.status === "expired" ? "Wygasła" : "Anulowano";
                           return (
-                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/20 bg-[rgba(255,255,255,0.01)] px-4 py-2 opacity-70">
+                            <div key={offer.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/55 px-4 py-2">
                               <span className="text-lg shrink-0">{offer.item_icon || "📦"}</span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-[#dfcfab] truncate">{offer.item_name}</p>
-                                <p className="text-xs text-[#8b6a3e]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
+                                <p className="text-base font-medium text-[#f0d48a] truncate">{offer.item_name}</p>
+                                <p className="text-sm text-[#c9a96e]">{offer.quantity} szt. &middot; {offer.price_per_unit.toLocaleString("pl-PL")} zł/szt.</p>
                               </div>
-                              <span className="text-xs font-bold shrink-0" style={{ color: statusColor }}>{statusLabel}</span>
+                              <span className="text-sm font-bold shrink-0" style={{ color: statusColor }}>{statusLabel}</span>
                             </div>
                           );
                         })}
@@ -11580,7 +11580,7 @@ export default function Page() {
               {marketTab === "returns" && (
                 <div>
                   <div className="mb-4 flex items-center justify-between">
-                    <p className="text-sm text-[#dfcfab]">Czeka na odbiór: <span className="font-bold text-[#f9e7b2]">{marketReturns.length}</span></p>
+                    <p className="text-base font-medium text-[#f0d48a]">Czeka na odbiór: <span className="font-bold text-[#f9e7b2]">{marketReturns.length}</span></p>
                     {marketReturns.length > 0 && (
                       <button type="button" disabled={claimingReturns}
                         onClick={() => void handleClaimAllReturns()}
@@ -11589,7 +11589,7 @@ export default function Page() {
                     )}
                   </div>
                   {marketReturns.length === 0 && (
-                    <div className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] p-10 text-center text-[#dfcfab]">
+                    <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/60 p-10 text-center text-base font-bold text-[#f0d48a]">
                       Nic tu nie czeka. Sprzedaj coś na targu albo anuluj ofertę.
                     </div>
                   )}
@@ -11599,18 +11599,18 @@ export default function Page() {
                         const reasonLabel = ret.reason === "sold" ? "Sprzedano" : ret.reason === "expired" ? "Wygasła" : "Anulowano";
                         const reasonColor = ret.reason === "sold" ? "#86efac" : ret.reason === "expired" ? "#fca5a5" : "#d8ba7a";
                         return (
-                          <div key={ret.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.02)] px-4 py-3">
+                          <div key={ret.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/60 bg-black/65 px-4 py-3">
                             <span className="text-2xl shrink-0">{ret.return_type === "gold" ? "💰" : (ret.item_icon || "📦")}</span>
                             <div className="flex-1">
                               {ret.return_type === "gold" ? (
                                 <>
-                                  <p className="font-bold text-[#f9e7b2]">+{(ret.gold_amount ?? 0).toLocaleString("pl-PL")} zł</p>
-                                  <p className="text-xs" style={{ color: reasonColor }}>{reasonLabel}</p>
+                                  <p className="text-base font-bold text-[#f9e7b2]">+{(ret.gold_amount ?? 0).toLocaleString("pl-PL")} zł</p>
+                                  <p className="text-sm font-medium" style={{ color: reasonColor }}>{reasonLabel}</p>
                                 </>
                               ) : (
                                 <>
-                                  <p className="font-bold text-[#f3e6c8]">{ret.item_name ?? ret.item_key} x{ret.quantity}</p>
-                                  <p className="text-xs" style={{ color: reasonColor }}>{reasonLabel}</p>
+                                  <p className="text-base font-bold text-[#f9e7b2]">{ret.item_name ?? ret.item_key} x{ret.quantity}</p>
+                                  <p className="text-sm font-medium" style={{ color: reasonColor }}>{reasonLabel}</p>
                                 </>
                               )}
                             </div>
