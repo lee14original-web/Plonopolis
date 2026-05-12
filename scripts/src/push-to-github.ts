@@ -1,23 +1,26 @@
 /**
- * Wysyla Game.tsx (app/page.tsx) + obrazki uprawy na GitHub.
- * Uzycie: pnpm --filter @workspace/scripts run push-to-github
+ * Wysyla zmiany na GitHub w JEDNYM commicie (Git Tree API).
+ * Domyslnie: tylko app/page.tsx (Game.tsx).
+ * Z flagą --images: takze nowe/zmienione obrazki z public/uprawy/.
+ *
+ * Uzycie:
+ *   pnpm --filter @workspace/scripts run push-to-github
+ *   pnpm --filter @workspace/scripts run push-to-github -- --images
  */
 import { readFile, readdir } from "fs/promises";
 import { resolve } from "path";
+import { existsSync } from "fs";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = "lee14original-web";
 const REPO = "Plonopolis";
 const BRANCH = "main";
-
-if (!GITHUB_TOKEN) {
-  console.error("Brak GITHUB_TOKEN w zmiennych srodowiskowych.");
-  process.exit(1);
-}
-
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+const WITH_IMAGES = process.argv.includes("--images");
 
-async function ghApi(method: string, path: string, body?: unknown) {
+if (!GITHUB_TOKEN) { console.error("Brak GITHUB_TOKEN."); process.exit(1); }
+
+async function gh(method: string, path: string, body?: unknown) {
   const res = await fetch(`https://api.github.com${path}`, {
     method,
     headers: {
@@ -29,52 +32,73 @@ async function ghApi(method: string, path: string, body?: unknown) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json() as Record<string, unknown>;
-  if (!res.ok) throw new Error(`GitHub API ${method} ${path} => ${res.status}: ${JSON.stringify(data)}`);
+  if (!res.ok) throw new Error(`GitHub ${method} ${path} => ${res.status}: ${JSON.stringify(data)}`);
   return data;
 }
 
-async function getFileSha(filePath: string): Promise<string | undefined> {
-  try {
-    const data = await ghApi("GET", `/repos/${OWNER}/${REPO}/contents/${filePath}?ref=${BRANCH}`);
-    return data.sha as string;
-  } catch { return undefined; }
-}
-
-async function pushFile(githubPath: string, contentBuffer: Buffer, message: string) {
-  const sha = await getFileSha(githubPath);
-  const encoded = contentBuffer.toString("base64");
-  await ghApi("PUT", `/repos/${OWNER}/${REPO}/contents/${githubPath}`, {
-    message,
-    content: encoded,
-    branch: BRANCH,
-    ...(sha ? { sha } : {}),
+async function createBlob(content: Buffer): Promise<string> {
+  const data = await gh("POST", `/repos/${OWNER}/${REPO}/git/blobs`, {
+    content: content.toString("base64"),
+    encoding: "base64",
   });
-  console.log(`  OK  ${githubPath}`);
+  return data.sha as string;
 }
 
 async function main() {
-  console.log(`Wysylam na GitHub (${OWNER}/${REPO} @ ${BRANCH})...`);
+  const filesToPush: { githubPath: string; localPath: string }[] = [];
 
-  // 1. Game.tsx → app/page.tsx
-  const gameTsxPath = resolve(ROOT, "artifacts/plonopolis/src/Game.tsx");
-  const gameTsxContent = await readFile(gameTsxPath);
-  await pushFile("app/page.tsx", gameTsxContent, "sync: Game.tsx z Replita (sciezki /uprawy/)");
+  // Zawsze: Game.tsx → app/page.tsx
+  filesToPush.push({
+    githubPath: "app/page.tsx",
+    localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx"),
+  });
 
-  // 2. Wszystkie obrazki z public/uprawy/
-  const uprawyDir = resolve(ROOT, "artifacts/plonopolis/public/uprawy");
-  const files = await readdir(uprawyDir);
-  console.log(`\nWysylam ${files.length} plikow do public/uprawy/...`);
-
-  for (const file of files) {
-    const buf = await readFile(resolve(uprawyDir, file));
-    await pushFile(`public/uprawy/${file}`, buf, `sync: uprawy/${file}`);
+  // Opcjonalnie: obrazki z public/uprawy/
+  if (WITH_IMAGES) {
+    const uprawyDir = resolve(ROOT, "artifacts/plonopolis/public/uprawy");
+    if (existsSync(uprawyDir)) {
+      const imgs = await readdir(uprawyDir);
+      for (const img of imgs) {
+        filesToPush.push({ githubPath: `public/uprawy/${img}`, localPath: resolve(uprawyDir, img) });
+      }
+      console.log(`Tryb --images: dodano ${imgs.length} obrazkow uprawy.`);
+    }
   }
 
-  console.log(`\nGotowe! Railway automatycznie wdrozy zmiany.`);
-  console.log(`Link: https://plonopolis-production.up.railway.app/`);
+  console.log(`Wysylam ${filesToPush.length} plik(ow) → 1 commit na GitHub...`);
+
+  // Pobierz HEAD
+  const refData = await gh("GET", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`);
+  const headSha = (refData.object as Record<string, string>).sha;
+  const commitData = await gh("GET", `/repos/${OWNER}/${REPO}/git/commits/${headSha}`);
+  const baseTreeSha = (commitData.tree as Record<string, string>).sha;
+
+  // Tworz blob dla kazdego pliku (rownolegly batch po 10)
+  const BATCH = 10;
+  const treeEntries: unknown[] = [];
+  for (let i = 0; i < filesToPush.length; i += BATCH) {
+    const batch = filesToPush.slice(i, i + BATCH);
+    const results = await Promise.all(batch.map(async ({ githubPath, localPath }) => {
+      const buf = await readFile(localPath);
+      const sha = await createBlob(buf);
+      return { path: githubPath, mode: "100644", type: "blob", sha };
+    }));
+    treeEntries.push(...results);
+    if (filesToPush.length > 1) console.log(`  ${Math.min(i + BATCH, filesToPush.length)}/${filesToPush.length} blobów`);
+  }
+
+  // Tree → commit → ref
+  const treeData = await gh("POST", `/repos/${OWNER}/${REPO}/git/trees`, { base_tree: baseTreeSha, tree: treeEntries });
+  const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+  const newCommit = await gh("POST", `/repos/${OWNER}/${REPO}/git/commits`, {
+    message: `sync z Replita [${now}]`,
+    tree: treeData.sha as string,
+    parents: [headSha],
+  });
+  await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: newCommit.sha as string });
+
+  console.log(`\nGotowe! Commit: ${(newCommit.sha as string).slice(0, 7)}`);
+  console.log(`Railway zbuduje nowa wersje w ciagu ~3 minut.`);
 }
 
-main().catch(err => {
-  console.error("Nieoczekiwany blad:", err instanceof Error ? err.message : err);
-  process.exit(1);
-});
+main().catch(err => { console.error("Blad:", err instanceof Error ? err.message : err); process.exit(1); });
