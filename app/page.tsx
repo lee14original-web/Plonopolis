@@ -6768,38 +6768,35 @@ export default function Page() {
                             const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
-                              <div key={crop.id} className={`flex flex-col rounded-xl border p-2.5 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
-                                {/* Górna część: obrazek + nazwa + odznaki */}
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <img src={crop.spritePath} alt={crop.name} className="h-[60px] w-[60px] object-contain shrink-0" style={{imageRendering:"pixelated"}} />
-                                  <div className="flex-1 min-w-0">
-                                    <p className={`text-xs font-black leading-tight truncate ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
-                                    <div className="flex flex-wrap gap-0.5 mt-0.5">
-                                      {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1 py-0.5 text-[8px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
-                                      {isSuper && !locked && <span className="rounded-full bg-rose-900/40 border border-rose-500/40 px-1 py-0.5 text-[8px] font-black text-rose-300">⭐ -20%</span>}
-                                      {isNormal && !locked && <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1 py-0.5 text-[8px] font-black text-amber-300">🔥 -10%</span>}
-                                    </div>
+                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
+                                {/* Ikona wyśrodkowana */}
+                                <img src={crop.spritePath} alt={crop.name} className="h-[64px] w-[64px] object-contain mb-2" style={{imageRendering:"pixelated"}} />
+                                {/* Nazwa */}
+                                <p className={`text-sm font-black leading-tight mb-1 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                {/* Odznaki */}
+                                <div className="flex flex-wrap justify-center gap-0.5 mb-2">
+                                  {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
+                                  {isSuper && !locked && <span className="rounded-full bg-rose-900/40 border border-rose-500/40 px-1.5 py-0.5 text-[9px] font-black text-rose-300">⭐ -20%</span>}
+                                  {isNormal && !locked && <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>}
+                                </div>
+                                {/* Cena */}
+                                {(isNormal || isSuper) && !locked ? (
+                                  <div className="mb-1">
+                                    <p className="text-xs text-[#8b6a3e] line-through">{basePrice.toFixed(2)} 💰</p>
+                                    <p className={`text-sm font-black ${isSuper ? "text-rose-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
                                   </div>
-                                </div>
-                                {/* Cena + Masz */}
-                                <div className="flex items-center justify-between mb-1.5">
-                                  {(isNormal || isSuper) && !locked ? (
-                                    <div className="leading-tight">
-                                      <p className="text-[9px] text-[#8b6a3e] line-through">{basePrice.toFixed(2)} 💰</p>
-                                      <p className={`text-[10px] font-black ${isSuper ? "text-rose-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
-                                    </div>
-                                  ) : (
-                                    <p className="text-[10px] text-[#8b6a3e]">{effPrice.toFixed(2)} 💰</p>
-                                  )}
-                                  <p className="text-[9px] font-bold text-emerald-400">Masz: {owned}</p>
-                                </div>
+                                ) : (
+                                  <p className="text-xs text-[#8b6a3e] mb-1">{effPrice.toFixed(2)} 💰</p>
+                                )}
+                                {/* Masz */}
+                                <p className="text-xs font-bold text-emerald-400 mb-2">Masz: {owned}</p>
                                 {/* Kontrolki ilości */}
                                 {!locked && (
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-6 w-6 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-sm font-black text-[#f9e7b2] hover:bg-red-900/30 hover:border-red-500/40 active:scale-75 active:bg-red-900/50 transition-all duration-75">−</button>
-                                    <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="min-w-0 flex-1 rounded-md border border-[#8b6a3e]/40 bg-black/30 px-1 py-0.5 text-center text-xs text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-6 w-6 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-sm font-black text-[#f9e7b2] hover:bg-emerald-900/30 hover:border-emerald-500/40 active:scale-75 active:bg-emerald-900/50 transition-all duration-75">+</button>
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:maxBuy}))} disabled={maxBuy === 0} className={`shrink-0 rounded-md border px-1 py-0.5 text-[8px] font-black transition-all duration-75 ${maxBuy > 0 ? "border-amber-500/50 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 active:scale-90" : "border-[#374151]/30 bg-black/10 text-[#6b7280] cursor-not-allowed"}`}>MAX</button>
+                                  <div className="flex items-center gap-1 w-full">
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-red-900/30 hover:border-red-500/40 active:scale-75 active:bg-red-900/50 transition-all duration-75">−</button>
+                                    <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="min-w-0 flex-1 rounded-md border border-[#8b6a3e]/40 bg-black/30 px-1 py-1 text-center text-sm font-bold text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-emerald-900/30 hover:border-emerald-500/40 active:scale-75 active:bg-emerald-900/50 transition-all duration-75">+</button>
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:maxBuy}))} disabled={maxBuy === 0} className={`shrink-0 rounded-md border px-1.5 py-1 text-[9px] font-black transition-all duration-75 ${maxBuy > 0 ? "border-amber-500/50 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 active:scale-90" : "border-[#374151]/30 bg-black/10 text-[#6b7280] cursor-not-allowed"}`}>MAX</button>
                                   </div>
                                 )}
                               </div>
