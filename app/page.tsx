@@ -8045,7 +8045,7 @@ export default function Page() {
                       <div className="mt-2 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-2.5">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[11px] font-bold text-[#dfcfab]">Roznorodnosc upraw</span>
-                          <span className="text-[11px] font-black" style={{ color: diversityCountUI >= 10 ? "#fbbf24" : diversityCountUI >= 6 ? "#a78bfa" : "#22c55e" }}>{diversityCountUI}/10 gatunkow</span>
+                          <span className="text-[11px] font-black" style={{ color: diversityCountUI >= 10 ? "#fbbf24" : diversityCountUI >= 6 ? "#a78bfa" : "#22c55e" }}>{Math.min(diversityCountUI, 10)}/10 gatunkow</span>
                         </div>
                         <div className="h-1.5 rounded-full bg-black/40 overflow-hidden mb-1.5">
                           <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, diversityCountUI * 10)}%`, background: diversityCountUI >= 10 ? "linear-gradient(to right, #a78bfa, #fbbf24)" : diversityCountUI >= 6 ? "linear-gradient(to right, #22c55e, #a78bfa)" : "linear-gradient(to right, #166534, #22c55e)" }} />
@@ -8054,9 +8054,10 @@ export default function Page() {
                           <span className="text-[10px] text-lime-400">+{diversityItemBonusUI}% szansy na item</span>
                           {diversityTierBoostUI && <span className="text-[10px] text-purple-400">+tier boost aktywny (6+ gatunkow)</span>}
                         </div>
-                        {diversityCountUI < 10 && (
-                          <p className="text-[9px] text-[#8b6a3e]/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
-                        )}
+                        {diversityCountUI >= 10
+                          ? <p className="text-[9px] text-amber-400/70 mt-0.5 font-bold">Maks. roznorodnosc — wszystkie bonusy aktywne!</p>
+                          : <p className="text-[9px] text-[#8b6a3e]/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
+                        }
                       </div>
 
                       {/* Historia ostatnich dropow */}
