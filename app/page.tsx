@@ -4385,7 +4385,7 @@ export default function Page() {
         if (idx !== -1) {
           updated = [{ ...updated[idx], count: updated[idx].count + 1, ts: now }, ...updated.filter((_, i) => i !== idx)];
         } else {
-          updated = [ne, ...updated];
+          updated = [{ ...ne, ts: ne.ts ?? Date.now(), count: ne.count ?? 1 }, ...updated];
         }
       }
       return updated;
@@ -6178,13 +6178,13 @@ export default function Page() {
                                         return sorted.map(([seedId, amount]) => {
                                         const { baseCropId: _bCropId, quality: _bQuality } = parseQualityKey(seedId);
                                           const crop = CROPS.find((item) => item.id === _bCropId);
+                                          if (!crop) return null;
                                           const _qDef2 = _bQuality ? CROP_QUALITY_DEFS[_bQuality] : null;
                                           const _isRotten = _bQuality === "rotten";
                                           const _qualitySprite = _bQuality === "epic" && crop.epicSpritePath ? crop.epicSpritePath
       : _bQuality === "rotten" && crop.rottenSpritePath ? crop.rottenSpritePath
       : _bQuality === "legendary" && crop.legendarySpritePath ? crop.legendarySpritePath
       : crop.spritePath;
-                                        if (!crop) return null;
                                         return (
                                           <button
                                             key={seedId}
@@ -7715,7 +7715,7 @@ export default function Page() {
                   {/* ════ EKWIPUNEK ════ */}
                   {domTab === "eq" && (() => {
                     const SLOT_BOX = slotBoxCustom;
-                    const handleUpg = async (slot, eqD) => {
+                    const handleUpg = async (slot: EquipSlot, eqD: { id: string; upg: number }) => {
                       const nextU = eqD.upg+1; const cost = getUpgradeCost(eqD.id, nextU);
                       if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
                       // Sprawdź materiały (od +4)
@@ -7730,7 +7730,7 @@ export default function Page() {
                         setMessage({ type:"error", title:"Brak materiałów!", text:txt });
                         return;
                       }
-                      const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
+                      const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
                       if (me) return;
                       // Odejmij materiały lokalnie
                       if (mats.length > 0) {
@@ -7745,7 +7745,7 @@ export default function Page() {
                       else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
                       saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
                       saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
-                      await loadProfile(profile.id);
+                      await loadProfile(profile!.id);
                     };
                     return (
                       <div>
@@ -7853,6 +7853,7 @@ export default function Page() {
                           {equippingSlot && charEquipped[equippingSlot] && (() => {
                             const slot = equippingSlot;
                             const eqD = charEquipped[slot];
+                            if (!eqD) return null;
                             const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
                             if (!eItem) return null;
                             const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
@@ -9489,11 +9490,11 @@ export default function Page() {
               const st = barnState[a.id];
               if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
               if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
-              const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
+              const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile!.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
               void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
-              await loadProfile(profile.id);
+              await loadProfile(profile!.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
             const handleBuySlot = async (a: AnimalDef) => {
@@ -9502,11 +9503,11 @@ export default function Page() {
               if (upg >= a.slotUpgCosts.length) { setMessage({type:"info",title:"Maks!",text:`Maksymalna liczba slotów dla ${a.name}.`}); return; }
               const cost = a.slotUpgCosts[upg];
               if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
-              const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile.id);
+              const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile!.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
               void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
-              await loadProfile(profile.id);
+              await loadProfile(profile!.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
             const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
