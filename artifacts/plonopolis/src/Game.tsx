@@ -4789,28 +4789,42 @@ export default function Page() {
     if (type === "honey") return { name: "Słoik miodu", icon: "🍯" };
     return { name: key, icon: "📦" };
   }
+  function getMarketItemImg(type: MarketItemType, key: string): string | null {
+    if (type === "crop") {
+      const { baseCropId, quality } = parseQualityKey(key);
+      const crop = CROPS.find(c => c.id === baseCropId);
+      if (!crop) return null;
+      if (quality === "legendary" && crop.legendarySpritePath) return crop.legendarySpritePath;
+      if (quality === "epic"      && crop.epicSpritePath)      return crop.epicSpritePath;
+      if (quality === "rotten"    && crop.rottenSpritePath)    return crop.rottenSpritePath;
+      return crop.spritePath;
+    }
+    if (type === "barn_item") return `/przedmioty/item_${key}.png`;
+    if (type === "honey")     return `/przedmioty/jar_honey.png`;
+    return null;
+  }
   function buildSellableItems() {
-    const items: { type: MarketItemType; key: string; name: string; icon: string; qty: number; minPrice: number }[] = [];
+    const items: { type: MarketItemType; key: string; name: string; icon: string; imgPath: string | null; qty: number; minPrice: number }[] = [];
     Object.entries(seedInventory).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
       const iType: MarketItemType = isCompostKey(key) ? "compost" : "crop";
       const { name, icon } = marketItemLabel(iType, key);
-      items.push({ type: iType, key, name, icon, qty: qty as number, minPrice: marketMinPrice(iType, key) });
+      items.push({ type: iType, key, name, icon, imgPath: getMarketItemImg(iType, key), qty: qty as number, minPrice: marketMinPrice(iType, key) });
     });
     Object.entries(barnItems).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
       const { name, icon } = marketItemLabel("barn_item", key);
-      items.push({ type: "barn_item", key, name, icon, qty: qty as number, minPrice: 20 });
+      items.push({ type: "barn_item", key, name, icon, imgPath: getMarketItemImg("barn_item", key), qty: qty as number, minPrice: 20 });
     });
     Object.entries(fruitInventory).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
       const { name, icon } = marketItemLabel("fruit", key);
-      items.push({ type: "fruit", key, name, icon, qty: qty as number, minPrice: marketMinPrice("fruit", key) });
+      items.push({ type: "fruit", key, name, icon, imgPath: null, qty: qty as number, minPrice: marketMinPrice("fruit", key) });
     });
     const honeyJars = typeof (profile?.hive_data as Record<string,unknown> | null | undefined)?.honey_jars === "number"
       ? (profile!.hive_data as Record<string,unknown>).honey_jars as number : 0;
     if (honeyJars > 0) {
-      items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", qty: honeyJars, minPrice: 100 });
+      items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", imgPath: getMarketItemImg("honey", "honey_jar"), qty: honeyJars, minPrice: 100 });
     }
     return items;
   }
@@ -11437,7 +11451,11 @@ export default function Page() {
                           </div>
                           {/* Wybrany przedmiot */}
                           <div className="flex items-center gap-4 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-3">
-                            <span className="text-5xl shrink-0">{selectedItem?.icon || "📦"}</span>
+                            {selectedItem?.imgPath ? (
+                              <img src={selectedItem.imgPath} alt={selectedItem.name} className="h-16 w-16 shrink-0 object-contain" style={{ imageRendering: "pixelated" }} />
+                            ) : (
+                              <span className="text-5xl shrink-0">{selectedItem?.icon || "📦"}</span>
+                            )}
                             <div>
                               <p className="text-base font-bold text-[#f3e6c8]">{selectedItem?.name ?? coItemKey}</p>
                               <p className="text-sm text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{maxQty} szt.</span></p>
@@ -11616,7 +11634,8 @@ export default function Page() {
           { id: "rare",      label: "Rzadkie",  icon: "⭐" },
         ];
         return (
-          <div className="fixed inset-0 z-[9998] flex flex-col bg-[rgba(6,3,1,0.97)] backdrop-blur-sm">
+          <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+           <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#8b6a3e] bg-[rgba(8,4,2,0.98)] shadow-2xl" style={{ height: "72vh" }}>
             {/* Nagłówek z wyszukiwarką */}
             <div className="shrink-0 flex items-center gap-3 border-b border-[#8b6a3e]/60 bg-[rgba(18,10,5,0.98)] px-4 py-3">
               <button
@@ -11685,7 +11704,11 @@ export default function Page() {
                       }}
                       className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/50 bg-[rgba(255,255,255,0.03)] p-3 text-center transition hover:border-[#f4cf78]/60 hover:bg-[rgba(242,202,105,0.09)] active:scale-95"
                     >
-                      <span className="text-5xl leading-none">{item.icon || "📦"}</span>
+                      {item.imgPath ? (
+                        <img src={item.imgPath} alt={item.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
+                      ) : (
+                        <span className="text-5xl leading-none">{item.icon || "📦"}</span>
+                      )}
                       <p className="text-sm font-bold leading-tight text-[#f3e6c8] line-clamp-2">{item.name}</p>
                       <p className="text-xs text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{item.qty}</span></p>
                       <p className="text-xs text-[#8b6a3e]">Min: {item.minPrice.toLocaleString("pl-PL")} zł</p>
@@ -11694,6 +11717,7 @@ export default function Page() {
                 </div>
               )}
             </div>
+           </div>
           </div>
         );
       })()}
