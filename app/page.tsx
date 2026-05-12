@@ -7929,31 +7929,31 @@ export default function Page() {
             ];
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-                <div className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-emerald-700/60 bg-[rgba(10,18,12,0.98)] shadow-2xl flex flex-col">
-                  <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-emerald-700/60 bg-black/40 text-emerald-200 transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                <div className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col">
+                  <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
-                  <div className="px-6 pt-6 pb-3 border-b border-emerald-800/40">
+                  <div className="px-6 pt-6 pb-3 border-b border-[#8b6a3e]/30">
                     <div className="flex items-center gap-3">
                       <span className="text-4xl">🌿</span>
                       <div className="flex-1">
-                        <h2 className="text-2xl font-black text-emerald-200">Kompostownik</h2>
-                        <p className="text-xs text-emerald-400/70 mt-0.5">Wrzucaj uprawy — każde 10 wrzutów = 1 partia. Jakość nagrody zależy od średniej wartości plonów.</p>
+                        <h2 className="text-2xl font-black text-[#dfcfab]">Kompostownik</h2>
+                        <p className="text-xs text-[#8b6a3e] mt-0.5">Wrzucaj uprawy — każde 10 wrzutów = 1 partia. Jakość nagrody zależy od średniej wartości plonów.</p>
                       </div>
                     </div>
                     {/* Pasek aktualnej partii + jakość + score */}
                     <div className="mt-4">
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-bold text-emerald-300">Aktualna partia</span>
-                        <span className="font-black text-emerald-200">
+                        <span className="font-bold text-[#dfcfab]">Aktualna partia</span>
+                        <span className="font-black text-[#dfcfab]">
                           Zapełnienie: {currentBatch.fill} / 10
                           {readyRewards > 0 && <span className="ml-2 text-amber-300">+ {readyRewards} gotowych</span>}
                         </span>
                       </div>
-                      <div className="h-3 rounded-full bg-emerald-950/60 border border-emerald-800/50 overflow-hidden">
+                      <div className="h-3 rounded-full bg-black/40 border border-[#8b6a3e]/30 overflow-hidden">
                         <div className="h-full transition-all" style={{ width: `${(currentBatch.fill / 10) * 100}%`, background: `linear-gradient(to right, ${currentQualityDef.border}, ${currentQualityDef.color})` }} />
                       </div>
                       <div className="flex items-center justify-between text-[11px] mt-1">
-                        <span className="text-emerald-500/70">Moc: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentBatch.scoreSum.toFixed(1) : "—"}</span></span>
+                        <span className="text-[#8b6a3e]/70">Moc: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentBatch.scoreSum.toFixed(1) : "—"}</span></span>
                         <span className="font-bold px-2 py-0.5 rounded-md text-[10px]" style={{ color: currentQualityDef.color, border: `1px solid ${currentQualityDef.border}66` }}>{currentBatch.fill > 0 ? currentQualityDef.label : "Brak wrzutów"}</span>
                       </div>
                       {/* Slots wszystkich partii (10 kropek) */}
@@ -7966,13 +7966,13 @@ export default function Page() {
                           const q = getCompostQualityDef(getCompostQualityFromScore(score));
                           const bg = isReady ? q.color : isPartial ? q.border : "#1f2937";
                           const ttl = b ? `Partia ${i+1}: ${b.fill}/10 · score ${score.toFixed(2)} · ${q.label}` : `Partia ${i+1}: pusta`;
-                          return <div key={i} title={ttl} className="flex-1 h-2 rounded-sm border border-emerald-900/60" style={{ background: bg, opacity: b ? 1 : 0.4 }} />;
+                          return <div key={i} title={ttl} className="flex-1 h-2 rounded-sm border border-[#8b6a3e]/30" style={{ background: bg, opacity: b ? 1 : 0.4 }} />;
                         })}
                       </div>
-                      <p className="text-[10px] text-emerald-500/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
+                      <p className="text-[10px] text-[#8b6a3e]/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
 
                       {/* Preview szans nagrody */}
-                      <div className="mt-3 rounded-xl border border-emerald-800/50 bg-emerald-950/30 p-2.5">
+                      <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-2.5">
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {currentTierChances.map((chance, i) => chance > 0 && (
                             <div
@@ -7987,10 +7987,10 @@ export default function Page() {
                                 const tipNode = (
                                   <>
                                     <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
-                                    <p className="text-[12px] font-bold text-emerald-500/60 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
+                                    <p className="text-[12px] font-bold text-[#8b6a3e]/70 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
                                     <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
                                       {tierItems.map(it => (
-                                        <p key={it.id} className="text-[13px] text-emerald-100 leading-snug">{it.icon} {it.name}</p>
+                                        <p key={it.id} className="text-[13px] text-[#dfcfab] leading-snug">{it.icon} {it.name}</p>
                                       ))}
                                     </div>
                                   </>
@@ -8005,18 +8005,18 @@ export default function Page() {
                           ))}
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span className="text-[10px] text-emerald-300">Szansa na item: <span className="font-black text-emerald-200">{itemDropChancePct}%</span>{diversityItemBonusUI > 0 && <span className="text-lime-400"> (+{diversityItemBonusUI}% roznorodnosc)</span>}</span>
+                          <span className="text-[10px] text-[#dfcfab]">Szansa na item: <span className="font-black text-[#dfcfab]">{itemDropChancePct}%</span>{diversityItemBonusUI > 0 && <span className="text-lime-400"> (+{diversityItemBonusUI}% roznorodnosc)</span>}</span>
                           <span className="text-[10px] text-amber-400/90">Jackpot: {JACKPOT_CHANCE}% na legendarny</span>
                         </div>
                       </div>
 
                       {/* Bonus różnorodności */}
-                      <div className="mt-2 rounded-xl border border-emerald-800/40 bg-black/20 p-2.5">
+                      <div className="mt-2 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-2.5">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[11px] font-bold text-emerald-200">Roznorodnosc upraw</span>
+                          <span className="text-[11px] font-bold text-[#dfcfab]">Roznorodnosc upraw</span>
                           <span className="text-[11px] font-black" style={{ color: diversityCountUI >= 10 ? "#fbbf24" : diversityCountUI >= 6 ? "#a78bfa" : "#22c55e" }}>{diversityCountUI}/10 gatunkow</span>
                         </div>
-                        <div className="h-1.5 rounded-full bg-emerald-950/60 overflow-hidden mb-1.5">
+                        <div className="h-1.5 rounded-full bg-black/40 overflow-hidden mb-1.5">
                           <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, diversityCountUI * 10)}%`, background: diversityCountUI >= 10 ? "linear-gradient(to right, #a78bfa, #fbbf24)" : diversityCountUI >= 6 ? "linear-gradient(to right, #22c55e, #a78bfa)" : "linear-gradient(to right, #166534, #22c55e)" }} />
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
@@ -8024,14 +8024,14 @@ export default function Page() {
                           {diversityTierBoostUI && <span className="text-[10px] text-purple-400">+tier boost aktywny (6+ gatunkow)</span>}
                         </div>
                         {diversityCountUI < 10 && (
-                          <p className="text-[9px] text-emerald-500/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
+                          <p className="text-[9px] text-[#8b6a3e]/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
                         )}
                       </div>
 
                       {/* Historia ostatnich dropow */}
                       {kompostDropHistory.length > 0 && (
-                        <div className="mt-2 rounded-xl border border-emerald-900/40 bg-black/15 p-2">
-                          <p className="text-[9px] font-bold text-emerald-500/60 mb-1 uppercase tracking-wider">Ostatnie nagrody</p>
+                        <div className="mt-2 rounded-xl border border-[#8b6a3e]/30 bg-black/15 p-2">
+                          <p className="text-[9px] font-bold text-[#8b6a3e]/70 mb-1 uppercase tracking-wider">Ostatnie nagrody</p>
                           <div className="flex flex-col gap-0.5 max-h-[60px] overflow-hidden">
                             {kompostDropHistory.slice(0, 5).map((h, i) => (
                               <p key={i} className="text-[10px] font-bold truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
@@ -8046,8 +8046,8 @@ export default function Page() {
                       disabled={readyRewards === 0}
                       className={`mt-3 w-full rounded-2xl border-2 px-6 py-3 text-base font-black transition shadow-lg ${
                         readyRewards > 0
-                          ? "border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:scale-[1.02] shadow-emerald-500/30 animate-pulse cursor-pointer"
-                          : "border-emerald-900/50 bg-emerald-950/30 text-emerald-700/60 shadow-none cursor-not-allowed"
+                          ? "border-yellow-400/80 bg-gradient-to-r from-yellow-600 to-amber-500 text-white hover:scale-[1.02] shadow-yellow-500/30 animate-pulse cursor-pointer"
+                          : "border-[#8b6a3e]/30 bg-black/30 text-[#8b6a3e]/40 shadow-none cursor-not-allowed"
                       }`}>
                       {readyRewards > 0
                         ? `🎲 Odbierz ${readyRewards} ${readyRewards === 1 ? "nagrodę" : readyRewards < 5 ? "nagrody" : "nagród"}`
@@ -8056,16 +8056,16 @@ export default function Page() {
                   </div>
 
                   {/* Sticky controls — pasek ilości + filtr (NIE scrolluje się z uprawami) */}
-                  <div className="px-6 pt-3 pb-2 border-b border-emerald-800/30 bg-[rgba(8,16,10,0.85)]">
+                  <div className="px-6 pt-3 pb-2 border-b border-[#8b6a3e]/30 bg-[rgba(14,8,4,0.85)]">
                     {/* Wybór ilości */}
                     <div className="mb-2">
-                      <p className="text-[11px] text-emerald-400/80 mb-1">Ilość przy kliknięciu:</p>
+                      <p className="text-[11px] text-[#8b6a3e] mb-1">Ilość przy kliknięciu:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {QTY_OPTIONS.map(q => (
                           <button
                             key={String(q)}
                             onClick={() => setKompostQty(q)}
-                            className={`px-3 py-1 rounded-lg text-xs font-black border transition ${kompostQty === q ? "border-emerald-300 bg-emerald-700/60 text-white" : "border-emerald-800/60 bg-emerald-950/40 text-emerald-300 hover:border-emerald-500/60"}`}>
+                            className={`px-3 py-1 rounded-lg text-xs font-black border transition ${kompostQty === q ? "border-yellow-400/60 bg-yellow-500/20 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#dfcfab] hover:border-[#dfcfab]/40"}`}>
                             {q === "max" ? "Max" : q}
                           </button>
                         ))}
@@ -8073,14 +8073,14 @@ export default function Page() {
                     </div>
                     {/* Filtr jakości */}
                     <div>
-                      <p className="text-[11px] text-emerald-400/80 mb-1">Filtruj uprawy:</p>
+                      <p className="text-[11px] text-[#8b6a3e] mb-1">Filtruj uprawy:</p>
                       <div className="flex gap-1.5 flex-wrap">
                         {FILTER_OPTIONS.map(f => (
                           <button
                             key={f.id}
                             onClick={() => setKompostFilter(f.id)}
-                            className={`px-3 py-1 rounded-lg text-xs font-black border transition ${kompostFilter === f.id ? "bg-emerald-700/60 text-white" : "bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/40"}`}
-                            style={{ borderColor: kompostFilter === f.id ? f.color : "rgba(8,80,40,0.6)" }}>
+                            className={`px-3 py-1 rounded-lg text-xs font-black border transition ${kompostFilter === f.id ? "bg-yellow-500/20 text-yellow-200" : "bg-black/20 text-[#dfcfab] hover:bg-[#8b6a3e]/20"}`}
+                            style={{ borderColor: kompostFilter === f.id ? f.color : "rgba(139,106,62,0.4)" }}>
                             {f.label}
                           </button>
                         ))}
@@ -8099,10 +8099,10 @@ export default function Page() {
                       }
                       if (cropEntries.length === 0) {
                         return (
-                          <div className="rounded-2xl border border-dashed border-emerald-800/50 bg-black/20 p-8 text-center">
+                          <div className="rounded-2xl border border-dashed border-[#8b6a3e]/40 bg-black/20 p-8 text-center">
                             <p className="text-4xl mb-3">🥕</p>
-                            <p className="text-sm font-bold text-emerald-200">{kompostFilter === "all" ? "Brak upraw do kompostowania" : `Brak upraw z filtrem „${FILTER_OPTIONS.find(f=>f.id===kompostFilter)?.label}"`}</p>
-                            <p className="text-[11px] text-emerald-400/70 mt-1">Zmień filtr lub zbierz uprawy z pola.</p>
+                            <p className="text-sm font-bold text-[#dfcfab]">{kompostFilter === "all" ? "Brak upraw do kompostowania" : `Brak upraw z filtrem „${FILTER_OPTIONS.find(f=>f.id===kompostFilter)?.label}"`}</p>
+                            <p className="text-[11px] text-[#8b6a3e]/70 mt-1">Zmień filtr lub zbierz uprawy z pola.</p>
                           </div>
                         );
                       }
@@ -8131,7 +8131,7 @@ export default function Page() {
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
                                 disabled={batchSlotsFull}
                                 title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-emerald-800/60 bg-emerald-950/40 hover:border-emerald-400 hover:bg-emerald-900/50 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2"
+                                className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
@@ -8139,10 +8139,10 @@ export default function Page() {
                                 ) : (
                                   <span className="text-3xl">🌱</span>
                                 )}
-                                <span className="mt-1 text-[10px] font-bold text-emerald-200 truncate w-full text-center">{crop.name}</span>
+                                <span className="mt-1 text-[10px] font-bold text-[#dfcfab] truncate w-full text-center">{crop.name}</span>
                                 {qDef && <span className="text-[9px] font-black" style={{ color: qDef.borderColor }}>{qDef.label}</span>}
-                                <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-emerald-200">×{amount}</span>
-                                <span className="absolute bottom-1 right-1 rounded bg-emerald-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
+                                <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-[#dfcfab]">×{amount}</span>
+                                <span className="absolute bottom-1 right-1 rounded bg-[#8b6a3e]/80 px-1 text-[9px] font-black text-white">+{qty}</span>
                               </button>
                             );
                           })}
@@ -8193,8 +8193,8 @@ export default function Page() {
                     })()}
                   </div>
 
-                  <div className="px-6 py-3 border-t border-emerald-800/40 text-center">
-                    <p className="text-[11px] text-emerald-500/70">
+                  <div className="px-6 py-3 border-t border-[#8b6a3e]/30 text-center">
+                    <p className="text-[11px] text-[#8b6a3e]/70">
                       Rodzaje kompostu: ⚡ Wzrost (-5/10/15% czasu) · 🌾 Urodzaj (+1/2/3 plon) · ⭐ Nauka (+10/20/30% EXP)
                     </p>
                   </div>
@@ -8203,11 +8203,11 @@ export default function Page() {
                 {/* Panel nagród (overlay) */}
                 {kompostRewards && (
                   <div className="absolute inset-0 z-[10] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-[720px] max-h-[88vh] overflow-hidden rounded-[24px] border-2 border-emerald-400/70 bg-[rgba(8,18,12,0.98)] shadow-2xl shadow-emerald-500/30 flex flex-col">
-                      <div className="px-6 pt-5 pb-3 border-b border-emerald-800/40 text-center">
+                    <div className="w-full max-w-[720px] max-h-[88vh] overflow-hidden rounded-[24px] border-2 border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col">
+                      <div className="px-6 pt-5 pb-3 border-b border-[#8b6a3e]/30 text-center">
                         <div className="text-5xl mb-2">🎁</div>
-                        <h3 className="text-[32px] font-black text-emerald-200">Zdobyłeś {kompostRewards.length} {kompostRewards.length === 1 ? "nagrodę" : kompostRewards.length < 5 ? "nagrody" : "nagród"}!</h3>
-                        <p className="text-[16px] text-emerald-400/70 mt-1">Najedź na nagrodę, aby zobaczyć szczegóły.</p>
+                        <h3 className="text-[32px] font-black text-[#dfcfab]">Zdobyłeś {kompostRewards.length} {kompostRewards.length === 1 ? "nagrodę" : kompostRewards.length < 5 ? "nagrody" : "nagród"}!</h3>
+                        <p className="text-[16px] text-[#8b6a3e] mt-1">Najedź na nagrodę, aby zobaczyć szczegóły.</p>
                       </div>
                       <div className="flex-1 overflow-y-auto px-6 py-4">
                         {(() => {
@@ -8288,10 +8288,10 @@ export default function Page() {
                           );
                         })()}
                       </div>
-                      <div className="px-6 py-3 border-t border-emerald-800/40 flex justify-center">
+                      <div className="px-6 py-3 border-t border-[#8b6a3e]/30 flex justify-center">
                         <button
                           onClick={() => { setKompostRewards(null); setKompostHoverTip(null); }}
-                          className="rounded-2xl border-2 border-emerald-400 bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-2 text-sm font-black text-white hover:scale-105 transition shadow-lg shadow-emerald-500/30">
+                          className="rounded-2xl border-2 border-yellow-400/70 bg-gradient-to-r from-yellow-600 to-amber-500 px-8 py-2 text-sm font-black text-white hover:scale-105 transition shadow-lg shadow-yellow-500/20">
                           Świetnie!
                         </button>
                       </div>
