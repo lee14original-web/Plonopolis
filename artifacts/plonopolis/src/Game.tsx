@@ -5881,11 +5881,11 @@ export default function Page() {
                                   if (!tree) return null;
                                   const isZgnile = q === "zgnile";
                                   const qLabel = isZgnile ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                                  const borderColor = isZgnile ? "#6b7280" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
-                                  const bgColor = isZgnile ? "rgba(30,30,30,0.55)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
-                                  const labelColor = isZgnile ? "#9ca3af" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const borderColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                                  const bgColor = isZgnile ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                                  const labelColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                                   return (
-                                    <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed opacity-80" : "cursor-default"}`}
+                                    <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed" : "cursor-default"}`}
                                       style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
                                       {isZgnile && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                       {q === "zloty" && (
@@ -5893,7 +5893,7 @@ export default function Page() {
                                           <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                         </span>
                                       )}
-                                      <span className="text-4xl leading-none" style={isZgnile ? { filter: "grayscale(0.7) brightness(0.7)" } : undefined}>{tree.fruitIcon}</span>
+                                      <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -7042,11 +7042,11 @@ export default function Page() {
                             if (!tree) return null;
                             const isZgnile2 = q === "zgnile";
                             const qLabel = isZgnile2 ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
-                            const borderColor = isZgnile2 ? "#6b7280" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
-                            const bgColor = isZgnile2 ? "rgba(30,30,30,0.55)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
-                            const labelColor = isZgnile2 ? "#9ca3af" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const borderColor = isZgnile2 ? "#ffffff" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                            const bgColor = isZgnile2 ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                            const labelColor = isZgnile2 ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                             return (
-                              <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed opacity-80" : "cursor-default"}`}
+                              <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed" : "cursor-default"}`}
                                 style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
                                 {isZgnile2 && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                 {q === "zloty" && (
@@ -7054,7 +7054,7 @@ export default function Page() {
                                     <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                   </span>
                                 )}
-                                <span className="text-4xl leading-none" style={isZgnile2 ? { filter: "grayscale(0.7) brightness(0.7)" } : undefined}>{tree.fruitIcon}</span>
+                                <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
@@ -8078,10 +8078,10 @@ export default function Page() {
                                   onClick={() => void depositFruitToCompost(fruitKey, qty)}
                                   disabled={batchSlotsFull}
                                   title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-gray-600/60 bg-gray-900/60 hover:border-gray-400 hover:bg-gray-800/60 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2">
-                                  <span className="text-3xl" style={{ filter: "grayscale(0.6) brightness(0.7)" }}>{tree.fruitIcon}</span>
-                                  <span className="mt-1 text-[10px] font-bold text-gray-300 truncate w-full text-center">{tree.fruitName}</span>
-                                  <span className="text-[9px] font-black text-gray-500">Zgniłe</span>
+                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2">
+                                  <span className="text-3xl">{tree.fruitIcon}</span>
+                                  <span className="mt-1 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
+                                  <span className="text-[9px] font-black text-white">Zgniłe</span>
                                   <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-gray-300">×{amount}</span>
                                   <span className="absolute bottom-1 right-1 rounded bg-gray-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
                                 </button>
