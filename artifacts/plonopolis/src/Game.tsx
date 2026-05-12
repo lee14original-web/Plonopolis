@@ -83,7 +83,7 @@ type GameMessage = {
 };
 
 // ─── TARG GRACZY ────────────────────────────────────────────────────────────
-type MarketItemType = "crop" | "compost" | "barn_item" | "fruit" | "honey";
+type MarketItemType = "crop" | "compost" | "barn_item" | "fruit" | "honey" | "equipment";
 type MarketOffer = {
   id: string;
   seller_id: string;
@@ -2132,7 +2132,7 @@ export default function Page() {
   const [myMarketOffers, setMyMarketOffers] = React.useState<MarketOffer[]>([]);
   const [marketReturns, setMarketReturns] = React.useState<MarketReturn[]>([]);
   const [marketLoading, setMarketLoading] = React.useState(false);
-  const [marketBrowseFilter, setMarketBrowseFilter] = React.useState<MarketItemType|"all">("all");
+  const [marketBrowseFilter, setMarketBrowseFilter] = React.useState<MarketItemType|"all">("crop");
   const [pendingReturnCount, setPendingReturnCount] = React.useState(0);
   const [createOfferOpen, setCreateOfferOpen] = React.useState(false);
   const [coItemType, setCoItemType] = React.useState<MarketItemType>("crop");
@@ -2146,7 +2146,7 @@ export default function Page() {
   const [claimingReturns, setClaimingReturns] = React.useState(false);
   const [marketPickerOpen, setMarketPickerOpen] = React.useState(false);
   const [marketPickerSearch, setMarketPickerSearch] = React.useState("");
-  const [marketPickerFilter, setMarketPickerFilter] = React.useState<MarketItemType|"all"|"rare">("all");
+  const [marketPickerFilter, setMarketPickerFilter] = React.useState<MarketItemType>("crop");
   React.useEffect(() => {
     const t = setInterval(() => setBarnNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -4757,6 +4757,10 @@ export default function Page() {
       return 20;
     }
     if (type === "honey") return 100;
+    if (type === "equipment") {
+      const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === key);
+      return eItem ? eItem.unlockLevel * 80 : 200;
+    }
     return 1;
   }
   function marketItemLabel(type: string, key: string): { name: string; icon: string } {
@@ -4787,6 +4791,10 @@ export default function Page() {
       return { name: key, icon: "🍎" };
     }
     if (type === "honey") return { name: "Słoik miodu", icon: "🍯" };
+    if (type === "equipment") {
+      const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === key);
+      return { name: eItem?.name ?? key, icon: eItem?.icon ?? "⚔️" };
+    }
     return { name: key, icon: "📦" };
   }
   function getMarketItemImg(type: MarketItemType, key: string): string | null {
@@ -4826,6 +4834,15 @@ export default function Page() {
     if (honeyJars > 0) {
       items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", imgPath: getMarketItemImg("honey", "honey_jar"), qty: honeyJars, minPrice: 100 });
     }
+    const equippedIds = new Set(
+      (Object.values(charEquipped) as ({ id: string; upg: number } | null)[])
+        .filter(Boolean).map(e => e!.id)
+    );
+    CHAR_EQUIP_ITEMS
+      .filter(item => ownedEqItems[item.id] && !equippedIds.has(item.id))
+      .forEach(item => {
+        items.push({ type: "equipment", key: item.id, name: item.name, icon: item.icon, imgPath: null, qty: 1, minPrice: item.unlockLevel * 80 });
+      });
     return items;
   }
   async function loadMarketData() {
@@ -4874,6 +4891,11 @@ export default function Page() {
     if (error) { setMessage({ type: "error", title: "Błąd wystawienia", text: error.message }); return; }
     const result = data as { error?: string; success?: boolean };
     if (result?.error) { setMessage({ type: "error", title: "Błąd wystawienia", text: result.error }); return; }
+    if (coItemType === "equipment") {
+      const next = { ...ownedEqItems } as Record<string, true>;
+      delete next[coItemKey];
+      saveOwnedEqItems(next);
+    }
     setMessage({ type: "success", title: "Oferta wystawiona!", text: `${name} ×${coQty} za ${coPrice} zł/szt.` });
     setCreateOfferOpen(false); setCoItemKey(""); setCoQty(1); setCoPrice(10); setCoDuration(24);
     await Promise.all([loadProfile(), loadMarketData()]);
@@ -11355,7 +11377,6 @@ export default function Page() {
                 <div>
                   <div className="mb-3 flex flex-wrap gap-1.5">
                     {([
-                      { id: "all" as const,       label: "Wszystkie" },
                       { id: "crop" as const,       label: "Uprawy" },
                       { id: "compost" as const,    label: "Kompost" },
                       { id: "barn_item" as const,  label: "Zwierzeta" },
@@ -11418,7 +11439,7 @@ export default function Page() {
                       <p className="text-sm text-[#dfcfab]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-xs text-[#8b6a3e]">(poziom {lvl})</span></p>
                       {activeOffers.length < maxOffers && (
                         <button type="button"
-                          onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("all"); setMarketPickerOpen(true); }}
+                          onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
                           className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition"
                         >+ Dodaj ofertę</button>
                       )}
@@ -11616,26 +11637,65 @@ export default function Page() {
       {/* ─── PICKER ITEMÓW TARGU — overlay ponad modalem ─────────────────── */}
       {marketPickerOpen && (() => {
         const sellable = buildSellableItems();
-        const filtered = sellable.filter(i => {
-          if (marketPickerFilter === "rare") return i.type === "crop" && (i.key.endsWith("_legendary") || i.key.endsWith("_epic"));
-          if (marketPickerFilter !== "all") return i.type === marketPickerFilter;
-          return true;
-        }).filter(i => {
+        const filtered = sellable.filter(i => i.type === marketPickerFilter).filter(i => {
           if (!marketPickerSearch.trim()) return true;
           return i.name.toLowerCase().includes(marketPickerSearch.trim().toLowerCase());
         });
-        const PICKER_FILTERS: { id: MarketItemType|"all"|"rare"; label: string; icon: string }[] = [
-          { id: "all",       label: "Wszystko", icon: "📦" },
-          { id: "crop",      label: "Uprawy",   icon: "🌱" },
-          { id: "fruit",     label: "Owoce",    icon: "🍎" },
-          { id: "barn_item", label: "Stodoła",  icon: "🐔" },
-          { id: "compost",   label: "Kompost",  icon: "🌿" },
-          { id: "honey",     label: "Miód",     icon: "🍯" },
-          { id: "rare",      label: "Rzadkie",  icon: "⭐" },
+        const PICKER_FILTERS: { id: MarketItemType; label: string; icon: string }[] = [
+          { id: "crop",      label: "Uprawy",     icon: "🌱" },
+          { id: "fruit",     label: "Owoce",      icon: "🍎" },
+          { id: "barn_item", label: "Stodoła",    icon: "🐔" },
+          { id: "compost",   label: "Kompost",    icon: "🌿" },
+          { id: "honey",     label: "Miód",       icon: "🍯" },
+          { id: "equipment", label: "Ekwipunek",  icon: "⚔️" },
         ];
+        const CROP_QUALITY_GROUPS = [
+          { label: "Zepsute",    quality: "rotten",    color: "#6b7280" },
+          { label: "Zwykłe",     quality: "normal",    color: "#f3e6c8" },
+          { label: "Epickie",    quality: "epic",      color: "#a855f7" },
+          { label: "Legendarne", quality: "legendary", color: "#f59e0b" },
+        ];
+        const FRUIT_QUALITY_GROUPS = [
+          { label: "Zgnite",    quality: "zgnile",   color: "#6b7280" },
+          { label: "Zwykłe",    quality: "zwykly",   color: "#f3e6c8" },
+          { label: "Soczyste",  quality: "soczysty", color: "#22c55e" },
+          { label: "Złote",     quality: "zloty",    color: "#f59e0b" },
+        ];
+        const EQ_SLOT_GROUPS = [
+          { label: "Głowa",  slot: "glowa",  icon: "👑" },
+          { label: "Dłonie", slot: "dlonie", icon: "🧤" },
+          { label: "Nogi",   slot: "nogi",   icon: "👢" },
+        ];
+        function renderPickerTile(item: typeof filtered[0]) {
+          return (
+            <button
+              key={`${item.type}::${item.key}`}
+              type="button"
+              onClick={() => {
+                setCoItemType(item.type);
+                setCoItemKey(item.key);
+                setCoQty(1);
+                setCoPrice(item.minPrice);
+                setCoDuration(24);
+                setMarketPickerOpen(false);
+                setCreateOfferOpen(true);
+              }}
+              className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/50 bg-[rgba(255,255,255,0.03)] p-3 text-center transition hover:border-[#f4cf78]/60 hover:bg-[rgba(242,202,105,0.09)] active:scale-95"
+            >
+              {item.imgPath ? (
+                <img src={item.imgPath} alt={item.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
+              ) : (
+                <span className="text-5xl leading-none">{item.icon || "📦"}</span>
+              )}
+              <p className="text-sm font-bold leading-tight text-[#f3e6c8] line-clamp-2">{item.name}</p>
+              <p className="text-xs text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{item.qty}</span></p>
+              <p className="text-xs text-[#8b6a3e]">Min: {item.minPrice.toLocaleString("pl-PL")} zł</p>
+            </button>
+          );
+        }
         return (
           <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-           <div className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-[#8b6a3e] bg-[rgba(8,4,2,0.98)] shadow-2xl" style={{ height: "72vh" }}>
+           <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#8b6a3e] bg-[rgba(8,4,2,0.98)] shadow-2xl" style={{ height: "90vh" }}>
             {/* Nagłówek z wyszukiwarką */}
             <div className="shrink-0 flex items-center gap-3 border-b border-[#8b6a3e]/60 bg-[rgba(18,10,5,0.98)] px-4 py-3">
               <button
@@ -11687,33 +11747,57 @@ export default function Page() {
                   <p className="text-xl font-bold text-[#dfcfab]">Brak przedmiotów</p>
                   <p className="text-base">Zmień filtr lub zbierz więcej surowców.</p>
                 </div>
+              ) : marketPickerFilter === "crop" ? (
+                <div className="space-y-5">
+                  {CROP_QUALITY_GROUPS.map(group => {
+                    const groupItems = filtered.filter(i => parseQualityKey(i.key).quality === group.quality);
+                    if (groupItems.length === 0) return null;
+                    return (
+                      <div key={group.quality}>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ color: group.color }}>{group.label}</p>
+                        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                          {groupItems.map(item => renderPickerTile(item))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : marketPickerFilter === "fruit" ? (
+                <div className="space-y-5">
+                  {FRUIT_QUALITY_GROUPS.map(group => {
+                    const groupItems = filtered.filter(i => i.key.endsWith(`_${group.quality}`));
+                    if (groupItems.length === 0) return null;
+                    return (
+                      <div key={group.quality}>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider" style={{ color: group.color }}>{group.label}</p>
+                        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                          {groupItems.map(item => renderPickerTile(item))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : marketPickerFilter === "equipment" ? (
+                <div className="space-y-5">
+                  {EQ_SLOT_GROUPS.map(group => {
+                    const groupItems = filtered.filter(i => {
+                      const eItem = CHAR_EQUIP_ITEMS.find(e => e.id === i.key);
+                      return eItem?.slot === group.slot;
+                    });
+                    if (groupItems.length === 0) return null;
+                    return (
+                      <div key={group.slot}>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#f4cf78]">{group.icon} {group.label}</p>
+                        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                          {groupItems.map(item => renderPickerTile(item))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-                  {filtered.map(item => (
-                    <button
-                      key={`${item.type}::${item.key}`}
-                      type="button"
-                      onClick={() => {
-                        setCoItemType(item.type);
-                        setCoItemKey(item.key);
-                        setCoQty(1);
-                        setCoPrice(item.minPrice);
-                        setCoDuration(24);
-                        setMarketPickerOpen(false);
-                        setCreateOfferOpen(true);
-                      }}
-                      className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/50 bg-[rgba(255,255,255,0.03)] p-3 text-center transition hover:border-[#f4cf78]/60 hover:bg-[rgba(242,202,105,0.09)] active:scale-95"
-                    >
-                      {item.imgPath ? (
-                        <img src={item.imgPath} alt={item.name} className="h-14 w-14 object-contain" style={{ imageRendering: "pixelated" }} />
-                      ) : (
-                        <span className="text-5xl leading-none">{item.icon || "📦"}</span>
-                      )}
-                      <p className="text-sm font-bold leading-tight text-[#f3e6c8] line-clamp-2">{item.name}</p>
-                      <p className="text-xs text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{item.qty}</span></p>
-                      <p className="text-xs text-[#8b6a3e]">Min: {item.minPrice.toLocaleString("pl-PL")} zł</p>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                  {filtered.map(item => renderPickerTile(item))}
                 </div>
               )}
             </div>
