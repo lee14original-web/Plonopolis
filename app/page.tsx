@@ -8133,15 +8133,15 @@ export default function Page() {
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
                                 disabled={batchSlotsFull}
                                 title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2"
+                                className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={sprite} alt={crop.name} className="w-10 h-10 object-contain" />
+                                  <img src={sprite} alt={crop.name} className="w-14 h-14 object-contain" />
                                 ) : (
-                                  <span className="text-3xl">🌱</span>
+                                  <span className="text-5xl">🌱</span>
                                 )}
-                                <span className="mt-1 text-[10px] font-bold text-[#dfcfab] truncate w-full text-center">{crop.name}</span>
+                                <span className="mt-0.5 text-[10px] font-bold text-[#dfcfab] truncate w-full text-center">{crop.name}</span>
                                 {qDef && <span className="text-[9px] font-black" style={{ color: qDef.borderColor }}>{qDef.label}</span>}
                                 <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-[#dfcfab]">×{amount}</span>
                                 <span className="absolute bottom-1 right-1 rounded bg-[#8b6a3e]/80 px-1 text-[9px] font-black text-white">+{qty}</span>
@@ -8180,9 +8180,9 @@ export default function Page() {
                                   onClick={() => void depositFruitToCompost(fruitKey, qty)}
                                   disabled={batchSlotsFull}
                                   title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-2">
-                                  <span className="text-3xl">{tree.fruitIcon}</span>
-                                  <span className="mt-1 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
+                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1">
+                                  <span className="text-5xl">{tree.fruitIcon}</span>
+                                  <span className="mt-0.5 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
                                   <span className="text-[9px] font-black text-white">Zgniłe</span>
                                   <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-gray-300">×{amount}</span>
                                   <span className="absolute bottom-1 right-1 rounded bg-gray-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
