@@ -6755,8 +6755,8 @@ export default function Page() {
                             {dailyPromos.super_.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-rose-900/40 border border-rose-500/40 px-2 py-0.5 text-[10px] font-black text-rose-300">⭐ {cr.name} -20%</span> : null; })}
                           </div>
                         </div>
-                        {/* Lista wszystkich upraw — siatka 2 kolumny */}
-                        <div className="grid grid-cols-2 gap-2">
+                        {/* Lista wszystkich upraw — siatka 3 kolumny */}
+                        <div className="grid grid-cols-3 gap-2">
                           {CROPS.filter(c => c.id !== "test_nasiono").map(crop => {
                             const locked = displayLevel < crop.unlockLevel;
                             const basePrice = CROP_PRICES[crop.id] ?? 0;
@@ -6771,7 +6771,7 @@ export default function Page() {
                               <div key={crop.id} className={`flex flex-col rounded-xl border p-2.5 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
                                 {/* Górna część: obrazek + nazwa + odznaki */}
                                 <div className="flex items-center gap-2 mb-1.5">
-                                  <img src={crop.spritePath} alt={crop.name} className="h-[40px] w-[40px] object-contain shrink-0" style={{imageRendering:"pixelated"}} />
+                                  <img src={crop.spritePath} alt={crop.name} className="h-[60px] w-[60px] object-contain shrink-0" style={{imageRendering:"pixelated"}} />
                                   <div className="flex-1 min-w-0">
                                     <p className={`text-xs font-black leading-tight truncate ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
                                     <div className="flex flex-wrap gap-0.5 mt-0.5">
