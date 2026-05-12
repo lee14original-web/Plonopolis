@@ -6751,17 +6751,6 @@ export default function Page() {
                   <div className="flex-1 overflow-y-auto p-5 text-[#dfcfab]">
                     {shopTab === "nasiona" && (
                       <div>
-                        {/* Baner promocji dnia */}
-                        <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-900/10 p-3">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <p className="text-xs font-black uppercase tracking-wider text-amber-300">Promocje dnia</p>
-                            <p className="text-[10px] text-[#8b6a3e]">Wygasa za: <span className="font-black text-amber-200">{promoCountdown}</span></p>
-                          </div>
-                          <div className="flex gap-1.5 flex-wrap">
-                            {dailyPromos.normal.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-amber-900/40 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black text-amber-300">🔥 {cr.name} -10%</span> : null; })}
-                            {dailyPromos.super_.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-green-900/40 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">⭐ {cr.name} -20%</span> : null; })}
-                          </div>
-                        </div>
                         {/* Lista wszystkich upraw — siatka 3 kolumny */}
                         <div className="grid grid-cols-3 gap-2">
                           {CROPS.filter(c => c.id !== "test_nasiono").map(crop => {
@@ -6784,8 +6773,18 @@ export default function Page() {
                                 {/* Odznaki */}
                                 <div className="flex flex-wrap justify-center gap-0.5 mb-2">
                                   {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
-                                  {isSuper && !locked && <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>}
-                                  {isNormal && !locked && <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>}
+                                  {isSuper && !locked && (
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
+                                      <span className="text-[8px] text-green-400/70 font-bold">{promoCountdown}</span>
+                                    </div>
+                                  )}
+                                  {isNormal && !locked && (
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
+                                      <span className="text-[8px] text-amber-400/70 font-bold">{promoCountdown}</span>
+                                    </div>
+                                  )}
                                 </div>
                                 {/* Cena */}
                                 {(isNormal || isSuper) && !locked ? (
