@@ -6819,7 +6819,7 @@ export default function Page() {
 
                       {/* ─── Modal powitalny dla nowego gracza ─── */}
                       {showWelcome && (
-                        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4">
+                        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" style={{ zIndex: 9999 }}>
                           <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
                             {/* Zamknij */}
                             <button
