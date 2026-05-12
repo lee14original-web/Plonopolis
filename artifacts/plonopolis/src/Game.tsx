@@ -9751,10 +9751,10 @@ export default function Page() {
                               <img src={src} alt={`Postac ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                             </div>
                             {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-60 rounded-xl border border-amber-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[15px] font-black text-amber-300 mb-2">{_meta.name}</p>}
+                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-72 rounded-xl border border-amber-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
+                                {_meta && <p className="text-[20px] font-black text-amber-300 mb-2">{_meta.name}</p>}
                                 <div className="flex flex-wrap justify-center gap-1.5">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-amber-900/40 border border-amber-600/30 px-2 py-0.5 text-[13px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>)}
+                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-amber-900/40 border border-amber-600/30 px-2 py-0.5 text-[17px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>)}
                                 </div>
                               </div>
                             )}
@@ -9783,10 +9783,10 @@ export default function Page() {
                               <img src={src} alt={`Postac ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                             </div>
                             {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-60 rounded-xl border border-pink-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[15px] font-black text-pink-300 mb-2">{_meta.name}</p>}
+                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-72 rounded-xl border border-pink-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
+                                {_meta && <p className="text-[20px] font-black text-pink-300 mb-2">{_meta.name}</p>}
                                 <div className="flex flex-wrap justify-center gap-1.5">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-pink-900/40 border border-pink-600/30 px-2 py-0.5 text-[13px] font-bold text-pink-200">+{v} {_sl[k]??k}</span>)}
+                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-pink-900/40 border border-pink-600/30 px-2 py-0.5 text-[17px] font-bold text-pink-200">+{v} {_sl[k]??k}</span>)}
                                 </div>
                               </div>
                             )}
@@ -9864,25 +9864,25 @@ export default function Page() {
             const isUnlocked = unlockedEpicAvatars.includes(hoveredEpicSkin);
             const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
             return (
-              <div className="pointer-events-none fixed z-[9999] w-64 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-4 shadow-2xl backdrop-blur-sm"
-                style={{ left: mousePos.x + 20, top: Math.max(8, mousePos.y - 160) }}>
+              <div className="pointer-events-none fixed z-[9999] w-80 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-5 shadow-2xl backdrop-blur-sm"
+                style={{ left: mousePos.x + 20, top: Math.max(8, mousePos.y - 200) }}>
                 {/* Podgląd skina */}
                 <div className="mb-3 flex justify-center">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
+                  <div className="relative h-32 w-32 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
                     <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(80%) brightness(0.5)" }} />
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-3xl">🔒</span>
+                        <span className="text-4xl">🔒</span>
                       </div>
                     )}
                   </div>
                 </div>
                 {/* Nazwa */}
-                <p className="mb-1 text-center text-[15px] font-black text-green-300">⭐ {es.name}</p>
+                <p className="mb-1 text-center text-[20px] font-black text-green-300">⭐ {es.name}</p>
                 {/* Status */}
                 {isUnlocked
-                  ? <p className="mb-2 text-center text-[11px] font-bold text-green-400">✓ Odblokowany — kliknij, aby wybrać</p>
-                  : <p className="mb-2 text-center text-[11px] text-[#8b6a3e]">Zablokowany — kliknij, aby odblokować</p>
+                  ? <p className="mb-2 text-center text-[14px] font-bold text-green-400">✓ Odblokowany — kliknij, aby wybrać</p>
+                  : <p className="mb-2 text-center text-[14px] text-[#8b6a3e]">Zablokowany — kliknij, aby odblokować</p>
                 }
                 {/* Bonusy statystyk */}
                 {(() => {
@@ -9891,10 +9891,10 @@ export default function Page() {
                   const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
                   if (!_e.length) return null;
                   return (
-                    <div className="mb-2 rounded-xl border border-green-700/40 bg-green-950/20 px-2 py-2">
-                      <p className="mb-1 text-[9px] font-black uppercase tracking-widest text-green-500">Bonusy statystyk:</p>
-                      <div className="flex flex-wrap justify-center gap-1">
-                        {_e.map(([k,v]) => <span key={k} className="rounded bg-green-900/40 border border-green-600/30 px-1.5 py-0.5 text-[10px] font-bold text-green-200">+{v} {_sl[k]??k}</span>)}
+                    <div className="mb-2 rounded-xl border border-green-700/40 bg-green-950/20 px-3 py-2">
+                      <p className="mb-1.5 text-[12px] font-black uppercase tracking-widest text-green-500">Bonusy statystyk:</p>
+                      <div className="flex flex-wrap justify-center gap-1.5">
+                        {_e.map(([k,v]) => <span key={k} className="rounded bg-green-900/40 border border-green-600/30 px-2 py-0.5 text-[13px] font-bold text-green-200">+{v} {_sl[k]??k}</span>)}
                       </div>
                     </div>
                   );
@@ -9902,7 +9902,7 @@ export default function Page() {
                 {/* Koszty */}
                 {!isUnlocked && (
                   <div className="rounded-xl border border-green-800/40 bg-black/30 p-3">
-                    <p className="mb-1.5 text-[10px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
+                    <p className="mb-1.5 text-[13px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
                     {Object.entries(es.cost).map(([k, v]) => {
                       const { baseCropId, quality } = parseQualityKey(k);
                       const crop = CROPS.find(c => c.id === baseCropId);
