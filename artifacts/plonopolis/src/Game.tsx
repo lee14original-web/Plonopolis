@@ -4293,7 +4293,7 @@ export default function Page() {
     let owned = { ...ownedEqItems };
     let upgReg = { ...itemUpgRegistry };
     let extras = [...extraEqItems];
-    const newHistoryEntries: Array<{label: string; color: string; icon: string}> = [];
+    const newHistoryEntries: Array<{label: string; color: string; icon: string; ts?: number; count?: number}> = [];
 
     // Bonus różnorodności: liczymy unikalne gatunki upraw w plecaku
     const uniqueCropIdsForBonus = new Set(
