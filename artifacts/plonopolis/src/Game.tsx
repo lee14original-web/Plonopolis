@@ -7987,11 +7987,12 @@ export default function Page() {
                                 const tipNode = (
                                   <>
                                     <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
-                                    <p className="text-[12px] font-bold text-emerald-500/60 mb-1.5 uppercase tracking-wider">Mozliwe nagrody:</p>
-                                    {tierItems.slice(0, 8).map(it => (
-                                      <p key={it.id} className="text-[13px] text-emerald-100 leading-snug">{it.icon} {it.name}</p>
-                                    ))}
-                                    {tierItems.length > 8 && <p className="text-[12px] text-emerald-500/50 mt-1.5">... i {tierItems.length - 8} wiecej</p>}
+                                    <p className="text-[12px] font-bold text-emerald-500/60 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
+                                    <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
+                                      {tierItems.map(it => (
+                                        <p key={it.id} className="text-[13px] text-emerald-100 leading-snug">{it.icon} {it.name}</p>
+                                      ))}
+                                    </div>
                                   </>
                                 );
                                 setKompostTierHoverTip({ x: rect.left + rect.width / 2, y: rect.bottom, node: tipNode, color: rarity.border });
@@ -8321,7 +8322,7 @@ export default function Page() {
                 {/* Tier tooltip — widoczny zawsze, nie tylko gdy panel nagród otwarty */}
                 {kompostTierHoverTip && (() => {
                   const TIP_W = 308;
-                  const TIP_H_EST = 310;
+                  const TIP_H_EST = 420;
                   const margin = 10;
                   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
                   const vh = typeof window !== "undefined" ? window.innerHeight : 720;
