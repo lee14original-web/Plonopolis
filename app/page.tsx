@@ -5899,7 +5899,7 @@ export default function Page() {
                                       const cnt = barnItems[it.id] ?? 0;
                                       return (
                                         <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
-                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[11px] text-amber-300 mt-1">{animal.icon} Z {animal.name.toLowerCase()}y</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                           onMouseLeave={() => setCardTip(null)}>
                                           <div className="relative h-16 w-16 flex items-center justify-center">
                                             
@@ -7039,7 +7039,7 @@ export default function Page() {
                                 const cnt = barnItems[it.id] ?? 0;
                                 return (
                                   <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
-                                    onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                    onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[11px] text-amber-300 mt-1">{animal.icon} Z {animal.name.toLowerCase()}y</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                     onMouseLeave={() => setCardTip(null)}>
                                     <div className="relative h-16 w-16 flex items-center justify-center">
                                       
