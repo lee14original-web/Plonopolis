@@ -1752,6 +1752,7 @@ export default function Page() {
   const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("mezczyzni");
   const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
   const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
+  const [hoveredNormalSkin, setHoveredNormalSkin] = React.useState<number|null>(null);
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statFlash, setStatFlash] = React.useState<string|null>(null);
@@ -9740,18 +9741,10 @@ export default function Page() {
                         const _meta = AVATAR_META[i];
                         return (
                           <button key={i} onClick={() => handleAvatarSelect(i)}
-                            className={`group relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-visible transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
-                            <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                              <img src={src} alt={`Postac ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                            </div>
-                            {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-72 rounded-xl border border-amber-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[20px] font-black text-amber-300 mb-2">{_meta.name}</p>}
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-amber-900/40 border border-amber-600/30 px-2 py-0.5 text-[17px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>)}
-                                </div>
-                              </div>
-                            )}
+                            onMouseEnter={() => setHoveredNormalSkin(i)}
+                            onMouseLeave={() => setHoveredNormalSkin(null)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            <img src={src} alt={`Postac ${i+1}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                           </button>
                         );
                       })}
@@ -9772,18 +9765,10 @@ export default function Page() {
                         const _meta = AVATAR_META[_idx];
                         return (
                           <button key={_idx} onClick={() => handleAvatarSelect(_idx)}
-                            className={`group relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-visible transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
-                            <div className="absolute inset-0 rounded-2xl overflow-hidden">
-                              <img src={src} alt={`Postac ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                            </div>
-                            {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-72 rounded-xl border border-pink-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[20px] font-black text-pink-300 mb-2">{_meta.name}</p>}
-                                <div className="flex flex-wrap justify-center gap-1.5">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-pink-900/40 border border-pink-600/30 px-2 py-0.5 text-[17px] font-bold text-pink-200">+{v} {_sl[k]??k}</span>)}
-                                </div>
-                              </div>
-                            )}
+                            onMouseEnter={() => setHoveredNormalSkin(_idx)}
+                            onMouseLeave={() => setHoveredNormalSkin(null)}
+                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            <img src={src} alt={`Postac ${i+11}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                           </button>
                         );
                       })}
@@ -9913,6 +9898,28 @@ export default function Page() {
                     {canAfford && <p className="mt-1.5 text-center text-[11px] font-black text-green-400">Masz wystarczająco!</p>}
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {/* ═══ TOOLTIP NORMALNEGO SKINA (M/K) ═══ */}
+          {hoveredNormalSkin !== null && showSkinModal && (() => {
+            const _b = getAvatarBonus(hoveredNormalSkin);
+            const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
+            if (!_e.length) return null;
+            const _meta = AVATAR_META[hoveredNormalSkin];
+            const isFemale = hoveredNormalSkin >= 10 && hoveredNormalSkin < EPIC_SKIN_START;
+            const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
+            const borderColor = isFemale ? "border-pink-500/70" : "border-amber-500/70";
+            const nameColor = isFemale ? "text-pink-300" : "text-amber-300";
+            const badgeBg = isFemale ? "bg-pink-900/40 border-pink-600/30 text-pink-200" : "bg-amber-900/40 border-amber-600/30 text-amber-200";
+            return (
+              <div className={`pointer-events-none fixed z-[9999] w-64 rounded-[18px] border ${borderColor} bg-[rgba(18,10,2,0.98)] px-4 py-3 text-center shadow-2xl backdrop-blur-sm`}
+                style={{ left: Math.min(mousePos.x + 16, (typeof window !== "undefined" ? window.innerWidth : 1920) - 272), top: Math.max(8, mousePos.y - 120) }}>
+                {_meta && <p className={`text-[18px] font-black ${nameColor} mb-2`}>{_meta.name}</p>}
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {_e.map(([k,v]) => <span key={k} className={`rounded border px-2 py-0.5 text-[15px] font-bold ${badgeBg}`}>+{v} {_sl[k]??k}</span>)}
+                </div>
               </div>
             );
           })()}
