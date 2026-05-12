@@ -6764,39 +6764,44 @@ export default function Page() {
                             const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
-                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
+                              <div key={crop.id} className={`flex flex-col rounded-xl border p-3 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
                                 {/* Ikona z nazwą nachodzącą */}
                                 <div className="relative flex justify-center w-full mb-1">
                                   <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
-                                  <p className={`absolute bottom-0 left-0 right-0 text-xs font-black leading-tight text-center px-1 py-0.5 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`} style={{textShadow:"0 1px 3px #000,0 1px 3px #000"}}>{crop.name}</p>
+                                  <p className={`absolute bottom-0 left-0 right-0 text-[16px] font-black leading-tight text-center px-1 py-0.5 ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`} style={{textShadow:"0 1px 3px #000,0 1px 3px #000"}}>{crop.name}</p>
                                 </div>
-                                {/* Odznaki */}
-                                <div className="flex flex-wrap justify-center gap-0.5 mb-2">
-                                  {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
-                                  {isSuper && !locked && (
-                                    <div className="flex flex-col items-start gap-0.5 w-full">
-                                      <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
-                                      <span className="text-[14px] text-green-400/80 font-black">{promoCountdown}</span>
-                                    </div>
-                                  )}
-                                  {isNormal && !locked && (
-                                    <div className="flex flex-col items-start gap-0.5 w-full">
-                                      <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
-                                      <span className="text-[14px] text-amber-400/80 font-black">{promoCountdown}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                {/* Cena */}
-                                {(isNormal || isSuper) && !locked ? (
-                                  <div className="mb-1">
-                                    <p className="text-xs text-[#8b6a3e] line-through">{basePrice.toFixed(2)} 💰</p>
-                                    <p className={`text-sm font-black ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
+                                {/* Odznaki + cena w jednym rzędzie */}
+                                <div className="flex items-start justify-between w-full mb-1 gap-1">
+                                  {/* Odznaki / countdown po lewej */}
+                                  <div className="flex flex-col gap-0.5">
+                                    {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
+                                    {isSuper && !locked && (
+                                      <>
+                                        <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
+                                        <span className="text-[14px] text-green-400/80 font-black">{promoCountdown}</span>
+                                      </>
+                                    )}
+                                    {isNormal && !locked && (
+                                      <>
+                                        <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
+                                        <span className="text-[14px] text-amber-400/80 font-black">{promoCountdown}</span>
+                                      </>
+                                    )}
                                   </div>
-                                ) : (
-                                  <p className="text-xs text-[#8b6a3e] mb-1">{effPrice.toFixed(2)} 💰</p>
-                                )}
-                                {/* Masz */}
-                                <p className="text-xs font-bold text-emerald-400 mb-2">Masz: {owned}</p>
+                                  {/* Cena po prawej */}
+                                  <div className="text-right shrink-0">
+                                    {(isNormal || isSuper) && !locked ? (
+                                      <>
+                                        <p className="text-[12px] text-[#8b6a3e] line-through leading-tight">{basePrice.toFixed(2)} 💰</p>
+                                        <p className={`text-[16px] font-black leading-tight ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
+                                      </>
+                                    ) : (
+                                      <p className="text-[16px] font-black text-[#8b6a3e] leading-tight">{effPrice.toFixed(2)} 💰</p>
+                                    )}
+                                  </div>
+                                </div>
+                                {/* Masz — dół wycentrowane */}
+                                <p className="text-[16px] font-bold text-emerald-400 text-center mb-2">Masz: {owned}</p>
                                 {/* Kontrolki ilości */}
                                 {!locked && (
                                   <div className="flex items-center gap-1 w-full">
