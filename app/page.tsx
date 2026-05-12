@@ -590,6 +590,14 @@ const ITEM_TIER_BY_QUALITY: Record<CompostQuality, [number,number,number,number,
   very_good: [ 5, 15, 35, 30, 15],
   legendary: [ 0,  5, 20, 40, 35],
 };
+const JACKPOT_CHANCE = 0.5; // % szansy na jackpot per partia
+const ITEM_TIER_RARITY: Array<{ border: string; shadow: string; label: string; dot: string }> = [
+  { border: "#22c55e", shadow: "rgba(34,197,94,0.30)",   label: "Standard",   dot: "🟢" }, // I1
+  { border: "#38bdf8", shadow: "rgba(56,189,248,0.30)",  label: "Dobry",      dot: "🔵" }, // I2
+  { border: "#a78bfa", shadow: "rgba(167,139,250,0.40)", label: "Epic",       dot: "🟣" }, // I3
+  { border: "#fb923c", shadow: "rgba(251,146,60,0.40)",  label: "Epic+",      dot: "🟠" }, // I4
+  { border: "#fbbf24", shadow: "rgba(251,191,36,0.55)",  label: "Legendarny", dot: "👑" }, // I5
+];
 // Siła kompostu growth/yield/exp wg jakości partii — DETERMINISTYCZNA (0=Słaby, 1=Średni, 2=Mocny)
 // Bardzo słaby/Słaby → Słaby (5%/+1/+10%); Średni/Dobry → Średni (10%/+2/+20%); Bardzo dobry/Legendarny → Mocny (15%/+3/+30%)
 const COMPOST_TIER_FIXED_BY_QUALITY: Record<CompostQuality, number> = {
@@ -2039,6 +2047,7 @@ export default function Page() {
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
     | { kind:"compost"; compostType: CompostType; value: number };
   const [kompostRewards, setKompostRewards] = React.useState<KompostRewardEntry[] | null>(null);
+  const [kompostDropHistory, setKompostDropHistory] = React.useState<Array<{label: string; color: string; icon: string}>>([]);
   // ESC zamyka modal kompostownika (najpierw panel nagród, potem cały modal)
   React.useEffect(() => {
     if (!showKompostModal) return;
@@ -4204,7 +4213,7 @@ export default function Page() {
 
   // ─── KOMPOSTOWNIK: odbierz nagrody — każda gotowa partia (fill=10) = 1 nagroda z TIEREM zależnym od score ───
   async function claimKompostReward() {
-    if (kompostBusyRef.current) return; // chroni przed double-click race
+    if (kompostBusyRef.current) return;
     kompostBusyRef.current = true;
     try {
     const readyBatches = kompostBatches.filter(b => b.fill >= 10);
@@ -4215,60 +4224,79 @@ export default function Page() {
     let owned = { ...ownedEqItems };
     let upgReg = { ...itemUpgRegistry };
     let extras = [...extraEqItems];
+    const newHistoryEntries: Array<{label: string; color: string; icon: string}> = [];
+
+    // Bonus różnorodności: liczymy unikalne gatunki upraw w plecaku
+    const uniqueCropIdsForBonus = new Set(
+      Object.keys(seedInventory)
+        .filter(k => Number(seedInventory[k]) > 0 && !isCompostKey(k))
+        .map(k => parseQualityKey(k).baseCropId)
+        .filter(Boolean)
+    );
+    const diversityCount = uniqueCropIdsForBonus.size;
+    const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2)); // +1% per 2 gatunki, max +5%
+    const diversityTierBoost = diversityCount >= 6;                         // przy 6+ : 30% szansa na wyższy tier
+    const itemDropChance = 10 + diversityItemBonus;                         // 10–15%
 
     for (const batch of readyBatches) {
       const score = batch.scoreSum / 10;
       const quality = getCompostQualityFromScore(score);
+
+      // Jackpot 0.5% — legendarny item bez względu na jakość partii
+      if (Math.random() * 100 < JACKPOT_CHANCE) {
+        const jackpotPool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= 21 && it.unlockLevel <= playerLvl);
+        const jpFallback = jackpotPool.length > 0 ? jackpotPool : CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
+        if (jpFallback.length > 0) {
+          const item = jpFallback[Math.floor(Math.random() * jpFallback.length)];
+          if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
+          else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
+          rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+          newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨" });
+          continue;
+        }
+      }
+
       const roll = Math.random() * 100;
-      // 10% — przedmiot ekwipunku z TIEREM wg jakości kompostu
-      if (roll < 10) {
-        const tierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]); // 0..4
-        const minLvl = tierIdx * 5 + 1;
-        const maxLvl = tierIdx * 5 + 5;
-        // Najpierw spróbuj puli w wylosowanym tierze (i ograniczonej do poziomu gracza)
+      if (roll < itemDropChance) {
+        // Bonus różnorodności: przy 6+ gatunkach 30% szansa na wyższy tier
+        let rolledTierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]);
+        if (diversityTierBoost && rolledTierIdx < 4 && Math.random() < 0.30) rolledTierIdx += 1;
+        const minLvl = rolledTierIdx * 5 + 1;
+        const maxLvl = rolledTierIdx * 5 + 5;
         let pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
-        // Fallback w dół: jeśli gracz nie ma jeszcze tego tieru — schodź do niższych
         if (pool.length === 0) {
-          for (let t = tierIdx - 1; t >= 0; t--) {
-            const altMin = t * 5 + 1;
-            const altMax = t * 5 + 5;
-            pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= altMin && it.unlockLevel <= altMax && it.unlockLevel <= playerLvl);
+          for (let t = rolledTierIdx - 1; t >= 0; t--) {
+            pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= t*5+1 && it.unlockLevel <= t*5+5 && it.unlockLevel <= playerLvl);
             if (pool.length > 0) break;
           }
         }
         if (pool.length > 0) {
           const item = pool[Math.floor(Math.random() * pool.length)];
-          if (!owned[item.id]) {
-            owned = { ...owned, [item.id]: true as const };
-          } else {
-            const newUpg = 0;
-            const curUpg = upgReg[item.id] ?? 0;
-            if (newUpg > curUpg) {
-              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: curUpg }];
-              upgReg = { ...upgReg, [item.id]: newUpg };
-            } else {
-              extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: newUpg }];
-            }
-          }
+          const rarityDef = ITEM_TIER_RARITY[Math.min(4, rolledTierIdx)];
+          if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
+          else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+          newHistoryEntries.push({ label: item.name, color: rarityDef.border, icon: item.icon });
           continue;
         }
-        // Brak żadnego dostępnego przedmiotu → fallback do kompostu
+        // Brak dostępnego przedmiotu → fallback do kompostu
       }
-      // 90% (lub fallback): kompost growth/yield/exp — równe szanse 30/30/30, TIER deterministyczny wg jakości
+      // Kompost growth/yield/exp — równe szanse, tier deterministyczny wg jakości
       let compostType: CompostType;
-      const r2 = Math.random() * 90;
-      if (r2 < 30) compostType = "growth";
-      else if (r2 < 60) compostType = "yield";
+      const r2 = Math.random() * 100;
+      if (r2 < 33.3) compostType = "growth";
+      else if (r2 < 66.6) compostType = "yield";
       else compostType = "exp";
-      const tierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality]; // 0=Słaby / 1=Średni / 2=Mocny
-      const value = COMPOST_DEFS[compostType].bonusValues[tierIdx];
+      const compostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality];
+      const value = COMPOST_DEFS[compostType].bonusValues[compostTierIdx];
       const key = compostKeyFor(compostType, value);
       inv = { ...inv, [key]: (inv[key] ?? 0) + 1 };
       rewards.push({ kind:"compost", compostType, value });
+      const cDef = COMPOST_DEFS[compostType];
+      const tColor = compostTierIdx === 0 ? "#9ca3af" : compostTierIdx === 1 ? "#22c55e" : "#a78bfa";
+      newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon });
     }
 
-    // Usuń skonsumowane partie (pełne); zachowaj niepełne; dosyp pending legacy charges (z migracji nadwyżki)
     const remainingBatches = kompostBatches.filter(b => b.fill < 10);
     consumePendingLegacyCharges(remainingBatches, profile?.id ?? "");
     setSeedInventory(inv);
@@ -4279,6 +4307,7 @@ export default function Page() {
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
     }
+    setKompostDropHistory(prev => [...newHistoryEntries.reverse(), ...prev].slice(0, 8));
     setKompostRewards(rewards);
     } finally {
       kompostBusyRef.current = false;
@@ -5986,7 +6015,7 @@ export default function Page() {
                                         const def = COMPOST_DEFS[t];
                                         const value = compostValueFromKey(cid);
                                         const tierIdx = def.bonusValues.indexOf(value);
-                                        const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                        const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa";
                                         const isSel = selectedSeedId === cid;
                                         return (
                                           <div key={cid}
@@ -7877,6 +7906,18 @@ export default function Page() {
             const currentQualityDef = getCompostQualityDef(currentQuality);
             const totalBatchesUsed = kompostBatches.length;
             const batchSlotsFull = totalBatchesUsed >= KOMPOST_MAX_BATCHES && (kompostBatches[kompostBatches.length - 1]?.fill ?? 0) >= 10;
+            // Bonus różnorodności — UI
+            const uniqueCropIdsUI = new Set(
+              Object.keys(seedInventory)
+                .filter(k => Number(seedInventory[k]) > 0 && !isCompostKey(k))
+                .map(k => parseQualityKey(k).baseCropId)
+                .filter(Boolean)
+            );
+            const diversityCountUI = uniqueCropIdsUI.size;
+            const diversityItemBonusUI = Math.min(5, Math.floor(diversityCountUI / 2));
+            const diversityTierBoostUI = diversityCountUI >= 6;
+            const itemDropChancePct = 10 + diversityItemBonusUI;
+            const currentTierChances = ITEM_TIER_BY_QUALITY[currentQuality];
             const QTY_OPTIONS: Array<1|5|10|100|"max"> = [1,5,10,100,"max"];
             const FILTER_OPTIONS: Array<{ id: typeof kompostFilter; label: string; color: string }> = [
               { id:"rotten",    label:"Popsute",     color:"#ffffff" },
@@ -7911,8 +7952,8 @@ export default function Page() {
                         <div className="h-full transition-all" style={{ width: `${(currentBatch.fill / 10) * 100}%`, background: `linear-gradient(to right, ${currentQualityDef.border}, ${currentQualityDef.color})` }} />
                       </div>
                       <div className="flex items-center justify-between text-[11px] mt-1">
-                        <span className="text-emerald-500/70">Score: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentScore.toFixed(2) : "—"}</span></span>
-                        <span className="font-bold" style={{ color: currentQualityDef.color }}>Jakość: {currentBatch.fill > 0 ? currentQualityDef.label : "—"}</span>
+                        <span className="text-emerald-500/70">Moc: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentBatch.scoreSum.toFixed(1) : "—"}</span></span>
+                        <span className="font-bold px-2 py-0.5 rounded-md text-[10px]" style={{ color: currentQualityDef.color, border: `1px solid ${currentQualityDef.border}66` }}>{currentBatch.fill > 0 ? currentQualityDef.label : "Brak wrzutów"}</span>
                       </div>
                       {/* Slots wszystkich partii (10 kropek) */}
                       <div className="mt-2 flex items-center gap-1">
@@ -7928,6 +7969,53 @@ export default function Page() {
                         })}
                       </div>
                       <p className="text-[10px] text-emerald-500/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
+
+                      {/* Preview szans nagrody */}
+                      <div className="mt-3 rounded-xl border border-emerald-800/50 bg-emerald-950/30 p-2.5">
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {currentTierChances.map((chance, i) => chance > 0 && (
+                            <div key={i} className="flex items-center gap-1 rounded-lg px-2 py-0.5 bg-black/30 border border-white/5">
+                              <span className="text-[10px]">{ITEM_TIER_RARITY[i].dot}</span>
+                              <span className="text-[10px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>I{i+1}:</span>
+                              <span className="text-[11px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span className="text-[10px] text-emerald-300">Szansa na item: <span className="font-black text-emerald-200">{itemDropChancePct}%</span>{diversityItemBonusUI > 0 && <span className="text-lime-400"> (+{diversityItemBonusUI}% roznorodnosc)</span>}</span>
+                          <span className="text-[10px] text-amber-400/90">Jackpot: {JACKPOT_CHANCE}% na legendarny</span>
+                        </div>
+                      </div>
+
+                      {/* Bonus różnorodności */}
+                      <div className="mt-2 rounded-xl border border-emerald-800/40 bg-black/20 p-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-bold text-emerald-200">Roznorodnosc upraw</span>
+                          <span className="text-[11px] font-black" style={{ color: diversityCountUI >= 10 ? "#fbbf24" : diversityCountUI >= 6 ? "#a78bfa" : "#22c55e" }}>{diversityCountUI}/10 gatunkow</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-emerald-950/60 overflow-hidden mb-1.5">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, diversityCountUI * 10)}%`, background: diversityCountUI >= 10 ? "linear-gradient(to right, #a78bfa, #fbbf24)" : diversityCountUI >= 6 ? "linear-gradient(to right, #22c55e, #a78bfa)" : "linear-gradient(to right, #166534, #22c55e)" }} />
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span className="text-[10px] text-lime-400">+{diversityItemBonusUI}% szansy na item</span>
+                          {diversityTierBoostUI && <span className="text-[10px] text-purple-400">+tier boost aktywny (6+ gatunkow)</span>}
+                        </div>
+                        {diversityCountUI < 10 && (
+                          <p className="text-[9px] text-emerald-500/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
+                        )}
+                      </div>
+
+                      {/* Historia ostatnich dropow */}
+                      {kompostDropHistory.length > 0 && (
+                        <div className="mt-2 rounded-xl border border-emerald-900/40 bg-black/15 p-2">
+                          <p className="text-[9px] font-bold text-emerald-500/60 mb-1 uppercase tracking-wider">Ostatnie nagrody</p>
+                          <div className="flex flex-col gap-0.5 max-h-[60px] overflow-hidden">
+                            {kompostDropHistory.slice(0, 5).map((h, i) => (
+                              <p key={i} className="text-[10px] font-bold truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {/* Przycisk odbioru nagród — zawsze widoczny żeby uniknąć layout shift */}
                     <button
@@ -8112,18 +8200,20 @@ export default function Page() {
                                 const r = g.entry;
                                 if (r.kind === "item") {
                                   const it = CHAR_EQUIP_ITEMS.find(x => x.id === r.itemId);
+                                  const itemTierIdx = it ? Math.min(4, Math.floor((it.unlockLevel - 1) / 5)) : 0;
+                                  const rarityDef = ITEM_TIER_RARITY[itemTierIdx];
                                   const tipNode = (
                                     <>
-                                      <p className="text-xs font-black text-amber-200">🎁 Przedmiot ekwipunku</p>
+                                      <p className="text-xs font-black" style={{ color: rarityDef.border }}>Przedmiot — {rarityDef.label}</p>
                                       <p className="text-[11px] font-bold text-amber-100">{r.itemIcon} {r.itemName}</p>
                                       {it && <p className="text-[10px] text-amber-300/80">Poziom: {it.unlockLevel} · Slot: {EQUIP_SLOT_META[it.slot]?.label}</p>}
                                       {it && <p className="text-[10px] text-cyan-300">{bonusLine(it.bonuses, 0)}</p>}
-                                      <p className="text-[10px] text-emerald-300 mt-1">✓ Trafił do Twojego ekwipunku</p>
+                                      <p className="text-[10px] text-emerald-300 mt-1">Trafil do Twojego ekwipunku</p>
                                     </>
                                   );
                                   const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
                                     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                                    setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: "#fbbf24" });
+                                    setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: rarityDef.border });
                                   };
                                   return (
                                     <div
@@ -8131,16 +8221,18 @@ export default function Page() {
                                       onMouseEnter={showTip}
                                       onMouseMove={showTip}
                                       onMouseLeave={() => setKompostHoverTip(null)}
-                                      className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-amber-400/70 bg-amber-950/40 p-2 shadow-lg shadow-amber-500/20 hover:border-amber-300 transition cursor-help">
+                                      className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 p-2 transition cursor-help hover:brightness-110"
+                                      style={{ borderColor: rarityDef.border, background: `rgba(0,0,0,0.5)`, boxShadow: `0 0 12px ${rarityDef.shadow}` }}>
                                       <span className="text-3xl">{r.itemIcon}</span>
-                                      <span className="mt-1 text-[10px] font-black text-amber-200 truncate w-full text-center">{r.itemName}</span>
-                                      {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-amber-700 px-1 text-[10px] font-black text-white">×{g.count}</span>}
+                                      <span className="mt-1 text-[10px] font-black truncate w-full text-center" style={{ color: rarityDef.border }}>{r.itemName}</span>
+                                      <span className="text-[8px] font-bold opacity-70" style={{ color: rarityDef.border }}>{rarityDef.label}</span>
+                                      {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-black/70 border px-1 text-[10px] font-black text-white" style={{ borderColor: rarityDef.border }}>×{g.count}</span>}
                                     </div>
                                   );
                                 }
                                 const def = COMPOST_DEFS[r.compostType];
                                 const tierIdx = def.bonusValues.indexOf(r.value);
-                                const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#fbbf24" : "#a78bfa";
+                                const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa";
                                 const tipNode = (
                                   <>
                                     <p className="text-xs font-black text-emerald-200">{def.icon} {def.name}</p>
