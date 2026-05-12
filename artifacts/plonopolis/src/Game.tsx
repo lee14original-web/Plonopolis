@@ -6752,7 +6752,7 @@ export default function Page() {
                           </div>
                           <div className="flex gap-1.5 flex-wrap">
                             {dailyPromos.normal.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-amber-900/40 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black text-amber-300">🔥 {cr.name} -10%</span> : null; })}
-                            {dailyPromos.super_.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-rose-900/40 border border-rose-500/40 px-2 py-0.5 text-[10px] font-black text-rose-300">⭐ {cr.name} -20%</span> : null; })}
+                            {dailyPromos.super_.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-green-900/40 border border-green-500/40 px-2 py-0.5 text-[10px] font-black text-green-300">⭐ {cr.name} -20%</span> : null; })}
                           </div>
                         </div>
                         {/* Lista wszystkich upraw — siatka 3 kolumny */}
@@ -6768,7 +6768,7 @@ export default function Page() {
                             const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
-                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-rose-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
+                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
                                 {/* Ikona z nazwą nachodzącą */}
                                 <div className="relative flex justify-center w-full mb-1">
                                   <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
@@ -6777,14 +6777,14 @@ export default function Page() {
                                 {/* Odznaki */}
                                 <div className="flex flex-wrap justify-center gap-0.5 mb-2">
                                   {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
-                                  {isSuper && !locked && <span className="rounded-full bg-rose-900/40 border border-rose-500/40 px-1.5 py-0.5 text-[9px] font-black text-rose-300">⭐ -20%</span>}
+                                  {isSuper && !locked && <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>}
                                   {isNormal && !locked && <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>}
                                 </div>
                                 {/* Cena */}
                                 {(isNormal || isSuper) && !locked ? (
                                   <div className="mb-1">
                                     <p className="text-xs text-[#8b6a3e] line-through">{basePrice.toFixed(2)} 💰</p>
-                                    <p className={`text-sm font-black ${isSuper ? "text-rose-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
+                                    <p className={`text-sm font-black ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
                                   </div>
                                 ) : (
                                   <p className="text-xs text-[#8b6a3e] mb-1">{effPrice.toFixed(2)} 💰</p>
