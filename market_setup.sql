@@ -273,7 +273,7 @@ $$;
 -- ─── 7. KUPNO OFERTY (ATOMICZNE — blokada wiersza) ────────────────────
 -- Zapobiega: kopiowaniu itemów, podwójnemu kupnu, kupowaniu własnych ofert
 
-CREATE OR REPLACE FUNCTION market_buy_offer(p_offer_id UUID)
+CREATE OR REPLACE FUNCTION market_buy_offer(p_offer_id UUID, p_quantity INTEGER DEFAULT NULL)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_buyer_id    UUID    := auth.uid();
@@ -283,6 +283,7 @@ DECLARE
   v_tax         NUMERIC;
   v_seller_gets NUMERIC;
   v_seller_login TEXT;
+  v_qty         INTEGER;
 BEGIN
   IF v_buyer_id IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany'); END IF;
 
@@ -304,7 +305,12 @@ BEGIN
     RETURN jsonb_build_object('error','Nie możesz kupić własnej oferty');
   END IF;
 
-  v_total       := ROUND(v_offer.price_per_unit * v_offer.quantity, 2);
+  -- Ilość do kupienia (domyślnie całość)
+  v_qty := COALESCE(p_quantity, v_offer.quantity);
+  IF v_qty <= 0 THEN RETURN jsonb_build_object('error','Ilość musi być dodatnia'); END IF;
+  IF v_qty > v_offer.quantity THEN RETURN jsonb_build_object('error','Dostępne tylko ' || v_offer.quantity || ' szt.'); END IF;
+
+  v_total       := ROUND(v_offer.price_per_unit * v_qty, 2);
   v_tax         := ROUND(v_total * 0.10, 2);
   v_seller_gets := v_total - v_tax;
 
@@ -323,7 +329,7 @@ BEGIN
       seed_inventory = jsonb_set(
         COALESCE(seed_inventory, '{}'::jsonb),
         ARRAY[v_offer.item_key],
-        to_jsonb(COALESCE((seed_inventory->>v_offer.item_key)::INTEGER, 0) + v_offer.quantity)
+        to_jsonb(COALESCE((seed_inventory->>v_offer.item_key)::INTEGER, 0) + v_qty)
       )
     WHERE id = v_buyer_id;
   ELSIF v_offer.item_type = 'barn_item' THEN
@@ -331,7 +337,7 @@ BEGIN
       barn_items = jsonb_set(
         COALESCE(barn_items, '{}'::jsonb),
         ARRAY[v_offer.item_key],
-        to_jsonb(COALESCE((barn_items->>v_offer.item_key)::INTEGER, 0) + v_offer.quantity)
+        to_jsonb(COALESCE((barn_items->>v_offer.item_key)::INTEGER, 0) + v_qty)
       )
     WHERE id = v_buyer_id;
   ELSIF v_offer.item_type = 'fruit' THEN
@@ -339,7 +345,7 @@ BEGIN
       fruit_inventory = jsonb_set(
         COALESCE(fruit_inventory, '{}'::jsonb),
         ARRAY[v_offer.item_key],
-        to_jsonb(COALESCE((fruit_inventory->>v_offer.item_key)::INTEGER, 0) + v_offer.quantity)
+        to_jsonb(COALESCE((fruit_inventory->>v_offer.item_key)::INTEGER, 0) + v_qty)
       )
     WHERE id = v_buyer_id;
   ELSIF v_offer.item_type = 'honey' THEN
@@ -347,13 +353,17 @@ BEGIN
       hive_data = jsonb_set(
         COALESCE(hive_data, '{"level":0,"bees_progress":0,"honey_start":null,"suit_durability":0,"empty_jars":0,"honey_jars":0}'::jsonb),
         '{honey_jars}',
-        to_jsonb(COALESCE((hive_data->>'honey_jars')::INTEGER, 0) + v_offer.quantity)
+        to_jsonb(COALESCE((hive_data->>'honey_jars')::INTEGER, 0) + v_qty)
       )
     WHERE id = v_buyer_id;
   END IF;
 
-  -- Oznacz ofertę jako sprzedaną (warunkowy UPDATE — druga próba kupna zwróci 0 wierszy, ale offer.status już != 'active' więc i tak wrócimy wcześniej)
-  UPDATE market_offers SET status = 'sold', sold_at = now(), buyer_id = v_buyer_id WHERE id = p_offer_id;
+  -- Aktualizuj ofertę: całkowita sprzedaż → sold, częściowa → zmniejsz ilość
+  IF v_qty = v_offer.quantity THEN
+    UPDATE market_offers SET status = 'sold', sold_at = now(), buyer_id = v_buyer_id WHERE id = p_offer_id;
+  ELSE
+    UPDATE market_offers SET quantity = quantity - v_qty WHERE id = p_offer_id;
+  END IF;
 
   -- Złoto dla sprzedającego trafia do "Do Odbioru"
   INSERT INTO market_returns (user_id, return_type, gold_amount, quantity, reason, offer_id)
@@ -361,7 +371,7 @@ BEGIN
 
   -- Log transakcji (dla historii i wykrywania exploitów)
   INSERT INTO market_transaction_log (offer_id, seller_id, buyer_id, item_key, item_name, quantity, price_total, tax_amount, seller_receives)
-  VALUES (p_offer_id, v_offer.seller_id, v_buyer_id, v_offer.item_key, v_offer.item_name, v_offer.quantity, v_total, v_tax, v_seller_gets);
+  VALUES (p_offer_id, v_offer.seller_id, v_buyer_id, v_offer.item_key, v_offer.item_name, v_qty, v_total, v_tax, v_seller_gets);
 
   -- Wiadomość systemowa do sprzedającego
   BEGIN
@@ -371,7 +381,7 @@ BEGIN
       p_from_user_id  := v_buyer_id,
       p_from_username := 'System',
       p_subject       := 'Targ — oferta sprzedana',
-      p_body          := 'Twoja oferta na ' || v_offer.item_name || ' (x' || v_offer.quantity || ') sprzedana za ' || v_total || ' zł. Odbierz ' || v_seller_gets || ' zł z zakładki Do Odbioru na Targu.',
+      p_body          := 'Twoja oferta na ' || v_offer.item_name || ' (x' || v_qty || ') sprzedana za ' || v_total || ' zł. Odbierz ' || v_seller_gets || ' zł z zakładki Do Odbioru na Targu.',
       p_to_username   := v_seller_login
     );
   EXCEPTION WHEN OTHERS THEN NULL; -- nie blokuj kupna jeśli wiadomość się nie uda
@@ -380,7 +390,7 @@ BEGIN
   RETURN jsonb_build_object(
     'success', true,
     'item_name', v_offer.item_name,
-    'quantity', v_offer.quantity,
+    'quantity', v_qty,
     'paid', v_total,
     'tax', v_tax,
     'seller_receives', v_seller_gets
