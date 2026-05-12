@@ -8004,10 +8004,6 @@ export default function Page() {
                             </div>
                           ))}
                         </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span className="text-[10px] text-[#dfcfab]">Szansa na item: <span className="font-black text-[#dfcfab]">{itemDropChancePct}%</span>{diversityItemBonusUI > 0 && <span className="text-lime-400"> (+{diversityItemBonusUI}% roznorodnosc)</span>}</span>
-                          <span className="text-[10px] text-amber-400/90">Jackpot: {JACKPOT_CHANCE}% na legendarny</span>
-                        </div>
                       </div>
 
                       {/* Bonus różnorodności */}
