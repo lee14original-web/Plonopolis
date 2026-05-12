@@ -4293,7 +4293,7 @@ export default function Page() {
     let owned = { ...ownedEqItems };
     let upgReg = { ...itemUpgRegistry };
     let extras = [...extraEqItems];
-    const newHistoryEntries: Array<{label: string; color: string; icon: string}> = [];
+    const newHistoryEntries: Array<{label: string; color: string; icon: string; ts?: number; count?: number}> = [];
 
     // Bonus różnorodności: liczymy unikalne gatunki upraw w plecaku
     const uniqueCropIdsForBonus = new Set(
@@ -11330,7 +11330,8 @@ export default function Page() {
       {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
       {showMarketModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="relative flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,5,0.98)] shadow-2xl mx-2">
+          <div className="relative flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] shadow-2xl mx-2"
+            style={{ background: `url('/mapy/targ_tlo.png') center/cover no-repeat, rgba(18,10,5,0.98)` }}>
             {/* Nagłówek */}
             <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-4">
               <div>
