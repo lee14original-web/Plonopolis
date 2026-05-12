@@ -6774,15 +6774,15 @@ export default function Page() {
                                 <div className="flex flex-wrap justify-center gap-0.5 mb-2">
                                   {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
                                   {isSuper && !locked && (
-                                    <div className="flex flex-col items-center gap-0.5">
+                                    <div className="flex flex-col items-start gap-0.5 w-full">
                                       <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
-                                      <span className="text-[8px] text-green-400/70 font-bold">{promoCountdown}</span>
+                                      <span className="text-[14px] text-green-400/80 font-black">{promoCountdown}</span>
                                     </div>
                                   )}
                                   {isNormal && !locked && (
-                                    <div className="flex flex-col items-center gap-0.5">
+                                    <div className="flex flex-col items-start gap-0.5 w-full">
                                       <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
-                                      <span className="text-[8px] text-amber-400/70 font-bold">{promoCountdown}</span>
+                                      <span className="text-[14px] text-amber-400/80 font-black">{promoCountdown}</span>
                                     </div>
                                   )}
                                 </div>
