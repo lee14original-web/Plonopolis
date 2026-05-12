@@ -1929,6 +1929,7 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showKompostModal, kompostRewards]);
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
+  const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
@@ -5578,7 +5579,7 @@ export default function Page() {
                       </div>
                       <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                       <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl whitespace-nowrap">
+                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] px-3 py-2 text-[13px] text-[#dfcfab] shadow-xl max-w-[200px]">
                           💡 Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span>
                         </div>
                       </div>
@@ -5758,18 +5759,12 @@ export default function Page() {
                                       const animal = ANIMALS.find(a => a.itemId === it.id);
                                       const cnt = barnItems[it.id] ?? 0;
                                       return (
-                                        <div key={it.id} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                        <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                          onMouseLeave={() => setCardTip(null)}>
                                           <span className="text-4xl leading-none">{it.icon}</span>
                                           <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
                                           <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                            <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                              <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
-                                              {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                              <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p>
-                                            </div>
-                                            <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                          </div>
                                         </div>
                                       );
                                     })}
@@ -5788,19 +5783,13 @@ export default function Page() {
                                       </div>
                                     )}
                                     {hasSuit && (
-                                      <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                      <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                        onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
+                                        onMouseLeave={() => setCardTip(null)}>
                                         <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                         <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
                                         <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
                                           <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                                        </div>
-                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                          <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                            <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                            <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                            <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                                          </div>
-                                          <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                         </div>
                                       </div>
                                     )}
@@ -5826,7 +5815,9 @@ export default function Page() {
                                             onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                             onDragEnd={() => setDraggedSeedId(null)}
                                             onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                            className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                            onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                            onMouseLeave={() => setCardTip(null)}
+                                            className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
                                             style={isSel
                                               ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
                                               : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
@@ -5834,14 +5825,6 @@ export default function Page() {
                                             <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
                                             {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
                                             <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                            <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                              <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                                <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                                <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                                <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                                <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                              </div>
-                                            </div>
                                           </div>
                                         );
                                       })}
@@ -5885,8 +5868,10 @@ export default function Page() {
                                   const bgColor = isZgnile ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
                                   const labelColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                                   return (
-                                    <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed" : "cursor-default"}`}
-                                      style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                                    <div key={key} className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed" : "cursor-default"}`}
+                                      style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p><p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>{isZgnile && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}</>)}
+                                      onMouseLeave={() => setCardTip(null)}>
                                       {isZgnile && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                       {q === "zloty" && (
                                         <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
@@ -5896,15 +5881,6 @@ export default function Page() {
                                       <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
-                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                        <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                          <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
-                                          <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
-                                          <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
-                                          {isZgnile && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}
-                                        </div>
-                                        <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                      </div>
                                     </div>
                                   );
                                 })}
@@ -6921,18 +6897,12 @@ export default function Page() {
                                 const animal = ANIMALS.find(a => a.itemId === it.id);
                                 const cnt = barnItems[it.id] ?? 0;
                                 return (
-                                  <div key={it.id} className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                  <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                    onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
+                                    onMouseLeave={() => setCardTip(null)}>
                                     <span className="text-4xl leading-none">{it.icon}</span>
                                     <p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1 w-full truncate">{it.name}</p>
                                     <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                    <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                      <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                        <p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>
-                                        {animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}
-                                        <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p>
-                                      </div>
-                                      <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                    </div>
                                   </div>
                                 );
                               })}
@@ -6951,19 +6921,13 @@ export default function Page() {
                                 </div>
                               )}
                               {hasSuit && (
-                                <div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default">
+                                <div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                  onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p></>)}
+                                  onMouseLeave={() => setCardTip(null)}>
                                   <img src="/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                                   <p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p>
                                   <div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden">
                                     <div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                                  </div>
-                                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                      <p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p>
-                                      <p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p>
-                                      <p className="text-[10px] text-[#8b6a3e] mt-0.5">Kup nowy w Sklepie → Przedmioty</p>
-                                    </div>
-                                    <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
                                   </div>
                                 </div>
                               )}
@@ -6989,7 +6953,9 @@ export default function Page() {
                                       onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                       onDragEnd={() => setDraggedSeedId(null)}
                                       onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                      className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                      onMouseLeave={() => setCardTip(null)}
+                                      className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
                                       style={isSel
                                         ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` }
                                         : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
@@ -6997,14 +6963,6 @@ export default function Page() {
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
                                       {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                        <div className="rounded-xl border border-emerald-600/60 bg-[rgba(8,16,10,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                          <p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p>
-                                          <p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p>
-                                          <p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p>
-                                          <p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p>
-                                        </div>
-                                      </div>
                                     </div>
                                   );
                                 })}
@@ -7046,8 +7004,10 @@ export default function Page() {
                             const bgColor = isZgnile2 ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
                             const labelColor = isZgnile2 ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
                             return (
-                              <div key={key} className={`group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed" : "cursor-default"}`}
-                                style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}>
+                              <div key={key} className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile2 ? "cursor-not-allowed" : "cursor-default"}`}
+                                style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}
+                                onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p><p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>{isZgnile2 && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}</>)}
+                                onMouseLeave={() => setCardTip(null)}>
                                 {isZgnile2 && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
                                 {q === "zloty" && (
                                   <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
@@ -7057,15 +7017,6 @@ export default function Page() {
                                 <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                 <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
                                 <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
-                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50">
-                                  <div className="rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-xl whitespace-nowrap">
-                                    <p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p>
-                                    <p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p>
-                                    <p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>
-                                    {isZgnile2 && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}
-                                  </div>
-                                  <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.97)] -mt-1" />
-                                </div>
                               </div>
                             );
                           })}
@@ -8218,6 +8169,18 @@ export default function Page() {
               </div>
             );
           })()}
+
+          {/* Fixed card tooltip — owoce, przedmioty, kompost — nad kursorem */}
+          {cardTip && (
+            <div
+              className="pointer-events-none fixed z-[9999] flex flex-col items-center"
+              style={{ left: mousePos.x, top: mousePos.y - 14, transform: "translate(-50%, -100%)" }}>
+              <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 text-center shadow-2xl max-w-[220px]">
+                {cardTip}
+              </div>
+              <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] -mt-1" />
+            </div>
+          )}
 
           {/* ═══ POWIADOMIENIE KOMPOSTU ═══ */}
           {compostNotice && (() => {
