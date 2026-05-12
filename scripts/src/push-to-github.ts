@@ -1,8 +1,9 @@
 /**
- * Wysyla biezacy commit SHA na GitHub przez API (bez uzycia git remote).
+ * Wysyla Game.tsx na GitHub do wlasciwej lokalizacji w projekcie Next.js.
  * Uzycie: pnpm --filter @workspace/scripts run push-to-github
  */
-import { execSync } from "child_process";
+import { readFile, writeFile } from "fs/promises";
+import { resolve } from "path";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const OWNER = "lee14original-web";
@@ -15,10 +16,6 @@ if (!GITHUB_TOKEN) {
 }
 
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
-
-function git(cmd: string): string {
-  return execSync(`git --no-optional-locks ${cmd}`, { encoding: "utf8", cwd: ROOT }).trim();
-}
 
 async function ghApi(method: string, path: string, body?: unknown) {
   const res = await fetch(`https://api.github.com${path}`, {
@@ -47,66 +44,39 @@ async function getFileSha(filePath: string): Promise<string | undefined> {
   }
 }
 
-async function pushFile(filePath: string, content: string) {
-  const sha = await getFileSha(filePath);
+async function pushFile(githubPath: string, content: string, message: string) {
+  const sha = await getFileSha(githubPath);
   const encoded = Buffer.from(content).toString("base64");
-  const commitMsg = `sync: ${filePath}`;
-  await ghApi("PUT", `/repos/${OWNER}/${REPO}/contents/${filePath}`, {
-    message: commitMsg,
+  await ghApi("PUT", `/repos/${OWNER}/${REPO}/contents/${githubPath}`, {
+    message,
     content: encoded,
     branch: BRANCH,
     ...(sha ? { sha } : {}),
   });
-  console.log(`  OK  ${filePath}`);
+  console.log(`  OK  ${githubPath}`);
 }
 
 async function main() {
-  console.log(`Wysylam zmienione pliki do GitHub (${OWNER}/${REPO} @ ${BRANCH})...`);
+  console.log(`Wysylam pliki gry na GitHub (${OWNER}/${REPO} @ ${BRANCH})...`);
 
-  let changedFiles: string[] = [];
-  try {
-    const output = git("diff --name-only HEAD~1 HEAD");
-    changedFiles = output.split("\n").filter(Boolean);
-  } catch {
-    console.log("Nie mozna ustalic git diff — wybieram recznie pliki gry.");
-    changedFiles = ["artifacts/plonopolis/src/Game.tsx"];
-  }
+  const gameTsxPath = resolve(ROOT, "artifacts/plonopolis/src/Game.tsx");
+  const gameTsxContent = await readFile(gameTsxPath, "utf8");
 
-  if (changedFiles.length === 0) {
-    console.log("Brak zmian do wyslania.");
-    return;
-  }
+  const pageContent = `import Game from "@/components/Game";
 
-  console.log(`Pliki do wyslania (${changedFiles.length}):`);
-  changedFiles.forEach(f => console.log("  -", f));
-  console.log("");
+export default function Page() {
+  return <Game />;
+}
+`;
 
-  const { readFile } = await import("fs/promises");
-  const { existsSync } = await import("fs");
-  const { resolve } = await import("path");
+  await pushFile("components/Game.tsx", gameTsxContent, "sync: Game.tsx z Replita");
+  await pushFile("app/game/page.tsx", pageContent, "sync: app/game/page.tsx wrapper");
 
-  let ok = 0;
-  let skip = 0;
-  for (const filePath of changedFiles) {
-    const absPath = resolve(ROOT, filePath);
-    if (!existsSync(absPath)) {
-      console.log(`  SKIP (nie istnieje lokalnie): ${filePath}`);
-      skip++;
-      continue;
-    }
-    try {
-      const content = await readFile(absPath, "utf8");
-      await pushFile(filePath, content);
-      ok++;
-    } catch (err) {
-      console.error(`  BLAD: ${filePath}:`, err instanceof Error ? err.message : err);
-    }
-  }
-
-  console.log(`\nGotowe! Wyslano: ${ok}, pominieto: ${skip}.`);
+  console.log("\nGotowe! Railway automatycznie wdrozy zmiany.");
+  console.log("Link do gry: https://plonopolis-production.up.railway.app/game");
 }
 
 main().catch(err => {
-  console.error("Nieoczekiwany blad:", err);
+  console.error("Nieoczekiwany blad:", err instanceof Error ? err.message : err);
   process.exit(1);
 });
