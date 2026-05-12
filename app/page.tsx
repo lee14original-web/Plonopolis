@@ -6768,7 +6768,7 @@ export default function Page() {
                             const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
                             const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
-                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
+                              <div key={crop.id} className={`flex flex-col items-center rounded-xl border p-3 transition-all text-center ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-rose-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
                                 {/* Ikona wyśrodkowana */}
                                 <img src={crop.spritePath} alt={crop.name} className="h-[64px] w-[64px] object-contain mb-2" style={{imageRendering:"pixelated"}} />
                                 {/* Nazwa */}
