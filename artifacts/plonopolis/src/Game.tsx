@@ -7942,25 +7942,25 @@ export default function Page() {
               { id:"all",       label:"Wszystkie",   color:"#6ee7b7" },
             ];
             return (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-                {/* Pływający przycisk historii — po lewej stronie modala */}
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-start gap-2" style={{ maxWidth: 220 }}>
+              <div className="fixed inset-0 z-[300] flex items-start justify-center gap-3 bg-black/75 p-4 backdrop-blur-sm">
+                {/* Panel historii — przyklejony do lewej krawędzi modala, góra */}
+                <div className="flex flex-col items-stretch gap-2 pt-0" style={{ width: 230, flexShrink: 0 }}>
                   <button
                     onClick={() => setShowKompostHistory(v => !v)}
-                    className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.95)] px-3 py-2 text-[11px] font-black text-[#dfcfab] shadow-lg hover:border-[#dfcfab]/50 transition">
+                    className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/60 bg-[rgba(14,8,4,0.95)] px-3 py-2 text-[14px] font-black text-[#dfcfab] shadow-lg hover:border-[#dfcfab]/50 transition">
                     📜 Ostatnie nagrody
-                    {kompostDropHistory.length > 0 && <span className="rounded-full bg-[#8b6a3e] px-1.5 text-[10px] text-white">{kompostDropHistory.reduce((s, e) => s + e.count, 0)}</span>}
-                    <span className="ml-auto opacity-50 text-[10px]">{showKompostHistory ? "▲" : "▼"}</span>
+                    {kompostDropHistory.length > 0 && <span className="rounded-full bg-[#8b6a3e] px-1.5 text-[13px] text-white">{kompostDropHistory.reduce((s, e) => s + e.count, 0)}</span>}
+                    <span className="ml-auto opacity-50 text-[13px]">{showKompostHistory ? "▲" : "▼"}</span>
                   </button>
                   {showKompostHistory && (
                     <div className="w-full rounded-xl border border-[#8b6a3e]/50 bg-[rgba(14,8,4,0.97)] p-3 shadow-xl">
                       {kompostDropHistory.length === 0
-                        ? <p className="text-[10px] text-[#8b6a3e]/60 italic">Brak historii w tej sesji.</p>
-                        : <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-1">
+                        ? <p className="text-[13px] text-[#8b6a3e]/60 italic">Brak historii w tej sesji.</p>
+                        : <div className="flex flex-col gap-1.5 max-h-[60vh] overflow-y-auto pr-1">
                             {kompostDropHistory.map((h, i) => (
                               <div key={i} className="flex items-center justify-between gap-2">
-                                <p className="text-[11px] font-bold leading-snug truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
-                                {h.count > 1 && <span className="shrink-0 rounded-full bg-white/10 px-1.5 text-[10px] font-black" style={{ color: h.color }}>x{h.count}</span>}
+                                <p className="text-[14px] font-bold leading-snug truncate" style={{ color: h.color }}>{h.icon} {h.label}</p>
+                                {h.count > 1 && <span className="shrink-0 rounded-full bg-white/10 px-1.5 text-[13px] font-black" style={{ color: h.color }}>x{h.count}</span>}
                               </div>
                             ))}
                           </div>
