@@ -5899,7 +5899,7 @@ export default function Page() {
                                       const cnt = barnItems[it.id] ?? 0;
                                       return (
                                         <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
-                                          onMouseEnter={() => setCardTip(<><p className="text-[17px] font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[15px] text-amber-300 mt-1">{animal.icon} Z {animal.name.toLowerCase()}y</p><p className="text-[14px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}</>)}
+                                          onMouseEnter={() => setCardTip(<><p className="text-[20px] font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[18px] text-amber-300 mt-1">{animal.icon} Z {({'kura':'kury','krolik':'królika','krowa':'krowy','kaczka':'kaczki','owca':'owcy','swinia':'świni','koza':'kozy','indyk':'indyka','kon':'konia','byk':'byka'} as Record<string,string>)[animal.id] ?? animal.name.toLowerCase()}</p><p className="text-[17px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}</>)}
                                           onMouseLeave={() => setCardTip(null)}>
                                           <div className="relative h-16 w-16 flex items-center justify-center">
                                             
@@ -7039,7 +7039,7 @@ export default function Page() {
                                 const cnt = barnItems[it.id] ?? 0;
                                 return (
                                   <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
-                                    onMouseEnter={() => setCardTip(<><p className="text-[17px] font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[15px] text-amber-300 mt-1">{animal.icon} Z {animal.name.toLowerCase()}y</p><p className="text-[14px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}</>)}
+                                    onMouseEnter={() => setCardTip(<><p className="text-[20px] font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[18px] text-amber-300 mt-1">{animal.icon} Z {({'kura':'kury','krolik':'królika','krowa':'krowy','kaczka':'kaczki','owca':'owcy','swinia':'świni','koza':'kozy','indyk':'indyka','kon':'konia','byk':'byka'} as Record<string,string>)[animal.id] ?? animal.name.toLowerCase()}</p><p className="text-[17px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}</>)}
                                     onMouseLeave={() => setCardTip(null)}>
                                     <div className="relative h-16 w-16 flex items-center justify-center">
                                       
@@ -8325,7 +8325,7 @@ export default function Page() {
             <div
               className="pointer-events-none fixed z-[9999] flex flex-col items-center"
               style={{ left: mousePos.x, top: mousePos.y - 14, transform: "translate(-50%, -100%)" }}>
-              <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-[17px] py-[11px] text-center shadow-2xl max-w-[308px]">
+              <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-5 py-[13px] text-center shadow-2xl max-w-[370px]">
                 {cardTip}
               </div>
               <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] -mt-1" />
