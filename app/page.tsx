@@ -7003,8 +7003,8 @@ export default function Page() {
                 return (
                   <div className="flex w-[268px] shrink-0 flex-col border-l border-[#8b6a3e]/30 bg-black/20">
                     <div className="px-4 py-3 border-b border-[#8b6a3e]/30 shrink-0">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#d8ba7a]">Koszyk</p>
-                      {cartEntries.length === 0 && <p className="mt-1.5 text-[11px] text-[#8b6a3e]">Koszyk jest pusty</p>}
+                      <p className="text-[18px] font-black uppercase tracking-wider text-[#d8ba7a]">Koszyk</p>
+                      {cartEntries.length === 0 && <p className="mt-1.5 text-[17px] text-[#8b6a3e]">Koszyk jest pusty</p>}
                     </div>
                     <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
                       {cartEntries.map(([id, qty]) => {
@@ -7014,24 +7014,24 @@ export default function Page() {
                         const ep = Math.round(bp * disc * 100) / 100;
                         return (
                           <div key={id} className="flex items-center gap-2 rounded-lg bg-black/20 px-2.5 py-1.5 border border-[#8b6a3e]/20">
-                            <img src={crop?.spritePath} alt={crop?.name} className="h-7 w-7 object-contain shrink-0" style={{imageRendering:"pixelated"}} />
+                            <img src={crop?.spritePath} alt={crop?.name} className="h-9 w-9 object-contain shrink-0" style={{imageRendering:"pixelated"}} />
                             <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{crop?.name}</p>
-                              <p className="text-[10px] text-[#8b6a3e]">{qty as number} x {ep.toFixed(2)} 💰</p>
+                              <p className="text-[17px] font-bold text-[#f9e7b2] truncate">{crop?.name}</p>
+                              <p className="text-[15px] text-[#8b6a3e]">{qty as number} x {ep.toFixed(2)} 💰</p>
                             </div>
-                            <p className="text-xs font-black text-yellow-300 shrink-0">{(ep * (qty as number)).toFixed(2)}</p>
-                            <button onClick={() => setShopCart(c => { const n = {...c}; delete n[id]; return n; })} className="shrink-0 flex h-5 w-5 items-center justify-center rounded-full border border-red-500/40 bg-red-900/20 text-red-300 hover:bg-red-900/50 hover:text-red-200 transition-all text-[10px] font-black">×</button>
+                            <p className="text-[18px] font-black text-yellow-300 shrink-0">{(ep * (qty as number)).toFixed(2)}</p>
+                            <button onClick={() => setShopCart(c => { const n = {...c}; delete n[id]; return n; })} className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-red-500/40 bg-red-900/20 text-red-300 hover:bg-red-900/50 hover:text-red-200 transition-all text-[13px] font-black">×</button>
                           </div>
                         );
                       })}
                     </div>
                     <div className="border-t border-[#8b6a3e]/30 p-3 shrink-0">
-                      {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-2 py-1 text-xs text-red-300">{shopError}</p>}
+                      {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-2 py-1 text-[18px] text-red-300">{shopError}</p>}
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-[11px] text-[#8b6a3e]">Suma ({totalItems} szt.)</p>
-                        <p className={`text-sm font-black ${canAfford || total === 0 ? "text-[#f9e7b2]" : "text-red-400"}`}>{total.toFixed(2)} 💰</p>
+                        <p className="text-[17px] text-[#8b6a3e]">Suma ({totalItems} szt.)</p>
+                        <p className={`text-[21px] font-black ${canAfford || total === 0 ? "text-[#f9e7b2]" : "text-red-400"}`}>{total.toFixed(2)} 💰</p>
                       </div>
-                      {!canAfford && total > 0 && <p className="text-[10px] text-red-400 mb-2">Za malo srodkow!</p>}
+                      {!canAfford && total > 0 && <p className="text-[15px] text-red-400 mb-2">Za malo srodkow!</p>}
                       <button
                         disabled={total === 0 || !canAfford}
                         onClick={() => {
@@ -7052,9 +7052,9 @@ export default function Page() {
                             else { setShopError("Blad: " + error.message); }
                           })();
                         }}
-                        className={`w-full rounded-xl py-2 font-black text-sm transition-all active:scale-95 ${total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                        className={`w-full rounded-xl py-2 font-black text-[21px] transition-all active:scale-95 ${total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
                       >Kup ({totalItems} szt.)</button>
-                      <button onClick={() => setShopCart({})} className="mt-1 w-full rounded-lg py-1 text-[10px] text-[#8b6a3e] hover:text-red-300 transition-colors">Wyczysc koszyk</button>
+                      <button onClick={() => setShopCart({})} className="mt-1 w-full rounded-lg py-1 text-[15px] text-[#8b6a3e] hover:text-red-300 transition-colors">Wyczysc koszyk</button>
                     </div>
                   </div>
                 );
