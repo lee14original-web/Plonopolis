@@ -6698,7 +6698,6 @@ export default function Page() {
                         className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
                           shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                         }`}>
-                        <span className="text-2xl leading-none">{tab === "nasiona" ? "🌱" : tab === "zwierzeta" ? "🐄" : tab === "drzewa" ? "🌳" : "🧰"}</span>
                         {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : tab === "drzewa" ? "Drzewa" : "Przedmioty"}
                       </button>
                     ))}
