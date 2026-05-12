@@ -2840,6 +2840,11 @@ export default function Page() {
       return;
     }
 
+    // Optymistyczne odliczenie nasiona — natychmiast, zanim timer ruszy.
+    // Blokuje race condition gdy gracz szybko klika różne pola.
+    setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
+    seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) - 1 };
+
     // Czas sadzenia z bonusem eq "% speed sadzenia"
     const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
     const _plantDurMs = Math.max(400, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
@@ -2861,21 +2866,29 @@ export default function Page() {
     // Sprzątanie pendingActions niezależnie od wyniku — try/finally zawsze odpala
     const _clearPending = () => setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
+    // Przywrócenie optymistycznie odliczonego nasiona przy błędzie
+    const _restoreSeed = () => {
+      setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) + 1 }));
+      seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) + 1 };
+    };
+
     try {
-      if (!profile) { return; }
+      if (!profile) { _restoreSeed(); return; }
       const crop = CROPS.find((item) => item.id === _baseCropId);
-      if (!crop) { return; }
+      if (!crop) { _restoreSeed(); return; }
       // Re-walidacja po upływie timera (gracz mógł w międzyczasie coś zmienić)
       // Używamy refs do FRESH state zamiast captured closures
       const _freshPlot: PlotCropState | undefined = plotCropsRef.current[plotId];
       if (_freshPlot?.cropId) {
         setMessage({ type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
+        _restoreSeed();
         return;
       }
       const _freshInv = seedInventoryRef.current;
       const _freshAmount = _freshInv[effectiveSeedId] ?? 0;
-      if (_freshAmount <= 0) {
+      if (_freshAmount < 0) {
         setMessage({ type: "info", title: "Brak nasion", text: "W międzyczasie skończyły się nasiona." });
+        // Nie przywracamy — nasiono już zostało odliczone, inny plot je "zużył"
         return;
       }
 
@@ -2898,6 +2911,7 @@ export default function Page() {
         p_planted_quality: _seedQuality ?? "good",
       });
       if (error) {
+        _restoreSeed();
         // Pole nie jest odblokowane w DB — zsynchronizuj lokalny stan z DB
         if (error.message?.includes("nie jest odblokowane") && profile?.id) {
           const { data: freshRow } = await supabase
