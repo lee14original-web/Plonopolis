@@ -1285,6 +1285,30 @@ const CROPS: Crop[] = [
   },
 ];
 
+// ── Dzienne promocje deterministyczne (seed z UTC-dnia) ──────────────────────
+function getDailyPromos(): { normal: string[]; super_: string[] } {
+  const day = Math.floor(Date.now() / 86400000);
+  const eligible = CROPS.filter(c => c.id !== "test_nasiono");
+  const arr = [...eligible];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const x = Math.sin(day * 9301 + i * 49297) * 233280;
+    const j = Math.floor((x - Math.floor(x)) * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return { normal: arr.slice(0,3).map(c=>c.id), super_: [arr[3].id] };
+}
+function getMsToMidnightUTC(): number {
+  const nextMidnight = (Math.floor(Date.now() / 86400000) + 1) * 86400000;
+  return nextMidnight - Date.now();
+}
+function formatShopCountdown(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
 const FARM_PLOTS: FarmPlot[] = Array.from({ length: MAX_FIELDS }, (_, index) => ({
   id: index + 1,
   left: "0%",
@@ -1924,6 +1948,8 @@ export default function Page() {
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
+  const [promoCountdown, setPromoCountdown] = React.useState(() => formatShopCountdown(getMsToMidnightUTC()));
+  const dailyPromos = React.useMemo(() => getDailyPromos(), []);
   const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"owoce">("uprawy");
     type BackpackQualityFilter = "rotten"|"good"|"epic"|"legendary"|"all";
@@ -3204,6 +3230,10 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showShopModal]);
+  React.useEffect(() => {
+    const iv = setInterval(() => setPromoCountdown(formatShopCountdown(getMsToMidnightUTC())), 1000);
+    return () => clearInterval(iv);
+  }, []);
   React.useEffect(() => {
     if (!showUlModal) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setShowUlModal(false); };
@@ -6714,24 +6744,56 @@ export default function Page() {
                   <div className="flex-1 overflow-y-auto p-5 text-[#dfcfab]">
                     {shopTab === "nasiona" && (
                       <div>
-                        <p className="mb-4 text-base font-black text-[#f9e7b2]">🌱 Nasiona do kupienia</p>
-                        <div className="space-y-2">
-                          {CROPS.filter(c => c.id !== "test_nasiono" && displayLevel >= c.unlockLevel).map(crop => {
-                            const price = CROP_PRICES[crop.id] ?? 0;
+                        {/* Baner promocji dnia */}
+                        <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-900/10 p-3">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p className="text-xs font-black uppercase tracking-wider text-amber-300">Promocje dnia</p>
+                            <p className="text-[10px] text-[#8b6a3e]">Wygasa za: <span className="font-black text-amber-200">{promoCountdown}</span></p>
+                          </div>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {dailyPromos.normal.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-amber-900/40 border border-amber-500/40 px-2 py-0.5 text-[10px] font-black text-amber-300">🔥 {cr.name} -10%</span> : null; })}
+                            {dailyPromos.super_.map(id => { const cr = CROPS.find(x=>x.id===id); return cr ? <span key={id} className="rounded-full bg-rose-900/40 border border-rose-500/40 px-2 py-0.5 text-[10px] font-black text-rose-300">⭐ {cr.name} -20%</span> : null; })}
+                          </div>
+                        </div>
+                        {/* Lista wszystkich upraw (w tym zablokowanych) */}
+                        <div className="space-y-1">
+                          {CROPS.filter(c => c.id !== "test_nasiono").map(crop => {
+                            const locked = displayLevel < crop.unlockLevel;
+                            const basePrice = CROP_PRICES[crop.id] ?? 0;
+                            const isSuper = dailyPromos.super_.includes(crop.id);
+                            const isNormal = dailyPromos.normal.includes(crop.id);
+                            const disc = isSuper ? 0.8 : isNormal ? 0.9 : 1;
+                            const effPrice = Math.round(basePrice * disc * 100) / 100;
                             const qty = shopCart[crop.id] ?? 0;
+                            const owned = (seedInventory as Record<string,number>)[crop.id] ?? 0;
+                            const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
                             return (
-                              <div key={crop.id} className="flex items-center gap-3 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-4 py-2">
-                                <img src={crop.spritePath} alt={crop.name} className="h-[60px] w-[60px] object-contain" style={{imageRendering:"pixelated"}} />
-                                <div className="flex-1">
-                                  <p className="font-bold text-[#f9e7b2]">{crop.name}</p>
-                                  <p className="text-xs text-[#8b6a3e]">{price.toFixed(2)} 💰 / szt.</p>
+                              <div key={crop.id} className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition-all ${locked ? "border-[#374151]/30 bg-black/10 opacity-50" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
+                                <img src={crop.spritePath} alt={crop.name} className="h-[42px] w-[42px] object-contain shrink-0" style={{imageRendering:"pixelated"}} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <p className={`text-sm font-bold ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
+                                    {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
+                                    {isSuper && !locked && <span className="rounded-full bg-rose-900/40 border border-rose-500/40 px-1.5 py-0.5 text-[9px] font-black text-rose-300">⭐ -20%</span>}
+                                    {isNormal && !locked && <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {(isNormal || isSuper) && !locked ? (
+                                      <p className="text-[10px] text-[#8b6a3e]"><span className="line-through">{basePrice.toFixed(2)}</span> <span className={`font-black ${isSuper ? "text-rose-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</span></p>
+                                    ) : (
+                                      <p className="text-[10px] text-[#8b6a3e]">{effPrice.toFixed(2)} 💰</p>
+                                    )}
+                                    <p className="text-[10px] font-bold text-emerald-400">Masz: {owned}</p>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">−</button>
-                                  <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="w-16 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-2 py-1 text-center text-sm text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
-                                  <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-[#f9e7b2] hover:bg-black/60">+</button>
-                                </div>
-                                <p className="w-24 text-right text-sm font-bold text-yellow-200">{(price * qty).toFixed(2)} 💰</p>
+                                {!locked && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-red-900/30 hover:border-red-500/40 active:scale-75 active:bg-red-900/50 transition-all duration-75">−</button>
+                                    <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="w-10 rounded-lg border border-[#8b6a3e]/40 bg-black/30 px-1 py-1 text-center text-xs text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 rounded-lg border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-emerald-900/30 hover:border-emerald-500/40 active:scale-75 active:bg-emerald-900/50 transition-all duration-75">+</button>
+                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:maxBuy}))} disabled={maxBuy === 0} className={`rounded-lg border px-1.5 py-1 text-[9px] font-black transition-all duration-75 ${maxBuy > 0 ? "border-amber-500/50 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 active:scale-90" : "border-[#374151]/30 bg-black/10 text-[#6b7280] cursor-not-allowed"}`}>MAX</button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -6909,42 +6971,74 @@ export default function Page() {
                       );
                     })()}
                   </div>
-                  {/* Summary bar */}
-                  {shopTab === "nasiona" && (() => {
-                    const total = Object.entries(shopCart).reduce((s,[id,qty]) => s + (CROP_PRICES[id]??0)*(qty as number), 0);
-                    const totalItems = Object.values(shopCart).reduce((s:number,v) => s+(v as number), 0);
-                    const canAfford = displayMoney >= total;
-                    return (
-                      <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
-                        {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{shopError}</p>}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-[#8b6a3e]">Podsumowanie zamówienia:</p>
-                            <p className="text-lg font-black text-[#f9e7b2]">{total.toFixed(2)} 💰 <span className="text-xs font-normal text-[#8b6a3e]">({totalItems} szt.)</span></p>
-                            {!canAfford && total > 0 && <p className="text-xs text-red-400">Niewystarczające środki!</p>}
-                          </div>
-                          <button
-                            disabled={total === 0 || !canAfford}
-                            onClick={() => {
-                              if (!profile?.id || total === 0 || !canAfford) return;
-                              setShopError("");
-                              void (async () => {
-                                const newInv: Record<string,number> = {...seedInventory};
-                                for (const [id,qty] of Object.entries(shopCart)) { if ((qty as number) > 0) newInv[id] = (newInv[id]??0) + (qty as number); }
-                                const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - total) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
-                                if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
-                                else { setShopError("Błąd zakupu: " + error.message); }
-                              })();
-                            }}
-                            className={`rounded-2xl px-6 py-3 font-black transition ${
-                              total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"
-                            }`}
-                          >✅ Zatwierdź zakup</button>
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </div>
+              {shopTab === "nasiona" && (() => {
+                const cartEntries = Object.entries(shopCart).filter(([,v]) => (v as number) > 0);
+                const total = Math.round(cartEntries.reduce((s, [id, qty]) => {
+                  const bp = CROP_PRICES[id] ?? 0;
+                  const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
+                  return s + bp * disc * (qty as number);
+                }, 0) * 100) / 100;
+                const totalItems = cartEntries.reduce((s, [,v]) => s + (v as number), 0);
+                const canAfford = displayMoney >= total;
+                return (
+                  <div className="flex w-[268px] shrink-0 flex-col border-l border-[#8b6a3e]/30 bg-black/20">
+                    <div className="px-4 py-3 border-b border-[#8b6a3e]/30 shrink-0">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#d8ba7a]">Koszyk</p>
+                      {cartEntries.length === 0 && <p className="mt-1.5 text-[11px] text-[#8b6a3e]">Koszyk jest pusty</p>}
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
+                      {cartEntries.map(([id, qty]) => {
+                        const crop = CROPS.find(c => c.id === id);
+                        const bp = CROP_PRICES[id] ?? 0;
+                        const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
+                        const ep = Math.round(bp * disc * 100) / 100;
+                        return (
+                          <div key={id} className="flex items-center gap-2 rounded-lg bg-black/20 px-2.5 py-1.5 border border-[#8b6a3e]/20">
+                            <img src={crop?.spritePath} alt={crop?.name} className="h-7 w-7 object-contain shrink-0" style={{imageRendering:"pixelated"}} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-bold text-[#f9e7b2] truncate">{crop?.name}</p>
+                              <p className="text-[10px] text-[#8b6a3e]">{qty as number} x {ep.toFixed(2)} 💰</p>
+                            </div>
+                            <p className="text-xs font-black text-yellow-300 shrink-0">{(ep * (qty as number)).toFixed(2)}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="border-t border-[#8b6a3e]/30 p-3 shrink-0">
+                      {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-2 py-1 text-xs text-red-300">{shopError}</p>}
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[11px] text-[#8b6a3e]">Suma ({totalItems} szt.)</p>
+                        <p className={`text-sm font-black ${canAfford || total === 0 ? "text-[#f9e7b2]" : "text-red-400"}`}>{total.toFixed(2)} 💰</p>
+                      </div>
+                      {!canAfford && total > 0 && <p className="text-[10px] text-red-400 mb-2">Za malo srodkow!</p>}
+                      <button
+                        disabled={total === 0 || !canAfford}
+                        onClick={() => {
+                          if (!profile?.id || total === 0 || !canAfford) return;
+                          setShopError("");
+                          void (async () => {
+                            const newInv: Record<string,number> = {...seedInventory};
+                            for (const [id, qty] of Object.entries(shopCart)) {
+                              if ((qty as number) > 0) newInv[id] = (newInv[id] ?? 0) + (qty as number);
+                            }
+                            const cartTotal = Math.round(Object.entries(shopCart).reduce((s, [id, qty]) => {
+                              const bp = CROP_PRICES[id] ?? 0;
+                              const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
+                              return s + bp * disc * (qty as number);
+                            }, 0) * 100) / 100;
+                            const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - cartTotal) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
+                            if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
+                            else { setShopError("Blad: " + error.message); }
+                          })();
+                        }}
+                        className={`w-full rounded-xl py-2 font-black text-sm transition-all active:scale-95 ${total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
+                      >Kup ({totalItems} szt.)</button>
+                      <button onClick={() => setShopCart({})} className="mt-1 w-full rounded-lg py-1 text-[10px] text-[#8b6a3e] hover:text-red-300 transition-colors">Wyczysc koszyk</button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             </div>
           )}
