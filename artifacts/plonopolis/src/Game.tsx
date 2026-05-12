@@ -11644,7 +11644,7 @@ export default function Page() {
         ];
         const CROP_QUALITY_GROUPS = [
           { label: "Zepsute",    quality: "rotten",    color: "#6b7280" },
-          { label: "Zwykłe",     quality: "normal",    color: "#f3e6c8" },
+          { label: "Zwykłe",     quality: "good",      color: "#f3e6c8" },
           { label: "Epickie",    quality: "epic",      color: "#a855f7" },
           { label: "Legendarne", quality: "legendary", color: "#f59e0b" },
         ];
