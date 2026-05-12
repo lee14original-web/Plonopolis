@@ -1,0 +1,38 @@
+npm warn config production Use `--omit=dev` instead.
+> plonopolis@0.1.0 build
+> next build
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+   	- lib was set to dom,dom.iterable,esnext
+   	- allowJs was set to true
+   	- skipLibCheck was set to true
+   	- strict was set to false
+   	- noEmit was set to true
+   	- incremental was set to true
+   	- include was set to ['next-env.d.ts', '.next/types/**/*.ts', '**/*.ts', '**/*.tsx']
+   	- plugins was updated to add { name: 'next' }
+   	- exclude was set to ['node_modules']
+   The following mandatory changes were made to your tsconfig.json:
+   	- module was set to esnext (for dynamic import() support)
+   	- esModuleInterop was set to true (requirement for SWC / babel)
+   	- moduleResolution was set to node (to match webpack resolution)
+   	- resolveJsonModule was set to true (to match webpack resolution)
+   	- isolatedModules was set to true (requirement for SWC / Babel)
+   	- jsx was set to preserve (next.js implements its own optimized jsx transform)
+Failed to compile.
+./app/page.tsx:4323:97
+Type error: Object literal may only specify known properties, and 'ts' does not exist in type '{ label: string; color: string; icon: string; }'.
+
+  4321 |           else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
+  4322 |           rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+> 4323 |           newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨", ts: Date.now(), count: 1 });
+       |                                                                                                 ^
+  4324 |           continue;
+  4325 |         }
+  4326 |       }
+Next.js build worker exited with code: 1 and signal: null
