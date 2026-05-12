@@ -8206,8 +8206,8 @@ export default function Page() {
                     <div className="w-full max-w-[720px] max-h-[88vh] overflow-hidden rounded-[24px] border-2 border-emerald-400/70 bg-[rgba(8,18,12,0.98)] shadow-2xl shadow-emerald-500/30 flex flex-col">
                       <div className="px-6 pt-5 pb-3 border-b border-emerald-800/40 text-center">
                         <div className="text-5xl mb-2">🎁</div>
-                        <h3 className="text-2xl font-black text-emerald-200">Zdobyłeś {kompostRewards.length} {kompostRewards.length === 1 ? "nagrodę" : kompostRewards.length < 5 ? "nagrody" : "nagród"}!</h3>
-                        <p className="text-xs text-emerald-400/70 mt-1">Najedź na nagrodę, aby zobaczyć szczegóły.</p>
+                        <h3 className="text-[32px] font-black text-emerald-200">Zdobyłeś {kompostRewards.length} {kompostRewards.length === 1 ? "nagrodę" : kompostRewards.length < 5 ? "nagrody" : "nagród"}!</h3>
+                        <p className="text-[16px] text-emerald-400/70 mt-1">Najedź na nagrodę, aby zobaczyć szczegóły.</p>
                       </div>
                       <div className="flex-1 overflow-y-auto px-6 py-4">
                         {(() => {
