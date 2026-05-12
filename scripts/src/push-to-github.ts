@@ -1,7 +1,10 @@
 /**
  * Wysyla zmiany na GitHub w JEDNYM commicie (Git Tree API).
- * Domyslnie: tylko app/page.tsx (Game.tsx).
- * Z flagą --images: takze wszystkie foldery z obrazkami.
+ *
+ * Flagi:
+ *   (brak)      — tylko app/page.tsx (Game.tsx)
+ *   --images    — tylko nowe/zmienione foldery obrazkow (max ~50 plikow)
+ *   --all       — wszystkie pliki (uwaga: limit GitHub ~200 blobów na tree)
  *
  * Uzycie:
  *   pnpm --filter @workspace/scripts run push-to-github
@@ -17,15 +20,23 @@ const REPO = "Plonopolis";
 const BRANCH = "main";
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const WITH_IMAGES = process.argv.includes("--images");
+const WITH_ALL    = process.argv.includes("--all");
 
-// Foldery z obrazkami do synchronizacji (lokalny -> GitHub)
-const IMAGE_FOLDERS: { local: string; github: string }[] = [
-  { local: "artifacts/plonopolis/public/uprawy",    github: "public/uprawy" },
-  { local: "artifacts/plonopolis/public/avatary",   github: "public/avatary" },
-  { local: "artifacts/plonopolis/public/owoce",     github: "public/owoce" },
-  { local: "artifacts/plonopolis/public/przedmioty",github: "public/przedmioty" },
-  { local: "artifacts/plonopolis/public/ul",        github: "public/ul" },
-  { local: "artifacts/plonopolis/public/ekwipunek", github: "public/ekwipunek" },
+// Foldery "nowe/rzadko zmieniane" — uzyj --images aby je wyslac
+const NEW_IMAGE_FOLDERS: { local: string; github: string }[] = [
+  { local: "artifacts/plonopolis/public/mapy",      github: "public/mapy" },
+  { local: "artifacts/plonopolis/public/ui",         github: "public/ui" },
+  { local: "artifacts/plonopolis/public/owoce",      github: "public/owoce" },
+  { local: "artifacts/plonopolis/public/przedmioty", github: "public/przedmioty" },
+  { local: "artifacts/plonopolis/public/ekwipunek",  github: "public/ekwipunek" },
+];
+
+// Foldery duze — tylko z --all
+const ALL_IMAGE_FOLDERS: { local: string; github: string }[] = [
+  { local: "artifacts/plonopolis/public/uprawy",  github: "public/uprawy" },
+  { local: "artifacts/plonopolis/public/avatary", github: "public/avatary" },
+  { local: "artifacts/plonopolis/public/ul",      github: "public/ul" },
+  ...NEW_IMAGE_FOLDERS,
 ];
 
 if (!GITHUB_TOKEN) { console.error("Brak GITHUB_TOKEN."); process.exit(1); }
@@ -54,61 +65,77 @@ async function createBlob(content: Buffer): Promise<string> {
   return data.sha as string;
 }
 
-async function main() {
-  const filesToPush: { githubPath: string; localPath: string }[] = [];
-
-  // Zawsze: Game.tsx → app/page.tsx
-  filesToPush.push({
-    githubPath: "app/page.tsx",
-    localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx"),
-  });
-
-  // Opcjonalnie: wszystkie foldery z obrazkami
-  if (WITH_IMAGES) {
-    for (const folder of IMAGE_FOLDERS) {
-      const dir = resolve(ROOT, folder.local);
-      if (!existsSync(dir)) continue;
-      const files = await readdir(dir);
-      for (const f of files) {
-        filesToPush.push({ githubPath: `${folder.github}/${f}`, localPath: resolve(dir, f) });
-      }
-      console.log(`  ${folder.github}/: ${files.length} plikow`);
-    }
-  }
-
-  console.log(`\nWysylam ${filesToPush.length} plik(ow) → 1 commit...`);
-
-  // Pobierz HEAD
-  const refData = await gh("GET", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`);
-  const headSha = (refData.object as Record<string, string>).sha;
-  const commitData = await gh("GET", `/repos/${OWNER}/${REPO}/git/commits/${headSha}`);
+async function pushCommit(files: { githubPath: string; localPath: string }[], baseRef: string, msg: string) {
+  const commitData = await gh("GET", `/repos/${OWNER}/${REPO}/git/commits/${baseRef}`);
   const baseTreeSha = (commitData.tree as Record<string, string>).sha;
 
-  // Tworz blob dla kazdego pliku (rownolegly batch po 10)
   const BATCH = 10;
   const treeEntries: unknown[] = [];
-  for (let i = 0; i < filesToPush.length; i += BATCH) {
-    const batch = filesToPush.slice(i, i + BATCH);
+  for (let i = 0; i < files.length; i += BATCH) {
+    const batch = files.slice(i, i + BATCH);
     const results = await Promise.all(batch.map(async ({ githubPath, localPath }) => {
       const buf = await readFile(localPath);
       const sha = await createBlob(buf);
       return { path: githubPath, mode: "100644", type: "blob", sha };
     }));
     treeEntries.push(...results);
-    if (filesToPush.length > 10) console.log(`  ${Math.min(i + BATCH, filesToPush.length)}/${filesToPush.length} blobów`);
+    if (files.length > 10) process.stdout.write(`  ${Math.min(i + BATCH, files.length)}/${files.length} blobów\r`);
+  }
+  if (files.length > 10) console.log();
+
+  const treeData = await gh("POST", `/repos/${OWNER}/${REPO}/git/trees`, { base_tree: baseTreeSha, tree: treeEntries });
+  const newCommit = await gh("POST", `/repos/${OWNER}/${REPO}/git/commits`, {
+    message: msg,
+    tree: treeData.sha as string,
+    parents: [baseRef],
+  });
+  return newCommit.sha as string;
+}
+
+async function main() {
+  const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+
+  // Pobierz aktualny HEAD
+  const refData = await gh("GET", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`);
+  let headSha = (refData.object as Record<string, string>).sha;
+
+  const folders = WITH_ALL ? ALL_IMAGE_FOLDERS : (WITH_IMAGES ? NEW_IMAGE_FOLDERS : []);
+
+  if (folders.length > 0) {
+    // Grupuj po 50 plikow max na commit (limit GitHub tree API)
+    const allImgFiles: { githubPath: string; localPath: string }[] = [];
+    for (const folder of folders) {
+      const dir = resolve(ROOT, folder.local);
+      if (!existsSync(dir)) continue;
+      const files = await readdir(dir);
+      for (const f of files) {
+        allImgFiles.push({ githubPath: `${folder.github}/${f}`, localPath: resolve(dir, f) });
+      }
+    }
+
+    const CHUNK = 50;
+    let chunkNum = 0;
+    for (let i = 0; i < allImgFiles.length; i += CHUNK) {
+      chunkNum++;
+      const chunk = allImgFiles.slice(i, i + CHUNK);
+      console.log(`Obrazki chunk ${chunkNum}: ${chunk.length} plikow...`);
+      headSha = await pushCommit(chunk, headSha, `sync obrazki [${now}] cz.${chunkNum}`);
+      console.log(`  commit: ${headSha.slice(0, 7)}`);
+    }
   }
 
-  // Tree → commit → ref
-  const treeData = await gh("POST", `/repos/${OWNER}/${REPO}/git/trees`, { base_tree: baseTreeSha, tree: treeEntries });
-  const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-  const newCommit = await gh("POST", `/repos/${OWNER}/${REPO}/git/commits`, {
-    message: `sync z Replita [${now}]`,
-    tree: treeData.sha as string,
-    parents: [headSha],
-  });
-  await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: newCommit.sha as string });
+  // Zawsze na koncu: Game.tsx → app/page.tsx
+  console.log(`Wysylam app/page.tsx...`);
+  headSha = await pushCommit(
+    [{ githubPath: "app/page.tsx", localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx") }],
+    headSha,
+    `sync z Replita [${now}]`,
+  );
 
-  console.log(`\nGotowe! Commit: ${(newCommit.sha as string).slice(0, 7)}`);
+  // Zaktualizuj ref gałęzi
+  await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: headSha });
+
+  console.log(`\nGotowe! Ostatni commit: ${headSha.slice(0, 7)}`);
   console.log(`Railway zbuduje nowa wersje w ciagu ~3 minut.`);
 }
 

@@ -4925,7 +4925,7 @@ export default function Page() {
       >
         {/* Tło mapy — zmienia się wraz z poziomem gracza */}
         <img
-          src={profile ? `/${backgroundMap}.png` : "/assetsmain-lobby.png"}
+          src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
           alt="Mapa gry"
           className="pointer-events-none absolute inset-0 h-full w-full select-none"
           draggable={false}
@@ -5072,7 +5072,7 @@ export default function Page() {
                       className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-black/20 transition hover:bg-[rgba(80,50,20,0.4)]"
                       title="Wiadomości"
                     >
-                      <img src="/mail.png" alt="Wiadomości" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src="/ui/mail.png" alt="Wiadomości" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
                       {unreadCount > 0 && (
                         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-lg">
                           {unreadCount > 9 ? "9+" : unreadCount}
@@ -5705,7 +5705,7 @@ export default function Page() {
                       aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                       title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
                     >
-                      <img src={isBackpackOpen ? "/backpack-open.png" : "/backpack.png"} alt="Plecak" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
+                      <img src={isBackpackOpen ? "/ui/backpack-open.png" : "/ui/backpack.png"} alt="Plecak" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                     {/* Avatar gracza — po prawej od plecaka, nie rusza się przy otwarciu */}
                     <div className="group relative flex flex-col items-center gap-1 cursor-default select-none">
@@ -6529,7 +6529,7 @@ export default function Page() {
                             >✕</button>
                             {/* Nagłówek */}
                             <div className="mb-5 flex flex-col items-center gap-3">
-                              <img src="/systemikona.png" alt="Plonopolis" className="h-32 w-32 object-contain" style={{imageRendering:"pixelated"}} />
+                              <img src="/ui/systemikona.png" alt="Plonopolis" className="h-32 w-32 object-contain" style={{imageRendering:"pixelated"}} />
                               <p className="text-[19px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">[ WIADOMOŚĆ SYSTEMOWA ]</p>
                               <h2 className="text-center text-[41px] font-black text-[#f9e7b2]">Witaj w Plonopolis.</h2>
                             </div>
@@ -6543,7 +6543,7 @@ export default function Page() {
                             {/* Stopka */}
                             <div className="mt-6 flex items-center justify-between border-t border-[#8b6a3e]/30 pt-4">
                               <div className="flex items-center gap-2 text-[19px] text-[#8b6a3e]">
-                                <img src="/systemikona.png" alt="" className="h-8 w-8 object-contain" style={{imageRendering:"pixelated"}} />
+                                <img src="/ui/systemikona.png" alt="" className="h-8 w-8 object-contain" style={{imageRendering:"pixelated"}} />
                                 <span>System Plonopolis</span>
                               </div>
                               <button
@@ -10018,7 +10018,7 @@ export default function Page() {
                         : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
                     }`}
                   >
-                    <img src="/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <img src="/ui/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
                   </button>
 
@@ -10035,7 +10035,7 @@ export default function Page() {
                         : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
                     }`}
                   >
-                    <img src="/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                    <img src="/ui/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
                   </button>
 
@@ -10058,7 +10058,7 @@ export default function Page() {
                   >
                   <div className="relative mx-auto aspect-[1536/1092] w-full">
                     <img
-                      src="/farm-field-view.png"
+                      src="/ui/farm-field-view.png"
                       alt="Widok pola 25 slotów"
                       className="h-full w-full object-contain"
                     />
