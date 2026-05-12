@@ -69,11 +69,10 @@ export default function Page() {
 }
 `;
 
-  await pushFile("components/Game.tsx", gameTsxContent, "sync: Game.tsx z Replita");
-  await pushFile("app/game/page.tsx", pageContent, "sync: app/game/page.tsx wrapper");
+  await pushFile("app/page.tsx", gameTsxContent, "sync: Game.tsx z Replita");
 
   console.log("\nGotowe! Railway automatycznie wdrozy zmiany.");
-  console.log("Link do gry: https://plonopolis-production.up.railway.app/game");
+  console.log("Link do gry: https://plonopolis-production.up.railway.app/");
 }
 
 main().catch(err => {
