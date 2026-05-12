@@ -7986,9 +7986,9 @@ export default function Page() {
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="text-[9px] font-black text-[#8b6a3e]/60 uppercase tracking-wider">Partia #{bIdx + 1}</span>
                                     <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ color: bQualityDef.color, border: `1px solid ${bQualityDef.border}70` }}>{bQualityDef.label}</span>
-                                    <span className="ml-auto text-[9px] text-amber-300 font-bold">🎁 {itemDropChancePct}% item</span>
+                                    <span className="ml-auto text-[9px] text-amber-300 font-bold">🎁 {itemDropChancePct}%</span>
                                   </div>
-                                  <div className="flex gap-1 flex-wrap">
+                                  <div className="flex gap-1 flex-wrap mb-1">
                                     {bTierChances.map((chance, i) => chance > 0 && (
                                       <div key={i} className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5"
                                         style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}60` }}>
@@ -7997,6 +7997,21 @@ export default function Page() {
                                       </div>
                                     ))}
                                   </div>
+                                  {(() => {
+                                    const bCompostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[bQuality];
+                                    const bCompostColor = bCompostTierIdx === 0 ? "#9ca3af" : bCompostTierIdx === 1 ? "#22c55e" : "#a78bfa";
+                                    const bCompostChance = 100 - itemDropChancePct;
+                                    return (
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        <span className="text-[9px] text-[#8b6a3e]/60">🌱 {bCompostChance}% kompost:</span>
+                                        {(["growth","yield","exp"] as const).map(ct => (
+                                          <span key={ct} className="text-[9px] font-bold" style={{ color: bCompostColor }}>
+                                            {COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[bCompostTierIdx])}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               );
                             })}
@@ -8038,6 +8053,21 @@ export default function Page() {
                             </div>
                           ))}
                         </div>
+                        {currentBatch.fill > 0 && (() => {
+                          const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
+                          const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
+                          const cChance = 100 - itemDropChancePct;
+                          return (
+                            <div className="flex items-center gap-1 flex-wrap mt-2">
+                              <span className="text-[9px] text-[#8b6a3e]/60">🌱 {cChance}% kompost:</span>
+                              {(["growth","yield","exp"] as const).map(ct => (
+                                <span key={ct} className="text-[9px] font-bold" style={{ color: cColor }}>
+                                  {COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                         )}
                       </div>
 
