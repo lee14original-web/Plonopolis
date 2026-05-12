@@ -2064,6 +2064,7 @@ export default function Page() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showKompostModal, kompostRewards]);
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
+  const [kompostTierHoverTip, setKompostTierHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
@@ -7974,7 +7975,28 @@ export default function Page() {
                       <div className="mt-3 rounded-xl border border-emerald-800/50 bg-emerald-950/30 p-2.5">
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {currentTierChances.map((chance, i) => chance > 0 && (
-                            <div key={i} className="flex items-center gap-1 rounded-lg px-2 py-0.5 bg-black/30 border border-white/5">
+                            <div
+                              key={i}
+                              className="flex items-center gap-1 rounded-lg px-2 py-0.5 bg-black/30 border border-white/5 cursor-help hover:brightness-125 transition"
+                              onMouseEnter={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const minLvl = i * 5 + 1;
+                                const maxLvl = i * 5 + 5;
+                                const tierItems = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl);
+                                const rarity = ITEM_TIER_RARITY[i];
+                                const tipNode = (
+                                  <>
+                                    <p className="text-[11px] font-black mb-1.5" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
+                                    <p className="text-[9px] font-bold text-emerald-500/60 mb-1 uppercase tracking-wider">Mozliwe nagrody:</p>
+                                    {tierItems.slice(0, 8).map(it => (
+                                      <p key={it.id} className="text-[10px] text-emerald-100 leading-snug">{it.icon} {it.name}</p>
+                                    ))}
+                                    {tierItems.length > 8 && <p className="text-[9px] text-emerald-500/50 mt-1">... i {tierItems.length - 8} wiecej</p>}
+                                  </>
+                                );
+                                setKompostTierHoverTip({ x: rect.left + rect.width / 2, y: rect.bottom, node: tipNode, color: rarity.border });
+                              }}
+                              onMouseLeave={() => setKompostTierHoverTip(null)}>
                               <span className="text-[10px]">{ITEM_TIER_RARITY[i].dot}</span>
                               <span className="text-[10px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>I{i+1}:</span>
                               <span className="text-[11px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
@@ -8296,6 +8318,25 @@ export default function Page() {
                     })()}
                   </div>
                 )}
+                {/* Tier tooltip — widoczny zawsze, nie tylko gdy panel nagród otwarty */}
+                {kompostTierHoverTip && (() => {
+                  const TIP_W = 220;
+                  const TIP_H_EST = 220;
+                  const margin = 10;
+                  const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
+                  const vh = typeof window !== "undefined" ? window.innerHeight : 720;
+                  let left = kompostTierHoverTip.x - TIP_W / 2;
+                  left = Math.max(margin, Math.min(vw - TIP_W - margin, left));
+                  let top = kompostTierHoverTip.y + 8;
+                  top = Math.max(margin, Math.min(vh - TIP_H_EST - margin, top));
+                  return (
+                    <div
+                      className="pointer-events-none fixed z-[9999] flex flex-col gap-0.5 rounded-xl border-2 px-3 py-2.5 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
+                      style={{ left, top, width: TIP_W, borderColor: kompostTierHoverTip.color }}>
+                      {kompostTierHoverTip.node}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
