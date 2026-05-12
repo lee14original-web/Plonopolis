@@ -1,7 +1,7 @@
 /**
  * Wysyla zmiany na GitHub w JEDNYM commicie (Git Tree API).
  * Domyslnie: tylko app/page.tsx (Game.tsx).
- * Z flagą --images: takze nowe/zmienione obrazki z public/uprawy/.
+ * Z flagą --images: takze wszystkie foldery z obrazkami.
  *
  * Uzycie:
  *   pnpm --filter @workspace/scripts run push-to-github
@@ -17,6 +17,16 @@ const REPO = "Plonopolis";
 const BRANCH = "main";
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const WITH_IMAGES = process.argv.includes("--images");
+
+// Foldery z obrazkami do synchronizacji (lokalny -> GitHub)
+const IMAGE_FOLDERS: { local: string; github: string }[] = [
+  { local: "artifacts/plonopolis/public/uprawy",    github: "public/uprawy" },
+  { local: "artifacts/plonopolis/public/avatary",   github: "public/avatary" },
+  { local: "artifacts/plonopolis/public/owoce",     github: "public/owoce" },
+  { local: "artifacts/plonopolis/public/przedmioty",github: "public/przedmioty" },
+  { local: "artifacts/plonopolis/public/ul",        github: "public/ul" },
+  { local: "artifacts/plonopolis/public/ekwipunek", github: "public/ekwipunek" },
+];
 
 if (!GITHUB_TOKEN) { console.error("Brak GITHUB_TOKEN."); process.exit(1); }
 
@@ -53,19 +63,20 @@ async function main() {
     localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx"),
   });
 
-  // Opcjonalnie: obrazki z public/uprawy/
+  // Opcjonalnie: wszystkie foldery z obrazkami
   if (WITH_IMAGES) {
-    const uprawyDir = resolve(ROOT, "artifacts/plonopolis/public/uprawy");
-    if (existsSync(uprawyDir)) {
-      const imgs = await readdir(uprawyDir);
-      for (const img of imgs) {
-        filesToPush.push({ githubPath: `public/uprawy/${img}`, localPath: resolve(uprawyDir, img) });
+    for (const folder of IMAGE_FOLDERS) {
+      const dir = resolve(ROOT, folder.local);
+      if (!existsSync(dir)) continue;
+      const files = await readdir(dir);
+      for (const f of files) {
+        filesToPush.push({ githubPath: `${folder.github}/${f}`, localPath: resolve(dir, f) });
       }
-      console.log(`Tryb --images: dodano ${imgs.length} obrazkow uprawy.`);
+      console.log(`  ${folder.github}/: ${files.length} plikow`);
     }
   }
 
-  console.log(`Wysylam ${filesToPush.length} plik(ow) → 1 commit na GitHub...`);
+  console.log(`\nWysylam ${filesToPush.length} plik(ow) → 1 commit...`);
 
   // Pobierz HEAD
   const refData = await gh("GET", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`);
@@ -84,7 +95,7 @@ async function main() {
       return { path: githubPath, mode: "100644", type: "blob", sha };
     }));
     treeEntries.push(...results);
-    if (filesToPush.length > 1) console.log(`  ${Math.min(i + BATCH, filesToPush.length)}/${filesToPush.length} blobów`);
+    if (filesToPush.length > 10) console.log(`  ${Math.min(i + BATCH, filesToPush.length)}/${filesToPush.length} blobów`);
   }
 
   // Tree → commit → ref
