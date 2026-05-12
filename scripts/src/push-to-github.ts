@@ -1,8 +1,8 @@
 /**
- * Wysyla Game.tsx na GitHub do wlasciwej lokalizacji w projekcie Next.js.
+ * Wysyla Game.tsx (app/page.tsx) + obrazki uprawy na GitHub.
  * Uzycie: pnpm --filter @workspace/scripts run push-to-github
  */
-import { readFile, writeFile } from "fs/promises";
+import { readFile, readdir } from "fs/promises";
 import { resolve } from "path";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -29,9 +29,7 @@ async function ghApi(method: string, path: string, body?: unknown) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json() as Record<string, unknown>;
-  if (!res.ok) {
-    throw new Error(`GitHub API ${method} ${path} => ${res.status}: ${JSON.stringify(data)}`);
-  }
+  if (!res.ok) throw new Error(`GitHub API ${method} ${path} => ${res.status}: ${JSON.stringify(data)}`);
   return data;
 }
 
@@ -39,14 +37,12 @@ async function getFileSha(filePath: string): Promise<string | undefined> {
   try {
     const data = await ghApi("GET", `/repos/${OWNER}/${REPO}/contents/${filePath}?ref=${BRANCH}`);
     return data.sha as string;
-  } catch {
-    return undefined;
-  }
+  } catch { return undefined; }
 }
 
-async function pushFile(githubPath: string, content: string, message: string) {
+async function pushFile(githubPath: string, contentBuffer: Buffer, message: string) {
   const sha = await getFileSha(githubPath);
-  const encoded = Buffer.from(content).toString("base64");
+  const encoded = contentBuffer.toString("base64");
   await ghApi("PUT", `/repos/${OWNER}/${REPO}/contents/${githubPath}`, {
     message,
     content: encoded,
@@ -57,22 +53,25 @@ async function pushFile(githubPath: string, content: string, message: string) {
 }
 
 async function main() {
-  console.log(`Wysylam pliki gry na GitHub (${OWNER}/${REPO} @ ${BRANCH})...`);
+  console.log(`Wysylam na GitHub (${OWNER}/${REPO} @ ${BRANCH})...`);
 
+  // 1. Game.tsx → app/page.tsx
   const gameTsxPath = resolve(ROOT, "artifacts/plonopolis/src/Game.tsx");
-  const gameTsxContent = await readFile(gameTsxPath, "utf8");
+  const gameTsxContent = await readFile(gameTsxPath);
+  await pushFile("app/page.tsx", gameTsxContent, "sync: Game.tsx z Replita (sciezki /uprawy/)");
 
-  const pageContent = `import Game from "@/components/Game";
+  // 2. Wszystkie obrazki z public/uprawy/
+  const uprawyDir = resolve(ROOT, "artifacts/plonopolis/public/uprawy");
+  const files = await readdir(uprawyDir);
+  console.log(`\nWysylam ${files.length} plikow do public/uprawy/...`);
 
-export default function Page() {
-  return <Game />;
-}
-`;
+  for (const file of files) {
+    const buf = await readFile(resolve(uprawyDir, file));
+    await pushFile(`public/uprawy/${file}`, buf, `sync: uprawy/${file}`);
+  }
 
-  await pushFile("app/page.tsx", gameTsxContent, "sync: Game.tsx z Replita");
-
-  console.log("\nGotowe! Railway automatycznie wdrozy zmiany.");
-  console.log("Link do gry: https://plonopolis-production.up.railway.app/");
+  console.log(`\nGotowe! Railway automatycznie wdrozy zmiany.`);
+  console.log(`Link: https://plonopolis-production.up.railway.app/`);
 }
 
 main().catch(err => {
