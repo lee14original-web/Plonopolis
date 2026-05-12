@@ -2144,6 +2144,9 @@ export default function Page() {
   const [buyingOfferId, setBuyingOfferId] = React.useState<string|null>(null);
   const [cancellingOfferId, setCancellingOfferId] = React.useState<string|null>(null);
   const [claimingReturns, setClaimingReturns] = React.useState(false);
+  const [marketPickerOpen, setMarketPickerOpen] = React.useState(false);
+  const [marketPickerSearch, setMarketPickerSearch] = React.useState("");
+  const [marketPickerFilter, setMarketPickerFilter] = React.useState<MarketItemType|"all"|"rare">("all");
   React.useEffect(() => {
     const t = setInterval(() => setBarnNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -6819,7 +6822,7 @@ export default function Page() {
 
                       {/* ─── Modal powitalny dla nowego gracza ─── */}
                       {showWelcome && (
-                        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4">
+                        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" style={{ zIndex: 9999 }}>
                           <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
                             {/* Zamknij */}
                             <button
@@ -11400,14 +11403,15 @@ export default function Page() {
                     <div className="mb-4 flex items-center justify-between">
                       <p className="text-sm text-[#dfcfab]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-xs text-[#8b6a3e]">(poziom {lvl})</span></p>
                       {activeOffers.length < maxOffers && (
-                        <button type="button" onClick={() => setCreateOfferOpen(true)}
+                        <button type="button"
+                          onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("all"); setMarketPickerOpen(true); }}
                           className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition"
                         >+ Dodaj ofertę</button>
                       )}
                     </div>
 
-                    {/* Formularz nowej oferty */}
-                    {createOfferOpen && (() => {
+                    {/* ── Panel konfiguracji oferty (po wybraniu itemu z pickera) ── */}
+                    {createOfferOpen && coItemKey && (() => {
                       const sellable     = buildSellableItems();
                       const selectedItem = sellable.find(i => i.key === coItemKey && i.type === coItemType);
                       const maxQty       = selectedItem?.qty ?? 1;
@@ -11416,76 +11420,73 @@ export default function Page() {
                       const sellerGets   = Math.round(total * 0.9);
                       const extFee       = coDuration === 48 ? Math.round(total * 0.05) : 0;
                       return (
-                        <div className="mb-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
+                        <div className="mb-4 rounded-2xl border border-[#d8ba7a]/40 bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
+                          {/* Nagłówek */}
                           <div className="flex items-center justify-between">
-                            <p className="font-bold text-[#d8ba7a]">Nowa oferta</p>
-                            <button type="button" onClick={() => setCreateOfferOpen(false)} className="text-[#dfcfab] hover:text-white font-bold">X</button>
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Przedmiot</label>
-                            {sellable.length === 0 ? (
-                              <p className="text-sm text-[#8b6a3e]">Brak przedmiotów do wystawienia.</p>
-                            ) : (
-                              <select
-                                value={coItemKey ? `${coItemType}::${coItemKey}` : ""}
-                                onChange={e => {
-                                  const [t, k] = e.target.value.split("::");
-                                  setCoItemType(t as MarketItemType); setCoItemKey(k); setCoQty(1);
-                                  const it = sellable.find(i => i.key === k && i.type === t);
-                                  setCoPrice(it ? it.minPrice : 10);
-                                }}
-                                className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
-                              >
-                                <option value="">— wybierz —</option>
-                                {sellable.map(i => (
-                                  <option key={`${i.type}::${i.key}`} value={`${i.type}::${i.key}`}>
-                                    {i.icon} {i.name} (masz: {i.qty} szt.)
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                          {coItemKey && (
-                            <>
-                              <div className="flex gap-3">
-                                <div className="flex-1">
-                                  <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Ilość (max {maxQty})</label>
-                                  <input type="number" min={1} max={maxQty} value={coQty}
-                                    onChange={e => setCoQty(Math.min(maxQty, Math.max(1, parseInt(e.target.value)||1)))}
-                                    className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
-                                  />
-                                </div>
-                                <div className="flex-1">
-                                  <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Cena/szt. (min {minP} zł)</label>
-                                  <input type="number" min={minP} value={coPrice}
-                                    onChange={e => setCoPrice(Math.max(minP, parseInt(e.target.value)||minP))}
-                                    className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2 text-sm text-[#f3e6c8] outline-none"
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="mb-1 block text-xs text-[#dfcfab] uppercase tracking-wider">Czas trwania</label>
-                                <div className="flex gap-2">
-                                  {([24, 48] as const).map(d => (
-                                    <button key={d} type="button" onClick={() => setCoDuration(d)}
-                                      className={`flex-1 rounded-xl border py-2 text-sm font-bold transition ${coDuration === d ? "border-[#f4cf78] bg-[rgba(242,202,105,0.15)] text-[#f9e7b2]" : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"}`}
-                                    >{d === 24 ? "24h (darmowe)" : `48h (+${extFee > 0 ? extFee.toLocaleString("pl-PL") : "5%"} zł opłaty)`}</button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[#8b6a3e]/30 p-3 text-xs text-[#dfcfab] space-y-1">
-                                <p>Łączna cena: <span className="text-[#f9e7b2] font-bold">{total.toLocaleString("pl-PL")} zł</span></p>
-                                <p>Podatek rynku (10%): <span className="text-[#fca5a5]">-{Math.round(total*0.1).toLocaleString("pl-PL")} zł</span></p>
-                                {extFee > 0 && <p>Opłata za 48h (5%): <span className="text-[#fca5a5]">-{extFee.toLocaleString("pl-PL")} zł</span></p>}
-                                <p>Otrzymasz po sprzedaży: <span className="text-[#86efac] font-bold">{sellerGets.toLocaleString("pl-PL")} zł</span></p>
-                              </div>
+                            <p className="text-lg font-black text-[#d8ba7a]">Nowa oferta</p>
+                            <div className="flex items-center gap-2">
                               <button type="button"
-                                disabled={coLoading || !coItemKey || coQty <= 0 || coPrice < minP}
-                                onClick={() => void handleCreateOffer()}
-                                className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] py-3 font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-50"
-                              >{coLoading ? "Wystawianie..." : "Wystaw ofertę"}</button>
-                            </>
-                          )}
+                                onClick={() => { setMarketPickerOpen(true); }}
+                                className="rounded-lg border border-[#8b6a3e]/60 bg-black/20 px-3 py-1.5 text-sm font-bold text-[#dfcfab] hover:bg-white/5 transition"
+                              >Zmień przedmiot</button>
+                              <button type="button"
+                                onClick={() => { setCreateOfferOpen(false); setCoItemKey(""); }}
+                                className="flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 text-[#dfcfab] hover:text-red-300 font-bold transition"
+                              >✕</button>
+                            </div>
+                          </div>
+                          {/* Wybrany przedmiot */}
+                          <div className="flex items-center gap-4 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-3">
+                            <span className="text-5xl shrink-0">{selectedItem?.icon || "📦"}</span>
+                            <div>
+                              <p className="text-base font-bold text-[#f3e6c8]">{selectedItem?.name ?? coItemKey}</p>
+                              <p className="text-sm text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{maxQty} szt.</span></p>
+                              <p className="text-sm text-[#8b6a3e]">Min. cena: {minP.toLocaleString("pl-PL")} zł/szt.</p>
+                            </div>
+                          </div>
+                          {/* Ilość + cena */}
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Ilość (max {maxQty})</label>
+                              <input type="number" min={1} max={maxQty} value={coQty}
+                                onChange={e => setCoQty(Math.min(maxQty, Math.max(1, parseInt(e.target.value)||1)))}
+                                className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2.5 text-base text-[#f3e6c8] outline-none focus:border-[#d8ba7a]/60"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Cena/szt. (min {minP} zł)</label>
+                              <input type="number" min={minP} value={coPrice}
+                                onChange={e => setCoPrice(Math.max(minP, parseInt(e.target.value)||minP))}
+                                className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2.5 text-base text-[#f3e6c8] outline-none focus:border-[#d8ba7a]/60"
+                              />
+                            </div>
+                          </div>
+                          {/* Czas trwania */}
+                          <div>
+                            <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Czas trwania</label>
+                            <div className="flex gap-2">
+                              {([24, 48] as const).map(d => (
+                                <button key={d} type="button" onClick={() => setCoDuration(d)}
+                                  className={`flex-1 rounded-xl border py-2.5 text-base font-bold transition ${coDuration === d ? "border-[#f4cf78] bg-[rgba(242,202,105,0.15)] text-[#f9e7b2]" : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"}`}
+                                >{d === 24 ? "24h (darmowe)" : `48h (+${extFee > 0 ? extFee.toLocaleString("pl-PL") : "5%"} zł)`}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Podsumowanie */}
+                          <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4 space-y-1.5">
+                            <p className="text-sm text-[#dfcfab]">Łączna cena: <span className="text-base font-bold text-[#f9e7b2]">{total.toLocaleString("pl-PL")} zł</span></p>
+                            <p className="text-sm text-[#dfcfab]">Podatek rynku (10%): <span className="font-bold text-[#fca5a5]">-{Math.round(total*0.1).toLocaleString("pl-PL")} zł</span></p>
+                            {extFee > 0 && <p className="text-sm text-[#dfcfab]">Opłata za 48h (5%): <span className="font-bold text-[#fca5a5]">-{extFee.toLocaleString("pl-PL")} zł</span></p>}
+                            <div className="mt-1 border-t border-[#8b6a3e]/30 pt-1.5">
+                              <p className="text-sm text-[#dfcfab]">Otrzymasz po sprzedaży: <span className="text-lg font-black text-[#86efac]">{sellerGets.toLocaleString("pl-PL")} zł</span></p>
+                            </div>
+                          </div>
+                          {/* Przycisk */}
+                          <button type="button"
+                            disabled={coLoading || !coItemKey || coQty <= 0 || coPrice < minP}
+                            onClick={() => void handleCreateOffer()}
+                            className="w-full rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] py-3.5 text-lg font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-50"
+                          >{coLoading ? "Wystawianie..." : "Wystaw ofertę"}</button>
                         </div>
                       );
                     })()}
@@ -11593,6 +11594,109 @@ export default function Page() {
           </div>
         </div>
       )}
+
+      {/* ─── PICKER ITEMÓW TARGU — overlay ponad modalem ─────────────────── */}
+      {marketPickerOpen && (() => {
+        const sellable = buildSellableItems();
+        const filtered = sellable.filter(i => {
+          if (marketPickerFilter === "rare") return i.type === "crop" && (i.key.endsWith("_legendary") || i.key.endsWith("_epic"));
+          if (marketPickerFilter !== "all") return i.type === marketPickerFilter;
+          return true;
+        }).filter(i => {
+          if (!marketPickerSearch.trim()) return true;
+          return i.name.toLowerCase().includes(marketPickerSearch.trim().toLowerCase());
+        });
+        const PICKER_FILTERS: { id: MarketItemType|"all"|"rare"; label: string; icon: string }[] = [
+          { id: "all",       label: "Wszystko", icon: "📦" },
+          { id: "crop",      label: "Uprawy",   icon: "🌱" },
+          { id: "fruit",     label: "Owoce",    icon: "🍎" },
+          { id: "barn_item", label: "Stodoła",  icon: "🐔" },
+          { id: "compost",   label: "Kompost",  icon: "🌿" },
+          { id: "honey",     label: "Miód",     icon: "🍯" },
+          { id: "rare",      label: "Rzadkie",  icon: "⭐" },
+        ];
+        return (
+          <div className="fixed inset-0 z-[9998] flex flex-col bg-[rgba(6,3,1,0.97)] backdrop-blur-sm">
+            {/* Nagłówek z wyszukiwarką */}
+            <div className="shrink-0 flex items-center gap-3 border-b border-[#8b6a3e]/60 bg-[rgba(18,10,5,0.98)] px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setMarketPickerOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#8b6a3e]/60 text-xl font-bold text-[#dfcfab] hover:bg-white/5 transition"
+              >←</button>
+              <div className="flex-1 relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8b6a3e] text-lg">🔍</span>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Szukaj przedmiotu..."
+                  value={marketPickerSearch}
+                  onChange={e => setMarketPickerSearch(e.target.value)}
+                  className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/40 pl-10 pr-4 py-2.5 text-base text-[#f3e6c8] placeholder:text-[#8b6a3e]/70 outline-none focus:border-[#d8ba7a]/70"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setMarketPickerOpen(false)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#8b6a3e]/60 font-bold text-[#dfcfab] hover:text-red-300 transition"
+              >✕</button>
+            </div>
+
+            {/* Filtry */}
+            <div className="shrink-0 flex gap-1.5 overflow-x-auto border-b border-[#8b6a3e]/30 bg-black/20 px-4 py-2.5 scrollbar-hide">
+              {PICKER_FILTERS.map(f => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setMarketPickerFilter(f.id)}
+                  className={`shrink-0 flex items-center gap-1.5 whitespace-nowrap rounded-xl border px-3.5 py-2 text-sm font-bold transition ${
+                    marketPickerFilter === f.id
+                      ? "border-[#f4cf78] bg-[rgba(242,202,105,0.18)] text-[#f9e7b2]"
+                      : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5 hover:border-[#8b6a3e]/70"
+                  }`}
+                >
+                  {f.icon} {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Grid itemów */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {filtered.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-[#8b6a3e]">
+                  <span className="text-6xl">📦</span>
+                  <p className="text-xl font-bold text-[#dfcfab]">Brak przedmiotów</p>
+                  <p className="text-base">Zmień filtr lub zbierz więcej surowców.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+                  {filtered.map(item => (
+                    <button
+                      key={`${item.type}::${item.key}`}
+                      type="button"
+                      onClick={() => {
+                        setCoItemType(item.type);
+                        setCoItemKey(item.key);
+                        setCoQty(1);
+                        setCoPrice(item.minPrice);
+                        setCoDuration(24);
+                        setMarketPickerOpen(false);
+                        setCreateOfferOpen(true);
+                      }}
+                      className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/50 bg-[rgba(255,255,255,0.03)] p-3 text-center transition hover:border-[#f4cf78]/60 hover:bg-[rgba(242,202,105,0.09)] active:scale-95"
+                    >
+                      <span className="text-5xl leading-none">{item.icon || "📦"}</span>
+                      <p className="text-sm font-bold leading-tight text-[#f3e6c8] line-clamp-2">{item.name}</p>
+                      <p className="text-xs text-[#dfcfab]">Posiadasz: <span className="font-bold text-[#f9e7b2]">{item.qty}</span></p>
+                      <p className="text-xs text-[#8b6a3e]">Min: {item.minPrice.toLocaleString("pl-PL")} zł</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       </main>
   );
