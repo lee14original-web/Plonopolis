@@ -6518,7 +6518,7 @@ export default function Page() {
                     <p className="mt-1 text-[10px] text-[#8b6a3e]">🥚 jajka · 🐇 futra · 🥛 mleko · 🪶 pióra · 🧶 wełna · 💩 nawóz · 🥛 mleko kozie · 🪶 duże pióra · ⚡ energia · 🦴 rogi byka</p>
                   </div>
                   <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 3 jakości)</p>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-pink-300">🍎 Dodaj owoce z sadu (każdy rodzaj × 4 jakości)</p>
                     <div className="flex flex-wrap gap-2">
                       {[5,10,50].map(amt => (
                         <button key={amt} onClick={() => handleAddFruits(amt)}
