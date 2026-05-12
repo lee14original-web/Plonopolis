@@ -2,6 +2,17 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+@keyframes promo-glow {
+  0%, 100% { box-shadow: 0 0 0px transparent; border-color: rgba(251,191,36,0.35); }
+  50%       { box-shadow: 0 0 10px rgba(251,191,36,0.35); border-color: rgba(251,191,36,0.75); }
+}
+@keyframes promo-glow-super {
+  0%, 100% { box-shadow: 0 0 0px transparent; border-color: rgba(251,113,133,0.35); }
+  50%       { box-shadow: 0 0 10px rgba(251,113,133,0.40); border-color: rgba(251,113,133,0.80); }
+}
+.promo-normal { animation: promo-glow 2.4s ease-in-out infinite; }
+.promo-super  { animation: promo-glow-super 1.8s ease-in-out infinite; }
+
 html, body, #root {
   margin: 0;
   padding: 0;
