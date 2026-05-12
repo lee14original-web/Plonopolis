@@ -5901,7 +5901,7 @@ export default function Page() {
                                           onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                           onMouseLeave={() => setCardTip(null)}>
                                           <div className="relative h-16 w-16 flex items-center justify-center">
-                                            <span className="text-4xl leading-none">{it.icon}</span>
+                                            
                                             <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                           </div>
                                           
@@ -7041,7 +7041,7 @@ export default function Page() {
                                     onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{it.icon} {it.name}</p>{animal && <p className="text-[11px] text-amber-300 mt-0.5">{animal.icon} Z {animal.name.toLowerCase()}y</p>}<p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {cnt} szt.</p></>)}
                                     onMouseLeave={() => setCardTip(null)}>
                                     <div className="relative h-16 w-16 flex items-center justify-center">
-                                      <span className="text-4xl leading-none">{it.icon}</span>
+                                      
                                       <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute h-[130%] w-[130%] -top-[15%] -left-[15%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
                                     </div>
                                     
