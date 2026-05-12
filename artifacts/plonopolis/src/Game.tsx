@@ -233,7 +233,7 @@ const AVATAR_META: Record<number, { name: string; style: string }> = {
   2:  { name:"Farmer z rzodkiewkami",     style:"mistrz upraw"            },
   3:  { name:"Mlody farmer",              style:"szybkosc i lupy"         },
   4:  { name:"Kierowca traktora",         style:"ekonomia"                },
-  5:  { name:"Farmer w traktorze",        style:"specjalista pol"         },
+  5:  { name:"Farmer w kombajnie",          style:"specjalista pol"         },
   6:  { name:"Sadownik",                  style:"sad i drzewa"            },
   7:  { name:"Hodowca",                   style:"hodowla zwierzat"        },
   8:  { name:"Chlopiec z kotem",          style:"rzadkie dropy"           },
