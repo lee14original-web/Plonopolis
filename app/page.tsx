@@ -6729,10 +6729,10 @@ export default function Page() {
                 {/* Sidebar — kategorie sklepu */}
                 <div className="flex w-[308px] shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
                   <div className="flex flex-col gap-3 p-6 pt-14">
-                    <p className="mb-3 text-[11px] font-black uppercase tracking-widest text-[#8b6a3e]">🏪 Sklep</p>
+                    <p className="mb-3 text-[17px] font-black uppercase tracking-widest text-[#8b6a3e]">Sklep</p>
                     {(["nasiona","zwierzeta","drzewa","przedmioty"] as const).map(tab => (
                       <button key={tab} onClick={() => setShopTab(tab)}
-                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[20px] font-bold transition ${
                           shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                         }`}>
                         {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : tab === "drzewa" ? "Drzewa" : "Przedmioty"}
