@@ -7382,7 +7382,9 @@ export default function Page() {
                         <div className="space-y-2">
                           {STATS_DEFS.map(def => {
                             const val = playerStats[def.key];
-                            const eff = calcStatEffect(val, def.rate);
+                            const _avBonus = (getAvatarBonus(avatarSkin)[def.key as keyof PlayerStatsMap] ?? 0) as number;
+                            const effVal = val + _avBonus;
+                            const eff = calcStatEffect(effVal, def.rate);
                             const isLocked = displayLevel < def.unlockLevel;
                             const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
                             const canFree = actualFreeAmt > 0 && !isLocked;
@@ -7401,7 +7403,7 @@ export default function Page() {
                               : def.key === "zrecznosc"  ? `+${eff.toFixed(1)}% szansa`
                               : def.key === "zaradnosc"  ? `−${Math.min(30, eff).toFixed(1)}% podlanie`
                               : def.key === "sadownik"   ? `+${eff.toFixed(1)}% drzewa`
-                              : def.key === "opieka"     ? `−${Math.min(90, val*0.3).toFixed(1)}% głód`
+                              : def.key === "opieka"     ? `−${Math.min(90, effVal*0.3).toFixed(1)}% głód`
                               : `+${eff.toFixed(1)}% drop`;
                             const isFlashing = statFlash === def.key;
                             return (
@@ -7420,7 +7422,7 @@ export default function Page() {
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
-                                      {!isLocked && val > 0 && (
+                                      {!isLocked && effVal > 0 && (
                                         <span className="text-sm font-bold text-green-200 ml-auto tabular-nums">{bonusStr}</span>
                                       )}
                                     </div>
@@ -7443,7 +7445,7 @@ export default function Page() {
                                           ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}</span>
                                           {val < 100
                                             ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
@@ -9749,10 +9751,10 @@ export default function Page() {
                               <img src={src} alt={`Postac ${i+1}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                             </div>
                             {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-48 rounded-xl border border-amber-500/50 bg-[rgba(18,10,2,0.97)] px-3 py-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[10px] font-black text-amber-300 mb-1.5">{_meta.name}</p>}
-                                <div className="flex flex-wrap justify-center gap-1">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-amber-900/40 border border-amber-600/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>)}
+                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-60 rounded-xl border border-amber-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
+                                {_meta && <p className="text-[15px] font-black text-amber-300 mb-2">{_meta.name}</p>}
+                                <div className="flex flex-wrap justify-center gap-1.5">
+                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-amber-900/40 border border-amber-600/30 px-2 py-0.5 text-[13px] font-bold text-amber-200">+{v} {_sl[k]??k}</span>)}
                                 </div>
                               </div>
                             )}
@@ -9781,10 +9783,10 @@ export default function Page() {
                               <img src={src} alt={`Postac ${i+11}`} className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                             </div>
                             {_e.length > 0 && (
-                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-48 rounded-xl border border-pink-500/50 bg-[rgba(18,10,2,0.97)] px-3 py-2 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
-                                {_meta && <p className="text-[10px] font-black text-pink-300 mb-1.5">{_meta.name}</p>}
-                                <div className="flex flex-wrap justify-center gap-1">
-                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-pink-900/40 border border-pink-600/30 px-1.5 py-0.5 text-[9px] font-bold text-pink-200">+{v} {_sl[k]??k}</span>)}
+                              <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 w-60 rounded-xl border border-pink-500/50 bg-[rgba(18,10,2,0.97)] px-4 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-[9999] shadow-2xl">
+                                {_meta && <p className="text-[15px] font-black text-pink-300 mb-2">{_meta.name}</p>}
+                                <div className="flex flex-wrap justify-center gap-1.5">
+                                  {_e.map(([k,v]) => <span key={k} className="rounded bg-pink-900/40 border border-pink-600/30 px-2 py-0.5 text-[13px] font-bold text-pink-200">+{v} {_sl[k]??k}</span>)}
                                 </div>
                               </div>
                             )}
