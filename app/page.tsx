@@ -2894,11 +2894,15 @@ export default function Page() {
       }
 
       // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
-      // zanim serwer spróbuje go odczytać — używamy FRESH ref state
+      // zanim serwer spróbuje go odczytać — używamy FRESH ref state.
+      // WAŻNE: seedInventoryRef ma już optimistycznie odliczone nasiono (−1).
+      // Przed zapisem przywracamy je do wartości SPRZED sadzenia (+1),
+      // bo game_plant_crop sam odliczy je z DB atomicznie.
       if (profile.id) {
+        const _invForDb = { ..._freshInv, [effectiveSeedId]: (_freshAmount + 1) };
         await supabase
           .from("profiles")
-          .update({ seed_inventory: serializeSeedInventory(_freshInv) })
+          .update({ seed_inventory: serializeSeedInventory(_invForDb) })
           .eq("id", profile.id);
       }
 
