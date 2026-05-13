@@ -182,6 +182,7 @@ const DEFAULT_LEVEL = 1;
 const DEFAULT_XP = 0;
 const DEFAULT_XP_TO_NEXT_LEVEL = 12;
 const DEFAULT_MONEY = 10;
+const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 godziny hard-timeout
 const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
@@ -1763,6 +1764,7 @@ export default function Page() {
   const [, setPendingTick] = useState(0);
   // Mapa plotId → setTimeout id (do anulowania przy unmount)
   const fieldActionTimeoutsRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+  const sessionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   // Refs do fresh state — używane w setTimeout callbackach (closure capture by stary state)
   const seedInventoryRef = React.useRef<SeedInventory>({});
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
@@ -3157,7 +3159,17 @@ export default function Page() {
         if (!mounted) return;
 
         if (session?.user) {
+          // Sprawdź czas poprzedniej sesji (hard 2h timeout)
+          let storedStart: number | null = null;
+          try { storedStart = Number(sessionStorage.getItem("plono_session_start")) || null; } catch { /* ignore */ }
+          if (storedStart && Date.now() - storedStart >= SESSION_DURATION_MS) {
+            // Sesja przeterminowana — wyloguj bez ładowania profilu
+            await supabase.auth.signOut();
+            if (mounted) setReady(true);
+            return;
+          }
           await loadProfile(session.user.id);
+          if (mounted) startSessionTimer(storedStart ?? undefined);
         }
       } catch (error) {
         console.error("BOOTSTRAP ERROR:", error);
@@ -3895,6 +3907,7 @@ export default function Page() {
       await loadProfile(session.user.id);
     }
 
+    startSessionTimer();
     setLoginForm({ identifier: "", password: "" });
     setMessage({
       type: "success",
@@ -3903,7 +3916,34 @@ export default function Page() {
     });
   }
 
+  function startSessionTimer(startedAt?: number) {
+    if (sessionTimeoutRef.current) clearTimeout(sessionTimeoutRef.current);
+    const now = Date.now();
+    const loginAt = startedAt ?? now;
+    try { sessionStorage.setItem("plono_session_start", String(loginAt)); } catch { /* ignore */ }
+    const remaining = SESSION_DURATION_MS - (now - loginAt);
+    if (remaining <= 0) { void autoLogout(); return; }
+    sessionTimeoutRef.current = setTimeout(() => { void autoLogout(); }, remaining);
+  }
+
+  function clearSessionTimer() {
+    if (sessionTimeoutRef.current) { clearTimeout(sessionTimeoutRef.current); sessionTimeoutRef.current = null; }
+    try { sessionStorage.removeItem("plono_session_start"); } catch { /* ignore */ }
+  }
+
+  async function autoLogout() {
+    clearSessionTimer();
+    await supabase.auth.signOut();
+    resetLocalGameState();
+    setMessage({
+      type: "info",
+      title: "Sesja wygasła",
+      text: "Twoja 2-godzinna sesja dobiegła końca. Zaloguj się ponownie.",
+    });
+  }
+
   async function handleLogout() {
+    clearSessionTimer();
     await supabase.auth.signOut();
     resetLocalGameState();
     setMessage({
@@ -6062,24 +6102,33 @@ export default function Page() {
                     Sesja gracza
                   </div>
 
-                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Nowy gracz startuje od zera</h2>
+                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Witaj w Płonopolis</h2>
                   <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Po pomyślnym logowaniu wczytujemy sesję gracza. Jeśli konto jest nowe, zaczynasz z 3 darmowymi
-                    polami, poziomem 1 i 10 PLN.
+                    Po zalogowaniu wczytujemy Twoją sesję. Nowe konto zaczyna z 3 darmowymi polami,
+                    poziomem 1 i 10 PLN. Sesja trwa maksymalnie 2 godziny — po tym czasie zostaniesz
+                    automatycznie wylogowany.
                   </p>
 
                   <div className="mt-6 space-y-4">
                     <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                       <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 100 EXP • 10 PLN</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 12 EXP • 10 PLN</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
                     </div>
 
                     <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                      <p className="font-bold text-[#f9e7b2]">Klikane pola</p>
+                      <p className="font-bold text-[#f9e7b2]">Pola uprawne</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">
-                        Kliknij podświetlone pole na mapie, aby otworzyć menu pola.
+                        Kliknij podświetlone pole na mapie, aby otworzyć menu pola i zasiać uprawę.
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
+                      <p className="font-bold text-[#f9e7b2]">Czas sesji</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">
+                        Sesja jest aktywna przez 2 godziny od zalogowania — niezależnie od aktywności.
+                        Po wygaśnięciu Twoje postępy są zapisane, wystarczy zalogować się ponownie.
                       </p>
                     </div>
                   </div>
