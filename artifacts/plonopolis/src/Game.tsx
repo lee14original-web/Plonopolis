@@ -11626,41 +11626,92 @@ export default function Page() {
                 const fmtK = (n: number) => n >= 1000 ? `${(n/1000).toLocaleString("pl-PL", {maximumFractionDigits:0})}k` : n.toLocaleString("pl-PL");
                 return (
                   <div>
-                    {/* Statystyki + przycisk */}
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div className="flex flex-wrap gap-2">
-                        {/* Slot ofert */}
-                        <div className="rounded-lg border border-[#8b6a3e]/60 bg-black/30 px-3 py-1.5 text-sm">
-                          <span className="text-[#c9a96e]">Oferty: </span>
-                          <span className={`font-bold ${activeOffers.length >= maxOffers ? "text-red-400" : "text-[#f9e7b2]"}`}>{activeOffers.length}/{maxOffers}</span>
+                    {/* ── MMO HUD: karty limitów ── */}
+                    {(() => {
+                      const slotPct   = Math.min(100, (activeOffers.length / maxOffers) * 100);
+                      const valPct    = activeValLimit ? Math.min(100, (activeVal / activeValLimit) * 100) : 0;
+                      const earnPct   = dailyLimit     ? Math.min(100, (earnedToday / dailyLimit) * 100)   : 0;
+                      const slotCrit  = slotPct  >= 92;
+                      const valCrit   = valPct   >= 92;
+                      const earnCrit  = earnPct  >= 92;
+                      const fmtFull   = (n: number) => n.toLocaleString("pl-PL");
+                      type CardProps = { icon: string; label: string; cur: string; max: string; pct: number; barColor: string; crit: boolean; tooltip?: string };
+                      const Card = ({ icon, label, cur, max, pct, barColor, crit, tooltip }: CardProps) => (
+                        <div
+                          title={tooltip}
+                          className={`relative flex-1 min-w-[120px] rounded-2xl border bg-black/40 p-3 overflow-hidden transition-all duration-300 ${crit ? "border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.4)]" : "border-[#8b6a3e]/50"}`}
+                          style={crit ? { animation: "mkt-pulse 1.6s ease-in-out infinite" } : undefined}
+                        >
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <span className="text-base leading-none">{icon}</span>
+                            <span className="text-xs font-bold uppercase tracking-wider text-[#c9a96e]">{label}</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 mb-2">
+                            <span className={`text-lg font-black leading-none ${crit ? "text-red-400" : "text-[#f9e7b2]"}`}>{cur}</span>
+                            <span className="text-xs text-[#8b6a3e] font-medium">/ {max}</span>
+                          </div>
+                          {/* Progress bar */}
+                          <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${pct}%`,
+                                background: crit
+                                  ? "linear-gradient(90deg,#ef4444,#f97316)"
+                                  : barColor,
+                              }}
+                            />
+                          </div>
+                          {crit && (
+                            <div className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wide">Bliski limitu</div>
+                          )}
                         </div>
-                        {/* Wartość aktywnych */}
-                        {activeValLimit !== null && (
-                          <div className="rounded-lg border border-[#8b6a3e]/60 bg-black/30 px-3 py-1.5 text-sm">
-                            <span className="text-[#c9a96e]">Wartość ofert: </span>
-                            <span className={`font-bold ${activeVal >= activeValLimit ? "text-red-400" : "text-[#f9e7b2]"}`}>{fmtK(Math.round(activeVal))}/{fmtK(activeValLimit)} zł</span>
+                      );
+                      return (
+                        <>
+                          <style>{`@keyframes mkt-pulse{0%,100%{box-shadow:0 0 12px rgba(239,68,68,.4)}50%{box-shadow:0 0 22px rgba(239,68,68,.75)}}`}</style>
+                          <div className="mb-4 flex gap-2">
+                            <Card
+                              icon="📦" label="Oferty"
+                              cur={String(activeOffers.length)} max={String(maxOffers)}
+                              pct={slotPct} crit={slotCrit}
+                              barColor="linear-gradient(90deg,#f2ca69,#c9952f)"
+                              tooltip="Liczba aktywnych ofert na targu"
+                            />
+                            <Card
+                              icon="💰" label="Wartość ofert"
+                              cur={activeValLimit ? fmtFull(Math.round(activeVal)) : "∞"}
+                              max={activeValLimit ? fmtFull(activeValLimit) + " zł" : "∞"}
+                              pct={valPct} crit={valCrit}
+                              barColor="linear-gradient(90deg,#f59e0b,#d97706)"
+                              tooltip={activeValLimit ? `Łączna wartość Twoich aktywnych ofert. Limit dla poziomu ${lvl}: ${fmtFull(activeValLimit)} zł` : "Brak limitu wartości na Twoim poziomie"}
+                            />
+                            <Card
+                              icon="📈" label="Zarobek dziś"
+                              cur={dailyLimit ? fmtFull(Math.round(earnedToday)) : "∞"}
+                              max={dailyLimit ? fmtFull(dailyLimit) + " zł" : "∞"}
+                              pct={earnPct} crit={earnCrit}
+                              barColor="linear-gradient(90deg,#22c55e,#16a34a)"
+                              tooltip="Zarobek z targu resetuje się codziennie o 00:00 czasu polskiego"
+                            />
                           </div>
-                        )}
-                        {/* Dzienny zarobek */}
-                        {dailyLimit !== null && (
-                          <div className={`rounded-lg border px-3 py-1.5 text-sm ${dailyBlocked ? "border-red-500/60 bg-red-950/30" : "border-[#8b6a3e]/60 bg-black/30"}`}>
-                            <span className="text-[#c9a96e]">Zarobek dziś: </span>
-                            <span className={`font-bold ${dailyBlocked ? "text-red-400" : "text-[#f9e7b2]"}`}>{fmtK(Math.round(earnedToday))}/{fmtK(dailyLimit)} zł</span>
-                            {dailyBlocked && <span className="ml-1 text-xs text-red-300"> — reset o polnocy</span>}
+                          {/* Przycisk Dodaj ofertę */}
+                          <div className="mb-4 flex items-center justify-between">
+                            <p className="text-xs text-[#8b6a3e]">Poziom {lvl}</p>
+                            <button type="button"
+                              disabled={!canAddOffer}
+                              onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
+                              className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            >+ Dodaj ofertę</button>
                           </div>
-                        )}
-                      </div>
-                      <button type="button"
-                        disabled={!canAddOffer}
-                        onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
-                        className="shrink-0 rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                      >+ Dodaj ofertę</button>
-                    </div>
-                    {dailyBlocked && (
-                      <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-300">
-                        Osiagnales dzienny limit zarobku z targu ({fmtK(dailyLimit!)} zł). Mozesz wystawiać nowe oferty po polnocy.
-                      </div>
-                    )}
+                          {dailyBlocked && (
+                            <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-300">
+                              Osiagnales dzienny limit zarobku z targu ({fmtK(dailyLimit!)} zł). Mozesz wystawiac nowe oferty po polnocy czasu polskiego.
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* ── Panel konfiguracji oferty (po wybraniu itemu z pickera) ── */}
                     {createOfferOpen && coItemKey && (() => {
