@@ -5397,7 +5397,7 @@ export default function Page() {
               <div className="fixed right-4 top-4 z-[90] flex flex-col items-end gap-1.5">
                 <button
                   onClick={handleLogout}
-                  className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
+                  className="rounded-2xl border border-red-400/40 bg-red-950/40 px-5 py-2.5 text-base font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
                 >
                   Wyloguj
                 </button>
@@ -5408,7 +5408,7 @@ export default function Page() {
                   const ss = String(totalSec % 60).padStart(2, "0");
                   const warn = sessionTimeLeft < 10 * 60 * 1000; // czerwono < 10 min
                   return (
-                    <div title="Czas do automatycznego wylogowania" className={`flex items-center gap-1.5 rounded-xl border px-3 py-1 backdrop-blur-sm text-xs font-bold tabular-nums cursor-default ${warn ? "border-red-500/60 bg-red-950/50 text-red-300" : "border-[#8b6a3e]/50 bg-[rgba(20,12,8,0.75)] text-[#d8ba7a]"}`}>
+                    <div title="Czas do automatycznego wylogowania" className={`flex items-center gap-2 rounded-xl border px-3.5 py-1.5 backdrop-blur-sm text-sm font-bold tabular-nums cursor-default ${warn ? "border-red-500/60 bg-red-950/50 text-red-300" : "border-[#8b6a3e]/50 bg-[rgba(20,12,8,0.75)] text-[#d8ba7a]"}`}>
                       <span className={warn ? "animate-pulse" : ""}>⏱</span>
                       <span>{hh}:{mm}:{ss}</span>
                     </div>
