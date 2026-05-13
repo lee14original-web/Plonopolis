@@ -2136,7 +2136,7 @@ export default function Page() {
   const [marketLoading, setMarketLoading] = React.useState(false);
   const [marketBrowseFilter, setMarketBrowseFilter] = React.useState<MarketItemType|"all">("crop");
   const [marketSearch, setMarketSearch] = React.useState("");
-  const [marketQualityFilter, setMarketQualityFilter] = React.useState<"all"|"rotten"|"good"|"epic"|"legendary">("all");
+  const [marketQualityFilter, setMarketQualityFilter] = React.useState<string>("all");
   const [marketSort, setMarketSort] = React.useState<"price_asc"|"price_desc"|"qty_desc"|"expires_asc"|"newest"|"unit_asc">("newest");
   const [marketTierFilter, setMarketTierFilter] = React.useState<"all"|"1"|"2"|"3"|"4"|"5">("all");
   const [marketMyLevelOnly, setMarketMyLevelOnly] = React.useState(false);
@@ -11413,8 +11413,17 @@ export default function Page() {
                     if (!o.item_name.toLowerCase().includes(q)) return false;
                   }
                   if (marketQualityFilter !== "all") {
-                    const { quality } = parseQualityKey(o.item_key);
-                    if (quality !== marketQualityFilter) return false;
+                    if (o.item_type === "crop") {
+                      const { quality } = parseQualityKey(o.item_key);
+                      if (quality !== marketQualityFilter) return false;
+                    } else if (o.item_type === "fruit") {
+                      const lastU = o.item_key.lastIndexOf("_");
+                      const q = lastU >= 0 ? o.item_key.slice(lastU + 1) : "";
+                      if (q !== marketQualityFilter) return false;
+                    } else if (o.item_type === "compost") {
+                      const ct = compostTypeFromKey(o.item_key);
+                      if (ct !== marketQualityFilter) return false;
+                    }
                   }
                   if (marketTierFilter !== "all") {
                     const ul = getOfferUnlockLevel(o);
@@ -11443,6 +11452,7 @@ export default function Page() {
                       { id: "barn_item" as const,  label: "Zwierzeta" },
                       { id: "fruit" as const,      label: "Owoce" },
                       { id: "honey" as const,      label: "Miod" },
+                      { id: "equipment" as const,  label: "Ekwipunek" },
                     ]).map(f => (
                       <button key={f.id} type="button"
                         onClick={() => { setMarketSearch(""); setMarketQualityFilter("all"); setMarketTierFilter("all"); setMarketMyLevelOnly(false); void handleMarketBrowseFilter(f.id); }}
@@ -11463,21 +11473,40 @@ export default function Page() {
                     />
                   </div>
 
-                  {/* Filtry jakości + sortowanie */}
+                  {/* Filtry jakości (kontekstowe) + sortowanie */}
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Jakość:</span>
-                    {([
-                      { id: "all" as const,        label: "Wszystkie" },
-                      { id: "rotten" as const,     label: "⚪ Popsute" },
-                      { id: "good" as const,       label: "🟢 Zwykłe" },
-                      { id: "epic" as const,       label: "🟣 Epickie" },
-                      { id: "legendary" as const,  label: "👑 Legen." },
-                    ]).map(q => (
-                      <button key={q.id} type="button"
-                        onClick={() => setMarketQualityFilter(q.id)}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${marketQualityFilter === q.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
-                      >{q.label}</button>
-                    ))}
+                    {(() => {
+                      const qualOpts: { id: string; label: string }[] =
+                        marketBrowseFilter === "crop" ? [
+                          { id:"all",       label:"Wszystkie" },
+                          { id:"rotten",    label:"⚪ Popsute" },
+                          { id:"good",      label:"🟢 Zwykłe" },
+                          { id:"epic",      label:"🟣 Epickie" },
+                          { id:"legendary", label:"👑 Legen." },
+                        ] : marketBrowseFilter === "fruit" ? [
+                          { id:"all",      label:"Wszystkie" },
+                          { id:"zgnile",   label:"🍂 Zgniłe" },
+                          { id:"zwykle",   label:"🍎 Zwykłe" },
+                          { id:"soczyste", label:"💧 Soczyste" },
+                          { id:"zlote",    label:"✨ Złote" },
+                        ] : marketBrowseFilter === "compost" ? [
+                          { id:"all",    label:"Wszystkie" },
+                          { id:"growth", label:"⚡ Wzrostu" },
+                          { id:"yield",  label:"🌾 Urodzaju" },
+                          { id:"exp",    label:"⭐ Nauki" },
+                        ] : null;
+                      return qualOpts ? (
+                        <>
+                          <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Jakość:</span>
+                          {qualOpts.map(q => (
+                            <button key={q.id} type="button"
+                              onClick={() => setMarketQualityFilter(q.id)}
+                              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${marketQualityFilter === q.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
+                            >{q.label}</button>
+                          ))}
+                        </>
+                      ) : null;
+                    })()}
                     <div className="ml-auto flex items-center gap-2">
                       <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Sortuj:</span>
                       <select
@@ -11670,7 +11699,7 @@ export default function Page() {
                             />
                             <Card
                               label="Wartość ofert"
-                              cur={activeValLimit ? fmtFull(Math.round(activeVal)) : "∞"}
+                              cur={fmtFull(Math.round(activeVal))}
                               max={activeValLimit ? fmtFull(activeValLimit) + " zł" : "∞"}
                               pct={valPct} crit={valCrit}
                               barColor="linear-gradient(90deg,#f59e0b,#d97706)"
@@ -11678,7 +11707,7 @@ export default function Page() {
                             />
                             <Card
                               label="Zarobek dziś"
-                              cur={dailyLimit ? fmtFull(Math.round(earnedToday)) : "∞"}
+                              cur={fmtFull(Math.round(earnedToday))}
                               max={dailyLimit ? fmtFull(dailyLimit) + " zł" : "∞"}
                               pct={earnPct} crit={earnCrit}
                               barColor="linear-gradient(90deg,#22c55e,#16a34a)"
@@ -11686,9 +11715,9 @@ export default function Page() {
                             />
                           </div>
                           {/* Reset countdown */}
-                          <div className="mb-3 flex items-center justify-end gap-1.5">
-                            <span className="text-[10px] uppercase tracking-widest text-[#8b6a3e] font-semibold">Reset limitu za</span>
-                            <span className="rounded-md bg-black/40 border border-[#8b6a3e]/40 px-2 py-0.5 font-mono text-xs font-bold text-[#f0d48a] tabular-nums">{resetIn}</span>
+                          <div className="mb-3 flex items-center justify-end gap-2">
+                            <span className="text-xs uppercase tracking-widest text-[#8b6a3e] font-semibold">Reset limitu za</span>
+                            <span className="rounded-md bg-black/40 border border-[#8b6a3e]/40 px-3 py-1 font-mono text-sm font-bold text-[#f0d48a] tabular-nums">{resetIn}</span>
                           </div>
                           {/* Przycisk Dodaj ofertę */}
                           <div className="mb-4 flex items-center justify-between">
