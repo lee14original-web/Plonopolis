@@ -6130,7 +6130,7 @@ export default function Page() {
                     Sesja gracza
                   </div>
 
-                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Witaj w Płonopolis</h2>
+                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Witaj w Plonopolis</h2>
                   <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
                     Po zalogowaniu wczytywane jest Twoje gospodarstwo wraz z całym postępem gry. Nowy gracz
                     rozpoczyna rozgrywkę z poziomem 1, dwudziestoma polami uprawnymi oraz 10 PLN na start.
