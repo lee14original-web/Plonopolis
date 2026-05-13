@@ -4899,6 +4899,13 @@ export default function Page() {
       setMarketLoading(false);
     }
   }
+  function getItemUnlockLevel(type: MarketItemType, key: string): number {
+    if (type === "crop") { const { baseCropId } = parseQualityKey(key); return CROPS.find(c => c.id === baseCropId)?.unlockLevel ?? 1; }
+    if (type === "equipment") { return CHAR_EQUIP_ITEMS.find(i => i.id === key)?.unlockLevel ?? 1; }
+    if (type === "barn_item" || type === "honey") { return ANIMALS.find(a => a.itemId === key || a.id === key)?.unlockLevel ?? 1; }
+    if (type === "fruit") { return TREES.find(t => t.fruitId === key)?.unlockLevel ?? 1; }
+    return 1;
+  }
   async function handleCreateOffer() {
     if (!profile || !coItemKey) return;
     const minP = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
@@ -4909,6 +4916,7 @@ export default function Page() {
     const { data, error } = await supabase.rpc("market_create_offer", {
       p_item_type: coItemType, p_item_key: coItemKey, p_item_name: name, p_item_icon: icon,
       p_quantity: coQty, p_price_per_unit: coPrice, p_duration_hours: coDuration,
+      p_unlock_level: getItemUnlockLevel(coItemType, coItemKey),
     });
     setCoLoading(false);
     if (error) { setMessage({ type: "error", title: "Błąd wystawienia", text: error.message }); return; }
@@ -11391,19 +11399,7 @@ export default function Page() {
               {/* ── PRZEGLĄDAJ ── */}
               {marketTab === "browse" && (() => {
                 const playerLvl = profile?.level ?? 1;
-                const getOfferUnlockLevel = (o: MarketOffer): number => {
-                  if (o.item_type === "crop") {
-                    const { baseCropId } = parseQualityKey(o.item_key);
-                    return CROPS.find(c => c.id === baseCropId)?.unlockLevel ?? 1;
-                  }
-                  if (o.item_type === "equipment") {
-                    return CHAR_EQUIP_ITEMS.find(i => i.id === o.item_key)?.unlockLevel ?? 1;
-                  }
-                  if (o.item_type === "barn_item" || o.item_type === "honey") {
-                    return ANIMALS.find(a => a.itemId === o.item_key || a.id === o.item_key)?.unlockLevel ?? 1;
-                  }
-                  return 1;
-                };
+                const getOfferUnlockLevel = (o: MarketOffer): number => getItemUnlockLevel(o.item_type, o.item_key);
                 const tierGroup = (lvl: number): string => {
                   if (lvl <= 5)  return "1";
                   if (lvl <= 10) return "2";
@@ -11424,10 +11420,7 @@ export default function Page() {
                     const ul = getOfferUnlockLevel(o);
                     if (tierGroup(ul) !== marketTierFilter) return false;
                   }
-                  if (marketMyLevelOnly) {
-                    const ul = getOfferUnlockLevel(o);
-                    if (ul > playerLvl) return false;
-                  }
+                  if (getOfferUnlockLevel(o) > playerLvl) return false;
                   return true;
                 }).sort((a, b) => {
                   switch (marketSort) {
@@ -11518,13 +11511,6 @@ export default function Page() {
                         className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${marketTierFilter === t.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
                       >{t.label}</button>
                     ))}
-                    <button type="button"
-                      onClick={() => setMarketMyLevelOnly(v => !v)}
-                      className={`ml-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${marketMyLevelOnly ? "border-emerald-500/80 bg-emerald-900/40 text-emerald-300" : "border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
-                    >
-                      <span className={`inline-block h-3 w-3 rounded-sm border ${marketMyLevelOnly ? "border-emerald-400 bg-emerald-400" : "border-[#c9a96e] bg-transparent"}`} />
-                      Dostepne na moj poziom
-                    </button>
                   </div>
 
                   {marketLoading && <p className="py-10 text-center text-base font-bold text-[#f0d48a]">Wczytuję oferty...</p>}

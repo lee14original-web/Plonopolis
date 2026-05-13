@@ -130,6 +130,10 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS market_earned_today NUMERIC(15,2) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS market_earned_date  DATE          DEFAULT NULL;
 
+-- Dodaj kolumnę unlock_level do market_offers (idempotentne)
+ALTER TABLE market_offers
+  ADD COLUMN IF NOT EXISTS unlock_level INTEGER NOT NULL DEFAULT 1;
+
 -- Limit łącznej wartości aktywnych ofert wg poziomu (NULL = brak limitu)
 CREATE OR REPLACE FUNCTION market_active_value_limit(p_level INTEGER)
 RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE AS $$
@@ -190,7 +194,8 @@ CREATE OR REPLACE FUNCTION market_create_offer(
   p_item_icon       TEXT,
   p_quantity        INTEGER,
   p_price_per_unit  NUMERIC,
-  p_duration_hours  INTEGER DEFAULT 24
+  p_duration_hours  INTEGER DEFAULT 24,
+  p_unlock_level    INTEGER DEFAULT 1
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_uid                UUID    := auth.uid();
@@ -335,11 +340,12 @@ BEGIN
   -- Utwórz ofertę
   INSERT INTO market_offers (
     seller_id, item_type, item_key, item_name, item_icon,
-    quantity, price_per_unit, duration_hours, expires_at
+    quantity, price_per_unit, duration_hours, expires_at, unlock_level
   ) VALUES (
     v_uid, p_item_type, p_item_key, p_item_name, p_item_icon,
     p_quantity, p_price_per_unit, p_duration_hours,
-    now() + (p_duration_hours || ' hours')::INTERVAL
+    now() + (p_duration_hours || ' hours')::INTERVAL,
+    GREATEST(1, p_unlock_level)
   ) RETURNING id INTO v_offer_id;
 
   RETURN jsonb_build_object('success', true, 'offer_id', v_offer_id, 'extension_fee', v_ext_fee);
@@ -361,6 +367,7 @@ DECLARE
   v_seller_login TEXT;
   v_qty          INTEGER;
   v_today_pl     DATE;
+  v_buyer_level  INTEGER;
 BEGIN
   IF v_buyer_id IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany'); END IF;
 
@@ -380,6 +387,13 @@ BEGIN
   -- Nie można kupić własnej oferty
   IF v_offer.seller_id = v_buyer_id THEN
     RETURN jsonb_build_object('error','Nie możesz kupić własnej oferty');
+  END IF;
+
+  -- Sprawdź czy kupujący ma wymagany poziom
+  SELECT COALESCE(level, 1) INTO v_buyer_level FROM profiles WHERE id = v_buyer_id;
+  IF v_buyer_level < COALESCE(v_offer.unlock_level, 1) THEN
+    RETURN jsonb_build_object('error',
+      'Wymagany poziom ' || v_offer.unlock_level || ' — Twój poziom: ' || v_buyer_level);
   END IF;
 
   -- Ilość do kupienia (domyślnie całość)
