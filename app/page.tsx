@@ -5385,7 +5385,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", backgroundImage: `url('${profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#1e3112" }}>
         <main
           className="overflow-hidden"
           style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2 }}
