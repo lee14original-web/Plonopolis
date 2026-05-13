@@ -2133,6 +2133,11 @@ export default function Page() {
   const [marketReturns, setMarketReturns] = React.useState<MarketReturn[]>([]);
   const [marketLoading, setMarketLoading] = React.useState(false);
   const [marketBrowseFilter, setMarketBrowseFilter] = React.useState<MarketItemType|"all">("crop");
+  const [marketSearch, setMarketSearch] = React.useState("");
+  const [marketQualityFilter, setMarketQualityFilter] = React.useState<"all"|"rotten"|"good"|"epic"|"legendary">("all");
+  const [marketSort, setMarketSort] = React.useState<"price_asc"|"price_desc"|"qty_desc"|"expires_asc"|"newest"|"unit_asc">("newest");
+  const [marketTierFilter, setMarketTierFilter] = React.useState<"all"|"1"|"2"|"3"|"4"|"5">("all");
+  const [marketMyLevelOnly, setMarketMyLevelOnly] = React.useState(false);
   const [pendingReturnCount, setPendingReturnCount] = React.useState(0);
   const [createOfferOpen, setCreateOfferOpen] = React.useState(false);
   const [coItemType, setCoItemType] = React.useState<MarketItemType>("crop");
@@ -11394,8 +11399,60 @@ export default function Page() {
             <div className="flex-1 overflow-y-auto p-4">
 
               {/* ── PRZEGLĄDAJ ── */}
-              {marketTab === "browse" && (
+              {marketTab === "browse" && (() => {
+                const playerLvl = profile?.level ?? 1;
+                const getOfferUnlockLevel = (o: MarketOffer): number => {
+                  if (o.item_type === "crop") {
+                    const { baseCropId } = parseQualityKey(o.item_key);
+                    return CROPS.find(c => c.id === baseCropId)?.unlockLevel ?? 1;
+                  }
+                  if (o.item_type === "equipment") {
+                    return CHAR_EQUIP_ITEMS.find(i => i.id === o.item_key)?.unlockLevel ?? 1;
+                  }
+                  if (o.item_type === "barn_item" || o.item_type === "honey") {
+                    return ANIMALS.find(a => a.itemId === o.item_key || a.id === o.item_key)?.unlockLevel ?? 1;
+                  }
+                  return 1;
+                };
+                const tierGroup = (lvl: number): string => {
+                  if (lvl <= 5)  return "1";
+                  if (lvl <= 10) return "2";
+                  if (lvl <= 15) return "3";
+                  if (lvl <= 20) return "4";
+                  return "5";
+                };
+                const filteredMarketBrowse = marketBrowse.filter(o => {
+                  if (marketSearch.trim()) {
+                    const q = marketSearch.trim().toLowerCase();
+                    if (!o.item_name.toLowerCase().includes(q)) return false;
+                  }
+                  if (marketQualityFilter !== "all") {
+                    const { quality } = parseQualityKey(o.item_key);
+                    if (quality !== marketQualityFilter) return false;
+                  }
+                  if (marketTierFilter !== "all") {
+                    const ul = getOfferUnlockLevel(o);
+                    if (tierGroup(ul) !== marketTierFilter) return false;
+                  }
+                  if (marketMyLevelOnly) {
+                    const ul = getOfferUnlockLevel(o);
+                    if (ul > playerLvl) return false;
+                  }
+                  return true;
+                }).sort((a, b) => {
+                  switch (marketSort) {
+                    case "price_asc":  return a.price_per_unit - b.price_per_unit;
+                    case "price_desc": return b.price_per_unit - a.price_per_unit;
+                    case "qty_desc":   return b.quantity - a.quantity;
+                    case "expires_asc": return new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime();
+                    case "newest":     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                    case "unit_asc":   return a.price_per_unit - b.price_per_unit;
+                    default:           return 0;
+                  }
+                });
+                return (
                 <div>
+                  {/* Kategorie */}
                   <div className="mb-3 flex flex-wrap gap-1.5">
                     {([
                       { id: "crop" as const,       label: "Uprawy" },
@@ -11405,20 +11462,90 @@ export default function Page() {
                       { id: "honey" as const,      label: "Miod" },
                     ]).map(f => (
                       <button key={f.id} type="button"
-                        onClick={() => void handleMarketBrowseFilter(f.id)}
+                        onClick={() => { setMarketSearch(""); setMarketQualityFilter("all"); setMarketTierFilter("all"); setMarketMyLevelOnly(false); void handleMarketBrowseFilter(f.id); }}
                         className={`rounded-xl px-4 py-1.5 text-sm font-bold transition ${marketBrowseFilter === f.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/70 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
                       >{f.label}</button>
                     ))}
                   </div>
+
+                  {/* Wyszukiwarka */}
+                  <div className="mb-3 relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8b6a3e] text-base">🔍</span>
+                    <input
+                      type="text"
+                      value={marketSearch}
+                      onChange={e => setMarketSearch(e.target.value)}
+                      placeholder="Szukaj przedmiotu..."
+                      className="w-full rounded-xl border border-[#8b6a3e]/70 bg-black/50 pl-9 pr-4 py-2.5 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d8ba7a]/60"
+                    />
+                  </div>
+
+                  {/* Filtry jakości + sortowanie */}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Jakość:</span>
+                    {([
+                      { id: "all" as const,        label: "Wszystkie" },
+                      { id: "rotten" as const,     label: "⚪ Popsute" },
+                      { id: "good" as const,       label: "🟢 Zwykłe" },
+                      { id: "epic" as const,       label: "🟣 Epickie" },
+                      { id: "legendary" as const,  label: "👑 Legen." },
+                    ]).map(q => (
+                      <button key={q.id} type="button"
+                        onClick={() => setMarketQualityFilter(q.id)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${marketQualityFilter === q.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
+                      >{q.label}</button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Sortuj:</span>
+                      <select
+                        value={marketSort}
+                        onChange={e => setMarketSort(e.target.value as typeof marketSort)}
+                        className="rounded-lg border border-[#8b6a3e]/70 bg-[rgba(17,10,6,0.85)] px-2 py-1.5 text-xs font-bold text-[#f0d48a] outline-none cursor-pointer"
+                      >
+                        <option value="newest">Najnowsze</option>
+                        <option value="price_asc">Cena rosnaco</option>
+                        <option value="price_desc">Cena malejaco</option>
+                        <option value="qty_desc">Ilosc</option>
+                        <option value="expires_asc">Czas konca</option>
+                        <option value="unit_asc">Najtansze/szt.</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Filtr tierów + mój poziom */}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">Poziom:</span>
+                    {([
+                      { id: "all" as const, label: "Wszystkie" },
+                      { id: "1" as const,   label: "Lv 1–5" },
+                      { id: "2" as const,   label: "Lv 6–10" },
+                      { id: "3" as const,   label: "Lv 11–15" },
+                      { id: "4" as const,   label: "Lv 16–20" },
+                      { id: "5" as const,   label: "Lv 21–25" },
+                    ]).map(t => (
+                      <button key={t.id} type="button"
+                        onClick={() => setMarketTierFilter(t.id)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${marketTierFilter === t.id ? "bg-[#8b6a3e] text-[#f9e7b2]" : "border border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
+                      >{t.label}</button>
+                    ))}
+                    <button type="button"
+                      onClick={() => setMarketMyLevelOnly(v => !v)}
+                      className={`ml-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${marketMyLevelOnly ? "border-emerald-500/80 bg-emerald-900/40 text-emerald-300" : "border-[#c9a96e]/50 bg-black/40 text-[#f0d48a] hover:bg-black/60"}`}
+                    >
+                      <span className={`inline-block h-3 w-3 rounded-sm border ${marketMyLevelOnly ? "border-emerald-400 bg-emerald-400" : "border-[#c9a96e] bg-transparent"}`} />
+                      Dostepne na moj poziom
+                    </button>
+                  </div>
+
                   {marketLoading && <p className="py-10 text-center text-base font-bold text-[#f0d48a]">Wczytuję oferty...</p>}
-                  {!marketLoading && marketBrowse.length === 0 && (
+                  {!marketLoading && filteredMarketBrowse.length === 0 && (
                     <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/60 p-10 text-center text-base font-bold text-[#f0d48a]">
-                      Brak aktywnych ofert w tej kategorii.
+                      {marketBrowse.length === 0 ? "Brak aktywnych ofert w tej kategorii." : "Brak ofert pasujacych do filtrow."}
                     </div>
                   )}
-                  {!marketLoading && marketBrowse.length > 0 && (
+                  {!marketLoading && filteredMarketBrowse.length > 0 && (
                     <div className="space-y-2">
-                      {marketBrowse.map(offer => {
+                      {filteredMarketBrowse.map(offer => {
                         const isOwn = offer.seller_id === profile?.id;
                         const timeLeft = Math.max(0, new Date(offer.expires_at).getTime() - Date.now());
                         const hoursLeft = Math.floor(timeLeft / 3600000);
@@ -11473,7 +11600,8 @@ export default function Page() {
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* ── MOJE OFERTY ── */}
               {marketTab === "my_offers" && (() => {
