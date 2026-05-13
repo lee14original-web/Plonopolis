@@ -42,6 +42,8 @@ type Profile = {
   hive_data?: Record<string, unknown> | null;
   barn_items?: Record<string, number> | null;
   fruit_inventory?: Record<string, number> | null;
+  market_earned_today?: number | null;
+  market_earned_date?: string | null;
   plot_obstacles?: Record<string, { type: string; cost: number }> | null;
   orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
   barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
@@ -11597,17 +11599,68 @@ export default function Page() {
                 const historyOffers = myMarketOffers.filter(o => o.status !== "active");
                 const lvl = profile?.level ?? 1;
                 const maxOffers = lvl >= 25 ? 10 : lvl >= 20 ? 8 : lvl >= 10 ? 5 : 3;
+                // Anti-boost: limity
+                const getActiveValLimit = (l: number): number | null => {
+                  if (l >= 25) return null;
+                  if (l >= 20) return 500000; if (l >= 15) return 150000;
+                  if (l >= 10) return 50000;  if (l >= 7)  return 10000;
+                  if (l >= 5)  return 5000;   if (l >= 3)  return 2500;
+                  return 1000;
+                };
+                const getDailyLimit = (l: number): number | null => {
+                  if (l >= 25) return null;
+                  if (l >= 20) return 750000; if (l >= 15) return 300000;
+                  if (l >= 10) return 100000; if (l >= 7)  return 25000;
+                  if (l >= 5)  return 10000;  if (l >= 3)  return 5000;
+                  return 2000;
+                };
+                const activeValLimit = getActiveValLimit(lvl);
+                const dailyLimit     = getDailyLimit(lvl);
+                const activeVal      = activeOffers.reduce((s, o) => s + o.quantity * o.price_per_unit, 0);
+                // Dzienny zarobek — z profilu (SQL resetuje przy tworzeniu oferty o północy Warsaw)
+                const todayPl = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Warsaw" })).toISOString().slice(0, 10);
+                const earnedDateOk = profile?.market_earned_date === todayPl;
+                const earnedToday  = earnedDateOk ? (profile?.market_earned_today ?? 0) : 0;
+                const dailyBlocked = dailyLimit !== null && earnedToday >= dailyLimit;
+                const canAddOffer  = activeOffers.length < maxOffers && !dailyBlocked;
+                const fmtK = (n: number) => n >= 1000 ? `${(n/1000).toLocaleString("pl-PL", {maximumFractionDigits:0})}k` : n.toLocaleString("pl-PL");
                 return (
                   <div>
-                    <div className="mb-4 flex items-center justify-between">
-                      <p className="text-base font-medium text-[#f0d48a]">Aktywne: <span className="font-bold text-[#f9e7b2]">{activeOffers.length}/{maxOffers}</span> <span className="text-sm text-[#c9a96e]">(poziom {lvl})</span></p>
-                      {activeOffers.length < maxOffers && (
-                        <button type="button"
-                          onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
-                          className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition"
-                        >+ Dodaj ofertę</button>
-                      )}
+                    {/* Statystyki + przycisk */}
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {/* Slot ofert */}
+                        <div className="rounded-lg border border-[#8b6a3e]/60 bg-black/30 px-3 py-1.5 text-sm">
+                          <span className="text-[#c9a96e]">Oferty: </span>
+                          <span className={`font-bold ${activeOffers.length >= maxOffers ? "text-red-400" : "text-[#f9e7b2]"}`}>{activeOffers.length}/{maxOffers}</span>
+                        </div>
+                        {/* Wartość aktywnych */}
+                        {activeValLimit !== null && (
+                          <div className="rounded-lg border border-[#8b6a3e]/60 bg-black/30 px-3 py-1.5 text-sm">
+                            <span className="text-[#c9a96e]">Wartość ofert: </span>
+                            <span className={`font-bold ${activeVal >= activeValLimit ? "text-red-400" : "text-[#f9e7b2]"}`}>{fmtK(Math.round(activeVal))}/{fmtK(activeValLimit)} zł</span>
+                          </div>
+                        )}
+                        {/* Dzienny zarobek */}
+                        {dailyLimit !== null && (
+                          <div className={`rounded-lg border px-3 py-1.5 text-sm ${dailyBlocked ? "border-red-500/60 bg-red-950/30" : "border-[#8b6a3e]/60 bg-black/30"}`}>
+                            <span className="text-[#c9a96e]">Zarobek dziś: </span>
+                            <span className={`font-bold ${dailyBlocked ? "text-red-400" : "text-[#f9e7b2]"}`}>{fmtK(Math.round(earnedToday))}/{fmtK(dailyLimit)} zł</span>
+                            {dailyBlocked && <span className="ml-1 text-xs text-red-300"> — reset o polnocy</span>}
+                          </div>
+                        )}
+                      </div>
+                      <button type="button"
+                        disabled={!canAddOffer}
+                        onClick={() => { setMarketPickerSearch(""); setMarketPickerFilter("crop"); setMarketPickerOpen(true); }}
+                        className="shrink-0 rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      >+ Dodaj ofertę</button>
                     </div>
+                    {dailyBlocked && (
+                      <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-300">
+                        Osiagnales dzienny limit zarobku z targu ({fmtK(dailyLimit!)} zł). Mozesz wystawiać nowe oferty po polnocy.
+                      </div>
+                    )}
 
                     {/* ── Panel konfiguracji oferty (po wybraniu itemu z pickera) ── */}
                     {createOfferOpen && coItemKey && (() => {

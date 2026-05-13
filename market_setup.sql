@@ -123,6 +123,43 @@ BEGIN
 END;
 $$;
 
+-- ─── 4b. ANTI-BOOST: LIMITY WARTOŚCI OFERT I DZIENNEGO ZAROBKU ────────
+
+-- Dodaj kolumny do profiles (idempotentne)
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS market_earned_today NUMERIC(15,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS market_earned_date  DATE          DEFAULT NULL;
+
+-- Limit łącznej wartości aktywnych ofert wg poziomu (NULL = brak limitu)
+CREATE OR REPLACE FUNCTION market_active_value_limit(p_level INTEGER)
+RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+  IF p_level >= 25 THEN RETURN NULL; END IF;
+  IF p_level >= 20 THEN RETURN 500000; END IF;
+  IF p_level >= 15 THEN RETURN 150000; END IF;
+  IF p_level >= 10 THEN RETURN 50000;  END IF;
+  IF p_level >= 7  THEN RETURN 10000;  END IF;
+  IF p_level >= 5  THEN RETURN 5000;   END IF;
+  IF p_level >= 3  THEN RETURN 2500;   END IF;
+  RETURN 1000;
+END;
+$$;
+
+-- Dzienny limit zarobku z targu wg poziomu (NULL = brak limitu)
+CREATE OR REPLACE FUNCTION market_daily_earn_limit(p_level INTEGER)
+RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+  IF p_level >= 25 THEN RETURN NULL; END IF;
+  IF p_level >= 20 THEN RETURN 750000; END IF;
+  IF p_level >= 15 THEN RETURN 300000; END IF;
+  IF p_level >= 10 THEN RETURN 100000; END IF;
+  IF p_level >= 7  THEN RETURN 25000;  END IF;
+  IF p_level >= 5  THEN RETURN 10000;  END IF;
+  IF p_level >= 3  THEN RETURN 5000;   END IF;
+  RETURN 2000;
+END;
+$$;
+
 -- ─── 5. WYGASANIE OFERT ───────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION market_expire_offers()
@@ -156,16 +193,22 @@ CREATE OR REPLACE FUNCTION market_create_offer(
   p_duration_hours  INTEGER DEFAULT 24
 ) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_uid         UUID    := auth.uid();
-  v_level       INTEGER;
-  v_max_offers  INTEGER;
-  v_active_cnt  INTEGER;
-  v_current_qty NUMERIC;
-  v_min_price   NUMERIC;
-  v_ext_fee     NUMERIC := 0;
-  v_money       NUMERIC;
-  v_total       NUMERIC;
-  v_offer_id    UUID;
+  v_uid                UUID    := auth.uid();
+  v_level              INTEGER;
+  v_max_offers         INTEGER;
+  v_active_cnt         INTEGER;
+  v_current_qty        NUMERIC;
+  v_min_price          NUMERIC;
+  v_ext_fee            NUMERIC := 0;
+  v_money              NUMERIC;
+  v_total              NUMERIC;
+  v_offer_id           UUID;
+  v_active_value       NUMERIC;
+  v_active_value_limit NUMERIC;
+  v_earned_today       NUMERIC;
+  v_earned_date        DATE;
+  v_daily_limit        NUMERIC;
+  v_today              DATE;
 BEGIN
   IF v_uid IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany'); END IF;
 
@@ -197,6 +240,30 @@ BEGIN
   SELECT COUNT(*) INTO v_active_cnt FROM market_offers WHERE seller_id = v_uid AND status = 'active';
   IF v_active_cnt >= v_max_offers THEN
     RETURN jsonb_build_object('error','Limit aktywnych ofert: ' || v_max_offers || ' (poziom ' || v_level || ')');
+  END IF;
+
+  -- Anti-boost #1: łączna wartość aktywnych ofert
+  v_active_value_limit := market_active_value_limit(v_level);
+  IF v_active_value_limit IS NOT NULL THEN
+    SELECT COALESCE(SUM(quantity * price_per_unit), 0) INTO v_active_value
+      FROM market_offers WHERE seller_id = v_uid AND status = 'active';
+    IF v_active_value + (p_quantity::NUMERIC * p_price_per_unit) > v_active_value_limit THEN
+      RETURN jsonb_build_object('error',
+        'Limit wartości aktywnych ofert: ' || v_active_value_limit::BIGINT || ' zł (poziom ' || v_level || ')');
+    END IF;
+  END IF;
+
+  -- Anti-boost #2: dzienny limit zarobku z targu (reset o północy czasu polskiego)
+  v_today := (now() AT TIME ZONE 'Europe/Warsaw')::DATE;
+  SELECT COALESCE(market_earned_today, 0), market_earned_date
+    INTO v_earned_today, v_earned_date FROM profiles WHERE id = v_uid;
+  IF v_earned_date IS DISTINCT FROM v_today THEN
+    v_earned_today := 0;
+  END IF;
+  v_daily_limit := market_daily_earn_limit(v_level);
+  IF v_daily_limit IS NOT NULL AND v_earned_today >= v_daily_limit THEN
+    RETURN jsonb_build_object('error',
+      'Dzienny limit zarobku z targu: ' || v_daily_limit::BIGINT || ' zł. Reset o polnocy czasu polskiego.');
   END IF;
 
   -- Blokada profilu + sprawdzenie złota
@@ -285,14 +352,15 @@ $$;
 CREATE OR REPLACE FUNCTION market_buy_offer(p_offer_id UUID, p_quantity INTEGER DEFAULT NULL)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_buyer_id    UUID    := auth.uid();
-  v_offer       market_offers%ROWTYPE;
-  v_money       NUMERIC;
-  v_total       NUMERIC;
-  v_tax         NUMERIC;
-  v_seller_gets NUMERIC;
+  v_buyer_id     UUID    := auth.uid();
+  v_offer        market_offers%ROWTYPE;
+  v_money        NUMERIC;
+  v_total        NUMERIC;
+  v_tax          NUMERIC;
+  v_seller_gets  NUMERIC;
   v_seller_login TEXT;
-  v_qty         INTEGER;
+  v_qty          INTEGER;
+  v_today_pl     DATE;
 BEGIN
   IF v_buyer_id IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany'); END IF;
 
@@ -381,6 +449,16 @@ BEGIN
   -- Złoto dla sprzedającego trafia do "Do Odbioru"
   INSERT INTO market_returns (user_id, return_type, gold_amount, quantity, reason, offer_id)
   VALUES (v_offer.seller_id, 'gold', v_seller_gets, 1, 'sold', p_offer_id);
+
+  -- Anti-boost: aktualizuj dzienny zarobek sprzedającego (reset o północy Warsaw)
+  v_today_pl := (now() AT TIME ZONE 'Europe/Warsaw')::DATE;
+  UPDATE profiles SET
+    market_earned_today = CASE
+      WHEN market_earned_date = v_today_pl THEN COALESCE(market_earned_today, 0) + v_seller_gets
+      ELSE v_seller_gets
+    END,
+    market_earned_date = v_today_pl
+  WHERE id = v_offer.seller_id;
 
   -- Log transakcji (dla historii i wykrywania exploitów)
   INSERT INTO market_transaction_log (offer_id, seller_id, buyer_id, item_key, item_name, quantity, price_total, tax_amount, seller_receives)
