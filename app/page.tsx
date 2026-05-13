@@ -6146,7 +6146,7 @@ export default function Page() {
                   <div className="mt-6 space-y-4">
                     <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                       <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 12 EXP • 10 PLN</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 10 PLN</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Pola uprawne: 20</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
                     </div>
