@@ -5423,13 +5423,13 @@ export default function Page() {
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
 
               `}</style>
-              <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "120px" }}>
-                <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
+              <div className="fixed right-4 bottom-6 z-[92] flex items-center gap-2">
+                <span className="text-4xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
-                  className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-6 py-3 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
-                  <span className="animate-pulse text-2xl">🧪</span>
-                  <span className="text-base">Testy</span>
-                  <span className="absolute -right-1 -top-1 flex h-3 w-3 rounded-full bg-orange-500 animate-ping" />
+                  className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-8 py-4 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
+                  <span className="animate-pulse text-3xl">🧪</span>
+                  <span className="text-lg">Testy</span>
+                  <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 rounded-full bg-orange-500 animate-ping" />
                 </button>
               </div>
 
