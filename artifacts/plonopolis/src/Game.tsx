@@ -1774,7 +1774,7 @@ export default function Page() {
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
   const [isDesktop, setIsDesktop] = useState(true);
   const [gameScale, setGameScale] = useState(() =>
-    typeof window !== "undefined" ? Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) * 0.9 : 1
+    typeof window !== "undefined" ? Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
   );
   const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -3223,7 +3223,7 @@ export default function Page() {
     const checkScreen = () => {
       const isSmall = window.innerWidth < 1024;
       setIsDesktop(!isSmall);
-      const s = Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) * 0.9;
+      const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
       setGameScale(s);
       gameScaleRef.current = s;
     };
@@ -5385,7 +5385,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000", position: "relative" }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", backgroundImage: `url('${profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}')`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <main
           className="overflow-hidden"
           style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2 }}
