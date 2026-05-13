@@ -11386,7 +11386,7 @@ export default function Page() {
             </div>
 
             {/* Treść */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 bg-[rgba(12,7,3,0.80)]">
 
               {/* ── PRZEGLĄDAJ ── */}
               {marketTab === "browse" && (() => {
