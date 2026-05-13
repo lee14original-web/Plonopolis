@@ -1774,7 +1774,7 @@ export default function Page() {
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
   const [isDesktop, setIsDesktop] = useState(true);
   const [gameScale, setGameScale] = useState(() =>
-    typeof window !== "undefined" ? Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
+    typeof window !== "undefined" ? Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) * 0.9 : 1
   );
   const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -3223,7 +3223,7 @@ export default function Page() {
     const checkScreen = () => {
       const isSmall = window.innerWidth < 1024;
       setIsDesktop(!isSmall);
-      const s = Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      const s = Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) * 0.9;
       setGameScale(s);
       gameScaleRef.current = s;
     };
