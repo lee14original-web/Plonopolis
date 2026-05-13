@@ -3221,8 +3221,8 @@ export default function Page() {
   useEffect(() => {
     if (!profile?.id || avatarSkin < 0 || skinDbSyncedRef.current) return;
     skinDbSyncedRef.current = true;
-    void supabase.from("profiles").update({ avatar_skin: avatarSkin }).eq("id", profile.id);
-  }, [profile?.id, avatarSkin, profile]); // eslint-disable-line react-hooks/exhaustive-deps
+    void supabase.rpc("game_sync_skin", { p_skin: avatarSkin });
+  }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
 
