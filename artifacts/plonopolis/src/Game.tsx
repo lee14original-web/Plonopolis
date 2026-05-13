@@ -11635,30 +11635,34 @@ export default function Page() {
                       const valCrit   = valPct   >= 92;
                       const earnCrit  = earnPct  >= 92;
                       const fmtFull   = (n: number) => n.toLocaleString("pl-PL");
-                      type CardProps = { icon: string; label: string; cur: string; max: string; pct: number; barColor: string; crit: boolean; tooltip?: string };
-                      const Card = ({ icon, label, cur, max, pct, barColor, crit, tooltip }: CardProps) => (
+                      // Czas do resetu o polnocy Warsaw
+                      const nowWaw    = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Warsaw" }));
+                      const midnight  = new Date(nowWaw); midnight.setHours(24, 0, 0, 0);
+                      const secsLeft  = Math.max(0, Math.floor((midnight.getTime() - nowWaw.getTime()) / 1000));
+                      const hh        = String(Math.floor(secsLeft / 3600)).padStart(2, "0");
+                      const mm        = String(Math.floor((secsLeft % 3600) / 60)).padStart(2, "0");
+                      const ss        = String(secsLeft % 60).padStart(2, "0");
+                      const resetIn   = `${hh}:${mm}:${ss}`;
+                      type CardProps = { label: string; cur: string; max: string; pct: number; barColor: string; crit: boolean; tooltip?: string };
+                      const Card = ({ label, cur, max, pct, barColor, crit, tooltip }: CardProps) => (
                         <div
                           title={tooltip}
                           className={`relative flex-1 min-w-[120px] rounded-2xl border bg-black/40 p-3 overflow-hidden transition-all duration-300 ${crit ? "border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.4)]" : "border-[#8b6a3e]/50"}`}
                           style={crit ? { animation: "mkt-pulse 1.6s ease-in-out infinite" } : undefined}
                         >
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <span className="text-base leading-none">{icon}</span>
+                          <div className="mb-2">
                             <span className="text-xs font-bold uppercase tracking-wider text-[#c9a96e]">{label}</span>
                           </div>
                           <div className="flex items-baseline gap-1 mb-2">
                             <span className={`text-lg font-black leading-none ${crit ? "text-red-400" : "text-[#f9e7b2]"}`}>{cur}</span>
                             <span className="text-xs text-[#8b6a3e] font-medium">/ {max}</span>
                           </div>
-                          {/* Progress bar */}
                           <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{
                                 width: `${pct}%`,
-                                background: crit
-                                  ? "linear-gradient(90deg,#ef4444,#f97316)"
-                                  : barColor,
+                                background: crit ? "linear-gradient(90deg,#ef4444,#f97316)" : barColor,
                               }}
                             />
                           </div>
@@ -11670,30 +11674,35 @@ export default function Page() {
                       return (
                         <>
                           <style>{`@keyframes mkt-pulse{0%,100%{box-shadow:0 0 12px rgba(239,68,68,.4)}50%{box-shadow:0 0 22px rgba(239,68,68,.75)}}`}</style>
-                          <div className="mb-4 flex gap-2">
+                          <div className="mb-1 flex gap-2">
                             <Card
-                              icon="📦" label="Oferty"
+                              label="Oferty"
                               cur={String(activeOffers.length)} max={String(maxOffers)}
                               pct={slotPct} crit={slotCrit}
                               barColor="linear-gradient(90deg,#f2ca69,#c9952f)"
                               tooltip="Liczba aktywnych ofert na targu"
                             />
                             <Card
-                              icon="💰" label="Wartość ofert"
+                              label="Wartość ofert"
                               cur={activeValLimit ? fmtFull(Math.round(activeVal)) : "∞"}
                               max={activeValLimit ? fmtFull(activeValLimit) + " zł" : "∞"}
                               pct={valPct} crit={valCrit}
                               barColor="linear-gradient(90deg,#f59e0b,#d97706)"
-                              tooltip={activeValLimit ? `Łączna wartość Twoich aktywnych ofert. Limit dla poziomu ${lvl}: ${fmtFull(activeValLimit)} zł` : "Brak limitu wartości na Twoim poziomie"}
+                              tooltip={activeValLimit ? `Łączna wartość aktywnych ofert. Limit dla poziomu ${lvl}: ${fmtFull(activeValLimit)} zł` : "Brak limitu wartości na Twoim poziomie"}
                             />
                             <Card
-                              icon="📈" label="Zarobek dziś"
+                              label="Zarobek dziś"
                               cur={dailyLimit ? fmtFull(Math.round(earnedToday)) : "∞"}
                               max={dailyLimit ? fmtFull(dailyLimit) + " zł" : "∞"}
                               pct={earnPct} crit={earnCrit}
                               barColor="linear-gradient(90deg,#22c55e,#16a34a)"
                               tooltip="Zarobek z targu resetuje się codziennie o 00:00 czasu polskiego"
                             />
+                          </div>
+                          {/* Reset countdown */}
+                          <div className="mb-3 flex items-center justify-end gap-1.5">
+                            <span className="text-[10px] uppercase tracking-widest text-[#8b6a3e] font-semibold">Reset limitu za</span>
+                            <span className="rounded-md bg-black/40 border border-[#8b6a3e]/40 px-2 py-0.5 font-mono text-xs font-bold text-[#f0d48a] tabular-nums">{resetIn}</span>
                           </div>
                           {/* Przycisk Dodaj ofertę */}
                           <div className="mb-4 flex items-center justify-between">
