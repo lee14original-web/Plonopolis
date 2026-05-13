@@ -305,6 +305,13 @@ function getAvatarChangeTier(changeCount: number) {
   if (changeCount < AVATAR_CHANGE_TIERS.length) return AVATAR_CHANGE_TIERS[changeCount];
   return { cost: 50000, cooldownMs: 12 * 3600 * 1000 };
 }
+function AnimalImg({ id, icon, className }: { id: string; icon: string; className?: string }) {
+  const [err, setErr] = React.useState(false);
+  if (err) return <span className={className}>{icon}</span>;
+  return <img src={`/zwierzeta/${id}.png`} alt={id} onError={() => setErr(true)}
+    className={className} style={{ objectFit: "contain" }} draggable={false} />;
+}
+
 function getAvatarBonus(skin: number): Partial<PlayerStatsMap> {
   return AVATAR_BONUSES[skin] ?? {};
 }
@@ -7359,7 +7366,8 @@ export default function Page() {
                             const canBuy = !locked && !noSlot && !tooPoor;
                             return (
                               <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-3 ${locked ? "border-[#374151]/40 bg-black/10 opacity-60" : "border-[#8b6a3e]/40 bg-black/20"}`}>
-                                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-xl border border-[#8b6a3e]/40 bg-black/30 text-4xl">{a.icon}</div>
+                                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-xl border border-[#8b6a3e]/40 bg-black/30 text-4xl overflow-hidden">
+                                  <AnimalImg id={a.id} icon={a.icon} className="h-full w-full" /></div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <p className="font-black text-[#f9e7b2]">{a.name}</p>
@@ -9742,7 +9750,7 @@ export default function Page() {
                         <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
                           disabled={locked}
                           className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          <span className="text-xl">{a.icon}</span>
+                          <AnimalImg id={a.id} icon={a.icon} className="h-6 w-6 text-xl" />
                           <span className="flex-1 truncate">{a.name}</span>
                           {locked && <span className="text-[11px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
                           {!locked && hasProd && <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />}
@@ -9791,7 +9799,7 @@ export default function Page() {
                               <div key={a.id} onClick={() => setSelectedAnimal(a.id)}
                                 className="cursor-pointer rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3 hover:border-[#d4a64f]/60 transition">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-3xl">{a.icon}</span>
+                                  <AnimalImg id={a.id} icon={a.icon} className="h-10 w-10 text-3xl" />
                                   <div className="flex-1">
                                     <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
                                     <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
@@ -9841,7 +9849,7 @@ export default function Page() {
                         <div>
                           <div className="flex items-center gap-3 mb-4">
                             <button onClick={() => setSelectedAnimal(null)} className="text-[#8b6a3e] hover:text-[#f9e7b2] text-sm transition">← Powrót</button>
-                            <span className="text-3xl">{a.icon}</span>
+                            <AnimalImg id={a.id} icon={a.icon} className="h-10 w-10 text-3xl" />
                             <div>
                               <p className="text-xl font-black text-[#f9e7b2]">{a.name}</p>
                               <p className="text-xs text-[#8b6a3e]">Produkuje: {item.icon} {item.name} · co {a.prodMs/3600000}h · sprzedaż: {item.sellPrice.toLocaleString()} 💰/szt</p>
