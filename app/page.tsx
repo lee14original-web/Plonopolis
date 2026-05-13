@@ -5408,7 +5408,7 @@ export default function Page() {
                   const ss = String(totalSec % 60).padStart(2, "0");
                   const warn = sessionTimeLeft < 10 * 60 * 1000; // czerwono < 10 min
                   return (
-                    <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1 backdrop-blur-sm text-xs font-bold tabular-nums ${warn ? "border-red-500/60 bg-red-950/50 text-red-300" : "border-[#8b6a3e]/50 bg-[rgba(20,12,8,0.75)] text-[#d8ba7a]"}`}>
+                    <div title="Czas do automatycznego wylogowania" className={`flex items-center gap-1.5 rounded-xl border px-3 py-1 backdrop-blur-sm text-xs font-bold tabular-nums cursor-default ${warn ? "border-red-500/60 bg-red-950/50 text-red-300" : "border-[#8b6a3e]/50 bg-[rgba(20,12,8,0.75)] text-[#d8ba7a]"}`}>
                       <span className={warn ? "animate-pulse" : ""}>⏱</span>
                       <span>{hh}:{mm}:{ss}</span>
                     </div>
