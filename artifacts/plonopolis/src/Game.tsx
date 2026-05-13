@@ -3791,6 +3791,7 @@ export default function Page() {
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: { data: { login } },
     });
 
     if (signUpError) {
@@ -3808,6 +3809,21 @@ export default function Page() {
         type: "info",
         title: "Sprawdź pocztę",
         text: "Konto zostało utworzone. Dokończ aktywację z linku w emailu, jeśli masz włączone potwierdzanie adresu.",
+      });
+      return;
+    }
+
+    // Nadpisz login w profilu — trigger tworzy go z emailem, tu ustawiamy właściwy login gracza
+    const { error: loginUpdateError } = await supabase
+      .from("profiles")
+      .update({ login })
+      .eq("id", userId);
+
+    if (loginUpdateError) {
+      setMessage({
+        type: "error",
+        title: "Błąd ustawiania loginu",
+        text: loginUpdateError.message,
       });
       return;
     }
