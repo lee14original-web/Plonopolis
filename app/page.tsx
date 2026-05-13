@@ -1657,6 +1657,9 @@ function getMapDisplayName(mapId: string | null | undefined) {
   }
 }
 
+const BASE_W = 1920;
+const BASE_H = 1280;
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
@@ -1770,6 +1773,10 @@ export default function Page() {
   const seedInventoryRef = React.useRef<SeedInventory>({});
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
   const [isDesktop, setIsDesktop] = useState(true);
+  const [gameScale, setGameScale] = useState(() =>
+    typeof window !== "undefined" ? Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
+  );
+  const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
 
@@ -3202,10 +3209,23 @@ export default function Page() {
     }
   }, [profile?.id]);
 
+  useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
+
+  function toGameCoords(clientX: number, clientY: number) {
+    const s = gameScaleRef.current;
+    return {
+      x: (clientX - (window.innerWidth - BASE_W * s) / 2) / s,
+      y: (clientY - (window.innerHeight - BASE_H * s) / 2) / s,
+    };
+  }
+
   useEffect(() => {
     const checkScreen = () => {
       const isSmall = window.innerWidth < 1024;
       setIsDesktop(!isSmall);
+      const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      setGameScale(s);
+      gameScaleRef.current = s;
     };
 
     checkScreen();
@@ -3432,8 +3452,9 @@ export default function Page() {
     const handlePointerMove = (event: PointerEvent) => {
       const panelWidth = isBackpackOpen ? 460 : 64;
       const panelHeight = isBackpackOpen ? 760 : 64;
-      const nextX = Math.max(-8, Math.min(window.innerWidth - panelWidth - 16, event.clientX - dragOffset.x));
-      const nextY = Math.max(-8, Math.min(window.innerHeight - panelHeight - 16, event.clientY - dragOffset.y));
+      const _gc = toGameCoords(event.clientX, event.clientY);
+      const nextX = Math.max(-8, Math.min(BASE_W - panelWidth - 16, _gc.x - dragOffset.x));
+      const nextY = Math.max(-8, Math.min(BASE_H - panelHeight - 16, _gc.y - dragOffset.y));
       setBackpackPosition({ x: nextX, y: nextY });
     };
 
@@ -5364,16 +5385,18 @@ export default function Page() {
   }
 
   return (
-    <main className="flex h-screen w-screen items-center justify-center overflow-hidden bg-black" onMouseMove={(e)=>setMousePos({x:e.clientX,y:e.clientY})}>
-      <div
-        ref={mapContainerRef}
-        className="relative overflow-hidden"
-        style={{
-          aspectRatio: "3 / 2",
-          width: "min(100vw, calc(100vh * 1.5))",
-          height: "min(100vh, calc(100vw / 1.5))",
-        }}
-      >
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: BASE_W * gameScale, height: BASE_H * gameScale, position: "relative", flexShrink: 0 }}>
+        <main
+          className="overflow-hidden"
+          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}
+          onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); }}
+        >
+        <div
+          ref={mapContainerRef}
+          className="relative overflow-hidden"
+          style={{ width: "100%", height: "100%" }}
+        >
         {/* Tło mapy — zmienia się wraz z poziomem gracza */}
         <img
           src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
@@ -8483,7 +8506,8 @@ export default function Page() {
                                     </div>
                                   </>
                                 );
-                                setKompostTierHoverTip({ x: rect.left + rect.width / 2, y: rect.bottom, node: tipNode, color: rarity.border });
+                                const _tc0 = toGameCoords(rect.left + rect.width / 2, rect.bottom);
+                                setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
                               }}
                               onMouseLeave={() => setKompostTierHoverTip(null)}>
                               <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
@@ -8726,7 +8750,8 @@ export default function Page() {
                                   );
                                   const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
                                     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                                    setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: rarityDef.border });
+                                    const _tc1 = toGameCoords(rect.left + rect.width / 2, rect.top);
+                                  setKompostHoverTip({ x: _tc1.x, y: _tc1.y, node: tipNode, color: rarityDef.border });
                                   };
                                   return (
                                     <div
@@ -8757,7 +8782,8 @@ export default function Page() {
                                 );
                                 const showTip = (e: React.MouseEvent<HTMLDivElement>) => {
                                   const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-                                  setKompostHoverTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tierColor });
+                                  const _tc2 = toGameCoords(rect.left + rect.width / 2, rect.top);
+                                  setKompostHoverTip({ x: _tc2.x, y: _tc2.y, node: tipNode, color: tierColor });
                                 };
                                 return (
                                   <div
@@ -8791,8 +8817,8 @@ export default function Page() {
                       const TIP_W = 336;
                       const TIP_H_EST = 182;
                       const margin = 10;
-                      const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
-                      const vh = typeof window !== "undefined" ? window.innerHeight : 720;
+                      const vw = BASE_W;
+                      const vh = BASE_H;
                       let left = kompostHoverTip.x - TIP_W / 2;
                       left = Math.max(margin, Math.min(vw - TIP_W - margin, left));
                       let top = kompostHoverTip.y - TIP_H_EST - 12;
@@ -8814,8 +8840,8 @@ export default function Page() {
                   const TIP_W = 308;
                   const TIP_H_EST = 420;
                   const margin = 10;
-                  const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
-                  const vh = typeof window !== "undefined" ? window.innerHeight : 720;
+                  const vw = BASE_W;
+                  const vh = BASE_H;
                   let left = kompostTierHoverTip.x - TIP_W / 2;
                   left = Math.max(margin, Math.min(vw - TIP_W - margin, left));
                   let top = kompostTierHoverTip.y + 8;
@@ -10432,7 +10458,7 @@ export default function Page() {
             const badgeBg = isFemale ? "bg-pink-900/40 border-pink-600/30 text-pink-200" : "bg-amber-900/40 border-amber-600/30 text-amber-200";
             return (
               <div className={`pointer-events-none fixed z-[9999] w-64 rounded-[18px] border ${borderColor} bg-[rgba(18,10,2,0.98)] px-4 py-3 text-center shadow-2xl backdrop-blur-sm`}
-                style={{ left: Math.min(mousePos.x + 16, (typeof window !== "undefined" ? window.innerWidth : 1920) - 272), top: Math.max(8, mousePos.y - 120) }}>
+                style={{ left: Math.min(mousePos.x + 16, BASE_W - 272), top: Math.max(8, mousePos.y - 120) }}>
                 {_meta && <p className={`text-[18px] font-black ${nameColor} mb-2`}>{_meta.name}</p>}
                 <div className="flex flex-wrap justify-center gap-1.5">
                   {_e.map(([k,v]) => <span key={k} className={`rounded border px-2 py-0.5 text-[15px] font-bold ${badgeBg}`}>+{v} {_sl[k]??k}</span>)}
@@ -11208,7 +11234,7 @@ export default function Page() {
       {hoveredSickle && (
         <div
           className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 220) }}
+          style={{ left: Math.min(mousePos.x + 18, BASE_W - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-yellow-300">Sierp — Zbierz</p>
           <p className="mb-3 text-[18px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
@@ -11355,7 +11381,7 @@ export default function Page() {
       {hoveredWateringCan && (
         <div
           className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: Math.min(mousePos.x + 18, (typeof window !== "undefined" ? window.innerWidth : 1920) - 300), top: Math.max(8, mousePos.y - 220) }}
+          style={{ left: Math.min(mousePos.x + 18, BASE_W - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-cyan-300">Konewka</p>
           <p className="mb-2 text-[18px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
@@ -12197,6 +12223,8 @@ export default function Page() {
         );
       })()}
 
-      </main>
+        </main>
+      </div>
+    </div>
   );
 }  
