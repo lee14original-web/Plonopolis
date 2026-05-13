@@ -1660,6 +1660,7 @@ function getMapDisplayName(mapId: string | null | undefined) {
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [ready, setReady] = useState(false);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<number | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
   // Auto-ukrywanie powiadomień po 6 sekundach (success/info), 8s dla error
   React.useEffect(() => {
@@ -3211,6 +3212,20 @@ export default function Page() {
     window.addEventListener("resize", checkScreen);
 
     return () => window.removeEventListener("resize", checkScreen);
+  }, []);
+
+  // ─── Licznik czasu sesji (aktualizacja co sekundę) ────────────────────
+  useEffect(() => {
+    const tick = () => {
+      let stored: number | null = null;
+      try { stored = Number(sessionStorage.getItem("plono_session_start")) || null; } catch { /* ignore */ }
+      if (!stored) { setSessionTimeLeft(null); return; }
+      const remaining = Math.max(0, SESSION_DURATION_MS - (Date.now() - stored));
+      setSessionTimeLeft(remaining);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -5379,13 +5394,26 @@ export default function Page() {
         <div className="relative z-[1] h-full w-full">
           {profile && (
             <>
-              <div className="fixed right-4 top-4 z-[90] flex gap-2">
+              <div className="fixed right-4 top-4 z-[90] flex flex-col items-end gap-1.5">
                 <button
                   onClick={handleLogout}
                   className="rounded-2xl border border-red-400/40 bg-red-950/40 px-4 py-2 font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
                 >
                   Wyloguj
                 </button>
+                {sessionTimeLeft !== null && (() => {
+                  const totalSec = Math.ceil(sessionTimeLeft / 1000);
+                  const hh = String(Math.floor(totalSec / 3600)).padStart(2, "0");
+                  const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, "0");
+                  const ss = String(totalSec % 60).padStart(2, "0");
+                  const warn = sessionTimeLeft < 10 * 60 * 1000; // czerwono < 10 min
+                  return (
+                    <div className={`flex items-center gap-1.5 rounded-xl border px-3 py-1 backdrop-blur-sm text-xs font-bold tabular-nums ${warn ? "border-red-500/60 bg-red-950/50 text-red-300" : "border-[#8b6a3e]/50 bg-[rgba(20,12,8,0.75)] text-[#d8ba7a]"}`}>
+                      <span className={warn ? "animate-pulse" : ""}>⏱</span>
+                      <span>{hh}:{mm}:{ss}</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}
