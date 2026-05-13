@@ -4770,29 +4770,17 @@ export default function Page() {
   }
 
   // ─── TARG GRACZY: helpery ─────────────────────────────────────────────────
-  function marketMinPrice(type: string, key: string): number {
-    if (type === "crop") {
-      if (key.endsWith("_legendary")) return 5000;
-      if (key.endsWith("_epic")) return 500;
-      if (key.endsWith("_good")) return 10;
-      return 1;
-    }
-    if (type === "compost") {
-      if (["compost_growth_15","compost_yield_3","compost_exp_30"].includes(key)) return 1000;
-      if (["compost_growth_10","compost_yield_2","compost_exp_20"].includes(key)) return 300;
-      return 50;
-    }
-    if (type === "barn_item") return 20;
-    if (type === "fruit") {
-      if (key.endsWith("_zloty")) return 500;
-      if (key.endsWith("_soczysty")) return 100;
-      if (key.endsWith("_zgnile")) return 1;
-      return 20;
-    }
-    if (type === "honey") return 100;
+  function marketMinPrice(type: string, key: string, upg?: number): number {
     if (type === "equipment") {
       const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === key);
-      return eItem ? eItem.unlockLevel * 80 : 200;
+      if (!eItem) return 1;
+      const tier = getItemTierIndex(eItem.unlockLevel);
+      if (tier <= 3) return 1;
+      const baseMin: Record<number, number> = { 4: 3000, 5: 6000, 6: 12000, 7: 25000, 8: 50000 };
+      const base = baseMin[Math.min(tier, 8)] ?? 1;
+      const upgMults = [1.0, 1.03, 1.07, 1.12, 1.17, 1.23, 1.35, 1.5, 2.0, 2.5, 3.4];
+      const mult = upgMults[Math.min(upg ?? 0, 10)] ?? 3.4;
+      return Math.round(base * mult);
     }
     return 1;
   }
@@ -4855,7 +4843,7 @@ export default function Page() {
     Object.entries(barnItems).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
       const { name, icon } = marketItemLabel("barn_item", key);
-      items.push({ type: "barn_item", key, name, icon, imgPath: getMarketItemImg("barn_item", key), qty: qty as number, minPrice: 20 });
+      items.push({ type: "barn_item", key, name, icon, imgPath: getMarketItemImg("barn_item", key), qty: qty as number, minPrice: 1 });
     });
     Object.entries(fruitInventory).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
@@ -4865,7 +4853,7 @@ export default function Page() {
     const honeyJars = typeof (profile?.hive_data as Record<string,unknown> | null | undefined)?.honey_jars === "number"
       ? (profile!.hive_data as Record<string,unknown>).honey_jars as number : 0;
     if (honeyJars > 0) {
-      items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", imgPath: getMarketItemImg("honey", "honey_jar"), qty: honeyJars, minPrice: 100 });
+      items.push({ type: "honey", key: "honey_jar", name: "Słoik miodu", icon: "🍯", imgPath: getMarketItemImg("honey", "honey_jar"), qty: honeyJars, minPrice: 1 });
     }
     const equippedIds = new Set(
       (Object.values(charEquipped) as ({ id: string; upg: number } | null)[])
@@ -4874,7 +4862,7 @@ export default function Page() {
     CHAR_EQUIP_ITEMS
       .filter(item => ownedEqItems[item.id] && !equippedIds.has(item.id))
       .forEach(item => {
-        items.push({ type: "equipment", key: item.id, name: item.name, icon: item.icon, imgPath: null, qty: 1, minPrice: item.unlockLevel * 80 });
+        items.push({ type: "equipment", key: item.id, name: item.name, icon: item.icon, imgPath: null, qty: 1, minPrice: marketMinPrice("equipment", item.id, getItemUpg(item.id)) });
       });
     return items;
   }
@@ -4911,7 +4899,7 @@ export default function Page() {
   }
   async function handleCreateOffer() {
     if (!profile || !coItemKey) return;
-    const minP = marketMinPrice(coItemType, coItemKey);
+    const minP = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
     if (coPrice < minP) { setMessage({ type: "error", title: "Zbyt niska cena", text: `Minimalna cena: ${minP} zł/szt.` }); return; }
     if (coQty <= 0) { setMessage({ type: "error", title: "Błąd", text: "Ilość musi być dodatnia." }); return; }
     setCoLoading(true);
@@ -11626,7 +11614,7 @@ export default function Page() {
                       const sellable     = buildSellableItems();
                       const selectedItem = sellable.find(i => i.key === coItemKey && i.type === coItemType);
                       const maxQty       = selectedItem?.qty ?? 1;
-                      const minP         = marketMinPrice(coItemType, coItemKey);
+                      const minP         = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
                       const total        = coQty * coPrice;
                       const sellerGets   = Math.round(total * 0.9);
                       const extFee       = coDuration === 48 ? Math.round(total * 0.05) : 0;

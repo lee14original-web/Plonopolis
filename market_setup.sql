@@ -98,28 +98,27 @@ CREATE POLICY "market_log_no_insert" ON market_transaction_log FOR INSERT WITH C
 
 CREATE OR REPLACE FUNCTION market_min_price(p_item_type TEXT, p_item_key TEXT)
 RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE
+  v_num INTEGER;
 BEGIN
-  IF p_item_type = 'crop' THEN
-    IF p_item_key LIKE '%_legendary' THEN RETURN 5000; END IF;
-    IF p_item_key LIKE '%_epic'      THEN RETURN 500;  END IF;
-    IF p_item_key LIKE '%_good'      THEN RETURN 10;   END IF;
-    RETURN 1; -- rotten
-  ELSIF p_item_type = 'compost' THEN
-    -- mocny: growth_15 / yield_3 / exp_30
-    IF p_item_key IN ('compost_growth_15','compost_yield_3','compost_exp_30') THEN RETURN 1000; END IF;
-    -- sredni: growth_10 / yield_2 / exp_20
-    IF p_item_key IN ('compost_growth_10','compost_yield_2','compost_exp_20') THEN RETURN 300;  END IF;
-    RETURN 50; -- slaby
-  ELSIF p_item_type = 'barn_item' THEN
-    RETURN 20;
-  ELSIF p_item_type = 'fruit' THEN
-    IF p_item_key LIKE '%_zloty'    THEN RETURN 500; END IF;
-    IF p_item_key LIKE '%_soczysty' THEN RETURN 100; END IF;
-    IF p_item_key LIKE '%_zgnile'   THEN RETURN 1;   END IF;
-    RETURN 20; -- zwykly
-  ELSIF p_item_type = 'honey' THEN
-    RETURN 100;
+  -- Uprawy, kompost, barn_item, owoce, miod — brak minimalnej ceny
+  IF p_item_type IN ('crop','compost','barn_item','fruit','honey') THEN
+    RETURN 1;
   END IF;
+
+  -- Ekwipunek: minimalna cena tylko dla T4+ (poziom odblokowania 10+)
+  -- Klucze: d1-d25, g1-g25, n1-n25 — numer = poziom odblokowania
+  IF p_item_type = 'equipment' THEN
+    v_num := (regexp_match(p_item_key, '[0-9]+'))[1]::INTEGER;
+    IF    v_num >= 22 THEN RETURN 50000;  -- T8 lv22-25
+    ELSIF v_num >= 19 THEN RETURN 25000;  -- T7 lv19-21
+    ELSIF v_num >= 16 THEN RETURN 12000;  -- T6 lv16-18
+    ELSIF v_num >= 13 THEN RETURN 6000;   -- T5 lv13-15
+    ELSIF v_num >= 10 THEN RETURN 3000;   -- T4 lv10-12
+    ELSE                    RETURN 1;     -- T1-T3 lv1-9 brak limitu
+    END IF;
+  END IF;
+
   RETURN 1;
 END;
 $$;
