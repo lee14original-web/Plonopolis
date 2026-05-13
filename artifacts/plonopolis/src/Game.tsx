@@ -3221,7 +3221,10 @@ export default function Page() {
   useEffect(() => {
     if (!profile?.id || avatarSkin < 0 || skinDbSyncedRef.current) return;
     skinDbSyncedRef.current = true;
-    void supabase.rpc("game_sync_skin", { p_skin: avatarSkin });
+    supabase.rpc("game_sync_skin", { p_skin: avatarSkin }).then(({ error }) => {
+      if (error) console.error("[skin-sync] game_sync_skin error:", error.message, error.code);
+      else console.log("[skin-sync] OK, skin =", avatarSkin);
+    });
   }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
