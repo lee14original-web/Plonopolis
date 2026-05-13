@@ -5423,7 +5423,7 @@ export default function Page() {
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
 
               `}</style>
-              <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "85px" }}>
+              <div className="fixed right-4 z-[92] flex items-center gap-2" style={{ top: "120px" }}>
                 <span className="text-3xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
                   className="relative flex items-center gap-2 rounded-2xl border border-orange-500/70 bg-[rgba(38,14,4,0.92)] px-6 py-3 font-black text-orange-300 shadow-2xl backdrop-blur-sm transition hover:border-orange-400 hover:text-orange-200">
@@ -5435,7 +5435,7 @@ export default function Page() {
 
               {/* ═══ EDYTOR BUDYNKÓW + PRZYCISKÓW ═══ */}
               {(isOnFarmMap || currentMap === "city") && (
-                <div className="fixed right-4 z-[92] flex flex-col gap-1" style={{ top: "140px" }}>
+                <div className="fixed right-4 z-[92] flex flex-col gap-1" style={{ top: "185px" }}>
                   <button
                     type="button"
                     onClick={() => isOnFarmMap ? setNavEditMode(m => !m) : setCityNavEditMode(m => !m)}
@@ -5454,7 +5454,7 @@ export default function Page() {
               )}
 
               {/* ═══ MUZYKA ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "240px" }}>
+              <div className="fixed right-4 z-[92]" style={{ top: "300px" }}>
                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] px-3 py-3 shadow-2xl backdrop-blur-sm w-[72px]">
                   {/* Ikona dźwięku */}
                   <button
