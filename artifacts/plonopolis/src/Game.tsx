@@ -6132,16 +6132,22 @@ export default function Page() {
 
                   <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Witaj w Płonopolis</h2>
                   <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Po zalogowaniu wczytujemy Twoją sesję. Nowe konto zaczyna z 3 darmowymi polami,
-                    poziomem 1 i 10 PLN. Sesja trwa maksymalnie 2 godziny — po tym czasie zostaniesz
-                    automatycznie wylogowany.
+                    Po zalogowaniu wczytywane jest Twoje gospodarstwo wraz z całym postępem gry. Nowy gracz
+                    rozpoczyna rozgrywkę z poziomem 1, dwudziestoma polami uprawnymi oraz 10 PLN na start.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+                    Postęp zapisuje się automatycznie podczas gry, więc po ponownym zalogowaniu wrócisz
+                    dokładnie do swojej farmy.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
+                    Sesja wygasa po 2 godzinach braku aktywności.
                   </p>
 
                   <div className="mt-6 space-y-4">
                     <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                       <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 0 / 12 EXP • 10 PLN</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Darmowe pola: 3</p>
+                      <p className="mt-2 text-sm text-[#dfcfab]">Pola uprawne: 20</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
                     </div>
 
@@ -6155,8 +6161,8 @@ export default function Page() {
                     <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
                       <p className="font-bold text-[#f9e7b2]">Czas sesji</p>
                       <p className="mt-2 text-sm text-[#dfcfab]">
-                        Sesja jest aktywna przez 2 godziny od zalogowania — niezależnie od aktywności.
-                        Po wygaśnięciu Twoje postępy są zapisane, wystarczy zalogować się ponownie.
+                        Sesja wygasa po 2 godzinach braku aktywności. Po wygaśnięciu Twoje postępy są
+                        zapisane — wystarczy zalogować się ponownie.
                       </p>
                     </div>
                   </div>
