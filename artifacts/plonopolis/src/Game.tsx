@@ -3221,13 +3221,8 @@ export default function Page() {
   useEffect(() => {
     if (!profile?.id || avatarSkin < 0 || skinDbSyncedRef.current) return;
     skinDbSyncedRef.current = true;
-    void supabase.rpc("game_save_avatar_data", {
-      p_avatar_skin: avatarSkin,
-      p_player_stats: playerStats as Record<string, number>,
-      p_free_skill_points: freeSkillPoints,
-      p_prev_level: prevLevelRef.current,
-    });
-  }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
+    void supabase.from("profiles").update({ avatar_skin: avatarSkin }).eq("id", profile.id);
+  }, [profile?.id, avatarSkin, profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
 
