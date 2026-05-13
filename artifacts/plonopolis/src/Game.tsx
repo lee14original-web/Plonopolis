@@ -2299,6 +2299,7 @@ export default function Page() {
   const [equipment, setEquipment] = React.useState<string[]>([]);
   const prevLevelRef = React.useRef<number>(0);
   const lastLoadedUserIdRef = React.useRef<string | null>(null);
+  const skinDbSyncedRef = React.useRef(false);
   const EQ_SLOT_COSTS = [0, 5000, 15000, 30000, 60000, 100000, 200000]; // slot 1 free, 2-7 paid
   const CROP_PRICES: Record<string,number> = {
     carrot:3.2,potato:4.8,tomato:6.4,cucumber:9.6,onion:14.4,garlic:19.2,
@@ -3215,6 +3216,18 @@ export default function Page() {
       setShowWelcome(true);
     }
   }, [profile?.id]);
+
+  // ─── Sync skina do DB raz na sesję (żeby ranking widział avatara) ───
+  useEffect(() => {
+    if (!profile?.id || avatarSkin < 0 || skinDbSyncedRef.current) return;
+    skinDbSyncedRef.current = true;
+    void supabase.rpc("game_save_avatar_data", {
+      p_avatar_skin: avatarSkin,
+      p_player_stats: playerStats as Record<string, number>,
+      p_free_skill_points: freeSkillPoints,
+      p_prev_level: prevLevelRef.current,
+    });
+  }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
 
