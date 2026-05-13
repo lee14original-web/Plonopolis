@@ -1774,7 +1774,7 @@ export default function Page() {
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
   const [isDesktop, setIsDesktop] = useState(true);
   const [gameScale, setGameScale] = useState(() =>
-    typeof window !== "undefined" ? Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
+    typeof window !== "undefined" ? Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
   );
   const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -3214,8 +3214,8 @@ export default function Page() {
   function toGameCoords(clientX: number, clientY: number) {
     const s = gameScaleRef.current;
     return {
-      x: (clientX - (window.innerWidth - BASE_W * s) / 2) / s,
-      y: (clientY - (window.innerHeight - BASE_H * s) / 2) / s,
+      x: BASE_W / 2 + (clientX - window.innerWidth / 2) / s,
+      y: BASE_H / 2 + (clientY - window.innerHeight / 2) / s,
     };
   }
 
@@ -3223,7 +3223,7 @@ export default function Page() {
     const checkScreen = () => {
       const isSmall = window.innerWidth < 1024;
       setIsDesktop(!isSmall);
-      const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      const s = Math.max(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
       setGameScale(s);
       gameScaleRef.current = s;
     };
@@ -5385,11 +5385,10 @@ export default function Page() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ width: BASE_W * gameScale, height: BASE_H * gameScale, position: "relative", flexShrink: 0 }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#000", position: "relative" }}>
         <main
           className="overflow-hidden"
-          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}
+          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2 }}
           onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); }}
         >
         <div
@@ -12224,7 +12223,6 @@ export default function Page() {
       })()}
 
         </main>
-      </div>
     </div>
   );
 }  
