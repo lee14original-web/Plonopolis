@@ -6185,13 +6185,13 @@ export default function Page() {
                       title="Otwórz profil"
                     >
                       {avatarSkin >= 0
-                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[128px] w-[128px] object-cover" style={{imageRendering:"pixelated"}} />
-                        : <span className="flex h-[128px] w-[128px] flex-col items-center justify-center gap-0.5 animate-pulse">
-                            <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
-                            <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
+                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[192px] w-[192px] object-cover" style={{imageRendering:"pixelated"}} />
+                        : <span className="flex h-[192px] w-[192px] flex-col items-center justify-center gap-0.5 animate-pulse">
+                            <span className="text-[#f9e7b2] text-[13px] font-black leading-tight text-center">Wybierz Avatar</span>
+                            <span className="text-[#c9952f] text-[12px] font-bold">(kliknij)</span>
                           </span>}
                     </button>
-                    <p className="mt-1 max-w-[128px] truncate text-center text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
+                    <p className="mt-1 w-[192px] truncate text-center text-[16px] font-black text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                     {/* Panel plecaka — przeniesiony do Dom → zakładka Plecak */}
                     <div className="hidden">
                       <div
