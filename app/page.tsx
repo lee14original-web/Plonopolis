@@ -9008,7 +9008,7 @@ export default function Page() {
           {avatarTipVisible && (
             <div
               className="pointer-events-none fixed z-[9999]"
-              style={{ left: avatarTipPos.x + 18, top: avatarTipPos.y + 14 }}
+              style={{ left: avatarTipPos.x + 4, top: avatarTipPos.y + 4 }}
             >
               <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-4 py-3 shadow-xl backdrop-blur-sm w-[240px]">
                 <p className="mb-2 text-[15px] font-black leading-tight text-[#f9e7b2]">{profile?.login ?? "—"}</p>
