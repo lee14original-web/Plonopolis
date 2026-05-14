@@ -8660,14 +8660,14 @@ export default function Page() {
                         ))}
                       </div>
                       {batch.fill > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap mt-2">
-                          <span className="text-[9px] text-[#8b6a3e]/60">🌱 {100 - itemDropChancePct}% kompost:</span>
+                        <div className="flex items-center gap-2 flex-wrap mt-3 rounded-lg border border-[#8b6a3e]/30 bg-black/20 px-3 py-2">
+                          <span className="text-[12px] font-bold text-[#8b6a3e]/80">🌱 {100 - itemDropChancePct}% kompost:</span>
                           {(["growth","yield","exp"] as const).map(ct => {
                             const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
                             const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                            return <span key={ct} className="text-[9px] font-bold" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
+                            return <span key={ct} className="text-[13px] font-black" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
                           })}
-                          {diversityTierBoostUI && <span className="text-[9px] text-purple-400 font-bold">· +tier boost (6+ gatunków)</span>}
+                          {diversityTierBoostUI && <span className="text-[12px] text-purple-400 font-black">· +tier boost (6+ gatunków)</span>}
                         </div>
                       )}
                     </div>
