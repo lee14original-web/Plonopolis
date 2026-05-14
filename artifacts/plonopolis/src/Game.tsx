@@ -11068,7 +11068,7 @@ export default function Page() {
                                           const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
                                           // Plony i EXP zależne od jakości
                                           const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
-                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} (obniżony)` : _yieldRange;
+                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
                                           const expText = q === "legendary" ? `${crop.expReward}–${crop.expReward * 40} (cap ×50)` : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
@@ -11106,7 +11106,7 @@ export default function Page() {
                                                 <div className="flex items-center justify-between mb-1.5">
                                                   <span className="text-[13px] text-[#8b6a3e]/80">🌾 Plon</span>
                                                   <span className="text-[14px] font-black text-white">
-                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. ↓` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
+                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. 🟫` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
                                                   </span>
                                                 </div>
                                               )}
