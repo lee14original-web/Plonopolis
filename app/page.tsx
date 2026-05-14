@@ -5450,7 +5450,7 @@ export default function Page() {
         )}
 
         <div className="relative z-[1] h-full w-full">
-          {profile && (
+          {profile && !isFieldViewOpen && (
             <>
               <div className="fixed right-4 top-4 z-[90] flex flex-col items-end gap-1.5">
                 <button
