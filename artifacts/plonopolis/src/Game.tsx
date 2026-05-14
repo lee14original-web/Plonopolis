@@ -10703,7 +10703,7 @@ export default function Page() {
                       onClick={() => setFvSeedPickerOpen(false)}
                     >
                       <div
-                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[520px] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
+                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[760px] max-w-[95vw] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
                         onClick={e => e.stopPropagation()}
                       >
                         <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz uprawę</p>
@@ -10716,7 +10716,7 @@ export default function Page() {
                           return (
                             <div key={quality ?? "base"} className="mb-4">
                               <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: qColor }}>{qLabel}</p>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-5 gap-2">
                                 {entries.map(([seedId, cnt]) => {
                                   const { baseCropId, quality: q } = parseQualityKey(seedId);
                                   const crop = CROPS.find(c => c.id === baseCropId);
