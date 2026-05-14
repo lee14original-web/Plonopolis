@@ -388,8 +388,8 @@ const WIEDZA_MULT_MIN        = 0.75;   // cap −25% (z Wiedzy)
 const HIVE_MULT_MIN          = 0.50;   // cap −50% (faktycznie max −10% przy lvl 5)
 const EQUIP_GROWTH_MULT_MIN  = 0.75;   // cap −25% (z eq "% speed upraw")
 const COMPOST_MULT_MIN       = 0.80;   // cap −20% (z Kompostu Wzrostu)
-const WATER_BONUS_MAX        = 0.30;   // cap +30% (siła bonusu Zaradności + eq wody)
-const WATER_MULT_MIN         = 0.70;   // cap −30% (z podlania)
+const WATER_BASE             = 0.05;   // min 5% zawsze z konewki (bez statystyk)
+const WATER_MULT_MIN         = 0.10;   // globalny min: konewka nie skróci więcej niż 90%
 type PendingFieldAction = {
   kind: "plant" | "harvest";
   startMs: number;
@@ -2670,9 +2670,9 @@ export default function Page() {
     let totalMult: number;
     if (plot.watered) {
       const zaradnoscBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
-      // Bonus z eq: % efekt podlewania + % efekt wody (boost siły zaradności)
+      // Bonus z eq: % efekt podlewania + % efekt wody (addytywny, nie mnożnik)
       const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
-      const totalWaterReduction = Math.min(WATER_BONUS_MAX, zaradnoscBonus * (1 + waterEqPct));
+      const totalWaterReduction = WATER_BASE + zaradnoscBonus + waterEqPct; // addytywny, bez capa
       const waterMult = Math.max(WATER_MULT_MIN, 1 - totalWaterReduction);
       totalMult = waterMult * wiedzaMult * hiveMult * compostMult * equipGrowthMult;
     } else {
@@ -2808,12 +2808,12 @@ export default function Page() {
 
     const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
-    const _zaradPct = Math.min(WATER_BONUS_MAX, _zaradBonus * (1 + _waterEqPct)) * 100;
+    const _zaradPct = (WATER_BASE + _zaradBonus + _waterEqPct) * 100;
     setMessage({
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
-        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (Zaradność ${effectiveStats.zaradnosc}/100, max ${(WATER_BONUS_MAX*100).toFixed(0)}%).`
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (min 5% + Zaradność ${effectiveStats.zaradnosc}/100 + ekwipunek).`
         : `${crop.name} podlana. Rozwijaj Zaradnosc, aby przyspieszac wzrost.`,
     });
   }
@@ -7651,7 +7651,7 @@ export default function Page() {
                         {/* ─── Moc farmy + bonusy summary ─── */}
                         {(() => {
                           const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza, WIEDZA_RATE));
-                          const _zaB = Math.min(30, calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE));
+                          const _zaB = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE);
                           const _zrB = calcStatEffect(effectiveStats.zrecznosc, 0.004);
                           const _saB = calcStatEffect(effectiveStats.sadownik, 0.005);
                           const _opB = Math.min(90, effectiveStats.opieka * 0.3);
@@ -7769,7 +7769,7 @@ export default function Page() {
                               : "0.00";
                             const bonusStr = def.key === "wiedza"    ? `−${Math.min(25, eff).toFixed(1)}% wzrostu`
                               : def.key === "zrecznosc"  ? `+${eff.toFixed(1)}% szansa`
-                              : def.key === "zaradnosc"  ? `−${Math.min(30, eff).toFixed(1)}% podlanie`
+                              : def.key === "zaradnosc"  ? `−${eff.toFixed(1)}% podlanie`
                               : def.key === "sadownik"   ? `+${eff.toFixed(1)}% drzewa`
                               : def.key === "opieka"     ? `−${Math.min(90, effVal*0.3).toFixed(1)}% głód`
                               : `+${eff.toFixed(1)}% drop`;
@@ -11402,11 +11402,11 @@ export default function Page() {
           style={{ left: Math.min(mousePos.x + 18, BASE_W - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-cyan-300">Konewka</p>
-          <p className="mb-2 text-[18px] text-[#8b6a3e]">Aktywuje bonus Zaradności — im wyższa statystyka, tym szybszy wzrost podlanej uprawy (0–{(WATER_BONUS_MAX*100).toFixed(0)}%)</p>
+          <p className="mb-2 text-[18px] text-[#8b6a3e]">Skraca czas wzrostu — min 5% zawsze, rośnie z Zaradnością i ekwipunkiem (addytywnie, bez limitu)</p>
           <p>Skraca czas wzrostu o <span className="font-bold text-cyan-300">{(() => {
             const _zb = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
             const _we = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
-            return (Math.min(WATER_BONUS_MAX, _zb * (1 + _we)) * 100).toFixed(1);
+            return ((WATER_BASE + _zb + _we) * 100).toFixed(1);
           })()}%</span> (twoja Zaradność: {effectiveStats.zaradnosc}/100{effectiveStats.zaradnosc !== playerStats.zaradnosc ? `, w tym +${effectiveStats.zaradnosc - playerStats.zaradnosc} z avatara` : ""})</p>
           <p className="mt-1">Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
@@ -11445,7 +11445,7 @@ export default function Page() {
               const _zaradnosc   = effectiveStats.zaradnosc ?? 0;
               const _zaradBonus  = calcStatEffect(_zaradnosc, ZARADNOSC_RATE);
               const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
-              const _waterTotalPct = Math.min(WATER_BONUS_MAX * 100, _zaradBonus * (1 + _waterEqPct / 100));
+              const _waterTotalPct = (WATER_BASE * 100) + _zaradBonus + _waterEqPct; // addytywny
               const _waterMult   = Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100);
               const _totalMultWet = _waterMult * _wiedzaMult * _hiveMult * _equipMult;
               const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultWet));
