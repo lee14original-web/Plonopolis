@@ -11042,22 +11042,80 @@ export default function Page() {
                                         onMouseEnter={(e) => {
                                           const rect = e.currentTarget.getBoundingClientRect();
                                           const tipColor = q === "legendary" ? "#fbbf24" : q === "epic" ? "#a78bfa" : q === "good" ? "#6ee7b7" : "#9ca3af";
-                                          const growMs = crop.growthTimeMs;
-                                          const growFmt = growMs >= 3600000 ? `${Math.floor(growMs/3600000)}h ${Math.floor((growMs%3600000)/60000)}m` : growMs >= 60000 ? `${Math.floor(growMs/60000)}m` : `${Math.floor(growMs/1000)}s`;
                                           const qLabel = q === "legendary" ? "✨ Legendarne" : q === "epic" ? "🟣 Epickie" : q === "good" ? "🟢 Zwykłe" : q === "rotten" ? "🟫 Zgniłe" : "Zwykłe";
-                                          const qDesc = q === "legendary" ? "Opcja przy zbiorze: ×2 plon / plony epickie / ×20–40 EXP" : q === "epic" ? "Wyższa jakość plonów, ×3–6 EXP przy zbiorze" : q === "rotten" ? "Obniżony plon, ale szybszy wzrost" : "";
+                                          // Efektywny czas wzrostu gracza (te same wzory co getEffectiveGrowthTimeMs, bez per-pole)
+                                          const _baseMs = crop.growthTimeMs;
+                                          const _wiedzaEff = (effectiveStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+                                          const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE);
+                                          const _wiedzaPct = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw);
+                                          const _hivePct = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
+                                          const _equipPct = Math.min((1 - EQUIP_GROWTH_MULT_MIN) * 100, getEquipBonusPct("% speed upraw", charEquipped));
+                                          const _wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - _wiedzaPct / 100);
+                                          const _hiveMult = Math.max(HIVE_MULT_MIN, 1 - _hivePct / 100);
+                                          const _equipMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - _equipPct / 100);
+                                          const _effMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult * _hiveMult * _equipMult));
+                                          const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc ?? 0, ZARADNOSC_RATE);
+                                          const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
+                                          const _waterTotalPct = (WATER_BASE * 100) + _zaradBonus + _waterEqPct;
+                                          const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100) * _wiedzaMult * _hiveMult * _equipMult));
+                                          const _fmt = (ms: number) => { const t = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(t/3600); const m = Math.floor((t%3600)/60); const s = t%60; return h > 0 ? `${h}h ${m}min ${s}s` : m > 0 ? `${m}min ${s}s` : `${s}s`; };
+                                          const _savedPct = Math.round(((_baseMs - _effMs) / _baseMs) * 100);
+                                          const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
+                                          // Plony i EXP zależne od jakości
+                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount} szt. (obniżony)` : `${crop.yieldAmount} szt.`;
+                                          const expText = q === "legendary" ? `${crop.expReward}–${crop.expReward * 40} (cap ×50)` : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
-                                              <p className="text-[15px] font-black" style={{ color: tipColor }}>{crop.name}</p>
-                                              <p className="text-[11px] font-bold mb-2 opacity-80" style={{ color: tipColor }}>{qLabel}</p>
-                                              <div className="flex flex-col gap-1 text-[12px]">
+                                              <p className="text-[19px] font-black" style={{ color: tipColor }}>{crop.name}</p>
+                                              <p className="text-[14px] font-bold mb-2 opacity-80" style={{ color: tipColor }}>{qLabel}</p>
+                                              <div className="flex flex-col gap-1.5 text-[15px]">
                                                 <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Odblokowanie</span><span className="font-black text-white">lvl {crop.unlockLevel}</span></div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Czas wzrostu</span><span className="font-black text-white">⏱ {growFmt}</span></div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Plon (bazowy)</span><span className="font-black text-white">×{crop.yieldAmount}</span></div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">EXP za zbiór</span><span className="font-black text-sky-300">+{crop.expReward}</span></div>
+                                                {/* Czas wzrostu: bazowy + efektywny */}
+                                                <div className="flex flex-col gap-0.5">
+                                                  <div className="flex justify-between gap-4">
+                                                    <span className="text-[#8b6a3e]/80">Czas wzrostu</span>
+                                                    <span className="font-black text-emerald-300">⏱ {_fmt(_effMs)}</span>
+                                                  </div>
+                                                  {_effMs < _baseMs && (
+                                                    <div className="flex justify-between gap-4 text-[13px]">
+                                                      <span className="text-[#8b6a3e]/60">Bazowo</span>
+                                                      <span className="text-[#8b6a3e]/70">{_fmt(_baseMs)} <span className="text-emerald-400 font-bold">−{_savedPct}%</span></span>
+                                                    </div>
+                                                  )}
+                                                  {_showBonus && (
+                                                    <div className="text-[12px] text-[#8b6a3e]/70 pl-1">
+                                                      {_wiedzaPct > 0 && <span>📚−{_wiedzaPct.toFixed(0)}% </span>}
+                                                      {_hivePct > 0 && <span>🍯−{_hivePct}% </span>}
+                                                      {_equipPct > 0 && <span>👕−{_equipPct}%</span>}
+                                                    </div>
+                                                  )}
+                                                  {_waterTotalPct > 0 && (
+                                                    <div className="text-[13px] text-cyan-300">💧 Z podlaniem: <span className="font-black">{_fmt(_withWaterMs)}</span></div>
+                                                  )}
+                                                </div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Plon</span><span className="font-black text-white">{yieldText}</span></div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">EXP za zbiór</span><span className="font-black text-sky-300">+{expText}</span></div>
                                                 <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">W plecaku</span><span className="font-black text-white">×{cnt}</span></div>
                                               </div>
-                                              {qDesc && <p className="mt-2 text-[11px] font-bold rounded-lg px-2 py-1.5 bg-white/5 border border-white/10" style={{ color: tipColor }}>{qDesc}</p>}
+                                              {q === "legendary" && (
+                                                <div className="mt-2 rounded-lg bg-amber-950/40 border border-amber-700/40 px-2.5 py-2 text-[13px]">
+                                                  <p className="font-black text-amber-300 mb-1">🎲 Jedna z 3 równych szans przy zbiorze:</p>
+                                                  <p className="text-[#dfcfab]/80">✅ 50–150 zwykłych nasion</p>
+                                                  <p className="text-[#dfcfab]/80">⭐ 15–35 epickich nasion</p>
+                                                  <p className="text-[#dfcfab]/80">🌟 15–30 zwykłych + EXP ×20–40</p>
+                                                </div>
+                                              )}
+                                              {q === "epic" && (
+                                                <div className="mt-2 rounded-lg bg-purple-950/40 border border-purple-700/40 px-2.5 py-2 text-[13px]">
+                                                  <p className="font-black text-purple-300">🟣 Losowy mnożnik EXP ×3–6 przy zbiorze</p>
+                                                  <p className="text-[#dfcfab]/70 text-[12px] mt-0.5">Plony wyższej jakości niż zwykłe</p>
+                                                </div>
+                                              )}
+                                              {q === "rotten" && (
+                                                <div className="mt-2 rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 text-[13px] text-[#9ca3af]">
+                                                  🟫 Obniżony plon przy zbiorze
+                                                </div>
+                                              )}
                                             </>
                                           );
                                           setSeedPickerTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tipColor });
@@ -11089,8 +11147,8 @@ export default function Page() {
                       </div>
                       {/* Tooltip nasiona */}
                       {seedPickerTip && (() => {
-                        const TIP_W = 300;
-                        const TIP_H_EST = 195;
+                        const TIP_W = 360;
+                        const TIP_H_EST = 320;
                         const margin = 12;
                         let left = seedPickerTip.x - TIP_W / 2;
                         left = Math.max(margin, Math.min(window.innerWidth - TIP_W - margin, left));
