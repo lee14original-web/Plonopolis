@@ -2445,7 +2445,7 @@ export default function Page() {
     };
     setHiveData(_parsedHive);
     if (_needsMigration && source.id) {
-      void supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
+      await supabase.from("profiles").update({ seed_inventory: _migratedInv }).eq("id", source.id);
     }
 
     if (source.id && lastLoadedUserIdRef.current !== source.id) {
@@ -4018,9 +4018,10 @@ export default function Page() {
 
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
-    const baseCropIds = CROPS.filter(c => c.id !== "test_nasiono").map(c => c.id);
+    // Zawsze używamy nowego formatu z sufiksem jakości — zapobiega rozbieżności client/DB
+    const goodKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono").map(c => `${c.id}_good`);
     const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
-    const allKeys = [...baseCropIds, ...qualityKeys];
+    const allKeys = [...goodKeys, ...qualityKeys];
     const newInv: Record<string,number> = { ...seedInventory };
     for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
     const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
