@@ -6184,7 +6184,7 @@ export default function Page() {
                       onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
                       onMouseEnter={() => setAvatarTipVisible(true)}
                       onMouseLeave={() => setAvatarTipVisible(false)}
-                      onMouseMove={e => setAvatarTipPos({ x: e.clientX, y: e.clientY })}
+                      onMouseMove={e => setAvatarTipPos(toGameCoords(e.clientX, e.clientY))}
                       className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)] overflow-hidden"
                       aria-label="Otwórz profil"
                     >
@@ -9008,7 +9008,7 @@ export default function Page() {
           {avatarTipVisible && (
             <div
               className="pointer-events-none fixed z-[9999]"
-              style={{ left: avatarTipPos.x + 4, top: avatarTipPos.y + 4 }}
+              style={{ left: avatarTipPos.x + 16, top: avatarTipPos.y + 16 }}
             >
               <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-4 py-3 shadow-xl backdrop-blur-sm w-[240px]">
                 <p className="mb-2 text-[15px] font-black leading-tight text-[#f9e7b2]">{profile?.login ?? "—"}</p>
