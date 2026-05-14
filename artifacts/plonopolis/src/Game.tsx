@@ -655,7 +655,8 @@ const COMPOST_TIER_FIXED_BY_QUALITY: Record<CompostQuality, number> = {
   legendary: 2,
 };
 type CompostBatch = { fill: number; scoreSum: number; cropIds?: string[] };
-const KOMPOST_MAX_BATCHES = 10;
+const KOMPOST_BATCH_SIZE = 100;
+const KOMPOST_REWARDS_PER_BATCH = 5;
 
 function getCompostQualityFromScore(score: number): CompostQuality {
   for (const def of COMPOST_QUALITY_DEFS) {
@@ -2092,45 +2093,23 @@ export default function Page() {
   const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {} };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
-  const KOMPOST_HARD_CAP = 9999; // legacy — nieużywane w nowym systemie batchowym
-  const [kompostBatches, setKompostBatches] = React.useState<CompostBatch[]>([]);
+  const [kompostBatch, setKompostBatch] = React.useState<CompostBatch>({ fill: 0, scoreSum: 0, cropIds: [] });
   // Flaga przeciw race conditions: blokuje równoległe deposit/claim (np. szybkie podwójne kliknięcia)
   const kompostBusyRef = React.useRef(false);
-  // Dosyp pozostałe legacy charges (z migracji nadwyżki >100) do zwolnionych slotów. Mutuje przekazaną tablicę.
-  const consumePendingLegacyCharges = (batches: CompostBatch[], uid: string) => {
-    try {
-      const legacyKey = lsKey(KOMPOST_KEY, uid);
-      const sOld = localStorage.getItem(legacyKey) ?? (uid ? localStorage.getItem(KOMPOST_KEY) : null);
-      if (!sOld) return;
-      let pending = Math.max(0, Math.floor(Number(sOld) || 0));
-      if (pending <= 0) { localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY); return; }
-      while (pending > 0 && batches.length < KOMPOST_MAX_BATCHES) {
-        let last = batches[batches.length - 1];
-        if (!last || last.fill >= 10) { last = { fill: 0, scoreSum: 0 }; batches.push(last); }
-        const room = 10 - last.fill;
-        const take = Math.min(pending, room);
-        last.fill += take; last.scoreSum += take;
-        pending -= take;
-      }
-      if (pending > 0) localStorage.setItem(legacyKey, String(pending));
-      else { localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY); }
-    } catch {}
-  };
-  const saveKompostBatches = (batches: CompostBatch[]) => {
+  const saveKompostBatch = (batch: CompostBatch) => {
     const uid = profile?.id ?? "";
-    const clean = batches
-      .slice(0, KOMPOST_MAX_BATCHES)
-      .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(b.fill))), scoreSum: Math.max(0, b.scoreSum), cropIds: Array.isArray(b.cropIds) ? b.cropIds : [] }))
-      .filter(b => b.fill > 0);
-    setKompostBatches(clean);
+    const clean: CompostBatch = {
+      fill: Math.max(0, Math.min(KOMPOST_BATCH_SIZE, Math.floor(batch.fill))),
+      scoreSum: Math.max(0, batch.scoreSum),
+      cropIds: Array.isArray(batch.cropIds) ? batch.cropIds : [],
+    };
+    setKompostBatch(clean);
     if (uid) try {
       localStorage.setItem(lsKey(KOMPOST_BATCHES_KEY, uid), JSON.stringify(clean));
       localStorage.removeItem(lsKey(KOMPOST_KEY, uid));
       localStorage.removeItem(KOMPOST_KEY);
     } catch {}
   };
-  // Derived: łączne ładowania (suma fill) — dla wyświetlania i kompatybilności
-  const kompostCharges = kompostBatches.reduce((s, b) => s + b.fill, 0);
   const [showKompostModal, setShowKompostModal] = React.useState(false);
   type KompostRewardEntry =
     | { kind:"item"; itemId: string; itemName: string; itemIcon: string }
@@ -2573,17 +2552,39 @@ export default function Page() {
     }
     setOrchardState_(_lsOrch);
     setDailyProgress(loadDP(uid));
-    // Kompost: migracja starego formatu (płaski licznik) + migracja klucza globalnego → userId
-    const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
-      const arr = JSON.parse(s);
-      if (!Array.isArray(arr)) return [];
-      return (arr as Array<{fill?:unknown;scoreSum?:unknown;cropIds?:unknown}>)
-        .slice(0, KOMPOST_MAX_BATCHES)
-        .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))), scoreSum: Math.max(0, Number(b?.scoreSum) || 0), cropIds: Array.isArray(b?.cropIds) ? (b.cropIds as unknown[]).filter((x): x is string => typeof x === "string") : [] }))
-        .filter(b => b.fill > 0);
-    }, () => []);
-    consumePendingLegacyCharges(loadedBatches, uid);
-    setKompostBatches(loadedBatches);
+    // Kompost: ładuj pojedynczą partię (nowy format) lub migruj stary format tablicowy
+    const loadedBatch = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
+      const parsed = JSON.parse(s);
+      // Nowy format: pojedynczy obiekt { fill, scoreSum, cropIds }
+      if (parsed && !Array.isArray(parsed) && typeof parsed === "object" && "fill" in parsed) {
+        const b = parsed as {fill?:unknown;scoreSum?:unknown;cropIds?:unknown};
+        return {
+          fill: Math.max(0, Math.min(KOMPOST_BATCH_SIZE, Math.floor(Number(b.fill) || 0))),
+          scoreSum: Math.max(0, Number(b.scoreSum) || 0),
+          cropIds: Array.isArray(b.cropIds) ? (b.cropIds as unknown[]).filter((x): x is string => typeof x === "string") : [],
+        } as CompostBatch;
+      }
+      // Stary format: tablica partii → sumujemy do jednej dużej partii
+      if (Array.isArray(parsed)) {
+        const arr = parsed as Array<{fill?:unknown;scoreSum?:unknown;cropIds?:unknown}>;
+        const totalFill = arr.reduce((s, b) => s + Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))), 0);
+        const totalScore = arr.reduce((s, b) => s + Math.max(0, Number(b?.scoreSum) || 0), 0);
+        const allCropIds = Array.from(new Set(arr.flatMap(b => Array.isArray(b?.cropIds) ? (b.cropIds as unknown[]).filter((x): x is string => typeof x === "string") : [])));
+        return { fill: Math.min(KOMPOST_BATCH_SIZE, totalFill), scoreSum: totalScore, cropIds: allCropIds } as CompostBatch;
+      }
+      return { fill: 0, scoreSum: 0, cropIds: [] } as CompostBatch;
+    }, () => ({ fill: 0, scoreSum: 0, cropIds: [] } as CompostBatch));
+    // Migracja legacy flat counter
+    try {
+      const legacyKey = lsKey(KOMPOST_KEY, uid);
+      const sOld = localStorage.getItem(legacyKey) ?? (uid ? localStorage.getItem(KOMPOST_KEY) : null);
+      if (sOld) {
+        const pending = Math.max(0, Math.floor(Number(sOld) || 0));
+        if (pending > 0) loadedBatch.fill = Math.min(KOMPOST_BATCH_SIZE, loadedBatch.fill + pending);
+        localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY);
+      }
+    } catch {}
+    setKompostBatch(loadedBatch);
 
     return nextProfile;
   }
@@ -4213,7 +4214,7 @@ export default function Page() {
       saveBarnState(freshBarnState);
       saveOrchardState(freshOrchardState);
       saveFruitInventory({});
-      saveKompostBatches([]);
+      saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
       try { localStorage.removeItem(KOMPOST_KEY); } catch {}
       await loadProfile(profile.id);
       setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
@@ -4380,34 +4381,21 @@ export default function Page() {
       const rarityMult = COMPOST_RARITY_MULT[rarityKey] ?? 1.0;
       const valuePerCrop = baseValue * rarityMult;
 
-      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum, cropIds: Array.isArray(b.cropIds) ? [...b.cropIds] : [] }));
-      let remaining = Math.min(count, have);
-      let added = 0;
-      while (remaining > 0) {
-        let last = batches[batches.length - 1];
-        // Jeśli brak partii lub ostatnia jest pełna — utwórz nową (o ile mieści się w cap)
-        if (!last || last.fill >= 10) {
-          if (batches.length >= KOMPOST_MAX_BATCHES) break;
-          last = { fill: 0, scoreSum: 0, cropIds: [] };
-          batches.push(last);
-        }
-        const room = 10 - last.fill;
-        const take = Math.min(remaining, room);
-        last.fill += take;
-        last.scoreSum += take * valuePerCrop;
-        // Śledź gatunki w partii (unikalny baseCropId)
-        if (!last.cropIds) last.cropIds = [];
-        if (baseCropId && !last.cropIds.includes(baseCropId)) last.cropIds.push(baseCropId);
-        remaining -= take;
-        added += take;
-      }
+      const batch: CompostBatch = { fill: kompostBatch.fill, scoreSum: kompostBatch.scoreSum, cropIds: Array.isArray(kompostBatch.cropIds) ? [...kompostBatch.cropIds] : [] };
+      const room = KOMPOST_BATCH_SIZE - batch.fill;
+      if (room <= 0) return;
+      const added = Math.min(Math.min(count, have), room);
       if (added <= 0) return;
+      batch.fill += added;
+      batch.scoreSum += added * valuePerCrop;
+      if (!batch.cropIds) batch.cropIds = [];
+      if (baseCropId && !batch.cropIds.includes(baseCropId)) batch.cropIds.push(baseCropId);
 
       const nextInv = { ...seedInventory };
       nextInv[seedKey] = have - added;
       if (nextInv[seedKey] <= 0) delete nextInv[seedKey];
       setSeedInventory(nextInv);
-      saveKompostBatches(batches);
+      saveKompostBatch(batch);
       if (profile?.id) {
         await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
       }
@@ -4430,34 +4418,22 @@ export default function Page() {
       // Score = cena owocu × 0.25 (jak "rotten" uprawa — najsłabszy kompost)
       const valuePerFruit = tree ? tree.pricePerFruit * COMPOST_RARITY_MULT.rotten : 1.0;
 
-      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum, cropIds: Array.isArray(b.cropIds) ? [...b.cropIds] : [] }));
-      let remaining = Math.min(count, have);
-      let added = 0;
-      while (remaining > 0) {
-        let last = batches[batches.length - 1];
-        if (!last || last.fill >= 10) {
-          if (batches.length >= KOMPOST_MAX_BATCHES) break;
-          last = { fill: 0, scoreSum: 0, cropIds: [] };
-          batches.push(last);
-        }
-        const room = 10 - last.fill;
-        const take = Math.min(remaining, room);
-        last.fill += take;
-        last.scoreSum += take * valuePerFruit;
-        // Śledź gatunki w partii (owoce jako "fruit_<id>")
-        if (!last.cropIds) last.cropIds = [];
-        const fruitSpeciesKey = `fruit_${fruitId}`;
-        if (!last.cropIds.includes(fruitSpeciesKey)) last.cropIds.push(fruitSpeciesKey);
-        remaining -= take;
-        added += take;
-      }
+      const batch: CompostBatch = { fill: kompostBatch.fill, scoreSum: kompostBatch.scoreSum, cropIds: Array.isArray(kompostBatch.cropIds) ? [...kompostBatch.cropIds] : [] };
+      const room = KOMPOST_BATCH_SIZE - batch.fill;
+      if (room <= 0) return;
+      const added = Math.min(Math.min(count, have), room);
       if (added <= 0) return;
+      batch.fill += added;
+      batch.scoreSum += added * valuePerFruit;
+      if (!batch.cropIds) batch.cropIds = [];
+      const fruitSpeciesKey = `fruit_${fruitId}`;
+      if (!batch.cropIds.includes(fruitSpeciesKey)) batch.cropIds.push(fruitSpeciesKey);
 
       const nextInv = { ...fruitInventory };
       nextInv[fruitKey] = have - added;
       if (nextInv[fruitKey] <= 0) delete nextInv[fruitKey];
       saveFruitInventory(nextInv);
-      saveKompostBatches(batches);
+      saveKompostBatch(batch);
       if (profile?.id) {
         await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: nextInv });
       }
@@ -4466,13 +4442,13 @@ export default function Page() {
     }
   }
 
-  // ─── KOMPOSTOWNIK: odbierz nagrody — każda gotowa partia (fill=10) = 1 nagroda z TIEREM zależnym od score ───
+  // ─── KOMPOSTOWNIK: odbierz nagrody — partia (fill=100) = 5 nagród z TIEREM zależnym od score ───
   async function claimKompostReward() {
     if (kompostBusyRef.current) return;
     kompostBusyRef.current = true;
     try {
-    const readyBatches = kompostBatches.filter(b => b.fill >= 10);
-    if (readyBatches.length <= 0) return;
+    const batch = kompostBatch;
+    if (batch.fill < KOMPOST_BATCH_SIZE) return;
     const playerLvl = profile?.level ?? 1;
     const rewards: KompostRewardEntry[] = [];
     let inv = { ...seedInventory };
@@ -4481,16 +4457,15 @@ export default function Page() {
     let extras = [...extraEqItems];
     const newHistoryEntries: Array<{label: string; color: string; icon: string; ts?: number; count?: number}> = [];
 
-    for (const batch of readyBatches) {
-      const score = batch.scoreSum / 10;
-      const quality = getCompostQualityFromScore(score);
+    const score = batch.scoreSum / KOMPOST_BATCH_SIZE;
+    const quality = getCompostQualityFromScore(score);
+    // Bonus różnorodności z tej partii
+    const diversityCount = (batch.cropIds ?? []).length;
+    const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2));
+    const diversityTierBoost = diversityCount >= 6;
+    const itemDropChance = 10 + diversityItemBonus;
 
-      // Bonus różnorodności: unikalne gatunki wrzucone DO TEJ PARTII
-      const diversityCount = (batch.cropIds ?? []).length;
-      const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2)); // +1% per 2 gatunki, max +5%
-      const diversityTierBoost = diversityCount >= 6;                         // przy 6+ : 30% szansa na wyższy tier
-      const itemDropChance = 10 + diversityItemBonus;                         // 10–15%
-
+    for (let rIdx = 0; rIdx < KOMPOST_REWARDS_PER_BATCH; rIdx++) {
       // Jackpot 0.5% — legendarny item bez względu na jakość partii
       if (Math.random() * 100 < JACKPOT_CHANCE) {
         const jackpotPool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= 21 && it.unlockLevel <= playerLvl);
@@ -4507,7 +4482,6 @@ export default function Page() {
 
       const roll = Math.random() * 100;
       if (roll < itemDropChance) {
-        // Bonus różnorodności: przy 6+ gatunkach 30% szansa na wyższy tier
         let rolledTierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]);
         if (diversityTierBoost && rolledTierIdx < 4 && Math.random() < 0.30) rolledTierIdx += 1;
         const minLvl = rolledTierIdx * 5 + 1;
@@ -4546,14 +4520,14 @@ export default function Page() {
       newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon, ts: Date.now(), count: 1 });
     }
 
-    const remainingBatches = kompostBatches.filter(b => b.fill < 10);
-    consumePendingLegacyCharges(remainingBatches, profile?.id ?? "");
+    // Reset partii po odebraniu
+    const emptyBatch: CompostBatch = { fill: 0, scoreSum: 0, cropIds: [] };
     seedInventoryRef.current = inv;
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
     saveItemUpg(upgReg);
     saveExtraEqItems(extras);
-    saveKompostBatches(remainingBatches);
+    saveKompostBatch(emptyBatch);
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
     }
@@ -8528,23 +8502,15 @@ export default function Page() {
 
           {/* ═══ KOMPOSTOWNIK MODAL ═══ */}
           {showKompostModal && (() => {
-            const readyBatchesUI = kompostBatches.filter(b => b.fill >= 10);
-            const readyRewards = readyBatchesUI.length;
-            // Aktualnie zapełniana partia (pierwsza niepełna lub pusta jeśli wszystkie pełne / brak)
-            const currentBatch = kompostBatches.find(b => b.fill < 10) ?? { fill: 0, scoreSum: 0 };
-            const currentScore = currentBatch.fill > 0 ? currentBatch.scoreSum / currentBatch.fill : 0;
+            const batch = kompostBatch;
+            const isReady = batch.fill >= KOMPOST_BATCH_SIZE;
+            const fillPct = Math.min(100, (batch.fill / KOMPOST_BATCH_SIZE) * 100);
+            const currentScore = batch.fill > 0 ? batch.scoreSum / batch.fill : 0;
             const currentQuality = getCompostQualityFromScore(currentScore);
             const currentQualityDef = getCompostQualityDef(currentQuality);
-            const totalBatchesUsed = kompostBatches.length;
-            const batchSlotsFull = totalBatchesUsed >= KOMPOST_MAX_BATCHES && (kompostBatches[kompostBatches.length - 1]?.fill ?? 0) >= 10;
-            // Bonus różnorodności — UI
-            const uniqueCropIdsUI = new Set(
-              Object.keys(seedInventory)
-                .filter(k => Number(seedInventory[k]) > 0 && !isCompostKey(k))
-                .map(k => parseQualityKey(k).baseCropId)
-                .filter(Boolean)
-            );
-            const diversityCountUI = uniqueCropIdsUI.size;
+            const batchFull = isReady;
+            const milestoneGlow = batch.fill >= 75 ? "#fbbf24" : batch.fill >= 50 ? "#a78bfa" : batch.fill >= 25 ? "#22c55e" : null;
+            const diversityCountUI = (batch.cropIds ?? []).length;
             const diversityItemBonusUI = Math.min(5, Math.floor(diversityCountUI / 2));
             const diversityTierBoostUI = diversityCountUI >= 6;
             const itemDropChancePct = 10 + diversityItemBonusUI;
@@ -8559,7 +8525,7 @@ export default function Page() {
             ];
             return (
               <div className="fixed inset-0 z-[300] flex items-start justify-center gap-3 bg-black/75 p-4 backdrop-blur-sm">
-                {/* Panel historii — przyklejony do lewej krawędzi modala, góra */}
+                {/* Panel historii */}
                 <div className="flex flex-col items-stretch gap-2 pt-0" style={{ width: 290, flexShrink: 0 }}>
                   <button
                     onClick={() => setShowKompostHistory(v => !v)}
@@ -8584,182 +8550,140 @@ export default function Page() {
                     </div>
                   )}
                 </div>
-                <div className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col">
+                <div
+                  className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col transition-all duration-700"
+                  style={milestoneGlow ? { boxShadow: `0 0 50px ${milestoneGlow}55, 0 0 100px ${milestoneGlow}22` } : undefined}>
                   <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
-                  <div className="px-6 pt-6 pb-3 border-b border-[#8b6a3e]/30">
-                    <div className="flex items-center gap-3">
+                  <div className="px-6 pt-6 pb-4 border-b border-[#8b6a3e]/30">
+                    {/* Nagłówek */}
+                    <div className="flex items-center gap-3 mb-4">
                       <span className="text-4xl">🌿</span>
                       <div className="flex-1">
                         <h2 className="text-2xl font-black text-[#dfcfab]">Kompostownik</h2>
-                        <p className="text-xs text-[#8b6a3e] mt-0.5">Wrzucaj uprawy — każde 10 wrzutów = 1 partia. Jakość nagrody zależy od średniej wartości plonów.</p>
+                        <p className="text-xs text-[#8b6a3e] mt-0.5">Zapełnij partię 100 wrzutami — im lepsze uprawy, tym silniejsze nagrody. Za każdą pełną partię: 5 nagród.</p>
                       </div>
                     </div>
-                    {/* Pasek aktualnej partii + jakość + score */}
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-bold text-[#dfcfab]">Aktualna partia</span>
-                        <span className="font-black text-[#dfcfab]">
-                          Zapełnienie: {currentBatch.fill} / 10
-                          {readyRewards > 0 && <span className="ml-2 text-amber-300">+ {readyRewards} gotowych</span>}
-                        </span>
-                      </div>
-                      <div className="h-3 rounded-full bg-black/40 border border-[#8b6a3e]/30 overflow-hidden">
-                        <div className="h-full transition-all" style={{ width: `${(currentBatch.fill / 10) * 100}%`, background: `linear-gradient(to right, ${currentQualityDef.border}, ${currentQualityDef.color})` }} />
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] mt-1">
-                        <span className="text-[#8b6a3e]/70">Moc: <span className="font-black" style={{ color: currentQualityDef.color }}>{currentBatch.fill > 0 ? currentBatch.scoreSum.toFixed(1) : "—"}</span></span>
-                        <span className="font-bold px-2 py-0.5 rounded-md text-[10px]" style={{ color: currentQualityDef.color, border: `1px solid ${currentQualityDef.border}66` }}>{currentBatch.fill > 0 ? currentQualityDef.label : "Brak wrzutów"}</span>
-                      </div>
-                      {/* Slots wszystkich partii (10 kropek) */}
-                      <div className="mt-2 flex items-center gap-1">
-                        {Array.from({ length: KOMPOST_MAX_BATCHES }).map((_, i) => {
-                          const b = kompostBatches[i];
-                          const isReady = !!b && b.fill >= 10;
-                          const isPartial = !!b && b.fill > 0 && b.fill < 10;
-                          const score = b && b.fill > 0 ? b.scoreSum / b.fill : 0;
-                          const q = getCompostQualityDef(getCompostQualityFromScore(score));
-                          const bg = isReady ? q.color : isPartial ? q.border : "#1f2937";
-                          const ttl = b ? `Partia ${i+1}: ${b.fill}/10 · score ${score.toFixed(2)} · ${q.label}` : `Partia ${i+1}: pusta`;
-                          return <div key={i} title={ttl} className="flex-1 h-2 rounded-sm border border-[#8b6a3e]/30" style={{ background: bg, opacity: b ? 1 : 0.4 }} />;
-                        })}
-                      </div>
-                      <p className="text-[10px] text-[#8b6a3e]/70 mt-1">Partie: {totalBatchesUsed} / {KOMPOST_MAX_BATCHES} · łączne wrzuty: {kompostCharges}{batchSlotsFull && <span className="ml-2 text-red-300">(odbierz nagrody, by wrzucać dalej)</span>}</p>
 
-                      {/* Preview szans nagrody */}
-                      <div className="mt-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2">
-                        <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Szanse na nagrodę</p>
-                        {readyRewards > 0 ? (
-                          <div className="flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pr-1">
-                            {readyBatchesUI.map((batch, bIdx) => {
-                              const bScore = batch.scoreSum / batch.fill;
-                              const bQuality = getCompostQualityFromScore(bScore);
-                              const bQualityDef = getCompostQualityDef(bQuality);
-                              const bTierChances = ITEM_TIER_BY_QUALITY[bQuality];
-                              return (
-                                <div key={bIdx} className="rounded-lg border border-[#8b6a3e]/30 bg-black/20 px-2 py-1.5">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-[9px] font-black text-[#8b6a3e]/60 uppercase tracking-wider">Partia #{bIdx + 1}</span>
-                                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ color: bQualityDef.color, border: `1px solid ${bQualityDef.border}70` }}>{bQualityDef.label}</span>
-                                    <span className="ml-auto text-[9px] text-amber-300 font-bold">🎁 {itemDropChancePct}%</span>
-                                  </div>
-                                  <div className="flex gap-1 flex-wrap mb-1">
-                                    {bTierChances.map((chance, i) => chance > 0 && (
-                                      <div key={i} className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5"
-                                        style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}60` }}>
-                                        <span className="text-[10px]">{ITEM_TIER_RARITY[i].dot}</span>
-                                        <span className="text-[10px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {(() => {
-                                    const bCompostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[bQuality];
-                                    const bCompostColor = bCompostTierIdx === 0 ? "#9ca3af" : bCompostTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                                    const bCompostChance = 100 - itemDropChancePct;
-                                    return (
-                                      <div className="flex items-center gap-1 flex-wrap">
-                                        <span className="text-[9px] text-[#8b6a3e]/60">🌱 {bCompostChance}% kompost:</span>
-                                        {(["growth","yield","exp"] as const).map(ct => (
-                                          <span key={ct} className="text-[9px] font-bold" style={{ color: bCompostColor }}>
-                                            {COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[bCompostTierIdx])}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                        <>
-                        <div className="flex gap-2 flex-wrap">
-                          {currentTierChances.map((chance, i) => chance > 0 && (
-                            <div
-                              key={i}
-                              className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 cursor-help hover:scale-105 transition"
-                              style={{
-                                background: `${ITEM_TIER_RARITY[i].border}18`,
-                                border: `1px solid ${ITEM_TIER_RARITY[i].border}70`,
-                                boxShadow: `0 0 8px ${ITEM_TIER_RARITY[i].shadow}`
-                              }}
-                              onMouseEnter={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const minLvl = i * 5 + 1;
-                                const maxLvl = i * 5 + 5;
-                                const tierItems = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl);
-                                const rarity = ITEM_TIER_RARITY[i];
-                                const tipNode = (
-                                  <>
-                                    <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
-                                    <p className="text-[12px] font-bold text-[#8b6a3e]/70 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
-                                    <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
-                                      {tierItems.map(it => (
-                                        <p key={it.id} className="text-[13px] text-[#dfcfab] leading-snug">{it.icon} {it.name}</p>
-                                      ))}
-                                    </div>
-                                  </>
-                                );
-                                const _tc0 = toGameCoords(rect.left + rect.width / 2, rect.bottom);
-                                setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
-                              }}
-                              onMouseLeave={() => setKompostTierHoverTip(null)}>
-                              <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
-                              <span className="text-[17px] font-black leading-tight" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
-                              <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {currentBatch.fill > 0 && (
-                          <div className="flex items-center gap-1 flex-wrap mt-2">
-                            <span className="text-[9px] text-[#8b6a3e]/60">🌱 {100 - itemDropChancePct}% kompost:</span>
-                            {(["growth","yield","exp"] as const).map(ct => {
-                              const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
-                              const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                              return (
-                                <span key={ct} className="text-[9px] font-bold" style={{ color: cColor }}>
-                                  {COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}
-                                </span>
-                              );
-                            })}
+                    {/* ── Wielki pasek postępu ── */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-sm mb-1.5">
+                        <span className="font-black text-[#dfcfab]">Partia</span>
+                        <span className="font-black text-[#dfcfab]">{batch.fill} / {KOMPOST_BATCH_SIZE}</span>
+                      </div>
+                      <div
+                        className="relative h-7 rounded-full bg-black/50 border border-[#8b6a3e]/40 overflow-hidden"
+                        style={milestoneGlow ? { boxShadow: `inset 0 0 16px ${milestoneGlow}44` } : undefined}>
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${fillPct}%`,
+                            background: isReady
+                              ? `linear-gradient(to right, #f59e0b, #fbbf24, #fde68a)`
+                              : batch.fill >= 75 ? `linear-gradient(to right, #a78bfa, #fbbf24)`
+                              : batch.fill >= 50 ? `linear-gradient(to right, #22c55e, #a78bfa)`
+                              : batch.fill >= 25 ? `linear-gradient(to right, #166534, #22c55e)`
+                              : `linear-gradient(to right, ${currentQualityDef.border}, ${currentQualityDef.color})`,
+                          }} />
+                        {/* Milestone ticks */}
+                        {[25, 50, 75].map(m => (
+                          <div key={m} className="absolute top-0 bottom-0 w-px" style={{ left: `${m}%`, background: batch.fill >= m ? "rgba(255,255,255,0.6)" : "rgba(139,106,62,0.4)" }} />
+                        ))}
+                        {isReady && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-[13px] font-black text-white drop-shadow-lg tracking-wide">✨ GOTOWA DO ODBIORU!</span>
                           </div>
                         )}
-                        </>
-                        )}
                       </div>
-
-                      {/* Bonus różnorodności */}
-                      <div className="mt-2 rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-2.5">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[11px] font-bold text-[#dfcfab]">Roznorodnosc upraw</span>
-                          <span className="text-[11px] font-black" style={{ color: diversityCountUI >= 10 ? "#fbbf24" : diversityCountUI >= 6 ? "#a78bfa" : "#22c55e" }}>{Math.min(diversityCountUI, 10)}/10 gatunkow</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-black/40 overflow-hidden mb-1.5">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, diversityCountUI * 10)}%`, background: diversityCountUI >= 10 ? "linear-gradient(to right, #a78bfa, #fbbf24)" : diversityCountUI >= 6 ? "linear-gradient(to right, #22c55e, #a78bfa)" : "linear-gradient(to right, #166534, #22c55e)" }} />
-                        </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                          <span className="text-[10px] text-lime-400">+{diversityItemBonusUI}% szansy na item</span>
-                          {diversityTierBoostUI && <span className="text-[10px] text-purple-400">+tier boost aktywny (6+ gatunkow)</span>}
-                        </div>
-                        {diversityCountUI >= 10
-                          ? <p className="text-[9px] text-amber-400/70 mt-0.5 font-bold">Maks. roznorodnosc — wszystkie bonusy aktywne!</p>
-                          : <p className="text-[9px] text-[#8b6a3e]/50 mt-0.5">Kolejny bonus za {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2)} {2 - (diversityCountUI % 2 === 0 ? 2 : diversityCountUI % 2) === 1 ? "gatunek" : "gatunki"}</p>
-                        }
+                      {/* Milestone labels */}
+                      <div className="flex justify-between text-[10px] mt-1 px-0.5">
+                        <span className="text-[#8b6a3e]/50">0</span>
+                        <span style={{ color: batch.fill >= 25 ? "#22c55e" : "#8b6a3e88" }}>25 🟢</span>
+                        <span style={{ color: batch.fill >= 50 ? "#a78bfa" : "#8b6a3e88" }}>50 🟣</span>
+                        <span style={{ color: batch.fill >= 75 ? "#fbbf24" : "#8b6a3e88" }}>75 🟡</span>
+                        <span style={{ color: isReady ? "#fbbf24" : "#8b6a3e88" }}>100 ✨</span>
                       </div>
-
                     </div>
-                    {/* Przycisk odbioru nagród — zawsze widoczny żeby uniknąć layout shift */}
+
+                    {/* Jakość + statystyki */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-1 rounded-xl border bg-black/20 px-3 py-2" style={{ borderColor: currentQualityDef.border + "60" }}>
+                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Jakość partii</span>
+                        <span className="text-[13px] font-black" style={{ color: currentQualityDef.color }}>{batch.fill > 0 ? currentQualityDef.label : "—"}</span>
+                      </div>
+                      <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
+                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Moc</span>
+                        <span className="text-[13px] font-black text-[#dfcfab]">{batch.fill > 0 ? currentScore.toFixed(1) : "—"}</span>
+                      </div>
+                      <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
+                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Gatunki</span>
+                        <span className="text-[13px] font-black" style={{ color: diversityCountUI >= 6 ? "#a78bfa" : diversityCountUI >= 2 ? "#22c55e" : "#8b6a3e" }}>{diversityCountUI}/10</span>
+                      </div>
+                      <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
+                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Szansa item</span>
+                        <span className="text-[13px] font-black text-amber-300">{itemDropChancePct}%</span>
+                      </div>
+                    </div>
+
+                    {/* Prognoza nagród */}
+                    <div className="mb-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-2.5 pb-2">
+                      <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Możliwe nagrody (5 losowań na partię)</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {currentTierChances.map((chance, i) => chance > 0 && (
+                          <div
+                            key={i}
+                            className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 cursor-help hover:scale-105 transition"
+                            style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}70`, boxShadow: `0 0 8px ${ITEM_TIER_RARITY[i].shadow}` }}
+                            onMouseEnter={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const minLvl = i * 5 + 1;
+                              const maxLvl = i * 5 + 5;
+                              const tierItems = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl);
+                              const rarity = ITEM_TIER_RARITY[i];
+                              const tipNode = (
+                                <>
+                                  <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
+                                  <p className="text-[12px] font-bold text-[#8b6a3e]/70 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
+                                  <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
+                                    {tierItems.map(it => (<p key={it.id} className="text-[13px] text-[#dfcfab] leading-snug">{it.icon} {it.name}</p>))}
+                                  </div>
+                                </>
+                              );
+                              const _tc0 = toGameCoords(rect.left + rect.width / 2, rect.bottom);
+                              setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
+                            }}
+                            onMouseLeave={() => setKompostTierHoverTip(null)}>
+                            <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
+                            <span className="text-[17px] font-black leading-tight" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                            <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {batch.fill > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap mt-2">
+                          <span className="text-[9px] text-[#8b6a3e]/60">🌱 {100 - itemDropChancePct}% kompost:</span>
+                          {(["growth","yield","exp"] as const).map(ct => {
+                            const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
+                            const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
+                            return <span key={ct} className="text-[9px] font-bold" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
+                          })}
+                          {diversityTierBoostUI && <span className="text-[9px] text-purple-400 font-bold">· +tier boost (6+ gatunków)</span>}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Przycisk odbioru */}
                     <button
-                      onClick={() => { if (readyRewards > 0) void claimKompostReward(); }}
-                      disabled={readyRewards === 0}
-                      className={`mt-3 w-full rounded-2xl border-2 px-6 py-3 text-base font-black transition shadow-lg ${
-                        readyRewards > 0
+                      onClick={() => { if (isReady) void claimKompostReward(); }}
+                      disabled={!isReady}
+                      className={`w-full rounded-2xl border-2 px-6 py-3 text-base font-black transition shadow-lg ${
+                        isReady
                           ? "border-yellow-400/80 bg-gradient-to-r from-yellow-600 to-amber-500 text-white hover:scale-[1.02] shadow-yellow-500/30 animate-pulse cursor-pointer"
                           : "border-[#8b6a3e]/30 bg-black/30 text-[#8b6a3e]/40 shadow-none cursor-not-allowed"
                       }`}>
-                      {readyRewards > 0
-                        ? `🎲 Odbierz ${readyRewards} ${readyRewards === 1 ? "nagrodę" : readyRewards < 5 ? "nagrody" : "nagród"}`
-                        : `🎲 Brak gotowych nagród`}
+                      {isReady
+                        ? `🎲 Odbierz 5 nagród! (partia gotowa)`
+                        : `🎲 Jeszcze ${KOMPOST_BATCH_SIZE - batch.fill} wrzutów do odbioru`}
                     </button>
                   </div>
 
@@ -8837,8 +8761,8 @@ export default function Page() {
                               <button
                                 key={seedKey}
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
-                                disabled={batchSlotsFull}
-                                title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
+                                disabled={batchFull}
+                                title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
                                 className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
@@ -8884,8 +8808,8 @@ export default function Page() {
                                 <button
                                   key={fruitKey}
                                   onClick={() => void depositFruitToCompost(fruitKey, qty)}
-                                  disabled={batchSlotsFull}
-                                  title={batchSlotsFull ? "Wszystkie partie pełne — odbierz nagrody" : `Wrzuć ${qty} szt.`}
+                                  disabled={batchFull}
+                                  title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
                                   className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1">
                                   <span className="text-5xl">{tree.fruitIcon}</span>
                                   <span className="mt-0.5 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
