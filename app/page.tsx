@@ -11067,7 +11067,8 @@ export default function Page() {
                                           const _savedPct = Math.round(((_baseMs - _effMs) / _baseMs) * 100);
                                           const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
                                           // Plony i EXP zależne od jakości
-                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount} szt. (obniżony)` : `${crop.yieldAmount} szt.`;
+                                          const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
+                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} (obniżony)` : _yieldRange;
                                           const expText = q === "legendary" ? `${crop.expReward}–${crop.expReward * 40} (cap ×50)` : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
@@ -11105,7 +11106,7 @@ export default function Page() {
                                                 <div className="flex items-center justify-between mb-1.5">
                                                   <span className="text-[13px] text-[#8b6a3e]/80">🌾 Plon</span>
                                                   <span className="text-[14px] font-black text-white">
-                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount} szt. ↓` : `${crop.yieldAmount} szt.`}
+                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. ↓` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
                                                   </span>
                                                 </div>
                                               )}
@@ -12150,7 +12151,7 @@ export default function Page() {
                 <p>🌟 15–30 zwykłych + EXP ×20–40</p>
               </div>
             ) : (
-              <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "8–20 szt." : `${hoveredCrop.yieldAmount} szt.`}</p>
+              <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "8–20 szt." : `${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
             )}
             <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `${hoveredCrop.expReward}–${hoveredCrop.expReward * 40}` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
           </>}
