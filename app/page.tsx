@@ -10830,7 +10830,7 @@ export default function Page() {
                           const cnt = seedInventory[selectedSeedId] ?? 0;
                           return (
                             <>
-                              <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-cover pointer-events-none rounded-[10px]" style={{ imageRendering: "pixelated" }} />
+                              <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain pointer-events-none rounded-[10px]" style={{ imageRendering: "pixelated" }} />
                               {quality === "legendary" && (
                                 <div className="absolute inset-0 rounded-[10px] pointer-events-none animate-pulse" style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.7) 0%, rgba(245,158,11,0.1) 40%, rgba(251,191,36,0.7) 100%)", boxShadow: "inset 0 0 20px rgba(251,191,36,1), 0 0 18px rgba(251,191,36,0.9)" }} />
                               )}
