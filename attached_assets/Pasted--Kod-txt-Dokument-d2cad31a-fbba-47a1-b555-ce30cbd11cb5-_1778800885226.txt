@@ -1,0 +1,690 @@
+
+
+
+Kod.txt
+Dokument
+
+d2cad31a-fbba-47a1-b555-ce30cbd11cb5.png
+b9c36d81-18ad-43ff-a8e9-5acf04dffd24.png
+aktualnie jak się kliknie w dom
+otwiera się:
+(drugi screen) 
+co byś tu zmienił, edytował, dodał lub usunął jakieś pomysły?
+
+według screenia pomożesz zmienić ranking żeby obliczał wyższa pozycje gracza najbardziej uwzględniajac moc farmy potem poziom potem pieniadze (screen podglądowo) lub może masz jakiś swój pomysł?
+
+Coś mi tu jeszcze nie pasuje lub coś bym zmienił ale nie wiem co, doradzisz? 
+
+Teraz wygląda to lepiej ale dalej może tekst za mały ale czegoś mi brak
+
+mam 10 avatarów mezczyzn (screen) wymyśl jakie statystyki (kazdy max 10) kazdy z nich może mieć skoro w grze mam: 
+Wiedza
+Rośliny rosną szybciej · 0/100
++1 pkt → +0.30%
+
+Zręczność
+Podwójny zbiór · 0/100
++1 pkt → +0.40%
+
+Zaradność
+Bonus podlewania · 0/100
++1 pkt → +0.40%
+
+Sadownik
+Zysk z drzew · 0/100
++1 pkt → +0.50%
+
+Opieka
+Zdrowsze zwierzęta · 0/100
++1 pkt → +0.30%
+
+Szczęście
+Bonusowy drop · 0/100
++1 pkt → +0.30%
+
+teraz alternatywnie to samo ale dla kobiet
+
+teraz staty do epickich avatarów ale wiecej pkt statystyk:
+
+co byś zmienił, dodał, usunął w tym sklepie?
+
+a co byś tu zmienił? aktualnie graczowi może polecieć kompostu lub jakis ekwipunek
+
+a jakbyś zrobił targ dla graczy?
+
+jak lepiej byś zrobił Nowa oferta bo aktualnie dużo tych rzeczy do wyboru i szukać trzeba
+
+w grze mamy 100 rodzaji uprawy jak duzo graczy wystawi to trudno bedzie znalezc dana uprawe jaki filtr byś dodał?
+
+lepiej ale fajnie jakby bardziej klimat gry sprawiał
+
+gdzie byś wstawił Wartość ofert: 0/3k zł 
+Zarobek dziś: 0/5k zł oraz jako jakiś pasek postepu czy cos?
+
+mało widoczne napisy i okienka jak byś poprawił?
+
+Sesja gracza daj mi aktualny opis 
+
+dla 48h dałbym troche niższy podatek a i dodałbym jeszcze jedna opcje ale wiecej dni:
+
+Gracz na swoim polu ma takie opcje: po lewej najpierw może uzyc kompostu co daje mu dany bonus po urosnieciu uprawy ale nie musi go uzywac lub moze go nie miec, nasiona tu wybiera nasiono, konewka podlewa co przyspiesza wzrost, zbierz zbiera gotowe uprawy, coś byś dodał? myslałem ze wąż ogrodowy po kliknieciu podlewa wszystko na raz oraz pracownik zbiera wszystko co juz urosło 
+
+zamiast tych kółek co lepiej zrobić?
+
+za dużo chaosu pomóz:
+
+dla epickich tez robi sie chaos:
+
+oraz dla zwykłych:
+
+Tak — aktualnie:
+
+×2 / ×3
+jest bardzo:
+
+MMO-2008,
+
+przewidywalne,
+
+bez emocji.
+
+A farming gry żyją z:
+
+„ooo poleciało więcej!”
+🔥 LEPSZY SYSTEM
+Niech:
+
+bazowy plon będzie zakresem
+zamiast stałej.
+
+🌱 NOWY BALANS
+Lv 1–6 uprawy
+Zamiast:
+×2
+Daj:
+1–3 szt.
+Średnio dalej ~2.
+
+🌿 Lv 7–25 uprawy
+Zamiast:
+×3
+Daj:
+2–5 szt.
+Średnio dalej ~3–3.5.
+
+🔥 CO TO DAJE
+Każdy harvest:
+ma RNG,
+
+daje dopamine,
+
+czuć „farta”.
+
+🔥 JAK DZIAŁA ZE ZRĘCZNOŚCIĄ
+🎯 Zręczność
+(szansa na podwójny zbiór)
+
+Powinna:
+
+podwajać finalny wynik
+Przykład:
+
+Los:
+
+4 szt.
+Zręczność proc:
+
+8 szt.
+To daje:
+
+BIG dopamine hit
+🔥 SZCZĘŚCIE
+🍀 Szczęście
+nie zwiększa ilości,
+tylko:
+
+rarity,
+
+bonus drop,
+
+rare seeds,
+
+jackpot chance.
+
+To ważne,
+żeby statystyki miały różne role.
+
+🔥 JESZCZE LEPIEJ
+Możesz zrobić:
+
+hidden lucky harvest
+Np:
+
+3% szansy na MAX ROLL
+Czyli:
+
+marchew → 3 szt,
+
+arbuz → 5 szt.
+
+I efekt:
+
+✨ Idealny zbiór!
+Mega satysfakcjonujące.
+
+🔥 FINALNY BALANS
+Typ	Stare	Nowe
+Lv 1–6	×2	1–3
+Lv 7–25	×3	2–5
+🔥 EPIK I LEGENDARY
+Nie zmieniaj.
+
+Bo tam:
+
+już jest dużo RNG
+i to jest OK.
+
+
+szczescie może niech zwieksza szanse na lepsze uprawy aktualnie jest ze zwykłej szansa na: 
+
+Jakość	Szansa
+🟫 Popsuta	10%
+🟢 Zwykła	85%
+🟣 Epicka	4%
+✨ Legendarna	1%
+
+Tak — to dużo lepsze zastosowanie Szczęścia 🍀 niż „bonusowy random drop”.
+
+Bo wtedy:
+
+Szczęście = jakość plonów
+i gracz od razu:
+
+rozumie statę,
+
+widzi efekt,
+
+czuje progres.
+
+🔥 IDEALNY SYSTEM
+🍀 Szczęście
+nie zwiększa ilości plonów.
+
+Zamiast tego:
+
+przesuwa szanse jakości na lepsze rarity
+🌱 BAZOWE SZANSE
+Jakość	Szansa
+🟫 Popsuta	10%
+🟢 Zwykła	85%
+🟣 Epicka	4%
+✨ Legendarna	1%
+🍀 EFEKT SZCZĘŚCIA
+Każdy punkt:
+
+zmniejsza popsute,
+
+zwiększa epic,
+
+lekko zwiększa legendary.
+
+🔥 PRZYKŁAD (100 pkt)
+MAX SZCZĘŚCIE
+Jakość	Bazowo	Max Szczęście
+🟫 Popsuta	10%	5%
+🟢 Zwykła	85%	74%
+🟣 Epicka	4%	15%
+✨ Legendarna	1%	6%
+🔥 DLACZEGO TO ŚWIETNE
+Bo:
+
+legendary nadal jest rzadkie,
+
+ale build luck zaczyna mieć ogromne znaczenie.
+
+I:
+
+gracz może robić „fortune farmer build”
+🔥 JESZCZE LEPIEJ
+🍀 Szczęście działa po wszystkich innych bonusach
+Czyli:
+
+epic seeds,
+
+eq,
+
+kompost,
+
+eventy,
+
+avatar,
+
+a potem:
+
+na końcu Luck modyfikuje rarity
+To daje:
+
+mega skalowanie endgame
+🔥 BONUS UX
+Tooltip:
+
+🍀 Szczęście zwiększa szanse na epickie i legendarne plony oraz zmniejsza szansę popsutych zbiorów.
+To jest:
+
+proste,
+
+czytelne,
+
+mocne gameplayowo.
+
+
+szczescie niech jeszcze daje w kompostowniku na max szczesciu dodatkowe +5% szansy na item czyli kompost -5% 
+
+To bardzo dobry kierunek 👍
+Bo wtedy:
+
+Szczęście wpływa na cały loot loop gry
+a nie tylko same uprawy.
+
+🔥 FINALNY EFEKT SZCZĘŚCIA
+🍀 Szczęście wpływa na:
+🌱 Uprawy
+mniejsza szansa na popsute,
+
+większa szansa na epickie,
+
+większa szansa na legendarne.
+
+🌿 Kompostownik
+Zwiększa szansę na:
+
+⚔️ ekwipunek zamiast kompostu
+🔥 BALANS
+MAX 100 pkt Szczęścia
+Daje:
+
++5% szansy na item
+czyli:
+
+Bazowo	Max luck
+⚔️ EQ 10%	15%
+🌿 Kompost 90%	85%
+🔥 SKALOWANIE
+Propozycja:
++0.05% item chance per punkt
+Czyli:
+
+20 pkt = +1%
+
+50 pkt = +2.5%
+
+100 pkt = +5%
+
+Bardzo clean balans.
+
+🔥 DLACZEGO TO DOBRE
+Bo:
+
+luck build staje się realny,
+
+kompostownik ma progression,
+
+endgame farmerzy mają motywację do inwestowania w Szczęście.
+
+I najważniejsze:
+
+nie psuje ekonomii
+bo:
+
+dalej 85% to kompost,
+
+itemy nadal są rzadkie,
+
+jackpot nadal ultra rare.
+
+🔥 TOOLTIP
+🍀 Szczęście
+Zwiększa szanse na epickie i legendarne plony oraz podnosi szansę na ekwipunek w kompostowniku.
+Bardzo czytelne.
+
+
+szczescie niech zwieksza tez % na ulepszenie ekwipunku aktualnie jest:
+Ulepszenie	Szansa
++0 → +1	100%
++1 → +2	95%
++2 → +3	90%
++3 → +4	90%
++4 → +5	85%
++5 → +6	80%
++6 → +7	70%
++7 → +8	60%
++8 → +9	45%
++9 → +10	35%
++10 → +11	20%
+
+To też bardzo dobry pomysł — ale tutaj trzeba zrobić:
+
+bardzo mały scaling
+Bo upgrade system jest:
+
+core economy gry
+i łatwo go rozwalić.
+
+🔥 NAJLEPSZY BALANS
+🍀 Szczęście
+daje:
+
+bonus do szansy ulepszenia
+ALE:
+
+tylko mały,
+
+tylko additive,
+
+z hard capem.
+
+🔥 PROPOZYCJA
+MAX 100 pkt szczęścia:
++5% success chance
+Czyli:
+
+1 punkt = +0.05%.
+
+🔥 PRZYKŁADY
+Upgrade	Bazowo	Max luck
++1	95%	100%
++5	80%	85%
++7	60%	65%
++9	35%	40%
++10	20%	25%
+🔥 WAŻNE
+HARD CAP
+Nigdy:
+
+nie przekraczaj 100%
+🔥 DLACZEGO TO DZIAŁA
+Bo luck:
+
+pomaga,
+
+ale nie gwarantuje,
+
+nadal zostawia RNG.
+
+I:
+
++10/+11 nadal są bardzo rare
+🔥 EFEKT GAMEPLAYOWY
+Powstają buildy:
+
+farming luck,
+
+compost luck,
+
+upgrade luck.
+
+I gracz:
+
+czuje że statystyka naprawdę działa wszędzie
+🔥 TOOLTIP FINALNY
+🍀 Szczęście
+Zmniejsza szansę na popsute plony, zwiększa szanse na epickie i legendarne uprawy, podnosi szansę na ekwipunek w kompostowniku oraz lekko zwiększa szansę ulepszenia ekwipunku.
+
+mam wszystko tylko troche zrobił mi się chaos popraw:
+zmiany w kodzie, opisach itp dla szczęście:
+BAZOWE SZANSE
+Jakość	Szansa
+🟫 Popsuta	10%
+🟢 Zwykła	85%
+🟣 Epicka	4%
+✨ Legendarna	1%
+🍀 EFEKT SZCZĘŚCIA
+
+Każdy punkt:
+
+zmniejsza popsute,
+zwiększa epic,
+lekko zwiększa legendary.
+🔥 PRZYKŁAD (100 pkt)
+MAX SZCZĘŚCIE
+Jakość	Bazowo	Max Szczęście
+🟫 Popsuta	10%	5%
+🟢 Zwykła	85%	74%
+🟣 Epicka	4%	15%
+✨ Legendarna	1%	6%
+🔥 DLACZEGO TO ŚWIETNE
+
+Bo:
+
+legendary nadal jest rzadkie,
+ale build luck zaczyna mieć ogromne znaczenie.
+
+I:
+
+gracz może robić „fortune farmer build”
+
+BONUS UX
+
+Tooltip:
+
+🍀 Szczęście zwiększa szanse na epickie i legendarne plony oraz zmniejsza szansę popsutych zbiorów.
+
+oraz szczescie niech w kompostowniku ułatwia:
+BALANS
+MAX 100 pkt Szczęścia
+
+Daje:
+
++5% szansy na item
+
+czyli:
+
+Bazowo	Max luck
+⚔️ EQ 10%	15%
+🌿 Kompost 90%	85%
+
+Propozycja:
++0.05% item chance per punkt
+
+Czyli:
+
+20 pkt = +1%
+50 pkt = +2.5%
+100 pkt = +5%
+
+Bardzo clean balans.
+
+Szczęście
+
+daje:
+
+bonus do szansy ulepszenia
+
+ALE:
+
+tylko mały,
+tylko additive,
+z hard capem.
+🔥 PROPOZYCJA
+MAX 100 pkt szczęścia:
++5% success chance
+
+Czyli:
+
+1 punkt = +0.05%.
+🔥 PRZYKŁADY
+Upgrade	Bazowo	Max luck
++1	95%	100%
++5	80%	85%
++7	60%	65%
++9	35%	40%
++10	20%	25%
+
+🍀 Szczęście
+Zmniejsza szansę na popsute plony, zwiększa szanse na epickie i legendarne uprawy, podnosi szansę na ekwipunek w kompostowniku oraz lekko zwiększa szansę ulepszenia ekwipunku.
+
+
+
+NOWY BALANS upraw zwykłych
+Lv 1–6 uprawy
+Zamiast:
+×2
+Daj:
+1–3 szt.
+
+Średnio dalej ~2.
+
+🌿 Lv 7–25 uprawy
+Zamiast:
+×3
+Daj:
+2–5 szt.
+
+Średnio dalej ~3–3.5.
+
+🔥 CO TO DAJE
+Każdy harvest:
+ma RNG,
+daje dopamine,
+czuć „farta”.
+🔥 JAK DZIAŁA ZE ZRĘCZNOŚCIĄ
+🎯 Zręczność
+
+(szansa na podwójny zbiór)
+
+Powinna:
+
+podwajać finalny wynik
+
+Przykład:
+
+Los:
+
+4 szt.
+
+Zręczność proc:
+
+8 szt.
+
+To daje:
+
+BIG dopamine hit
+🔥 SZCZĘŚCIE
+🍀 Szczęście
+
+nie zwiększa ilości,
+tylko:
+
+rarity,
+bonus drop,
+rare seeds,
+jackpot chance.
+
+To ważne,
+żeby statystyki miały różne role.
+
+# 🍀 Szczęście — finalny system
+
+## 🌱 Wpływ na jakość upraw
+
+Bazowe szanse jakości:
+
+| Jakość | Szansa |
+|---|---:|
+| 🟫 Popsuta | 10% |
+| 🟢 Zwykła | 85% |
+| 🟣 Epicka | 4% |
+| ✨ Legendarna | 1% |
+
+Każdy punkt Szczęścia:
+- zmniejsza szansę na popsute plony,
+- zwiększa szansę na epickie,
+- lekko zwiększa szansę na legendarne.
+
+### Max efekt przy 100 pkt
+
+| Jakość | Bazowo | 100 pkt |
+|---|---:|---:|
+| 🟫 Popsuta | 10% | 5% |
+| 🟢 Zwykła | 85% | 74% |
+| 🟣 Epicka | 4% | 15% |
+| ✨ Legendarna | 1% | 6% |
+
+---
+
+# 🌿 Kompostownik
+
+Szczęście zwiększa szansę na ekwipunek zamiast kompostu.
+
+## Bonus:
+- +0.05% szansy na item za każdy punkt Szczęścia
+- maksymalnie +5% przy 100 pkt
+
+### Przykład:
+
+| Bazowo | 100 pkt |
+|---|---:|
+| ⚔️ Ekwipunek 10% | 15% |
+| 🌿 Kompost 90% | 85% |
+
+---
+
+# ⚔️ Ulepszanie ekwipunku
+
+Szczęście lekko zwiększa szansę ulepszenia.
+
+## Bonus:
+- +0.05% success chance za punkt
+- maksymalnie +5% przy 100 pkt
+- bonus jest addytywny
+- szansa nigdy nie przekracza 100%
+
+### Przykłady:
+
+| Upgrade | Bazowo | 100 pkt |
+|---|---:|---:|
+| +1 → +2 | 95% | 100% |
+| +5 → +6 | 80% | 85% |
+| +7 → +8 | 60% | 65% |
+| +9 → +10 | 35% | 40% |
+| +10 → +11 | 20% | 25% |
+
+---
+
+# 🌾 Nowy balans zwykłych upraw
+
+## Uprawy lvl 1–6
+Zamiast stałego:
+- ×2
+
+Nowy drop:
+- 1–3 sztuki
+
+## Uprawy lvl 7–25
+Zamiast stałego:
+- ×3
+
+Nowy drop:
+- 2–5 sztuk
+
+Dzięki temu każdy zbiór ma większą losowość i daje więcej emocji.
+
+---
+
+# 🎯 Zręczność
+
+Zręczność daje szansę na podwójny zbiór.
+
+Podwaja finalny wynik zbioru.
+
+### Przykład:
+- wypadło 4 sztuki,
+- aktywował się bonus Zręczności,
+- gracz dostaje 8 sztuk.
+
+---
+
+# 🍀 Tooltip statystyki
+
+🍀 Szczęście zwiększa szanse na epickie i legendarne plony, zmniejsza szansę popsutych zbiorów, zwiększa szansę na ekwipunek w kompostowniku oraz lekko zwiększa szansę ulepszenia ekwipunku.
+
