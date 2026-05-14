@@ -4653,14 +4653,14 @@ export default function Page() {
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
     const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
 
-    // ─── Legendarny drop — losuj PRZED wywołaniem RPC ───
-    // 0 = zwykłe (50-150 szt.), 1 = epickie (15-35 szt.), 2 = EXP (20-40x)
-    let _legOption = -1;
+    // ─── Legendarny drop — zawsze: zwykłe + epickie + EXP ───
     let _legExpMult = 0;
     if (_plantedQuality === "legendary") {
-      _legOption = Math.floor(Math.random() * 3);
-      if (_legOption === 2) {
-        _legExpMult = Math.floor(Math.random() * 21) + 20; // 20–40
+      // lvl 1-6 (yieldAmount<=2): EXP ×10–20; lvl 7-25: EXP ×12–25
+      if (crop.yieldAmount <= 2) {
+        _legExpMult = Math.floor(Math.random() * 11) + 10; // 10–20
+      } else {
+        _legExpMult = Math.floor(Math.random() * 14) + 12; // 12–25
       }
     }
 
@@ -4686,9 +4686,9 @@ export default function Page() {
       p_zrecznosc: effectiveStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      // -1 = wymuś 0 EXP (leg. opcja 0/1 — tylko plony); 0 = jakość decyduje; >0 = dokładny mnożnik
+      // -1 = wymuś 0 EXP; 0 = jakość decyduje; >0 = dokładny mnożnik
       p_exp_mult_override: _plantedQuality === "legendary"
-        ? (_legOption === 2 ? _legExpMult : -1)
+        ? _legExpMult
         : _epicExpMult,
       // Atomicznie po stronie SQL (eliminuje race condition przy zbiorze wielu pól naraz)
       p_compost_yield_extra: _compostYieldExtraForRpc,
@@ -4718,22 +4718,16 @@ export default function Page() {
 
     if (_plantedQuality === "legendary") {
       nextInventory = { ...prevInventorySnapshot };
-      if (_legOption === 0) {
-        // Opcja 1: 50–150 zwykłych
-        const _legGood = Math.floor(Math.random() * 101) + 50;
-        nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legGood;
-        _totalYield = _legGood;
-      } else if (_legOption === 1) {
-        // Opcja 2: 15–35 epickich
-        const _legEpic = Math.floor(Math.random() * 21) + 15;
-        nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
-        _totalYield = _legEpic;
-      } else {
-        // Opcja 3: EXP (20–40x) + 15–30 zwykłych upraw
-        const _legExpGood = Math.floor(Math.random() * 16) + 15;
-        nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legExpGood;
-        _totalYield = _legExpGood;
-      }
+      // lvl 1-6 (yieldAmount<=2): 20–60 good + 5–12 epic; lvl 7-25: 30–80 good + 8–18 epic
+      const _legGood = crop.yieldAmount <= 2
+        ? Math.floor(Math.random() * 41) + 20   // 20–60
+        : Math.floor(Math.random() * 51) + 30;  // 30–80
+      const _legEpic = crop.yieldAmount <= 2
+        ? Math.floor(Math.random() * 8) + 5     // 5–12
+        : Math.floor(Math.random() * 11) + 8;   // 8–18
+      nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legGood;
+      nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
+      _totalYield = _legGood + _legEpic;
     } else {
       // SQL zapisał jakości per sztuka — buduj z rpcInv (pełne inventory po zbiorze)
       const _rawNext: Record<string, number> = {};
@@ -4863,28 +4857,13 @@ export default function Page() {
     // Dodaj do logu zbiorów
     if (_plantedQuality === "legendary") {
       const _now = Date.now();
-      if (_legOption === 0) {
-        // Opcja 1: zwykłe uprawy
-        const _legGood = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
-        setHarvestLog(prev => [
-          ...prev.filter(e => _now - e.timestamp < 25000),
-          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legGood, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: actualExp, timestamp: _now, quality: "good" as const },
-        ]);
-      } else if (_legOption === 1) {
-        // Opcja 2: epickie uprawy
-        const _legEpic = Math.max(0, (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "epic")] ?? 0));
-        setHarvestLog(prev => [
-          ...prev.filter(e => _now - e.timestamp < 25000),
-          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpic, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: actualExp, timestamp: _now, quality: "epic" as const },
-        ]);
-      } else {
-        // Opcja 3: EXP + zwykłe uprawy (loguj jako "good" — plony zwykłe, EXP w bonusSource)
-        const _legExpGoodLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
-        setHarvestLog(prev => [
-          ...prev.filter(e => _now - e.timestamp < 25000),
-          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legExpGoodLog, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp, timestamp: _now, quality: "good" as const },
-        ]);
-      }
+      const _legGoodLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
+      const _legEpicLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "epic")] ?? 0));
+      setHarvestLog(prev => [
+        ...prev.filter(e => _now - e.timestamp < 25000),
+        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legGoodLog, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp, timestamp: _now, quality: "good" as const },
+        ...(_legEpicLog > 0 ? [{ id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpicLog, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: 0, timestamp: _now, quality: "epic" as const }] : []),
+      ]);
     } else {
       const _now2 = Date.now();
       // SQL jest źródłem prawdy — liczymy diff prev→next dla logu (ref już zaktualizowany)
@@ -11068,8 +11047,8 @@ export default function Page() {
                                           const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
                                           // Plony i EXP zależne od jakości
                                           const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
-                                          const yieldText = q === "legendary" ? "50–150 zwykłych / 15–35 epickich" : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
-                                          const expText = q === "legendary" ? `${crop.expReward}–${crop.expReward * 40} (cap ×50)` : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
+                                          const yieldText = q === "legendary" ? (crop.yieldAmount <= 2 ? "20–60 zw. + 5–12 epic." : "30–80 zw. + 8–18 epic.") : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
+                                          const expText = q === "legendary" ? (crop.yieldAmount <= 2 ? `${crop.expReward * 10}–${crop.expReward * 20}` : `${crop.expReward * 12}–${crop.expReward * 25}`) : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
                                               {/* ── HEADER ── */}
@@ -11094,10 +11073,10 @@ export default function Page() {
                                               {/* ── NAGRODY (legendary) ── */}
                                               {q === "legendary" && (
                                                 <div className="rounded-lg border px-3 py-2 mb-2" style={{ borderColor: `${tipColor}55`, background: `${tipColor}0f` }}>
-                                                  <p className="text-[12px] font-bold mb-1.5 opacity-60" style={{ color: tipColor }}>🎁 Możliwe nagrody</p>
-                                                  <p className="text-[14px] font-black text-[#dfcfab]">🤎 50–150 zwykłych</p>
-                                                  <p className="text-[14px] font-black text-purple-300">💜 15–35 epickich</p>
-                                                  <p className="text-[14px] font-black text-amber-300">⭐ EXP ×20–40</p>
+                                                  <p className="text-[12px] font-bold mb-1.5 opacity-60" style={{ color: tipColor }}>🎁 Nagrody (zawsze wszystkie)</p>
+                                                  <p className="text-[14px] font-black text-[#dfcfab]">🤎 {crop.yieldAmount <= 2 ? "20–60" : "30–80"} zwykłych</p>
+                                                  <p className="text-[14px] font-black text-purple-300">💜 {crop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich</p>
+                                                  <p className="text-[14px] font-black text-amber-300">⭐ EXP ×{crop.yieldAmount <= 2 ? "10–20" : "12–25"}</p>
                                                 </div>
                                               )}
 
@@ -12145,15 +12124,17 @@ export default function Page() {
             })()}
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
-                <p className="font-black text-amber-300">🎲 Jedna z 3 równych szans:</p>
-                <p>✅ 50–150 zwykłych nasion</p>
-                <p>⭐ 15–35 epickich nasion</p>
-                <p>🌟 15–30 zwykłych + EXP ×20–40</p>
+                <p className="font-black text-amber-300">🌟 Zawsze wszystkie nagrody:</p>
+                <p>✅ {hoveredCrop.yieldAmount <= 2 ? "20–60" : "30–80"} zwykłych nasion</p>
+                <p>⭐ {hoveredCrop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich nasion</p>
+                <p>📚 EXP ×{hoveredCrop.yieldAmount <= 2 ? "10–20" : "12–25"}</p>
               </div>
             ) : (
               <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "8–20 szt." : `${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
             )}
-            <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "legendary" ? `${hoveredCrop.expReward}–${hoveredCrop.expReward * 40}` : hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
+            {hoveredSeedQuality !== "legendary" && (
+              <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
+            )}
           </>}
         </div>
       )}
