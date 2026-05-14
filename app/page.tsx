@@ -3924,22 +3924,29 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Brak danych",
-        text: "Podaj email oraz hasło.",
+        text: "Podaj login oraz hasło.",
       });
       return;
     }
 
-    if (!isEmailValid(identifier)) {
+    // Znajdź email na podstawie loginu gracza
+    const { data: profileRow, error: lookupError } = await supabase
+      .from("profiles")
+      .select("email")
+      .ilike("login", identifier)
+      .single();
+
+    if (lookupError || !profileRow?.email) {
       setMessage({
         type: "error",
-        title: "Nieprawidłowy email",
-        text: "Zaloguj się używając adresu email.",
+        title: "Nie znaleziono gracza",
+        text: "Nie znaleziono konta z takim loginem. Sprawdź pisownię.",
       });
       return;
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: identifier,
+      email: profileRow.email,
       password,
     });
 
@@ -6033,7 +6040,7 @@ export default function Page() {
           )}
           <div className="flex min-h-screen items-center justify-center">
             {!profile ? (
-              <div style={{ transform: `scale(${gameScale})`, transformOrigin: "center center", width: "960px", display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "1.5rem", alignItems: "center" }}>
+              <div style={{ transform: `scale(${gameScale})`, transformOrigin: "center center", width: "520px" }}>
                 <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
                   <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
                     <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
@@ -6066,10 +6073,10 @@ export default function Page() {
                     {tab === "login" ? (
                       <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Email</label>
+                          <label className="mb-2 block text-sm font-semibold">Login</label>
                           <input
                             type="text"
-                            placeholder="twoj@email.pl"
+                            placeholder="Twój unikalny login"
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -6158,48 +6165,6 @@ export default function Page() {
                   </div>
                 </section>
 
-                <aside className="rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.82)] p-6 text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
-                  <div className="inline-block rounded-full border border-[#d4a64f]/50 bg-[#d4a64f]/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[#f5d57f]">
-                    Sesja gracza
-                  </div>
-
-                  <h2 className="mt-4 text-3xl font-black text-[#f9e7b2]">Witaj w Plonopolis</h2>
-                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Po zalogowaniu wczytywane jest Twoje gospodarstwo wraz z całym postępem gry. Nowy gracz
-                    rozpoczyna rozgrywkę z poziomem 1, dwudziestoma polami uprawnymi oraz 10 PLN na start.
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Postęp zapisuje się automatycznie podczas gry, więc po ponownym zalogowaniu wrócisz
-                    dokładnie do swojej farmy.
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-[#dfcfab]">
-                    Sesja wygasa po 2 godzinach braku aktywności.
-                  </p>
-
-                  <div className="mt-6 space-y-4">
-                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                      <p className="font-bold text-[#f9e7b2]">Nowy gracz</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Poziom 1 • 10 PLN</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Pola uprawne: 20</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">Lokacja: Startowa Polana</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                      <p className="font-bold text-[#f9e7b2]">Pola uprawne</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">
-                        Kliknij podświetlone pole na mapie, aby otworzyć menu pola i zasiać uprawę.
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.45)] p-4">
-                      <p className="font-bold text-[#f9e7b2]">Czas sesji</p>
-                      <p className="mt-2 text-sm text-[#dfcfab]">
-                        Sesja wygasa po 2 godzinach braku aktywności. Po wygaśnięciu Twoje postępy są
-                        zapisane — wystarczy zalogować się ponownie.
-                      </p>
-                    </div>
-                  </div>
-                </aside>
               </div>
             ) : (
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
