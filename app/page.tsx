@@ -4847,11 +4847,11 @@ export default function Page() {
           { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpic, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: actualExp, timestamp: _now, quality: "epic" as const },
         ]);
       } else {
-        // Opcja 3: EXP + zwykłe uprawy
+        // Opcja 3: EXP + zwykłe uprawy (loguj jako "good" — plony zwykłe, EXP w bonusSource)
         const _legExpGoodLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
         setHarvestLog(prev => [
           ...prev.filter(e => _now - e.timestamp < 25000),
-          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legExpGoodLog, bonusAmount: 0, bonusSource: `×${_legExpMult}`, baseExp: actualExp, timestamp: _now, quality: "legendary" as const },
+          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legExpGoodLog, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp, timestamp: _now, quality: "good" as const },
         ]);
       }
     } else {
