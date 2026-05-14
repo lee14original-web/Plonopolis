@@ -11887,8 +11887,8 @@ export default function Page() {
                       const maxQty       = selectedItem?.qty ?? 1;
                       const minP         = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
                       const total        = coQty * coPrice;
-                      const sellerGets   = Math.round(total * 0.9);
                       const extFee       = coDuration === 48 ? Math.round(total * 0.05) : 0;
+                      const sellerGets   = Math.round(total * 0.9) - extFee;
                       return (
                         <div className="mb-4 rounded-2xl border border-[#d8ba7a]/40 bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
                           {/* Nagłówek */}
