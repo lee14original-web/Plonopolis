@@ -1851,6 +1851,36 @@ export default function Page() {
   const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
   const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
   const [hoveredNormalSkin, setHoveredNormalSkin] = React.useState<number|null>(null);
+
+  // ── Strażnik tooltipów stref: co 500ms sprawdza :hover, czyści "przyklejone" tooltipy ──
+  React.useEffect(() => {
+    const zoneSetters: Array<[string, React.Dispatch<React.SetStateAction<boolean>>]> = [
+      ["doMiasta",     setHoveredDoMiasta],
+      ["naFarme",      setHoveredNaFarme],
+      ["dom",          setHoveredDom],
+      ["stodola",      setHoveredStodola],
+      ["ul",           setHoveredUl],
+      ["sad",          setHoveredSad],
+      ["lada",         setHoveredLada],
+      ["kompostownik", setHoveredKompostownik],
+      ["polaUprawne",  setHoveredPolaUprawne],
+      ["sklep",        setHoveredSklep],
+      ["targ",         setHoveredTarg],
+      ["bank",         setHoveredBank],
+      ["ratusz",       setHoveredRatusz],
+      ["hiveLock",     setHoveredHiveLock],
+      ["barnLock",     setHoveredBarnLock],
+      ["sadLock",      setHoveredSadLock],
+      ["sickle",       setHoveredSickle],
+    ];
+    const id = setInterval(() => {
+      for (const [zone, setter] of zoneSetters) {
+        const el = document.querySelector<Element>(`[data-zone="${zone}"]`);
+        if (!el || !el.matches(":hover")) setter(false);
+      }
+    }, 500);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [playerStats, setPlayerStats] = React.useState<PlayerStatsMap>({ ...DEFAULT_STATS });
   const [freeSkillPoints, setFreeSkillPoints] = React.useState(3);
   const [statFlash, setStatFlash] = React.useState<string|null>(null);
@@ -5610,6 +5640,7 @@ export default function Page() {
     }}
     onMouseEnter={() => setHoveredPolaUprawne(true)}
     onMouseLeave={() => setHoveredPolaUprawne(false)}
+    data-zone="polaUprawne"
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
       left: `${navHitboxPos.polaUprawne.left}%`,
@@ -5631,6 +5662,7 @@ export default function Page() {
                           title=""
                           onMouseEnter={() => setHoveredDom(true)}
                           onMouseLeave={() => setHoveredDom(false)}
+                          data-zone="dom"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                           style={{ left:`${navHitboxPos.dom.left}%`, top:`${navHitboxPos.dom.top}%`, width:`${navHitboxPos.dom.width}%`, height:`${navHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
@@ -5644,6 +5676,7 @@ export default function Page() {
                               title=""
                               onMouseEnter={() => { if (_barnUnlocked) setHoveredStodola(true); else setHoveredBarnLock(true); }}
                               onMouseLeave={() => { setHoveredBarnLock(false); setHoveredStodola(false); }}
+                              data-zone={_barnUnlocked ? "stodola" : "barnLock"}
                               onClick={() => {
                                 if (!_barnUnlocked) {
                                   setHoveredBarnLock(false);
@@ -5665,6 +5698,7 @@ export default function Page() {
                         title=""
                         onMouseEnter={() => setHoveredDoMiasta(true)}
                         onMouseLeave={() => setHoveredDoMiasta(false)}
+                        data-zone="doMiasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
@@ -5678,6 +5712,7 @@ export default function Page() {
                             title=""
                             onMouseEnter={() => { if (_hiveUnlocked) setHoveredUl(true); else setHoveredHiveLock(true); }}
                             onMouseLeave={() => { setHoveredHiveLock(false); setHoveredUl(false); }}
+                            data-zone={_hiveUnlocked ? "ul" : "hiveLock"}
                             onClick={() => {
                               if (!_hiveUnlocked) {
                                 setHoveredHiveLock(false);
@@ -5698,6 +5733,7 @@ export default function Page() {
                         title=""
                         onMouseEnter={() => setHoveredLada(true)}
                         onMouseLeave={() => setHoveredLada(false)}
+                        data-zone="lada"
                         onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
@@ -5708,6 +5744,7 @@ export default function Page() {
                         title=""
                         onMouseEnter={() => setHoveredKompostownik(true)}
                         onMouseLeave={() => setHoveredKompostownik(false)}
+                        data-zone="kompostownik"
                         onClick={() => { setHoveredKompostownik(false); setShowKompostModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
@@ -5722,6 +5759,7 @@ export default function Page() {
                             title=""
                             onMouseEnter={() => { if (_sadUnlocked) setHoveredSad(true); else setHoveredSadLock(true); }}
                             onMouseLeave={() => { setHoveredSadLock(false); setHoveredSad(false); }}
+                            data-zone={_sadUnlocked ? "sad" : "sadLock"}
                             onClick={() => {
                               if (!_sadUnlocked) {
                                 setHoveredSadLock(false);
@@ -5850,6 +5888,7 @@ export default function Page() {
                         onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
                         onMouseEnter={() => setHoveredNaFarme(true)}
                         onMouseLeave={() => setHoveredNaFarme(false)}
+                        data-zone="naFarme"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
                         title=""
@@ -5859,6 +5898,7 @@ export default function Page() {
                         onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
                         onMouseEnter={() => setHoveredSklep(true)}
                         onMouseLeave={() => setHoveredSklep(false)}
+                        data-zone="sklep"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
                         title=""
@@ -5868,6 +5908,7 @@ export default function Page() {
                         onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
                         onMouseEnter={() => setHoveredTarg(true)}
                         onMouseLeave={() => setHoveredTarg(false)}
+                        data-zone="targ"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
                         title=""
@@ -5877,6 +5918,7 @@ export default function Page() {
                         onClick={() => handleChangeMap("city_bank")}
                         onMouseEnter={() => setHoveredBank(true)}
                         onMouseLeave={() => setHoveredBank(false)}
+                        data-zone="bank"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
                         title=""
@@ -5886,6 +5928,7 @@ export default function Page() {
                         onClick={() => handleChangeMap("city_townhall")}
                         onMouseEnter={() => setHoveredRatusz(true)}
                         onMouseLeave={() => setHoveredRatusz(false)}
+                        data-zone="ratusz"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
                         title=""
@@ -10788,6 +10831,7 @@ export default function Page() {
                     onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
+                    data-zone="sickle"
                     onMouseDown={fvToolEditMode ? (e) => {
                       e.preventDefault();
                       const pos = fvZbierzPos;
