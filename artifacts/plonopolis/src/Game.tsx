@@ -2024,7 +2024,7 @@ export default function Page() {
   const [shopError, setShopError] = React.useState("");
   const [promoCountdown, setPromoCountdown] = React.useState(() => formatShopCountdown(getMsToPolandMidnight()));
   const dailyPromos = React.useMemo(() => getDailyPromos(), []);
-  const [domTab, setDomTab] = React.useState<"profil"|"eq">("profil");
+  const [domTab, setDomTab] = React.useState<"profil"|"eq"|"plecak">("profil");
     const [backpackTab, setBackpackTab] = React.useState<"uprawy"|"przedmioty"|"owoce">("uprawy");
     type BackpackQualityFilter = "rotten"|"good"|"epic"|"legendary"|"all";
     const [backpackSort, setBackpackSort] = React.useState<BackpackQualityFilter>(() => {
@@ -6176,42 +6176,24 @@ export default function Page() {
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
                 <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-150 ${isFieldViewOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}>
                   <div className="flex flex-col items-start">
-                    {/* Górny rząd: przycisk plecaka + avatar */}
-                    <div className="flex flex-row items-start gap-2">
+                    {/* Avatar gracza — kliknięcie otwiera Dom */}
                     <button
                       type="button"
-                      onClick={() => setIsBackpackOpen((prev) => !prev)}
-                      className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] text-3xl font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:bg-[rgba(58,34,18,0.98)]"
-                      aria-label={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
-                      title={isBackpackOpen ? "Zamknij plecak" : "Otwórz plecak"}
+                      onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
+                      className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)] overflow-hidden"
+                      aria-label="Otwórz profil"
+                      title="Otwórz profil"
                     >
-                      <img src={isBackpackOpen ? "/ui/backpack-open.png" : "/ui/backpack.png"} alt="Plecak" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
+                      {avatarSkin >= 0
+                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[128px] w-[128px] object-cover" style={{imageRendering:"pixelated"}} />
+                        : <span className="flex h-[128px] w-[128px] flex-col items-center justify-center gap-0.5 animate-pulse">
+                            <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
+                            <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
+                          </span>}
                     </button>
-                    {/* Avatar gracza — po prawej od plecaka, nie rusza się przy otwarciu */}
-                    <div className={`group relative flex flex-col items-center gap-1 cursor-default select-none transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
-                      <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
-                        {avatarSkin >= 0
-                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          : <span className="flex flex-col items-center justify-center gap-0.5 animate-pulse">
-                              <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
-                              <span className="text-[#c9952f] text-[10px] font-bold">(kliknij Dom)</span>
-                            </span>}
-                      </div>
-                      <p className="max-w-[128px] truncate text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
-                      <div className="pointer-events-none absolute left-full top-0 ml-2 hidden group-hover:block z-[200]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] w-[130px] h-[130px] flex flex-col items-center justify-center text-center text-[13px] text-[#dfcfab] shadow-xl gap-1">
-                          <span className="text-xl">💡</span>
-                          <span>Avatar można zmienić w <span className="font-bold text-[#d8ba7a]">„Dom"</span></span>
-                        </div>
-                      </div>
-                    </div>
-                    </div>
-                    {/* Panel plecaka — rozsuwa się w dół, nie przesuwa avatara */}
-                    <div
-                      className={`mt-[1.5vh] origin-left overflow-hidden transition-all duration-150 ease-out ${
-                        isBackpackOpen ? "max-w-[440px] translate-x-0 opacity-100" : "max-w-0 -translate-x-4 opacity-0"
-                      }`}
-                    >
+                    <p className="mt-1 max-w-[128px] truncate text-center text-[13px] font-bold text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
+                    {/* Panel plecaka — przeniesiony do Dom → zakładka Plecak */}
+                    <div className="hidden">
                       <div
                         className={`max-h-[80vh] w-[440px] overflow-y-auto rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] p-4 text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition-all duration-150 ease-out ${
                           isBackpackOpen ? "pointer-events-auto scale-100" : "pointer-events-none scale-95"
@@ -7513,13 +7495,13 @@ export default function Page() {
                 {/* ─ Sidebar ─ */}
                 <div className="flex w-[264px] shrink-0 flex-col gap-3 border-r border-[#8b6a3e]/30 bg-black/20 p-8 pt-20">
                   <p className="mb-4 text-sm font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
-                  {(["profil","eq"] as const).map(tab => (
+                  {(["profil","eq","plecak"] as const).map(tab => (
                     <button key={tab} onClick={() => setDomTab(tab)}
                       className={`flex items-center gap-3 rounded-xl px-5 py-4 text-xl font-bold transition ${
                         domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
                       }`}>
-                      {tab === "profil" ? "👤" : "⚔️"}
-                      {tab === "profil" ? "Profil" : "Ekwipunek"}
+                      {tab === "profil" ? "👤" : tab === "eq" ? "⚔️" : "🎒"}
+                      {tab === "profil" ? "Profil" : tab === "eq" ? "Ekwipunek" : "Plecak"}
                     </button>
                   ))}
                 </div>
@@ -8300,6 +8282,192 @@ export default function Page() {
                       </div>
                     );
                   })()}
+
+                  {/* ════ PLECAK ════ */}
+                  {domTab === "plecak" && (
+                    <div>
+                      <div className="mb-4 flex items-center justify-between">
+                        <p className="text-2xl font-black text-[#f9e7b2]">🎒 Plecak</p>
+                        <button type="button"
+                          onClick={() => { setSelectedSeedId(null); setSelectedTool(null); }}
+                          className="rounded-full border border-[#8b6a3e] px-3 py-1 text-xs uppercase tracking-[0.2em] text-[#dfcfab] transition hover:bg-[rgba(80,58,28,0.65)]">
+                          Wyczyść wybór
+                        </button>
+                      </div>
+                      <div className="flex gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1 mb-4">
+                        {(["uprawy","owoce","przedmioty"] as const).map(tab => (
+                          <button key={tab} type="button" onClick={() => setBackpackTab(tab)}
+                            className={`flex-1 rounded-lg py-2 text-sm font-bold uppercase tracking-[0.15em] transition ${backpackTab === tab ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "text-[#dfcfab] hover:bg-white/5"}`}>
+                            {tab === "uprawy" ? "🌾 Uprawy" : tab === "przedmioty" ? "🎒 Przedmioty" : "🍎 Owoce"}
+                          </button>
+                        ))}
+                      </div>
+
+                      {backpackTab === "uprawy" && (
+                        <>
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className="text-xs text-[#8b6a3e] uppercase tracking-[0.15em] shrink-0">Filtr:</span>
+                            <div className="flex flex-1 gap-1 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-1">
+                              {BACKPACK_FILTER_OPTS.map(opt => (
+                                <button key={opt.id} type="button" onClick={() => setBackpackSort(opt.id)}
+                                  className={`flex-1 rounded-lg py-1 text-[10px] font-bold uppercase tracking-[0.05em] transition ${backpackSort === opt.id ? "bg-[#8b6a3e] text-[#f9e7b2] shadow" : "hover:bg-white/5"}`}
+                                  style={backpackSort === opt.id ? undefined : { color: opt.color }}>
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {(() => {
+                            const allCrops = (Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !isCompostKey(k)) as Array<[string, number]>);
+                            const filtered = backpackSort === "all" ? allCrops : allCrops.filter(([k]) => { const q = parseQualityKey(k).quality ?? "good"; return q === backpackSort; });
+                            if (allCrops.length === 0) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
+                            if (filtered.length === 0) { const fLabel = BACKPACK_FILTER_OPTS.find(o => o.id === backpackSort)?.label ?? ""; return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Brak upraw o jakości „{fLabel}". Zmień filtr.</div>; }
+                            const sorted = [...filtered].sort(([aId], [bId]) => {
+                              const { baseCropId: aC, quality: aQ } = parseQualityKey(aId);
+                              const { baseCropId: bC, quality: bQ } = parseQualityKey(bId);
+                              const aLv = CROPS.find(c => c.id === aC)?.unlockLevel ?? 999;
+                              const bLv = CROPS.find(c => c.id === bC)?.unlockLevel ?? 999;
+                              if (aLv !== bLv) return aLv - bLv;
+                              const qOrd: Record<string,number> = {rotten:0,good:1,epic:2,legendary:3};
+                              return (qOrd[aQ ?? "good"] ?? 1) - (qOrd[bQ ?? "good"] ?? 1);
+                            });
+                            return (
+                              <div className="grid grid-cols-5 gap-2">
+                                {sorted.map(([seedId, amount]) => {
+                                  const { baseCropId, quality } = parseQualityKey(seedId);
+                                  const crop = CROPS.find(c => c.id === baseCropId);
+                                  if (!crop) return null;
+                                  const qDef = quality ? CROP_QUALITY_DEFS[quality] : null;
+                                  const isRotten = quality === "rotten";
+                                  const sprite = quality === "epic" && crop.epicSpritePath ? crop.epicSpritePath : quality === "rotten" && crop.rottenSpritePath ? crop.rottenSpritePath : quality === "legendary" && crop.legendarySpritePath ? crop.legendarySpritePath : crop.spritePath;
+                                  return (
+                                    <button key={seedId} draggable
+                                      onDragStart={() => { setDraggedSeedId(seedId); setSelectedSeedId(seedId); setSelectedTool(null); }}
+                                      onDragEnd={() => setDraggedSeedId(null)}
+                                      type="button"
+                                      onClick={() => { setSelectedSeedId(prev => prev === seedId ? null : seedId); setSelectedTool(null); }}
+                                      onMouseEnter={() => { setHoveredCrop(crop); setHoveredSeedQuality(quality as "rotten"|"good"|"epic"|"legendary"|null); }}
+                                      onMouseLeave={() => { setHoveredCrop(null); setHoveredSeedQuality(null); }}
+                                      className={`group relative flex h-24 w-24 items-center justify-center rounded-xl border transition ${isRotten ? "cursor-not-allowed" : ""}`}
+                                      style={selectedSeedId === seedId
+                                        ? { borderColor: "#f6d860", background: "rgba(60,40,5,0.4)", boxShadow: "0 0 12px rgba(255,220,120,0.22)" }
+                                        : quality === "legendary"
+                                          ? { borderColor: qDef!.borderColor, background: qDef!.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
+                                          : qDef
+                                            ? { borderColor: qDef.borderColor, background: qDef.bgColor }
+                                            : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}>
+                                      <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                      {quality === "legendary" && (
+                                        <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
+                                          <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                        </span>
+                                      )}
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{amount}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </>
+                      )}
+
+                      {backpackTab === "przedmioty" && (
+                        <div>
+                          {(() => {
+                            const ownedAnimals = ANIMAL_ITEMS.filter(it => (barnItems[it.id] ?? 0) > 0);
+                            const hasEmptyJars = hiveData.empty_jars > 0;
+                            const hasHoneyJars = hiveData.honey_jars > 0;
+                            const hasSuit = hiveData.suit_durability > 0;
+                            const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
+                            const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                            if (!hasAny) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
+                            return (
+                              <div className="grid grid-cols-5 gap-2">
+                                {ownedAnimals.map(it => {
+                                  const animal = ANIMALS.find(a => a.itemId === it.id);
+                                  const cnt = barnItems[it.id] ?? 0;
+                                  return (
+                                    <div key={it.id} className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"
+                                      onMouseEnter={() => setCardTip(<><p className="text-[20px] font-black text-[#f9e7b2]">{it.name}</p>{animal && <><p className="text-[18px] text-amber-300 mt-1">{animal.icon}</p><p className="text-[17px] text-[#8b6a3e] mt-0.5">1 zbiór: {animal.prodMs/3600000}h</p></>}</>)}
+                                      onMouseLeave={() => setCardTip(null)}>
+                                      <div className="relative h-16 w-16 flex items-center justify-center">
+                                        <img src={`/przedmioty/item_${it.id}.png`} alt={it.name} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[180%] w-[180%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                      </div>
+                                      <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{cnt}</span>
+                                    </div>
+                                  );
+                                })}
+                                {hasEmptyJars && (<div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"><img src="/przedmioty/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p><span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span></div>)}
+                                {hasHoneyJars && (<div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default"><img src="/przedmioty/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p><span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span></div>)}
+                                {hasSuit && (<div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default" onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p></>)} onMouseLeave={() => setCardTip(null)}><img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p><div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden"><div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} /></div></div>)}
+                                {compostKeys.sort((a,b) => { const ta = compostTypeFromKey(a) ?? "growth"; const tb = compostTypeFromKey(b) ?? "growth"; const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 }; if (order[ta] !== order[tb]) return order[ta] - order[tb]; return compostValueFromKey(a) - compostValueFromKey(b); }).map(cid => {
+                                  const cnt = seedInventory[cid]; const t = compostTypeFromKey(cid)!; const def = COMPOST_DEFS[t]; const value = compostValueFromKey(cid);
+                                  const tierIdx = def.bonusValues.indexOf(value); const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa"; const isSel = selectedSeedId === cid;
+                                  return (
+                                    <div key={cid} draggable onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
+                                      onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p></>)}
+                                      onMouseLeave={() => setCardTip(null)}
+                                      className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
+                                      style={isSel ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` } : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
+                                      <span className="text-4xl leading-none">{def.icon}</span>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
+                                      {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {backpackTab === "owoce" && (() => {
+                        const entries = Object.entries(fruitInventory).filter(([,c]) => Number(c) > 0);
+                        if (entries.length === 0) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
+                        const _qOrd: Record<string, number> = { zgnile: 0, zwykly: 1, soczysty: 2, zloty: 3 };
+                        const sorted = [...entries].sort(([aKey], [bKey]) => {
+                          const aU = aKey.lastIndexOf("_"); const aFid = aKey.slice(0, aU); const aQ = aKey.slice(aU + 1);
+                          const bU = bKey.lastIndexOf("_"); const bFid = bKey.slice(0, bU); const bQ = bKey.slice(bU + 1);
+                          const aLv = TREES.find(t => t.fruitId === aFid)?.unlockLevel ?? 999;
+                          const bLv = TREES.find(t => t.fruitId === bFid)?.unlockLevel ?? 999;
+                          if (aLv !== bLv) return aLv - bLv;
+                          return (_qOrd[aQ] ?? 0) - (_qOrd[bQ] ?? 0);
+                        });
+                        return (
+                          <div className="grid grid-cols-5 gap-2">
+                            {sorted.map(([key, cnt]) => {
+                              const lastU = key.lastIndexOf("_"); const fid = key.slice(0, lastU); const q = key.slice(lastU + 1) as FruitQuality;
+                              const tree = TREES.find(t => t.fruitId === fid); if (!tree) return null;
+                              const isZgnile = q === "zgnile";
+                              const qLabel = isZgnile ? "Zgniłe" : q === "zwykly" ? "Zwykłe" : q === "soczysty" ? "Soczysty" : "Złote";
+                              const borderColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#ffffff" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                              const bgColor = isZgnile ? "rgba(255,255,255,0.05)" : q === "zwykly" ? "rgba(255,255,255,0.05)" : q === "soczysty" ? "rgba(20,80,30,0.5)" : "rgba(80,50,5,0.5)";
+                              const labelColor = isZgnile ? "#ffffff" : q === "zwykly" ? "#dfcfab" : q === "soczysty" ? "#22c55e" : "#f59e0b";
+                              return (
+                                <div key={key} className={`relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border ${isZgnile ? "cursor-not-allowed" : "cursor-default"}`}
+                                  style={{ borderColor, background: bgColor, ...(q === "zloty" ? { animation: "legendaryPulse 2s ease-in-out infinite" } : {}) }}
+                                  onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">{tree.fruitIcon} {tree.fruitName}</p><p className="text-[11px] mt-0.5" style={{color: labelColor}}>{qLabel}</p><p className="text-[10px] text-[#8b6a3e] mt-0.5">Masz: {Number(cnt)} szt.</p>{isZgnile && <p className="text-[10px] text-amber-400 mt-0.5 font-bold">Nie do sprzedaży — wrzuć do kompostu</p>}</>)}
+                                  onMouseLeave={() => setCardTip(null)}>
+                                  {isZgnile && <span className="absolute top-1 left-1 text-[10px] leading-none">⚠️</span>}
+                                  {q === "zloty" && (<span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden"><span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} /></span>)}
+                                  <div className="relative h-16 w-16 flex items-center justify-center">
+                                    <span className="text-4xl leading-none">{tree.fruitIcon}</span>
+                                    <img src={`/owoce/owoc_${fid}.png`} alt={tree.fruitName} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[180%] w-[180%] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.display="none";}} />
+                                  </div>
+                                  <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: labelColor}}>{qLabel}</p>
+                                  <span className="absolute bottom-1 right-1 min-w-[16px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{Number(cnt)}</span>
+                                </div>
+                              );
+                            })}
+                            <p className="col-span-5 mt-1 text-[10px] text-[#8b6a3e] text-center">Sprzedasz owoce w Sadzie (przycisk „Sprzedaj wszystkie"). Zgniłe idą do kompostu.</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
 
                 </div>
               </div>
