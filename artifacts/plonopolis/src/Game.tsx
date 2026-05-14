@@ -1733,8 +1733,8 @@ export default function Page() {
 
   // ── Edytor pozycji przycisków narzędzi (konewka/zbierz) na obrazie pola ──
   const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
-  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 1849, t: 198, w: 192, h: 179 });
-  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 1852, t: 408, w: 190, h: 176 });
+  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 1629, t: 176, w: 192, h: 179 });
+  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 1629, t: 384, w: 190, h: 176 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -11531,7 +11531,7 @@ export default function Page() {
                 <p className="font-black text-amber-300">🎲 Jedna z 3 równych szans:</p>
                 <p>✅ 50–150 zwykłych nasion</p>
                 <p>⭐ 15–35 epickich nasion</p>
-                <p>🌟 EXP ×20–40 (bez plonu)</p>
+                <p>🌟 15–30 zwykłych + EXP ×20–40</p>
               </div>
             ) : (
               <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "8–20 szt." : `${hoveredCrop.yieldAmount} szt.`}</p>
