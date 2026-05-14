@@ -10509,17 +10509,17 @@ export default function Page() {
                       setSelectedPlotId(null);
                       setIsFieldViewCollapsed(false);
                     }}
-                    className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-red-400/40 bg-red-950/40 text-xl font-bold text-red-100 transition hover:bg-red-950/60"
+                    className="absolute right-4 top-4 z-[100] flex h-14 w-14 items-center justify-center rounded-full border-2 border-red-400/70 bg-red-950/70 text-3xl font-black text-red-100 shadow-2xl transition hover:bg-red-800/90 hover:scale-110 active:scale-95"
                     aria-label="Zamknij widok pola"
                   >
-                    ×
+                    ✕
                   </button>
 
                   {/* ─── Przycisk edycji hitboxów narzędzi ─── */}
                   <button
                     type="button"
                     onClick={() => setFvToolEditMode(m => !m)}
-                    className={`absolute right-4 top-4 z-[91] flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-xl backdrop-blur-sm transition ${fvToolEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.85)] text-[#dfcfab]"}`}
+                    className={`absolute right-20 top-4 z-[91] flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-xl backdrop-blur-sm transition ${fvToolEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.85)] text-[#dfcfab]"}`}
                   >
                     🎯 {fvToolEditMode ? "Zakończ edycję" : "Edytuj narzędzia"}
                   </button>
