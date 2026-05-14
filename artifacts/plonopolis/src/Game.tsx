@@ -2758,8 +2758,8 @@ export default function Page() {
 
   function getCropStageSprite(cropId: string, stage: number): string | null {
     const STAGED: Record<string, string> = {
-      "carrot": "/carrot",
-      "test_nasiono": "/carrot",
+      "carrot": "/uprawy/carrot",
+      "test_nasiono": "/uprawy/carrot",
     };
     const base = STAGED[cropId];
     if (!base) return null;
