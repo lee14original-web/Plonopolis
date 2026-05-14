@@ -10877,14 +10877,22 @@ export default function Page() {
                         <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz uprawę</p>
                         <h3 className="text-xl font-black text-[#f9e7b2] mb-4">🌱 Nasiona w plecaku</h3>
                         {(["legendary","epic","good",null] as (string|null)[]).map(quality => {
-                          const entries = Object.entries(seedInventory).filter(([k, cnt]) => !isCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality);
+                          const entries = Object.entries(seedInventory)
+                            .filter(([k, cnt]) => !isCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality)
+                            .sort(([aId], [bId]) => {
+                              const aC = parseQualityKey(aId).baseCropId;
+                              const bC = parseQualityKey(bId).baseCropId;
+                              const aLv = CROPS.find(c => c.id === aC)?.unlockLevel ?? 999;
+                              const bLv = CROPS.find(c => c.id === bC)?.unlockLevel ?? 999;
+                              return aLv - bLv;
+                            });
                           if (entries.length === 0) return null;
                           const qLabel = quality === "legendary" ? "✨ Legendarne" : quality === "epic" ? "🟣 Epickie" : quality === "good" ? "🟢 Zwykłe" : "📦 Pozostałe";
                           const qColor = quality === "legendary" ? "#fbbf24" : quality === "epic" ? "#a78bfa" : quality === "good" ? "#6ee7b7" : "#8b6a3e";
                           return (
                             <div key={quality ?? "base"} className="mb-4">
                               <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: qColor }}>{qLabel}</p>
-                              <div className="grid grid-cols-5 gap-2">
+                              <div className="grid grid-cols-5 gap-3">
                                 {entries.map(([seedId, cnt]) => {
                                   const { baseCropId, quality: q } = parseQualityKey(seedId);
                                   const crop = CROPS.find(c => c.id === baseCropId);
@@ -10892,21 +10900,23 @@ export default function Page() {
                                   const sprite = q === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : q === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : q === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
                                   const isSel = selectedSeedId === seedId;
                                   return (
-                                    <button
-                                      key={seedId}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedSeedId(isSel ? null : seedId);
-                                        setSelectedTool(null);
-                                        setFvSeedPickerOpen(false);
-                                      }}
-                                      className="flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition-colors"
-                                      style={{ borderColor: isSel ? qColor : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(30,18,8,0.9)" : "rgba(20,12,6,0.7)" }}
-                                    >
-                                      <img src={sprite} alt={crop.name} className="w-12 h-12 object-contain" style={{ imageRendering: "pixelated" }} />
-                                      <p className="text-[11px] font-bold text-[#f9e7b2] text-center leading-tight">{crop.name}</p>
-                                      <p className="text-[10px] text-[#d8ba7a]">×{cnt}</p>
-                                    </button>
+                                    <div key={seedId} className="flex flex-col items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedSeedId(isSel ? null : seedId);
+                                          setSelectedTool(null);
+                                          setFvSeedPickerOpen(false);
+                                        }}
+                                        className="relative w-[112px] h-[112px] rounded-xl border-2 overflow-hidden transition-colors"
+                                        style={{ borderColor: isSel ? qColor : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(30,18,8,0.9)" : "rgba(20,12,6,0.7)", ...(isSel ? { boxShadow: `0 0 14px ${qColor}88` } : {}) }}
+                                      >
+                                        <img src={sprite} alt={crop.name} className="absolute inset-0 w-full h-full object-cover" style={{ imageRendering: "pixelated" }} />
+                                        <span className="absolute bottom-1 right-1 min-w-[20px] rounded-md bg-black/80 px-1 py-0.5 text-[11px] font-black leading-none text-[#f9e7b2]">×{cnt}</span>
+                                        {isSel && <span className="absolute inset-0 rounded-xl ring-2 ring-inset pointer-events-none" style={{ outlineColor: qColor }} />}
+                                      </button>
+                                      <p className="text-[11px] font-bold text-[#f9e7b2] text-center leading-tight max-w-[112px] truncate">{crop.name}</p>
+                                    </div>
                                   );
                                 })}
                               </div>
