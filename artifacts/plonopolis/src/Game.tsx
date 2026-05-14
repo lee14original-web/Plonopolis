@@ -4751,7 +4751,8 @@ export default function Page() {
     if (_plantedQuality !== "legendary") {
       // Dla NIE-legendarnych: SQL jest źródłem prawdy. nextInventory = sparsowany rpcInv.
       // Nie liczymy diff'a względem prevInventorySnapshot (race-prone) — używamy gained_* z RPC.
-      _totalYield = _gainedGood + _gainedEpic + _gainedRotten;
+      const _gainedLegendary = (typeof (_rpcWrapper as { gained_legendary?: unknown }).gained_legendary === "number") ? (_rpcWrapper as { gained_legendary: number }).gained_legendary : 0;
+      _totalYield = _gainedGood + _gainedEpic + _gainedRotten + _gainedLegendary;
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
