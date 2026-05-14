@@ -4706,8 +4706,10 @@ export default function Page() {
         nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
         _totalYield = _legEpic;
       } else {
-        // Opcja 3: tylko EXP (20–40x) — bez upraw
-        _totalYield = 0;
+        // Opcja 3: EXP (20–40x) + 15–30 zwykłych upraw
+        const _legExpGood = Math.floor(Math.random() * 16) + 15;
+        nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legExpGood;
+        _totalYield = _legExpGood;
       }
     } else {
       // SQL zapisał jakości per sztuka — buduj z rpcInv (pełne inventory po zbiorze)
@@ -4845,10 +4847,11 @@ export default function Page() {
           { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpic, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: actualExp, timestamp: _now, quality: "epic" as const },
         ]);
       } else {
-        // Opcja 3: tylko EXP
+        // Opcja 3: EXP + zwykłe uprawy
+        const _legExpGoodLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
         setHarvestLog(prev => [
           ...prev.filter(e => _now - e.timestamp < 25000),
-          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: 0, bonusAmount: 0, bonusSource: `×${_legExpMult}`, baseExp: actualExp, timestamp: _now, quality: "legendary" as const },
+          { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legExpGoodLog, bonusAmount: 0, bonusSource: `×${_legExpMult}`, baseExp: actualExp, timestamp: _now, quality: "legendary" as const },
         ]);
       }
     } else {
