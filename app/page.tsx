@@ -1795,7 +1795,7 @@ export default function Page() {
   const [showRankingPanel, setShowRankingPanel] = useState(false);
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
-  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower"|"name">("level");
+  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower">("farmpower");
   const [rankingSearch, setRankingSearch] = useState("");
   const [rankingHighlightMe, setRankingHighlightMe] = useState(false);
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
@@ -6540,6 +6540,10 @@ export default function Page() {
 
                   {/* Sort tabs + search + znajdź mnie */}
                   <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
+                    <button onClick={() => setRankingSort("farmpower")}
+                      className={rankingSort==="farmpower" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      Moc farmy
+                    </button>
                     <button onClick={() => setRankingSort("level")}
                       className={rankingSort==="level" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Poziom
@@ -6547,14 +6551,6 @@ export default function Page() {
                     <button onClick={() => setRankingSort("money")}
                       className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Pieniądze
-                    </button>
-                    <button onClick={() => setRankingSort("farmpower")}
-                      className={rankingSort==="farmpower" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Moc farmy
-                    </button>
-                    <button onClick={() => setRankingSort("name")}
-                      className={rankingSort==="name" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Nazwa
                     </button>
                     <div className="ml-auto flex items-center gap-2">
                       <input
@@ -6611,8 +6607,7 @@ export default function Page() {
                           {[...rankingData].sort((a,b) => {
                             if (rankingSort==="level") return (b.ranking_score ?? 0)-(a.ranking_score ?? 0);
                             if (rankingSort==="money") return b.money-a.money;
-                            if (rankingSort==="farmpower") return (b.farm_power ?? 0)-(a.farm_power ?? 0);
-                            return a.player_name.localeCompare(b.player_name,"pl");
+                            return (b.farm_power ?? 0)-(a.farm_power ?? 0);
                           }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
                             const isMe = p.user_id === profile?.id;
                             const highlighted = rankingHighlightMe && isMe;
