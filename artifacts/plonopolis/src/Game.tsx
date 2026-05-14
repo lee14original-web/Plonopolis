@@ -11886,9 +11886,10 @@ export default function Page() {
                       const selectedItem = sellable.find(i => i.key === coItemKey && i.type === coItemType);
                       const maxQty       = selectedItem?.qty ?? 1;
                       const minP         = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
-                      const total        = coQty * coPrice;
-                      const extFee       = coDuration === 48 ? Math.round(total * 0.05) : 0;
-                      const sellerGets   = Math.round(total * 0.9) - extFee;
+                      const total        = Math.round(coQty * coPrice * 100) / 100;
+                      const tax          = Math.round(total * 0.1 * 100) / 100;
+                      const extFee       = coDuration === 48 ? Math.round(total * 0.05 * 100) / 100 : 0;
+                      const sellerGets   = Math.round((total - tax - extFee) * 100) / 100;
                       return (
                         <div className="mb-4 rounded-2xl border border-[#d8ba7a]/40 bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
                           {/* Nagłówek */}
@@ -11959,7 +11960,7 @@ export default function Page() {
                           {/* Podsumowanie */}
                           <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-4 space-y-1.5">
                             <p className="text-sm text-[#dfcfab]">Łączna cena: <span className="text-base font-bold text-[#f9e7b2]">{total.toLocaleString("pl-PL")} zł</span></p>
-                            <p className="text-sm text-[#dfcfab]">Podatek rynku (10%): <span className="font-bold text-[#fca5a5]">-{Math.round(total*0.1).toLocaleString("pl-PL")} zł</span></p>
+                            <p className="text-sm text-[#dfcfab]">Podatek rynku (10%): <span className="font-bold text-[#fca5a5]">-{tax.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} zł</span></p>
                             {extFee > 0 && <p className="text-sm text-[#dfcfab]">Opłata za 48h (5%): <span className="font-bold text-[#fca5a5]">-{extFee.toLocaleString("pl-PL")} zł</span></p>}
                             <div className="mt-1 border-t border-[#8b6a3e]/30 pt-1.5">
                               <p className="text-sm text-[#dfcfab]">Otrzymasz po sprzedaży: <span className="text-lg font-black text-[#86efac]">{sellerGets.toLocaleString("pl-PL")} zł</span></p>
