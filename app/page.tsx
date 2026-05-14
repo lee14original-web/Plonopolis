@@ -1767,7 +1767,6 @@ export default function Page() {
   }, [fvToolEditMode, isFieldViewOpen]);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
-  const seedInventoryRef = React.useRef<SeedInventory>(getDefaultSeedInventory()); // sync ref — zawsze aktualny, nawet przed re-renderem
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
