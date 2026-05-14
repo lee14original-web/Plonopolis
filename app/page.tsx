@@ -1767,6 +1767,7 @@ export default function Page() {
   }, [fvToolEditMode, isFieldViewOpen]);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
+  const seedInventoryRef = React.useRef<SeedInventory>(getDefaultSeedInventory()); // sync ref — zawsze aktualny, nawet przed re-renderem
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
   const [selectedTool, setSelectedTool] = useState<"watering_can" | "sickle" | null>(null);
   const [, setGrowthTick] = useState(0);
@@ -4504,6 +4505,7 @@ export default function Page() {
 
     const remainingBatches = kompostBatches.filter(b => b.fill < 10);
     consumePendingLegacyCharges(remainingBatches, profile?.id ?? "");
+    seedInventoryRef.current = inv;
     setSeedInventory(inv);
     saveOwnedEqItems(owned);
     saveItemUpg(upgReg);
@@ -4622,7 +4624,7 @@ export default function Page() {
     const prevXpToNext = displayXpToNextLevel;
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
-    const prevInventorySnapshot: Record<string, number> = { ...seedInventory };
+    const prevInventorySnapshot: Record<string, number> = { ...seedInventoryRef.current };
     // jakość PLONU jest losowana osobno dla każdej sztuki — patrz niżej
     // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
     // Jakość ZASADZONEGO nasiona (z pola w DB — bez localStorage)
@@ -4740,7 +4742,8 @@ export default function Page() {
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
-    // Synchronizacja stanu klienta z DB
+    // Synchronizacja stanu klienta z DB — ref aktualizujemy PRZED setState (żeby kolejny harvest miał świeży snapshot)
+    seedInventoryRef.current = nextInventory;
     setSeedInventory(nextInventory);
     // Dla LEGENDARNYCH klient sam nadpisał inventory (decyduje o opcji 0/1/2) — zapisz do DB.
     // Dla nie-legendarnych: SQL jest źródłem prawdy, NIE nadpisujemy DB pełnym obiektem
@@ -4843,12 +4846,12 @@ export default function Page() {
       }
     } else {
       const _now2 = Date.now();
-      // Wartości z RPC (atomicznie aplikowane przez SQL) — eliminuje race vs prevSnap.
+      // SQL jest źródłem prawdy — liczymy diff prev→next dla logu (ref już zaktualizowany)
       const _qualGained: Record<CropQuality, number> = {
-        good:      _gainedGood,
-        epic:      _gainedEpic,
-        rotten:    _gainedRotten,
-        legendary: 0,
+        good:      Math.max(0, (nextInventory[getQualityKey(crop.id, "good")]      ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")]      ?? 0)),
+        epic:      Math.max(0, (nextInventory[getQualityKey(crop.id, "epic")]      ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "epic")]      ?? 0)),
+        rotten:    Math.max(0, (nextInventory[getQualityKey(crop.id, "rotten")]    ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "rotten")]    ?? 0)),
+        legendary: Math.max(0, (nextInventory[getQualityKey(crop.id, "legendary")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "legendary")] ?? 0)),
       };
       const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => _qualGained[_q] > 0);
       const _logEvents = _diffQuals.map((_q, _idx) => {
