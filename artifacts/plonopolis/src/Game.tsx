@@ -336,7 +336,7 @@ const STATS_DEFS = [
   { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/ekwipunek/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1  },
   { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/ekwipunek/skill_sadownik.png",  desc: "Zysk z drzew",           rate: 0.005,  unlockLevel: 10 },
   { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/ekwipunek/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/ekwipunek/skill_szczescie.png", desc: "Bonusowy drop",          rate: 0.0025, unlockLevel: 1  },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/ekwipunek/skill_szczescie.png", desc: "Jakość plonów, ekwipunek, ulepszenia", rate: 0.0025, unlockLevel: 1  },
 ];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
@@ -4466,7 +4466,8 @@ export default function Page() {
     const diversityCount = (batch.cropIds ?? []).length;
     const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2));
     const diversityTierBoost = diversityCount >= 6;
-    const itemDropChance = 10 + diversityItemBonus;
+    const _luckItemBonus = Math.min(5, (effectiveStats.szczescie ?? 0) * 0.05);
+    const itemDropChance = 10 + diversityItemBonus + _luckItemBonus;
 
     for (let rIdx = 0; rIdx < KOMPOST_REWARDS_PER_BATCH; rIdx++) {
       // Jackpot 0.5% — legendarny item bez względu na jakość partii
@@ -4693,6 +4694,7 @@ export default function Page() {
       p_compost_yield_extra: _compostYieldExtraForRpc,
       p_extra_harvest_pct:   _extraHarvestPctForRpc,
       p_bonus_drop_pct:      _bonusDropPctForRpc,
+      p_szczescie:           effectiveStats.szczescie ?? 0,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -7883,7 +7885,8 @@ export default function Page() {
                         mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
                         saveBarnItems(newBarn);
                       }
-                      const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                      const _luckUpgBonus = Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005);
+                      const ok = Math.random() < Math.min(1, UPGRADE_CHANCE[nextU] + _luckUpgBonus);
                       let fu;
                       if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
                       else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
@@ -8013,7 +8016,7 @@ export default function Page() {
                                     </div>
                                     <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
                                     {upg < 10
-                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(UPGRADE_CHANCE[upg+1]*100)}% szansy</p>
+                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(Math.min(100, (UPGRADE_CHANCE[upg+1] + Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005)) * 100))}% szansy</p>
                                       : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
                                     {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
                                     {upg < 10 && (() => {
@@ -8171,7 +8174,8 @@ export default function Page() {
                                 mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
                                 saveBarnItems(newBarn);
                               }
-                              const ok = Math.random() < UPGRADE_CHANCE[nextU];
+                              const _luckUpgBonusEx = Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005);
+                              const ok = Math.random() < Math.min(1, UPGRADE_CHANCE[nextU] + _luckUpgBonusEx);
                               let fu: number;
                               if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
                               else if (entry.upg <= 6) { fu = entry.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${entry.upg}.` }); }
@@ -8523,7 +8527,8 @@ export default function Page() {
             const diversityCountUI = (batch.cropIds ?? []).length;
             const diversityItemBonusUI = Math.min(5, Math.floor(diversityCountUI / 2));
             const diversityTierBoostUI = diversityCountUI >= 6;
-            const itemDropChancePct = 10 + diversityItemBonusUI;
+            const _luckItemBonusUI = Math.min(5, (effectiveStats.szczescie ?? 0) * 0.05);
+            const itemDropChancePct = parseFloat((10 + diversityItemBonusUI + _luckItemBonusUI).toFixed(1));
             const currentTierChances = ITEM_TIER_BY_QUALITY[currentQuality];
             const QTY_OPTIONS: Array<1|5|10|100|"max"> = [1,5,10,100,"max"];
             const FILTER_OPTIONS: Array<{ id: typeof kompostFilter; label: string; color: string }> = [

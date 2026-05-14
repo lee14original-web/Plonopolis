@@ -1,0 +1,110 @@
+# 🍀 Szczęście — finalny system
+
+## 🌱 Wpływ na jakość upraw
+
+Bazowe szanse jakości:
+
+| Jakość | Szansa |
+|---|---:|
+| 🟫 Popsuta | 10% |
+| 🟢 Zwykła | 85% |
+| 🟣 Epicka | 4% |
+| ✨ Legendarna | 1% |
+
+Każdy punkt Szczęścia:
+- zmniejsza szansę na popsute plony,
+- zwiększa szansę na epickie,
+- lekko zwiększa szansę na legendarne.
+
+### Max efekt przy 100 pkt
+
+| Jakość | Bazowo | 100 pkt |
+|---|---:|---:|
+| 🟫 Popsuta | 10% | 5% |
+| 🟢 Zwykła | 85% | 74% |
+| 🟣 Epicka | 4% | 15% |
+| ✨ Legendarna | 1% | 6% |
+
+---
+
+# 🌿 Kompostownik
+
+Szczęście zwiększa szansę na ekwipunek zamiast kompostu.
+
+## Bonus:
+- +0.05% szansy na item za każdy punkt Szczęścia
+- maksymalnie +5% przy 100 pkt
+
+### Przykład:
+
+| Bazowo | 100 pkt |
+|---|---:|
+| ⚔️ Ekwipunek 10% | 15% |
+| 🌿 Kompost 90% | 85% |
+
+---
+
+# ⚔️ Ulepszanie ekwipunku
+
+Szczęście lekko zwiększa szansę ulepszenia.
+
+## Bonus:
+- +0.05% success chance za punkt
+- maksymalnie +5% przy 100 pkt
+- bonus jest addytywny
+- szansa nigdy nie przekracza 100% (wyjątek +0 → +1, tu ma przy max 100 szczęścia 100% na ulepszenie)
+
+### Przykłady:
+
+### Przykłady:
+
+| Upgrade | Bazowo | 100 pkt Szczęścia |
+|---|---:|---:|
+| +0 → +1 | 95% | 100% | (wyjątek)
+| +1 → +2 | 90% | 95% |
+| +2 → +3 | 90% | 95% |
+| +3 → +4 | 85% | 90% |
+| +4 → +5 | 80% | 85% |
+| +5 → +6 | 70% | 75% |
+| +6 → +7 | 60% | 65% |
+| +7 → +8 | 45% | 50% |
+| +8 → +9 | 35% | 40% |
+| +9 → +10 | 20% | 25% |
+---
+
+# 🌾 Nowy balans zwykłych upraw
+
+## Uprawy lvl 1–6
+Zamiast stałego:
+- ×2
+
+Nowy drop:
+- 1–3 sztuki
+
+## Uprawy lvl 7–25
+Zamiast stałego:
+- ×3
+
+Nowy drop:
+- 2–5 sztuk
+
+Dzięki temu każdy zbiór ma większą losowość i daje więcej emocji.
+
+---
+
+# 🎯 Zręczność
+
+Zręczność daje szansę na podwójny zbiór.
+
+Podwaja finalny wynik zbioru.
+
+### Przykład:
+- wypadło 4 sztuki,
+- aktywował się bonus Zręczności,
+- gracz dostaje 8 sztuk.
+
+---
+
+# 🍀 Tooltip statystyki
+
+🍀 Szczęście zwiększa szanse na epickie i legendarne plony, zmniejsza szansę popsutych zbiorów, zwiększa szansę na ekwipunek w kompostowniku oraz lekko zwiększa szansę ulepszenia ekwipunku.
