@@ -2135,6 +2135,7 @@ export default function Page() {
   }, [showKompostModal, kompostRewards]);
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostTierHoverTip, setKompostTierHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
+  const [showKompostHelp, setShowKompostHelp] = React.useState(false);
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [avatarTipVisible, setAvatarTipVisible] = React.useState(false);
   const [avatarTipPos, setAvatarTipPos] = React.useState({ x: 0, y: 0 });
@@ -8561,7 +8562,94 @@ export default function Page() {
                 <div
                   className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col transition-all duration-700"
                   style={milestoneGlow ? { boxShadow: `0 0 50px ${milestoneGlow}55, 0 0 100px ${milestoneGlow}22` } : undefined}>
-                  <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                  <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); setShowKompostHelp(false); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                  {/* Przycisk pomocy ? */}
+                  <button
+                    onMouseEnter={() => setShowKompostHelp(true)}
+                    onMouseLeave={() => setShowKompostHelp(false)}
+                    className="absolute right-16 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#8b6a3e] font-black text-[16px] transition hover:border-emerald-500/60 hover:text-emerald-300 select-none">
+                    ?
+                  </button>
+                  {showKompostHelp && (
+                    <div className="absolute right-14 top-14 z-50 w-[480px] rounded-2xl border border-[#8b6a3e]/60 bg-[rgba(10,6,2,0.98)] p-5 shadow-2xl text-[#dfcfab] pointer-events-none"
+                      style={{ boxShadow: "0 0 40px rgba(34,197,94,0.15)" }}>
+                      <p className="text-[14px] font-black text-emerald-300 mb-3">🌿 Jak działa Kompostownik?</p>
+
+                      {/* Zasady */}
+                      <div className="text-[12px] text-[#dfcfab]/90 leading-relaxed mb-3 flex flex-col gap-1">
+                        <p>• Wrzuć <span className="font-black text-white">100 upraw lub zgniłych owoców</span> aby zapełnić partię.</p>
+                        <p>• Im lepsze wrzutki, tym wyższy <span className="font-black text-amber-300">score</span> partii = lepsze nagrody.</p>
+                        <p>• Za pełną partię losowane jest <span className="font-black text-yellow-300">5 nagród</span> jednocześnie.</p>
+                        <p>• <span className="font-black text-purple-300">Różnorodność</span> gatunków w jednej partii zwiększa szansę na ekwipunek (+1% co 2 gatunki, maks +5%; 6+ gatunków = bonus tier).</p>
+                        <p>• <span className="font-black text-yellow-300">Jackpot 0.5%</span> per losowanie — legendarny item niezależnie od jakości.</p>
+                      </div>
+
+                      {/* Tabela rzadkości */}
+                      <p className="text-[11px] font-black text-[#8b6a3e]/80 uppercase tracking-wider mb-1.5">Mnożnik rzadkości wrzutu</p>
+                      <div className="grid grid-cols-4 gap-1 mb-3 text-center">
+                        {([["🟫 Zgniłe","×0.25","#9ca3af"],["🟢 Dobre","×1.0","#86efac"],["🟣 Epickie","×2.5","#c4b5fd"],["🌟 Legendarne","×5.0","#fbbf24"]] as const).map(([label, mult, color]) => (
+                          <div key={label} className="rounded-lg bg-white/5 border border-white/10 px-2 py-1.5">
+                            <p className="text-[11px] font-bold leading-tight" style={{ color }}>{label}</p>
+                            <p className="text-[14px] font-black mt-0.5" style={{ color }}>{mult}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Tabela upraw - przykładowe */}
+                      <p className="text-[11px] font-black text-[#8b6a3e]/80 uppercase tracking-wider mb-1.5">Score upraw (dobre × mnożnik)</p>
+                      <div className="grid grid-cols-5 gap-x-2 gap-y-0.5 text-[11px] mb-3">
+                        <span className="font-black text-[#8b6a3e]/70">Uprawa</span>
+                        <span className="font-black text-[#9ca3af] text-center">Zgn.</span>
+                        <span className="font-black text-[#86efac] text-center">Dob.</span>
+                        <span className="font-black text-[#c4b5fd] text-center">Epic</span>
+                        <span className="font-black text-[#fbbf24] text-center">Leg.</span>
+                        {([
+                          ["🥕 Marchew",  "0.25","1.0","2.5","5.0"],
+                          ["🧅 Cebula",   "0.45","1.8","4.5","9.0"],
+                          ["🧄 Czosnek",  "0.50","2.0","5.0","10.0"],
+                          ["🫑 Papryka",  "0.70","2.8","7.0","14.0"],
+                          ["🍓 Truskaw.", "0.90","3.6","9.0","18.0"],
+                          ["🍇 Winog.",   "1.20","4.8","12.0","24.0"],
+                          ["🌻 Słonecz.", "1.35","5.4","13.5","27.0"],
+                          ["🌿 Szparagi", "1.50","6.0","15.0","30.0"],
+                        ] as const).map(([name, a, b, c, d]) => (
+                          <React.Fragment key={name}>
+                            <span className="text-[#dfcfab]/80 truncate">{name}</span>
+                            <span className="text-center text-[#9ca3af]">{a}</span>
+                            <span className="text-center text-[#86efac]">{b}</span>
+                            <span className="text-center text-[#c4b5fd]">{c}</span>
+                            <span className="text-center text-[#fbbf24]">{d}</span>
+                          </React.Fragment>
+                        ))}
+                      </div>
+
+                      {/* Tabela owoców */}
+                      <p className="text-[11px] font-black text-[#8b6a3e]/80 uppercase tracking-wider mb-1.5">Score zgniłych owoców (cena × 0.25)</p>
+                      <div className="grid grid-cols-3 gap-1 text-[11px]">
+                        {([
+                          ["🍎 Jabłko","5.0"],["🍐 Gruszka","8.75"],["🟣 Śliwka","13.75"],
+                          ["🍒 Wiśnia","20.0"],["🍑 Brzoskw.","37.5"],["🍊 Pomarań.","80.0"],
+                          ["🍋 Cytryna","125.0"],
+                        ] as const).map(([name, score]) => (
+                          <div key={name} className="flex justify-between rounded bg-white/5 px-2 py-0.5">
+                            <span className="text-[#dfcfab]/80">{name}</span>
+                            <span className="font-black text-emerald-300">{score}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Progi jakości */}
+                      <p className="text-[11px] font-black text-[#8b6a3e]/80 uppercase tracking-wider mt-3 mb-1.5">Progi jakości partii (avg score)</p>
+                      <div className="flex gap-2 flex-wrap text-[11px]">
+                        {([["🌟 Leg.","≥15","#fbbf24"],["🟣 B.dobry","≥9","#a78bfa"],["🟢 Dobry","≥5","#6ee7b7"],["⚪ Słaby","<5","#9ca3af"]] as const).map(([label, val, color]) => (
+                          <div key={label} className="rounded-lg border px-2.5 py-1 bg-white/5" style={{ borderColor: color + "60" }}>
+                            <span className="font-black" style={{ color }}>{label}</span>
+                            <span className="ml-1.5 text-[#dfcfab]/60">{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="px-6 pt-6 pb-4 border-b border-[#8b6a3e]/30">
                     {/* Nagłówek */}
