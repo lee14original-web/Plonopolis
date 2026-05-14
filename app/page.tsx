@@ -2126,6 +2126,8 @@ export default function Page() {
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostTierHoverTip, setKompostTierHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
+  const [avatarTipVisible, setAvatarTipVisible] = React.useState(false);
+  const [avatarTipPos, setAvatarTipPos] = React.useState({ x: 0, y: 0 });
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
@@ -6177,44 +6179,22 @@ export default function Page() {
                 <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-150 ${isFieldViewOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}>
                   <div className="flex flex-col items-start">
                     {/* Avatar gracza — kliknięcie otwiera Dom */}
-                    <div className="group relative">
-                      <button
-                        type="button"
-                        onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
-                        className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)] overflow-hidden"
-                        aria-label="Otwórz profil"
-                        title="Otwórz profil"
-                      >
-                        {avatarSkin >= 0
-                          ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[134px] w-[134px] object-cover" style={{imageRendering:"pixelated"}} />
-                          : <span className="flex h-[134px] w-[134px] flex-col items-center justify-center gap-0.5 animate-pulse">
-                              <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
-                              <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
-                            </span>}
-                      </button>
-                      {/* Tooltip po najechaniu */}
-                      <div className="pointer-events-none absolute left-full top-0 ml-3 hidden group-hover:block z-[200] w-[240px]">
-                        <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-4 py-3 shadow-xl backdrop-blur-sm">
-                          <p className="mb-2 text-[15px] font-black leading-tight text-[#f9e7b2]">{profile?.login ?? "—"}</p>
-                          <div className="flex flex-col gap-1.5 text-[13px]">
-                            <div className="flex justify-between gap-3">
-                              <span className="text-[#8b6a3e]">Avatar</span>
-                              <span className="text-right font-bold text-[#d8ba7a]">
-                                {avatarSkin < 0 ? "Brak" : avatarSkin < SKINS_MALE.length ? `Rolnik M${avatarSkin + 1}` : avatarSkin < SKINS_MALE.length + SKINS_FEMALE.length ? `Rolniczka F${avatarSkin - SKINS_MALE.length + 1}` : (EPIC_SKINS[avatarSkin - EPIC_SKIN_START]?.name ?? "Epickie")}
-                              </span>
-                            </div>
-                            <div className="flex justify-between gap-3">
-                              <span className="text-[#8b6a3e]">Doświadczenie</span>
-                              <span className="font-bold text-[#d8ba7a]">{displayXp}</span>
-                            </div>
-                            <div className="flex justify-between gap-3">
-                              <span className="text-[#8b6a3e]">Kolejny poziom</span>
-                              <span className="font-bold text-[#d8ba7a]">{displayXpToNextLevel > 0 ? displayXpToNextLevel : "MAX"}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setShowDomModal(true); setDomTab("profil"); }}
+                      onMouseEnter={() => setAvatarTipVisible(true)}
+                      onMouseLeave={() => setAvatarTipVisible(false)}
+                      onMouseMove={e => setAvatarTipPos({ x: e.clientX, y: e.clientY })}
+                      className="flex shrink-0 items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 hover:bg-[rgba(58,34,18,0.98)] overflow-hidden"
+                      aria-label="Otwórz profil"
+                    >
+                      {avatarSkin >= 0
+                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[134px] w-[134px] object-cover" style={{imageRendering:"pixelated"}} />
+                        : <span className="flex h-[134px] w-[134px] flex-col items-center justify-center gap-0.5 animate-pulse">
+                            <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
+                            <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
+                          </span>}
+                    </button>
                     <p className="mt-1 w-[134px] truncate text-center text-[16px] font-black text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
                     {/* Panel plecaka — przeniesiony do Dom → zakładka Plecak */}
                     <div className="hidden">
@@ -9023,6 +9003,34 @@ export default function Page() {
               </div>
             );
           })()}
+
+          {/* Fixed avatar tooltip — śledzi kursor */}
+          {avatarTipVisible && (
+            <div
+              className="pointer-events-none fixed z-[9999]"
+              style={{ left: avatarTipPos.x + 18, top: avatarTipPos.y + 14 }}
+            >
+              <div className="rounded-[14px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.97)] px-4 py-3 shadow-xl backdrop-blur-sm w-[240px]">
+                <p className="mb-2 text-[15px] font-black leading-tight text-[#f9e7b2]">{profile?.login ?? "—"}</p>
+                <div className="flex flex-col gap-1.5 text-[13px]">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-[#8b6a3e]">Avatar</span>
+                    <span className="text-right font-bold text-[#d8ba7a]">
+                      {avatarSkin < 0 ? "Brak" : avatarSkin < SKINS_MALE.length ? `Rolnik M${avatarSkin + 1}` : avatarSkin < SKINS_MALE.length + SKINS_FEMALE.length ? `Rolniczka F${avatarSkin - SKINS_MALE.length + 1}` : (EPIC_SKINS[avatarSkin - EPIC_SKIN_START]?.name ?? "Epickie")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-[#8b6a3e]">Doświadczenie</span>
+                    <span className="font-bold text-[#d8ba7a]">{displayXp}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-[#8b6a3e]">Kolejny poziom</span>
+                    <span className="font-bold text-[#d8ba7a]">{displayXpToNextLevel > 0 ? displayXpToNextLevel : "MAX"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Fixed card tooltip — owoce, przedmioty, kompost — nad kursorem */}
           {cardTip && (
