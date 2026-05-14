@@ -1735,13 +1735,17 @@ export default function Page() {
   const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
   const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 1629, t: 176, w: 192, h: 179 });
   const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 1629, t: 384, w: 190, h: 176 });
-  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
+  const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 1629, t: 592, w: 192, h: 179 });
+  const [fvKompostPos, setFvKompostPos] = React.useState({ l: 1629, t: 800, w: 192, h: 179 });
+  const [fvSeedPickerOpen, setFvSeedPickerOpen] = React.useState(false);
+  const [fvCompostPickerOpen, setFvCompostPickerOpen] = React.useState(false);
+  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
-      const setter = d.btn === "konewka" ? setFvKonewkaPos : setFvZbierzPos;
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : setFvKompostPos;
       if (d.mode === "move") {
         setter({
           l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX))),
@@ -6170,7 +6174,7 @@ export default function Page() {
 
 
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
-                <div className="fixed left-4 top-4 z-[95]">
+                <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-150 ${isFieldViewOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}>
                   <div className="flex flex-col items-start">
                     {/* Górny rząd: przycisk plecaka + avatar */}
                     <div className="flex flex-row items-start gap-2">
@@ -10526,22 +10530,24 @@ export default function Page() {
 
                   {/* ─── Panel współrzędnych (widoczny tylko w trybie edycji) ─── */}
                   {fvToolEditMode && (
-                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-[320px] rounded-2xl border border-orange-400/60 bg-[rgba(20,8,2,0.97)] p-5 shadow-2xl backdrop-blur-sm pointer-events-none">
+                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-[340px] rounded-2xl border border-orange-400/60 bg-[rgba(20,8,2,0.97)] p-5 shadow-2xl backdrop-blur-sm pointer-events-none">
                       <p className="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">📐 Współrzędne narzędzi</p>
-                      <div className="flex flex-col gap-3">
-                        <div className="rounded-xl border border-cyan-400/30 bg-cyan-950/30 p-3">
+                      <div className="flex flex-col gap-2">
+                        <div className="rounded-xl border border-cyan-400/30 bg-cyan-950/30 p-2.5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-cyan-300">🚿 Konewka</p>
-                          <p className="font-mono text-sm text-cyan-100">left: <span className="font-black text-white">{fvKonewkaPos.l}</span></p>
-                          <p className="font-mono text-sm text-cyan-100">top: <span className="font-black text-white">{fvKonewkaPos.t}</span></p>
-                          <p className="font-mono text-sm text-cyan-100">width: <span className="font-black text-white">{fvKonewkaPos.w}</span></p>
-                          <p className="font-mono text-sm text-cyan-100">height: <span className="font-black text-white">{fvKonewkaPos.h}</span></p>
+                          <p className="font-mono text-xs text-cyan-100">l:<span className="font-black text-white">{fvKonewkaPos.l}</span> t:<span className="font-black text-white">{fvKonewkaPos.t}</span> w:<span className="font-black text-white">{fvKonewkaPos.w}</span> h:<span className="font-black text-white">{fvKonewkaPos.h}</span></p>
                         </div>
-                        <div className="rounded-xl border border-yellow-400/30 bg-yellow-950/30 p-3">
-                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">⚔️ Sierp (Zbierz)</p>
-                          <p className="font-mono text-sm text-yellow-100">left: <span className="font-black text-white">{fvZbierzPos.l}</span></p>
-                          <p className="font-mono text-sm text-yellow-100">top: <span className="font-black text-white">{fvZbierzPos.t}</span></p>
-                          <p className="font-mono text-sm text-yellow-100">width: <span className="font-black text-white">{fvZbierzPos.w}</span></p>
-                          <p className="font-mono text-sm text-yellow-100">height: <span className="font-black text-white">{fvZbierzPos.h}</span></p>
+                        <div className="rounded-xl border border-yellow-400/30 bg-yellow-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">⚔️ Sierp</p>
+                          <p className="font-mono text-xs text-yellow-100">l:<span className="font-black text-white">{fvZbierzPos.l}</span> t:<span className="font-black text-white">{fvZbierzPos.t}</span> w:<span className="font-black text-white">{fvZbierzPos.w}</span> h:<span className="font-black text-white">{fvZbierzPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-green-400/30 bg-green-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-green-300">🌱 Nasiona</p>
+                          <p className="font-mono text-xs text-green-100">l:<span className="font-black text-white">{fvNasonaPos.l}</span> t:<span className="font-black text-white">{fvNasonaPos.t}</span> w:<span className="font-black text-white">{fvNasonaPos.w}</span> h:<span className="font-black text-white">{fvNasonaPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-lime-400/30 bg-lime-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-lime-300">♻️ Kompost</p>
+                          <p className="font-mono text-xs text-lime-100">l:<span className="font-black text-white">{fvKompostPos.l}</span> t:<span className="font-black text-white">{fvKompostPos.t}</span> w:<span className="font-black text-white">{fvKompostPos.w}</span> h:<span className="font-black text-white">{fvKompostPos.h}</span></p>
                         </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
@@ -10596,11 +10602,231 @@ export default function Page() {
                     )}
                   </button>
 
+                  {/* ─── Przycisk Nasiona ─── */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (fvToolEditMode) return;
+                      setFvSeedPickerOpen(prev => !prev);
+                      setFvCompostPickerOpen(false);
+                    }}
+                    onMouseDown={fvToolEditMode ? (e) => {
+                      e.preventDefault();
+                      const pos = fvNasonaPos;
+                      fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
+                  >
+                    {(() => {
+                      if (!fvToolEditMode && selectedSeedId && !isCompostKey(selectedSeedId)) {
+                        const { baseCropId, quality } = parseQualityKey(selectedSeedId);
+                        const crop = CROPS.find(c => c.id === baseCropId);
+                        if (crop) {
+                          const sprite = quality === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : quality === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : quality === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
+                          const cnt = seedInventory[selectedSeedId] ?? 0;
+                          return (
+                            <>
+                              <img src={sprite} alt={crop.name} className="h-[45%] w-[45%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
+                              <p className="text-[9px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5 text-center px-1 max-w-full truncate">{crop.name}</p>
+                              <p className="text-[9px] text-green-300 pointer-events-none leading-none">×{cnt}</p>
+                            </>
+                          );
+                        }
+                      }
+                      return (
+                        <>
+                          <span className="text-3xl pointer-events-none select-none">🌱</span>
+                          <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Nasiona</p>
+                        </>
+                      );
+                    })()}
+                    {fvToolEditMode && (
+                      <div
+                        onMouseDown={(e) => { e.stopPropagation(); const pos = fvNasonaPos; fvToolDragRef.current = { btn: "nasiona", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-orange-400/80 rounded-tl"
+                      />
+                    )}
+                  </button>
+
+                  {/* ─── Przycisk Kompost ─── */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (fvToolEditMode) return;
+                      setFvCompostPickerOpen(prev => !prev);
+                      setFvSeedPickerOpen(false);
+                    }}
+                    onMouseDown={fvToolEditMode ? (e) => {
+                      e.preventDefault();
+                      const pos = fvKompostPos;
+                      fvToolDragRef.current = { btn: "kompost", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvKompostPos.l, top: fvKompostPos.t, width: fvKompostPos.w, height: fvKompostPos.h }}
+                  >
+                    {(() => {
+                      if (!fvToolEditMode && selectedSeedId && isCompostKey(selectedSeedId)) {
+                        const cType = compostTypeFromKey(selectedSeedId);
+                        const cVal = compostValueFromKey(selectedSeedId);
+                        const cDef = cType ? COMPOST_DEFS[cType] : null;
+                        const cnt = seedInventory[selectedSeedId] ?? 0;
+                        if (cDef) {
+                          return (
+                            <>
+                              <span className="text-3xl pointer-events-none select-none">{cDef.icon}</span>
+                              <p className="text-[9px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5 text-center px-1 max-w-full truncate">{cDef.tierName(cVal)}</p>
+                              <p className="text-[9px] text-lime-300 pointer-events-none leading-none">×{cnt}</p>
+                            </>
+                          );
+                        }
+                      }
+                      return (
+                        <>
+                          <span className="text-3xl pointer-events-none select-none">♻️</span>
+                          <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Kompost</p>
+                        </>
+                      );
+                    })()}
+                    {fvToolEditMode && (
+                      <div
+                        onMouseDown={(e) => { e.stopPropagation(); const pos = fvKompostPos; fvToolDragRef.current = { btn: "kompost", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-orange-400/80 rounded-tl"
+                      />
+                    )}
+                  </button>
+
+                  {/* ─── Picker: Nasiona ─── */}
+                  {fvSeedPickerOpen && !fvToolEditMode && (
+                    <div
+                      className="fixed inset-0 z-[115] flex items-center justify-center"
+                      onClick={() => setFvSeedPickerOpen(false)}
+                    >
+                      <div
+                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[520px] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz uprawę</p>
+                        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">🌱 Nasiona w plecaku</h3>
+                        {(["legendary","epic","good",null] as (string|null)[]).map(quality => {
+                          const entries = Object.entries(seedInventory).filter(([k, cnt]) => !isCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality);
+                          if (entries.length === 0) return null;
+                          const qLabel = quality === "legendary" ? "✨ Legendarne" : quality === "epic" ? "🟣 Epickie" : quality === "good" ? "🟢 Zwykłe" : "📦 Pozostałe";
+                          const qColor = quality === "legendary" ? "#fbbf24" : quality === "epic" ? "#a78bfa" : quality === "good" ? "#6ee7b7" : "#8b6a3e";
+                          return (
+                            <div key={quality ?? "base"} className="mb-4">
+                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: qColor }}>{qLabel}</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {entries.map(([seedId, cnt]) => {
+                                  const { baseCropId, quality: q } = parseQualityKey(seedId);
+                                  const crop = CROPS.find(c => c.id === baseCropId);
+                                  if (!crop) return null;
+                                  const sprite = q === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : q === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : q === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
+                                  const isSel = selectedSeedId === seedId;
+                                  return (
+                                    <button
+                                      key={seedId}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSeedId(isSel ? null : seedId);
+                                        setSelectedTool(null);
+                                        setFvSeedPickerOpen(false);
+                                      }}
+                                      className="flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition-colors"
+                                      style={{ borderColor: isSel ? qColor : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(30,18,8,0.9)" : "rgba(20,12,6,0.7)" }}
+                                    >
+                                      <img src={sprite} alt={crop.name} className="w-12 h-12 object-contain" style={{ imageRendering: "pixelated" }} />
+                                      <p className="text-[11px] font-bold text-[#f9e7b2] text-center leading-tight">{crop.name}</p>
+                                      <p className="text-[10px] text-[#d8ba7a]">×{cnt}</p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {Object.entries(seedInventory).filter(([k, v]) => !isCompostKey(k) && v > 0).length === 0 && (
+                          <p className="text-sm text-[#dfcfab] text-center py-6">Brak nasion w plecaku</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setFvSeedPickerOpen(false)}
+                          className="mt-3 w-full rounded-xl border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.7)] py-2 text-sm font-bold text-[#dfcfab] hover:bg-[rgba(58,34,18,0.9)] transition-colors"
+                        >Zamknij</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ─── Picker: Kompost ─── */}
+                  {fvCompostPickerOpen && !fvToolEditMode && (
+                    <div
+                      className="fixed inset-0 z-[115] flex items-center justify-center"
+                      onClick={() => setFvCompostPickerOpen(false)}
+                    >
+                      <div
+                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[480px] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz kompost</p>
+                        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">♻️ Kompost w plecaku</h3>
+                        {(Object.keys(COMPOST_DEFS) as (keyof typeof COMPOST_DEFS)[]).map(cType => {
+                          const def = COMPOST_DEFS[cType];
+                          const entries = def.bonusValues.flatMap(val => {
+                            const key = compostKeyFor(cType, val);
+                            const cnt = seedInventory[key] ?? 0;
+                            return cnt > 0 ? [{ key, val, cnt }] : [];
+                          });
+                          if (entries.length === 0) return null;
+                          return (
+                            <div key={cType} className="mb-4">
+                              <p className="text-xs font-black mb-2 uppercase tracking-wider text-[#d8ba7a]">{def.icon} {def.name}</p>
+                              <div className="flex flex-col gap-2">
+                                {entries.map(({ key: cKey, val, cnt }) => {
+                                  const isSel = selectedSeedId === cKey;
+                                  const tierLabel = def.tierName(val);
+                                  const bonusLabel = def.bonusLabel(val);
+                                  return (
+                                    <button
+                                      key={cKey}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedSeedId(isSel ? null : cKey);
+                                        setSelectedTool(null);
+                                        setFvCompostPickerOpen(false);
+                                      }}
+                                      className="flex items-center gap-3 rounded-xl border-2 px-3 py-2 transition-colors text-left"
+                                      style={{ borderColor: isSel ? "#86efac" : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(20,40,10,0.9)" : "rgba(20,12,6,0.7)" }}
+                                    >
+                                      <span className="text-2xl select-none">{def.icon}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-[#f9e7b2] leading-tight">{tierLabel} {def.name}</p>
+                                        <p className="text-[11px] text-[#d8ba7a]">{bonusLabel}</p>
+                                      </div>
+                                      <p className="text-sm font-black text-lime-300 shrink-0">×{cnt}</p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {Object.keys(COMPOST_DEFS).every(t => (COMPOST_DEFS[t as keyof typeof COMPOST_DEFS].bonusValues.every(v => (seedInventory[compostKeyFor(t as keyof typeof COMPOST_DEFS, v)] ?? 0) === 0))) && (
+                          <p className="text-sm text-[#dfcfab] text-center py-6">Brak kompostu w plecaku</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setFvCompostPickerOpen(false)}
+                          className="mt-3 w-full rounded-xl border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.7)] py-2 text-sm font-bold text-[#dfcfab] hover:bg-[rgba(58,34,18,0.9)] transition-colors"
+                        >Zamknij</button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mb-4 pr-28">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
                     <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
                     <p className="mt-2 text-sm text-[#dfcfab]">
-                      Wybierz nasiono z plecaka, konewkę lub sierp, a potem kliknij pole. Możesz też używać WASD i strzałek.
+                      Wybierz uprawę lub kompost przyciskami po prawej, użyj konewki lub sierpa, a potem kliknij pole. Możesz też używać WASD i strzałek.
                     </p>
                   </div>
 
