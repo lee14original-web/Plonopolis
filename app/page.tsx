@@ -2164,7 +2164,7 @@ export default function Page() {
   const [coQty, setCoQty] = React.useState(1);
   const [coPrice, setCoPrice] = React.useState<number>(10);
   const [coPriceStr, setCoPriceStr] = React.useState("10");
-  const [coDuration, setCoDuration] = React.useState<24|48>(24);
+  const [coDuration, setCoDuration] = React.useState<24|48|72>(24);
   const [coLoading, setCoLoading] = React.useState(false);
   const [buyingOfferId, setBuyingOfferId] = React.useState<string|null>(null);
   const [buyQtyMap, setBuyQtyMap] = React.useState<Record<string, number>>({});
@@ -11888,7 +11888,7 @@ export default function Page() {
                       const minP         = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
                       const total        = Math.round(coQty * coPrice * 100) / 100;
                       const tax          = Math.round(total * 0.1 * 100) / 100;
-                      const extFee       = coDuration === 48 ? Math.round(total * 0.05 * 100) / 100 : 0;
+                      const extFee       = coDuration === 48 ? Math.round(total * 0.03 * 100) / 100 : coDuration === 72 ? Math.round(total * 0.07 * 100) / 100 : 0;
                       const sellerGets   = Math.round((total - tax - extFee) * 100) / 100;
                       return (
                         <div className="mb-4 rounded-2xl border border-[#d8ba7a]/40 bg-[rgba(255,255,255,0.03)] p-5 space-y-4">
@@ -11950,11 +11950,15 @@ export default function Page() {
                           <div>
                             <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Czas trwania</label>
                             <div className="flex gap-2">
-                              {([24, 48] as const).map(d => (
-                                <button key={d} type="button" onClick={() => setCoDuration(d)}
-                                  className={`flex-1 rounded-xl border py-2.5 text-base font-bold transition ${coDuration === d ? "border-[#f4cf78] bg-[rgba(242,202,105,0.15)] text-[#f9e7b2]" : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"}`}
-                                >{d === 24 ? "24h (darmowe)" : `48h (+${extFee > 0 ? extFee.toLocaleString("pl-PL") : "5%"} zł)`}</button>
-                              ))}
+                              {([24, 48, 72] as const).map(d => {
+                                const dFee = d === 48 ? Math.round(total * 0.03 * 100) / 100 : d === 72 ? Math.round(total * 0.07 * 100) / 100 : 0;
+                                const label = d === 24 ? "24h (darmowe)" : d === 48 ? `48h (+${dFee > 0 ? dFee.toLocaleString("pl-PL") : "3%"} zł)` : `72h (+${dFee > 0 ? dFee.toLocaleString("pl-PL") : "7%"} zł)`;
+                                return (
+                                  <button key={d} type="button" onClick={() => setCoDuration(d)}
+                                    className={`flex-1 rounded-xl border py-2.5 text-base font-bold transition ${coDuration === d ? "border-[#f4cf78] bg-[rgba(242,202,105,0.15)] text-[#f9e7b2]" : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"}`}
+                                  >{label}</button>
+                                );
+                              })}
                             </div>
                           </div>
                           {/* Podsumowanie */}
