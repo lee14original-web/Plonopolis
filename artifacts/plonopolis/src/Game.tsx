@@ -8625,51 +8625,73 @@ export default function Page() {
                       </div>
                     </div>
 
-                    {/* Prognoza nagród */}
-                    <div className="mb-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-2.5 pb-2">
-                      <p className="text-[9px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider mb-2">Możliwe nagrody (5 losowań na partię)</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {currentTierChances.map((chance, i) => chance > 0 && (
-                          <div
-                            key={i}
-                            className="flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 cursor-help hover:scale-105 transition"
-                            style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}70`, boxShadow: `0 0 8px ${ITEM_TIER_RARITY[i].shadow}` }}
-                            onMouseEnter={(e) => {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              const minLvl = i * 5 + 1;
-                              const maxLvl = i * 5 + 5;
-                              const tierItems = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl);
-                              const rarity = ITEM_TIER_RARITY[i];
-                              const tipNode = (
-                                <>
-                                  <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
-                                  <p className="text-[12px] font-bold text-[#8b6a3e]/70 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
-                                  <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
-                                    {tierItems.map(it => (<p key={it.id} className="text-[13px] text-[#dfcfab] leading-snug">{it.icon} {it.name}</p>))}
-                                  </div>
-                                </>
-                              );
-                              const _tc0 = toGameCoords(rect.left + rect.width / 2, rect.bottom);
-                              setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
-                            }}
-                            onMouseLeave={() => setKompostTierHoverTip(null)}>
-                            <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
-                            <span className="text-[17px] font-black leading-tight" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
-                            <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {batch.fill > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap mt-3 rounded-lg border border-[#8b6a3e]/30 bg-black/20 px-3 py-2">
-                          <span className="text-[12px] font-bold text-[#8b6a3e]/80">🌱 {100 - itemDropChancePct}% kompost:</span>
+                    {/* Prognoza nagród — 3 sekcje */}
+                    <div className="mb-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2 flex flex-col gap-2">
+                      <p className="text-[10px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider">Możliwe nagrody <span className="normal-case font-normal">(per losowanie, 5 losowań na partię)</span></p>
+
+                      {/* Blok 1 — Kompost */}
+                      <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[13px]">🌱</span>
+                          <span className="text-[13px] font-black text-emerald-300">Kompost</span>
+                          <span className="ml-auto text-[15px] font-black text-emerald-300">{100 - itemDropChancePct}%</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
                           {(["growth","yield","exp"] as const).map(ct => {
                             const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
                             const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                            return <span key={ct} className="text-[13px] font-black" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
+                            return <span key={ct} className="text-[12px] font-black" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
                           })}
-                          {diversityTierBoostUI && <span className="text-[12px] text-purple-400 font-black">· +tier boost (6+ gatunków)</span>}
+                          {diversityTierBoostUI && <span className="text-[11px] text-purple-400 font-bold">· +tier boost (6+ gatunków)</span>}
                         </div>
-                      )}
+                      </div>
+
+                      {/* Blok 2 — Ekwipunek */}
+                      <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-[13px]">⚔️</span>
+                          <span className="text-[13px] font-black text-amber-300">Ekwipunek</span>
+                          <span className="ml-auto text-[15px] font-black text-amber-300">{itemDropChancePct}%</span>
+                        </div>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {currentTierChances.map((chance, i) => chance > 0 && (
+                            <div
+                              key={i}
+                              className="flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1.5 cursor-help hover:scale-105 transition"
+                              style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}70`, boxShadow: `0 0 6px ${ITEM_TIER_RARITY[i].shadow}` }}
+                              onMouseEnter={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const minLvl = i * 5 + 1; const maxLvl = i * 5 + 5;
+                                const tierItems = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl);
+                                const rarity = ITEM_TIER_RARITY[i];
+                                const tipNode = (
+                                  <>
+                                    <p className="text-[15px] font-black mb-2" style={{ color: rarity.border }}>{rarity.dot} I{i+1} — {rarity.label} (lvl {minLvl}–{maxLvl})</p>
+                                    <p className="text-[12px] font-bold text-[#8b6a3e]/70 mb-1.5 uppercase tracking-wider">Mozliwe nagrody ({tierItems.length}):</p>
+                                    <div className="flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 320 }}>
+                                      {tierItems.map(it => (<p key={it.id} className="text-[13px] text-[#dfcfab] leading-snug">{it.icon} {it.name}</p>))}
+                                    </div>
+                                  </>
+                                );
+                                const _tc0 = toGameCoords(rect.left + rect.width / 2, rect.bottom);
+                                setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
+                              }}
+                              onMouseLeave={() => setKompostTierHoverTip(null)}>
+                              <span className="text-[14px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
+                              <span className="text-[13px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                              <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Blok 3 — Jackpot */}
+                      <div className="rounded-lg border border-yellow-600/40 bg-yellow-950/30 px-3 py-2 flex items-center gap-2">
+                        <span className="text-[13px]">✨</span>
+                        <span className="text-[13px] font-black text-yellow-300">Jackpot</span>
+                        <span className="text-[11px] text-yellow-200/60 flex-1">— legendarny item (niezależnie od jakości partii)</span>
+                        <span className="text-[15px] font-black text-yellow-300">{JACKPOT_CHANCE}%</span>
+                      </div>
                     </div>
 
                     {/* Przycisk odbioru */}
