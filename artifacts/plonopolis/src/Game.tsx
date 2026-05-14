@@ -2162,7 +2162,8 @@ export default function Page() {
   const [coItemType, setCoItemType] = React.useState<MarketItemType>("crop");
   const [coItemKey, setCoItemKey] = React.useState("");
   const [coQty, setCoQty] = React.useState(1);
-  const [coPrice, setCoPrice] = React.useState(10);
+  const [coPrice, setCoPrice] = React.useState<number>(10);
+  const [coPriceStr, setCoPriceStr] = React.useState("10");
   const [coDuration, setCoDuration] = React.useState<24|48>(24);
   const [coLoading, setCoLoading] = React.useState(false);
   const [buyingOfferId, setBuyingOfferId] = React.useState<string|null>(null);
@@ -5055,7 +5056,7 @@ export default function Page() {
       saveOwnedEqItems(next);
     }
     setMessage({ type: "success", title: "Oferta wystawiona!", text: `${name} ×${coQty} za ${coPrice} zł/szt.` });
-    setCreateOfferOpen(false); setCoItemKey(""); setCoQty(1); setCoPrice(10); setCoDuration(24);
+    setCreateOfferOpen(false); setCoItemKey(""); setCoQty(1); setCoPrice(10); setCoPriceStr("10"); setCoDuration(24);
     await Promise.all([loadProfile(), loadMarketData()]);
   }
   async function handleBuyOffer(offerId: string, qty: number) {
@@ -11927,9 +11928,19 @@ export default function Page() {
                               />
                             </div>
                             <div className="flex-1">
-                              <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Cena/szt. (min {minP} zł)</label>
-                              <input type="number" min={minP} value={coPrice}
-                                onChange={e => setCoPrice(Math.max(minP, parseInt(e.target.value)||minP))}
+                              <label className="mb-1.5 block text-sm font-bold uppercase tracking-wider text-[#dfcfab]">Cena/szt. (min 1 zł)</label>
+                              <input type="text" inputMode="decimal" value={coPriceStr}
+                                onChange={e => {
+                                  const raw = e.target.value.replace(",", ".");
+                                  setCoPriceStr(e.target.value);
+                                  const parsed = parseFloat(raw);
+                                  if (!isNaN(parsed)) setCoPrice(Math.round(parsed * 100) / 100);
+                                }}
+                                onBlur={() => {
+                                  const val = Math.max(1, isNaN(coPrice) ? 1 : coPrice);
+                                  setCoPrice(val);
+                                  setCoPriceStr(String(val));
+                                }}
                                 className="w-full rounded-xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.8)] px-3 py-2.5 text-base text-[#f3e6c8] outline-none focus:border-[#d8ba7a]/60"
                               />
                             </div>
@@ -12110,6 +12121,7 @@ export default function Page() {
                 setCoItemKey(item.key);
                 setCoQty(1);
                 setCoPrice(item.minPrice);
+                setCoPriceStr(String(item.minPrice));
                 setCoDuration(24);
                 setMarketPickerOpen(false);
                 setCreateOfferOpen(true);
