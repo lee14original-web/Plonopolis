@@ -2918,12 +2918,11 @@ export default function Page() {
         return;
       }
 
-      // Upewnij się że baza ma aktualny (po-migracyjny) format inwentarza
-      // zanim serwer spróbuje go odczytać — używamy FRESH ref state.
-      // WAŻNE: seedInventoryRef ma już optimistycznie odliczone nasiono (−1).
-      // Przed zapisem przywracamy je do wartości SPRZED sadzenia (+1),
-      // bo game_plant_crop sam odliczy je z DB atomicznie.
-      if (profile.id) {
+      // Migracja formatu inwentarza (tylko dla starych kluczy bez sufiksu jakości, np. "carrot").
+      // Nasiona w nowym formacie (np. "carrot_legendary") pomijają ten update —
+      // ślepy zapis równoległy nadpisywałby stan DB po poprzednim atomicznym game_plant_crop.
+      const _needsMigration = !effectiveSeedId.includes("_");
+      if (_needsMigration && profile.id) {
         const _invForDb = { ..._freshInv, [effectiveSeedId]: (_freshAmount + 1) };
         await supabase
           .from("profiles")
@@ -10565,6 +10564,30 @@ export default function Page() {
                   >
                     🎯 {fvToolEditMode ? "Zakończ edycję" : "Edytuj narzędzia"}
                   </button>
+
+                  {/* ─── Panel współrzędnych (widoczny tylko w trybie edycji) ─── */}
+                  {fvToolEditMode && (
+                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-[320px] rounded-2xl border border-orange-400/60 bg-[rgba(20,8,2,0.97)] p-5 shadow-2xl backdrop-blur-sm pointer-events-none">
+                      <p className="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-orange-400">📐 Współrzędne narzędzi</p>
+                      <div className="flex flex-col gap-3">
+                        <div className="rounded-xl border border-cyan-400/30 bg-cyan-950/30 p-3">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-cyan-300">🚿 Konewka</p>
+                          <p className="font-mono text-sm text-cyan-100">left: <span className="font-black text-white">{fvKonewkaPos.l}</span></p>
+                          <p className="font-mono text-sm text-cyan-100">top: <span className="font-black text-white">{fvKonewkaPos.t}</span></p>
+                          <p className="font-mono text-sm text-cyan-100">width: <span className="font-black text-white">{fvKonewkaPos.w}</span></p>
+                          <p className="font-mono text-sm text-cyan-100">height: <span className="font-black text-white">{fvKonewkaPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-yellow-400/30 bg-yellow-950/30 p-3">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">⚔️ Sierp (Zbierz)</p>
+                          <p className="font-mono text-sm text-yellow-100">left: <span className="font-black text-white">{fvZbierzPos.l}</span></p>
+                          <p className="font-mono text-sm text-yellow-100">top: <span className="font-black text-white">{fvZbierzPos.t}</span></p>
+                          <p className="font-mono text-sm text-yellow-100">width: <span className="font-black text-white">{fvZbierzPos.w}</span></p>
+                          <p className="font-mono text-sm text-yellow-100">height: <span className="font-black text-white">{fvZbierzPos.h}</span></p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
+                    </div>
+                  )}
 
                   {/* Konewka */}
                   <button
