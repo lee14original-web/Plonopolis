@@ -2136,6 +2136,7 @@ export default function Page() {
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostTierHoverTip, setKompostTierHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [showKompostHelp, setShowKompostHelp] = React.useState(false);
+  const [seedPickerTip, setSeedPickerTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [avatarTipVisible, setAvatarTipVisible] = React.useState(false);
   const [avatarTipPos, setAvatarTipPos] = React.useState({ x: 0, y: 0 });
@@ -11036,7 +11037,32 @@ export default function Page() {
                                           setSelectedSeedId(isSel ? null : seedId);
                                           setSelectedTool(null);
                                           setFvSeedPickerOpen(false);
+                                          setSeedPickerTip(null);
                                         }}
+                                        onMouseEnter={(e) => {
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const tipColor = q === "legendary" ? "#fbbf24" : q === "epic" ? "#a78bfa" : q === "good" ? "#6ee7b7" : "#9ca3af";
+                                          const growMs = crop.growthTimeMs;
+                                          const growFmt = growMs >= 3600000 ? `${Math.floor(growMs/3600000)}h ${Math.floor((growMs%3600000)/60000)}m` : growMs >= 60000 ? `${Math.floor(growMs/60000)}m` : `${Math.floor(growMs/1000)}s`;
+                                          const qLabel = q === "legendary" ? "✨ Legendarne" : q === "epic" ? "🟣 Epickie" : q === "good" ? "🟢 Zwykłe" : q === "rotten" ? "🟫 Zgniłe" : "Zwykłe";
+                                          const qDesc = q === "legendary" ? "Opcja przy zbiorze: ×2 plon / plony epickie / ×20–40 EXP" : q === "epic" ? "Wyższa jakość plonów, ×3–6 EXP przy zbiorze" : q === "rotten" ? "Obniżony plon, ale szybszy wzrost" : "";
+                                          const tipNode = (
+                                            <>
+                                              <p className="text-[15px] font-black" style={{ color: tipColor }}>{crop.name}</p>
+                                              <p className="text-[11px] font-bold mb-2 opacity-80" style={{ color: tipColor }}>{qLabel}</p>
+                                              <div className="flex flex-col gap-1 text-[12px]">
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Odblokowanie</span><span className="font-black text-white">lvl {crop.unlockLevel}</span></div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Czas wzrostu</span><span className="font-black text-white">⏱ {growFmt}</span></div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Plon (bazowy)</span><span className="font-black text-white">×{crop.yieldAmount}</span></div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">EXP za zbiór</span><span className="font-black text-sky-300">+{crop.expReward}</span></div>
+                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">W plecaku</span><span className="font-black text-white">×{cnt}</span></div>
+                                              </div>
+                                              {qDesc && <p className="mt-2 text-[11px] font-bold rounded-lg px-2 py-1.5 bg-white/5 border border-white/10" style={{ color: tipColor }}>{qDesc}</p>}
+                                            </>
+                                          );
+                                          setSeedPickerTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tipColor });
+                                        }}
+                                        onMouseLeave={() => setSeedPickerTip(null)}
                                         className="relative w-[112px] h-[112px] rounded-xl border-2 overflow-hidden transition-colors"
                                         style={{ borderColor: isSel ? qColor : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(30,18,8,0.9)" : "rgba(20,12,6,0.7)", ...(isSel ? { boxShadow: `0 0 14px ${qColor}88` } : {}) }}
                                       >
@@ -11061,6 +11087,23 @@ export default function Page() {
                           className="mt-3 w-full rounded-xl border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.7)] py-2 text-sm font-bold text-[#dfcfab] hover:bg-[rgba(58,34,18,0.9)] transition-colors"
                         >Zamknij</button>
                       </div>
+                      {/* Tooltip nasiona */}
+                      {seedPickerTip && (() => {
+                        const TIP_W = 300;
+                        const TIP_H_EST = 195;
+                        const margin = 12;
+                        let left = seedPickerTip.x - TIP_W / 2;
+                        left = Math.max(margin, Math.min(window.innerWidth - TIP_W - margin, left));
+                        let top = seedPickerTip.y - TIP_H_EST - 14;
+                        if (top < margin) top = seedPickerTip.y + 125;
+                        return (
+                          <div
+                            className="pointer-events-none fixed z-[9999] flex flex-col gap-1 rounded-xl border-2 px-4 py-3 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
+                            style={{ left, top, width: TIP_W, borderColor: seedPickerTip.color }}>
+                            {seedPickerTip.node}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
