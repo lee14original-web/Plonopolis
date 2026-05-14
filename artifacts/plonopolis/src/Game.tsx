@@ -11084,9 +11084,9 @@ export default function Page() {
                                                   )}
                                                   {_showBonus && (
                                                     <div className="text-[12px] text-[#8b6a3e]/70 pl-1">
-                                                      {_wiedzaPct > 0 && <span>📚−{_wiedzaPct.toFixed(0)}% </span>}
-                                                      {_hivePct > 0 && <span>🍯−{_hivePct}% </span>}
-                                                      {_equipPct > 0 && <span>👕−{_equipPct}%</span>}
+                                                      {_wiedzaPct > 0 && <span>📚−{_wiedzaPct.toFixed(1)}% </span>}
+                                                      {_hivePct > 0 && <span>🍯−{_hivePct.toFixed(1)}% </span>}
+                                                      {_equipPct > 0 && <span>👕−{parseFloat(_equipPct.toFixed(1))}%</span>}
                                                     </div>
                                                   )}
                                                   {_waterTotalPct > 0 && (
