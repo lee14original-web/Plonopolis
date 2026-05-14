@@ -71,18 +71,28 @@ begin
 
     -- Ile sztuk bazowych?
     if p_planted_quality = 'epic' then
-      v_total_base_items := 3 + floor(random() * 8)::integer;  -- 3–10
+      v_total_base_items := 8 + floor(random() * 13)::integer;  -- 8–20
     else
       v_total_base_items := v_crop.yield_amount;
     end if;
 
     -- Losuj jakość dla każdej sztuki bazowej
+    -- Epickie nasiono: 5% popsuta / 55% zwykła / 35% epicka / 5% legendarna
+    -- Zwykłe nasiono:  15% popsuta / 79% zwykła /  5% epicka / 1%  legendarna
     for v_loop_i in 1..v_total_base_items loop
       v_item_roll := random();
-      if    v_item_roll < 0.15 then v_item_quality := 'rotten';
-      elsif v_item_roll < 0.94 then v_item_quality := 'good';
-      elsif v_item_roll < 0.99 then v_item_quality := 'epic';
-      else                          v_item_quality := 'legendary';
+      if p_planted_quality = 'epic' then
+        if    v_item_roll < 0.05 then v_item_quality := 'rotten';
+        elsif v_item_roll < 0.60 then v_item_quality := 'good';
+        elsif v_item_roll < 0.95 then v_item_quality := 'epic';
+        else                          v_item_quality := 'legendary';
+        end if;
+      else
+        if    v_item_roll < 0.15 then v_item_quality := 'rotten';
+        elsif v_item_roll < 0.94 then v_item_quality := 'good';
+        elsif v_item_roll < 0.99 then v_item_quality := 'epic';
+        else                          v_item_quality := 'legendary';
+        end if;
       end if;
       v_seed_inventory := jsonb_set(
         v_seed_inventory,
@@ -103,10 +113,18 @@ begin
       v_zrecznosc_triggered := true;
       for v_loop_i in 1..v_crop.yield_amount loop
         v_item_roll := random();
-        if    v_item_roll < 0.15 then v_item_quality := 'rotten';
-        elsif v_item_roll < 0.94 then v_item_quality := 'good';
-        elsif v_item_roll < 0.99 then v_item_quality := 'epic';
-        else                          v_item_quality := 'legendary';
+        if p_planted_quality = 'epic' then
+          if    v_item_roll < 0.05 then v_item_quality := 'rotten';
+          elsif v_item_roll < 0.60 then v_item_quality := 'good';
+          elsif v_item_roll < 0.95 then v_item_quality := 'epic';
+          else                          v_item_quality := 'legendary';
+          end if;
+        else
+          if    v_item_roll < 0.15 then v_item_quality := 'rotten';
+          elsif v_item_roll < 0.94 then v_item_quality := 'good';
+          elsif v_item_roll < 0.99 then v_item_quality := 'epic';
+          else                          v_item_quality := 'legendary';
+          end if;
         end if;
         v_seed_inventory := jsonb_set(
           v_seed_inventory,
