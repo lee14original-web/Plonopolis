@@ -10831,6 +10831,12 @@ export default function Page() {
                           return (
                             <>
                               <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-cover pointer-events-none rounded-[10px]" style={{ imageRendering: "pixelated" }} />
+                              {quality === "legendary" && (
+                                <div className="absolute inset-0 rounded-[10px] pointer-events-none animate-pulse" style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.35) 0%, rgba(245,158,11,0.0) 50%, rgba(251,191,36,0.35) 100%)", boxShadow: "inset 0 0 12px rgba(251,191,36,0.6)" }} />
+                              )}
+                              {quality === "epic" && (
+                                <div className="absolute inset-0 rounded-[10px] pointer-events-none animate-pulse" style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3) 0%, rgba(139,92,246,0.0) 50%, rgba(167,139,250,0.3) 100%)", boxShadow: "inset 0 0 10px rgba(167,139,250,0.5)" }} />
+                              )}
                               <p className="absolute bottom-5 left-0 right-0 text-center text-[9px] font-black text-white pointer-events-none leading-none px-1 truncate drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{crop.name}</p>
                               <p className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-black text-green-300 pointer-events-none leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">×{cnt}</p>
                             </>
