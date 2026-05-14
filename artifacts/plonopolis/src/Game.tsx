@@ -8561,7 +8561,7 @@ export default function Page() {
                       <span className="text-4xl">🌿</span>
                       <div className="flex-1">
                         <h2 className="text-2xl font-black text-[#dfcfab]">Kompostownik</h2>
-                        <p className="text-xs text-[#8b6a3e] mt-0.5">Zapełnij partię 100 wrzutami — im lepsze uprawy, tym silniejsze nagrody. Za każdą pełną partię: 5 nagród.</p>
+                        <p className="text-sm font-bold text-[#8b6a3e] mt-0.5">Zapełnij partię 100 wrzutami — im lepsze uprawy, tym silniejsze nagrody. Za każdą pełną partię: 5 nagród.</p>
                       </div>
                     </div>
 
@@ -8596,68 +8596,68 @@ export default function Page() {
                         )}
                       </div>
                       {/* Milestone labels */}
-                      <div className="flex justify-between text-[10px] mt-1 px-0.5">
-                        <span className="text-[#8b6a3e]/50">0</span>
-                        <span style={{ color: batch.fill >= 25 ? "#22c55e" : "#8b6a3e88" }}>25 🟢</span>
-                        <span style={{ color: batch.fill >= 50 ? "#a78bfa" : "#8b6a3e88" }}>50 🟣</span>
-                        <span style={{ color: batch.fill >= 75 ? "#fbbf24" : "#8b6a3e88" }}>75 🟡</span>
-                        <span style={{ color: isReady ? "#fbbf24" : "#8b6a3e88" }}>100 ✨</span>
+                      <div className="flex justify-between text-[12px] font-bold mt-1 px-0.5">
+                        <span className="text-[#8b6a3e]/60">0</span>
+                        <span style={{ color: batch.fill >= 25 ? "#22c55e" : "#8b6a3e99" }}>25 🟢</span>
+                        <span style={{ color: batch.fill >= 50 ? "#a78bfa" : "#8b6a3e99" }}>50 🟣</span>
+                        <span style={{ color: batch.fill >= 75 ? "#fbbf24" : "#8b6a3e99" }}>75 🟡</span>
+                        <span style={{ color: isReady ? "#fbbf24" : "#8b6a3e99" }}>100 ✨</span>
                       </div>
                     </div>
 
                     {/* Jakość + statystyki */}
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex-1 rounded-xl border bg-black/20 px-3 py-2" style={{ borderColor: currentQualityDef.border + "60" }}>
-                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Jakość partii</span>
-                        <span className="text-[13px] font-black" style={{ color: currentQualityDef.color }}>{batch.fill > 0 ? currentQualityDef.label : "—"}</span>
+                        <span className="text-[11px] font-bold text-[#8b6a3e]/80 uppercase tracking-wider block mb-0.5">Jakość partii</span>
+                        <span className="text-[15px] font-black" style={{ color: currentQualityDef.color }}>{batch.fill > 0 ? currentQualityDef.label : "—"}</span>
                       </div>
                       <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
-                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Moc</span>
-                        <span className="text-[13px] font-black text-[#dfcfab]">{batch.fill > 0 ? currentScore.toFixed(1) : "—"}</span>
+                        <span className="text-[11px] font-bold text-[#8b6a3e]/80 uppercase tracking-wider block mb-0.5">Moc</span>
+                        <span className="text-[15px] font-black text-[#dfcfab]">{batch.fill > 0 ? currentScore.toFixed(1) : "—"}</span>
                       </div>
                       <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
-                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Gatunki</span>
-                        <span className="text-[13px] font-black" style={{ color: diversityCountUI >= 6 ? "#a78bfa" : diversityCountUI >= 2 ? "#22c55e" : "#8b6a3e" }}>{diversityCountUI}/10</span>
+                        <span className="text-[11px] font-bold text-[#8b6a3e]/80 uppercase tracking-wider block mb-0.5">Gatunki</span>
+                        <span className="text-[15px] font-black" style={{ color: diversityCountUI >= 6 ? "#a78bfa" : diversityCountUI >= 2 ? "#22c55e" : "#8b6a3e" }}>{diversityCountUI}/10</span>
                       </div>
                       <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-3 py-2 text-center">
-                        <span className="text-[9px] text-[#8b6a3e]/70 uppercase tracking-wider block mb-0.5">Szansa item</span>
-                        <span className="text-[13px] font-black text-amber-300">{itemDropChancePct}%</span>
+                        <span className="text-[11px] font-bold text-[#8b6a3e]/80 uppercase tracking-wider block mb-0.5">Szansa item</span>
+                        <span className="text-[15px] font-black text-amber-300">{itemDropChancePct}%</span>
                       </div>
                     </div>
 
                     {/* Prognoza nagród — 3 sekcje */}
                     <div className="mb-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2 flex flex-col gap-2">
-                      <p className="text-[10px] font-bold text-[#8b6a3e]/70 uppercase tracking-wider">Możliwe nagrody <span className="normal-case font-normal">(per losowanie, 5 losowań na partię)</span></p>
+                      <p className="text-[12px] font-black text-[#dfcfab]/80 uppercase tracking-wider">Możliwe nagrody <span className="normal-case font-bold text-[#8b6a3e]">(per losowanie, 5 losowań na partię)</span></p>
 
                       {/* Blok 1 — Kompost */}
                       <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
                         <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[13px]">🌱</span>
-                          <span className="text-[13px] font-black text-emerald-300">Kompost</span>
-                          <span className="ml-auto text-[15px] font-black text-emerald-300">{100 - itemDropChancePct}%</span>
+                          <span className="text-[15px]">🌱</span>
+                          <span className="text-[15px] font-black text-emerald-300">Kompost</span>
+                          <span className="ml-auto text-[17px] font-black text-emerald-300">{100 - itemDropChancePct}%</span>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {(["growth","yield","exp"] as const).map(ct => {
                             const cTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[currentQuality];
                             const cColor = cTierIdx === 0 ? "#9ca3af" : cTierIdx === 1 ? "#22c55e" : "#a78bfa";
-                            return <span key={ct} className="text-[12px] font-black" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
+                            return <span key={ct} className="text-[13px] font-black" style={{ color: cColor }}>{COMPOST_DEFS[ct].icon} {COMPOST_DEFS[ct].tierName(COMPOST_DEFS[ct].bonusValues[cTierIdx])}</span>;
                           })}
-                          {diversityTierBoostUI && <span className="text-[11px] text-purple-400 font-bold">· +tier boost (6+ gatunków)</span>}
+                          {diversityTierBoostUI && <span className="text-[12px] text-purple-400 font-black">· +tier boost (6+ gatunków)</span>}
                         </div>
                       </div>
 
                       {/* Blok 2 — Ekwipunek */}
                       <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-2">
                         <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[13px]">⚔️</span>
-                          <span className="text-[13px] font-black text-amber-300">Ekwipunek</span>
-                          <span className="ml-auto text-[15px] font-black text-amber-300">{itemDropChancePct}%</span>
+                          <span className="text-[15px]">⚔️</span>
+                          <span className="text-[15px] font-black text-amber-300">Ekwipunek</span>
+                          <span className="ml-auto text-[17px] font-black text-amber-300">{itemDropChancePct}%</span>
                         </div>
                         <div className="flex gap-1.5 flex-wrap">
                           {currentTierChances.map((chance, i) => chance > 0 && (
                             <div
                               key={i}
-                              className="flex flex-col items-center gap-0.5 rounded-lg px-2.5 py-1.5 cursor-help hover:scale-105 transition"
+                              className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 cursor-help hover:scale-105 transition"
                               style={{ background: `${ITEM_TIER_RARITY[i].border}18`, border: `1px solid ${ITEM_TIER_RARITY[i].border}70`, boxShadow: `0 0 6px ${ITEM_TIER_RARITY[i].shadow}` }}
                               onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
@@ -8677,9 +8677,9 @@ export default function Page() {
                                 setKompostTierHoverTip({ x: _tc0.x, y: _tc0.y, node: tipNode, color: rarity.border });
                               }}
                               onMouseLeave={() => setKompostTierHoverTip(null)}>
-                              <span className="text-[14px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
-                              <span className="text-[13px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
-                              <span className="text-[9px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
+                              <span className="text-[16px] leading-none">{ITEM_TIER_RARITY[i].dot}</span>
+                              <span className="text-[14px] font-black" style={{ color: ITEM_TIER_RARITY[i].border }}>{chance}%</span>
+                              <span className="text-[11px] font-bold" style={{ color: ITEM_TIER_RARITY[i].border }}>{ITEM_TIER_RARITY[i].label}</span>
                             </div>
                           ))}
                         </div>
@@ -8687,10 +8687,10 @@ export default function Page() {
 
                       {/* Blok 3 — Jackpot */}
                       <div className="rounded-lg border border-yellow-600/40 bg-yellow-950/30 px-3 py-2 flex items-center gap-2">
-                        <span className="text-[13px]">✨</span>
-                        <span className="text-[13px] font-black text-yellow-300">Jackpot</span>
-                        <span className="text-[11px] text-yellow-200/60 flex-1">— legendarny item (niezależnie od jakości partii)</span>
-                        <span className="text-[15px] font-black text-yellow-300">{JACKPOT_CHANCE}%</span>
+                        <span className="text-[15px]">✨</span>
+                        <span className="text-[15px] font-black text-yellow-300">Jackpot</span>
+                        <span className="text-[12px] font-bold text-yellow-200/70 flex-1">— legendarny item (niezależnie od jakości partii)</span>
+                        <span className="text-[17px] font-black text-yellow-300">{JACKPOT_CHANCE}%</span>
                       </div>
                     </div>
 
