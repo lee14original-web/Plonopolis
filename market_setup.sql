@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS market_offers (
   item_icon        TEXT          NOT NULL DEFAULT '',
   quantity         INTEGER       NOT NULL CHECK (quantity > 0),
   price_per_unit   NUMERIC(14,2) NOT NULL CHECK (price_per_unit > 0),
-  duration_hours   INTEGER       NOT NULL CHECK (duration_hours IN (24, 48)),
+  duration_hours   INTEGER       NOT NULL CHECK (duration_hours IN (24, 48, 72)),
   status           TEXT          NOT NULL DEFAULT 'active' CHECK (status IN ('active','sold','expired','cancelled')),
   created_at       TIMESTAMPTZ   NOT NULL DEFAULT now(),
   expires_at       TIMESTAMPTZ   NOT NULL,
@@ -220,7 +220,7 @@ BEGIN
   -- Walidacja wejść
   IF p_quantity <= 0 THEN RETURN jsonb_build_object('error','Ilość musi być dodatnia'); END IF;
   IF p_price_per_unit <= 0 THEN RETURN jsonb_build_object('error','Cena musi być dodatnia'); END IF;
-  IF p_duration_hours NOT IN (24, 48) THEN RETURN jsonb_build_object('error','Czas oferty: 24h lub 48h'); END IF;
+  IF p_duration_hours NOT IN (24, 48, 72) THEN RETURN jsonb_build_object('error','Czas oferty: 24h, 48h lub 72h'); END IF;
   IF p_item_type NOT IN ('crop','compost','barn_item','fruit','honey','equipment') THEN
     RETURN jsonb_build_object('error','Nieznany typ przedmiotu');
   END IF;
@@ -274,9 +274,11 @@ BEGIN
   -- Blokada profilu + sprawdzenie złota
   SELECT money INTO v_money FROM profiles WHERE id = v_uid FOR UPDATE;
   v_total := p_price_per_unit * p_quantity;
-  IF p_duration_hours = 48 THEN v_ext_fee := ROUND(v_total * 0.05, 2); END IF;
+  IF p_duration_hours = 48 THEN v_ext_fee := ROUND(v_total * 0.03, 2);
+  ELSIF p_duration_hours = 72 THEN v_ext_fee := ROUND(v_total * 0.07, 2);
+  END IF;
   IF v_ext_fee > 0 AND v_money < v_ext_fee THEN
-    RETURN jsonb_build_object('error','Za mało złota na opłatę 48h (' || v_ext_fee || ' zł)');
+    RETURN jsonb_build_object('error','Za mało złota na opłatę ' || p_duration_hours || 'h (' || v_ext_fee || ' zł)');
   END IF;
 
   -- Zabierz przedmiot z odpowiedniego pola inventory
