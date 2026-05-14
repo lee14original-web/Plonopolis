@@ -82,9 +82,10 @@ begin
     for v_loop_i in 1..v_total_base_items loop
       v_item_roll := random();
       if p_planted_quality = 'epic' then
-        if    v_item_roll < 0.05 then v_item_quality := 'rotten';
-        elsif v_item_roll < 0.60 then v_item_quality := 'good';
-        elsif v_item_roll < 0.95 then v_item_quality := 'epic';
+        -- 0% popsuta / 87% zwykla / 10% epicka / 3% legendarna
+        if    v_item_roll < 0.87 then v_item_quality := 'good';
+        elsif v_item_roll < 0.97 then v_item_quality := 'epic';
+
         else                          v_item_quality := 'legendary';
         end if;
       else
@@ -114,9 +115,10 @@ begin
       for v_loop_i in 1..v_crop.yield_amount loop
         v_item_roll := random();
         if p_planted_quality = 'epic' then
-          if    v_item_roll < 0.05 then v_item_quality := 'rotten';
-          elsif v_item_roll < 0.60 then v_item_quality := 'good';
-          elsif v_item_roll < 0.95 then v_item_quality := 'epic';
+          -- 0% popsuta / 87% zwykla / 10% epicka / 3% legendarna
+        if    v_item_roll < 0.87 then v_item_quality := 'good';
+          elsif v_item_roll < 0.97 then v_item_quality := 'epic';
+  
           else                          v_item_quality := 'legendary';
           end if;
         else
