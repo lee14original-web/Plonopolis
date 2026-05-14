@@ -11066,56 +11066,66 @@ export default function Page() {
                                           const expText = q === "legendary" ? `${crop.expReward}–${crop.expReward * 40} (cap ×50)` : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
-                                              <p className="text-[19px] font-black" style={{ color: tipColor }}>{crop.name}</p>
-                                              <p className="text-[14px] font-bold mb-2 opacity-80" style={{ color: tipColor }}>{qLabel}</p>
-                                              <div className="flex flex-col gap-1.5 text-[15px]">
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Odblokowanie</span><span className="font-black text-white">lvl {crop.unlockLevel}</span></div>
-                                                {/* Czas wzrostu: bazowy + efektywny */}
-                                                <div className="flex flex-col gap-0.5">
-                                                  <div className="flex justify-between gap-4">
-                                                    <span className="text-[#8b6a3e]/80">Czas wzrostu</span>
-                                                    <span className="font-black text-emerald-300">⏱ {_fmt(_effMs)}</span>
-                                                  </div>
-                                                  {_effMs < _baseMs && (
-                                                    <div className="flex justify-between gap-4 text-[13px]">
-                                                      <span className="text-[#8b6a3e]/60">Bazowo</span>
-                                                      <span className="text-[#8b6a3e]/70">{_fmt(_baseMs)} <span className="text-emerald-400 font-bold">−{_savedPct}%</span></span>
-                                                    </div>
-                                                  )}
-                                                  {_showBonus && (
-                                                    <div className="text-[12px] text-[#8b6a3e]/70 pl-1">
-                                                      {_wiedzaPct > 0 && <span>📚−{_wiedzaPct.toFixed(1)}% </span>}
-                                                      {_hivePct > 0 && <span>🍯−{_hivePct.toFixed(1)}% </span>}
-                                                      {_equipPct > 0 && <span>👕−{parseFloat(_equipPct.toFixed(1))}%</span>}
-                                                    </div>
-                                                  )}
-                                                  {_waterTotalPct > 0 && (
-                                                    <div className="text-[13px] text-cyan-300">💧 Z podlaniem: <span className="font-black">{_fmt(_withWaterMs)}</span></div>
-                                                  )}
+                                              {/* ── HEADER: nazwa + jakość + plecak ── */}
+                                              <div className="flex items-start justify-between gap-2 mb-2">
+                                                <div>
+                                                  <p className="text-[18px] font-black leading-tight" style={{ color: tipColor }}>{crop.name}</p>
+                                                  <p className="text-[13px] font-bold opacity-75 mt-0.5" style={{ color: tipColor }}>{qLabel}</p>
                                                 </div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">Plon</span><span className="font-black text-white">{yieldText}</span></div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">EXP za zbiór</span><span className="font-black text-sky-300">+{expText}</span></div>
-                                                <div className="flex justify-between gap-4"><span className="text-[#8b6a3e]/80">W plecaku</span><span className="font-black text-white">×{cnt}</span></div>
+                                                <span className="text-[13px] font-bold text-[#f9e7b2] bg-black/40 rounded-lg px-2 py-1 whitespace-nowrap mt-0.5">🎒 {cnt}</span>
                                               </div>
-                                              {q === "legendary" && (
-                                                <div className="mt-2 rounded-lg bg-amber-950/40 border border-amber-700/40 px-2.5 py-2 text-[13px]">
-                                                  <p className="font-black text-amber-300 mb-1">🎲 Jedna z 3 równych szans przy zbiorze:</p>
-                                                  <p className="text-[#dfcfab]/80">✅ 50–150 zwykłych nasion</p>
-                                                  <p className="text-[#dfcfab]/80">⭐ 15–35 epickich nasion</p>
-                                                  <p className="text-[#dfcfab]/80">🌟 15–30 zwykłych + EXP ×20–40</p>
+
+                                              {/* ── CZAS WZROSTU ── */}
+                                              <div className="rounded-lg bg-white/5 px-3 py-2 mb-2">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="text-[13px] text-[#8b6a3e]/80">⏱ Wzrost</span>
+                                                  <span className="text-[15px] font-black text-emerald-300">{_fmt(_effMs)}</span>
+                                                </div>
+                                                {_waterTotalPct > 0 && (
+                                                  <div className="flex items-center justify-between mt-0.5">
+                                                    <span className="text-[12px] text-[#8b6a3e]/60">💧 Po podlaniu</span>
+                                                    <span className="text-[13px] font-bold text-cyan-300">{_fmt(_withWaterMs)}</span>
+                                                  </div>
+                                                )}
+                                                {_showBonus && (
+                                                  <div className="flex gap-2.5 mt-1.5 text-[12px] text-[#8b6a3e]/70">
+                                                    {_wiedzaPct > 0 && <span>🧠 −{_wiedzaPct.toFixed(1)}%</span>}
+                                                    {_hivePct > 0 && <span>🍯 −{_hivePct.toFixed(1)}%</span>}
+                                                    {_equipPct > 0 && <span>🧤 −{parseFloat(_equipPct.toFixed(1))}%</span>}
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* ── NAGRODY ── */}
+                                              {q === "legendary" ? (
+                                                <div className="rounded-lg border px-3 py-2 mb-2" style={{ borderColor: `${tipColor}55`, background: `${tipColor}0f` }}>
+                                                  <p className="text-[12px] font-bold mb-1.5 opacity-60" style={{ color: tipColor }}>🎁 Możliwe nagrody</p>
+                                                  <p className="text-[14px] font-black text-[#dfcfab]">🤎 50–150 zwykłych</p>
+                                                  <p className="text-[14px] font-black text-purple-300">💜 15–35 epickich</p>
+                                                  <p className="text-[14px] font-black text-amber-300">⭐ EXP ×20–40</p>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 mb-2">
+                                                  <span className="text-[13px] text-[#8b6a3e]/80">🌾 Plon</span>
+                                                  <span className="text-[14px] font-black text-white">
+                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount} szt. ↓` : `${crop.yieldAmount} szt.`}
+                                                  </span>
                                                 </div>
                                               )}
-                                              {q === "epic" && (
-                                                <div className="mt-2 rounded-lg bg-purple-950/40 border border-purple-700/40 px-2.5 py-2 text-[13px]">
-                                                  <p className="font-black text-purple-300">🟣 Losowy mnożnik EXP ×3–6 przy zbiorze</p>
-                                                  <p className="text-[#dfcfab]/70 text-[12px] mt-0.5">Plony wyższej jakości niż zwykłe</p>
-                                                </div>
-                                              )}
-                                              {q === "rotten" && (
-                                                <div className="mt-2 rounded-lg bg-white/5 border border-white/10 px-2.5 py-2 text-[13px] text-[#9ca3af]">
-                                                  🟫 Obniżony plon przy zbiorze
-                                                </div>
-                                              )}
+
+                                              {/* ── EXP ── */}
+                                              <div className="flex items-center justify-between rounded-lg bg-sky-950/40 border border-sky-800/30 px-3 py-1.5">
+                                                <span className="text-[12px] text-sky-400/70">⭐ EXP</span>
+                                                <span className="text-[14px] font-black text-sky-300">
+                                                  {q === "legendary"
+                                                    ? `+${crop.expReward}–${crop.expReward * 40}`
+                                                    : q === "epic"
+                                                    ? `+${crop.expReward * 3}–${crop.expReward * 6}`
+                                                    : `+${crop.expReward}`}
+                                                </span>
+                                                {q === "legendary" && <span className="text-[11px] text-sky-400/50 ml-1">cap ×50</span>}
+                                                {q === "epic" && <span className="text-[11px] text-sky-400/50 ml-1">×3–6</span>}
+                                              </div>
                                             </>
                                           );
                                           setSeedPickerTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tipColor });
