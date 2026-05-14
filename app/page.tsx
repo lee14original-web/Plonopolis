@@ -2128,6 +2128,9 @@ export default function Page() {
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [avatarTipVisible, setAvatarTipVisible] = React.useState(false);
   const [avatarTipPos, setAvatarTipPos] = React.useState({ x: 0, y: 0 });
+  const [loginEditMode, setLoginEditMode] = React.useState(false);
+  const [loginPanelPos, setLoginPanelPos] = React.useState({ left: 700, top: 280, width: 520 });
+  const loginDragRef = React.useRef<{ mode: "move" | "resize"; startMX: number; startMY: number; startL: number; startT: number; startW: number } | null>(null);
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
@@ -3234,6 +3237,25 @@ export default function Page() {
   }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
+
+  useEffect(() => {
+    if (!loginEditMode) return;
+    const s = gameScaleRef.current;
+    const onMove = (e: MouseEvent) => {
+      if (!loginDragRef.current) return;
+      const dx = (e.clientX - loginDragRef.current.startMX) / s;
+      const dy = (e.clientY - loginDragRef.current.startMY) / s;
+      if (loginDragRef.current.mode === "move") {
+        setLoginPanelPos(p => ({ ...p, left: loginDragRef.current!.startL + dx, top: loginDragRef.current!.startT + dy }));
+      } else {
+        setLoginPanelPos(p => ({ ...p, width: Math.max(320, loginDragRef.current!.startW + dx) }));
+      }
+    };
+    const onUp = () => { loginDragRef.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, [loginEditMode]);
 
   function toGameCoords(clientX: number, clientY: number) {
     const s = gameScaleRef.current;
@@ -6043,10 +6065,31 @@ export default function Page() {
                     )}
                 </div>
           )}
-          <div className="flex min-h-screen items-center justify-center">
+          <div className="relative" style={{ width: BASE_W, height: BASE_H }}>
             {!profile ? (
-              <div style={{ transform: `scale(${gameScale})`, transformOrigin: "center center", width: "520px" }}>
-                <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
+              <>
+                <button
+                  type="button"
+                  onClick={() => setLoginEditMode(m => !m)}
+                  className={`absolute right-4 top-4 z-[200] flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-xl backdrop-blur-sm transition ${loginEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.85)] text-[#dfcfab]"}`}
+                >
+                  🎯 {loginEditMode ? "Zakończ edycję" : "Edytuj panel"}
+                </button>
+                {loginEditMode && (
+                  <div className="pointer-events-none absolute left-1/2 top-4 z-[200] -translate-x-1/2 rounded-xl border border-orange-400/60 bg-[rgba(20,8,2,0.97)] px-4 py-2 font-mono text-xs text-orange-200">
+                    l:<span className="font-black text-white">{Math.round(loginPanelPos.left)}</span>{" "}
+                    t:<span className="font-black text-white">{Math.round(loginPanelPos.top)}</span>{" "}
+                    w:<span className="font-black text-white">{Math.round(loginPanelPos.width)}</span>
+                  </div>
+                )}
+                <div style={{ position: "absolute", left: loginPanelPos.left, top: loginPanelPos.top, width: loginPanelPos.width }}>
+                  {loginEditMode && (
+                    <div
+                      onMouseDown={e => { e.preventDefault(); loginDragRef.current = { mode: "move", startMX: e.clientX, startMY: e.clientY, startL: loginPanelPos.left, startT: loginPanelPos.top, startW: loginPanelPos.width }; }}
+                      className="absolute -top-7 left-0 right-0 flex h-7 cursor-move select-none items-center justify-center rounded-t-xl bg-orange-500/70 text-xs font-black text-white"
+                    >⠿ Przeciągnij panel</div>
+                  )}
+                <section className={`relative overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm${loginEditMode ? " outline outline-2 outline-orange-400/70" : ""}`}>
                   <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
                     <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
                     <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
@@ -6168,9 +6211,15 @@ export default function Page() {
                       </form>
                     )}
                   </div>
+                  {loginEditMode && (
+                    <div
+                      onMouseDown={e => { e.stopPropagation(); loginDragRef.current = { mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: loginPanelPos.left, startT: loginPanelPos.top, startW: loginPanelPos.width }; }}
+                      className="absolute bottom-0 right-0 h-5 w-5 cursor-se-resize rounded-tl bg-orange-400/80"
+                    />
+                  )}
                 </section>
-
-              </div>
+                </div>
+              </>
             ) : (
               <div className="relative min-h-screen w-full px-4 pt-8 md:px-8">
 
