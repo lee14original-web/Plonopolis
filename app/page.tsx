@@ -6215,7 +6215,7 @@ export default function Page() {
 
 
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
-                <div className="fixed left-4 top-4 z-[95]">
+                <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
                   <div className="flex flex-col items-start">
                     {/* Górny rząd: przycisk plecaka + avatar */}
                     <div className="flex flex-row items-start gap-2">
@@ -10549,10 +10549,10 @@ export default function Page() {
 
           {isFieldViewOpen && isOnFarmMap && (
             <div
-              className="fixed inset-0 z-[80] flex items-center justify-center px-2 py-2"
+              className="fixed inset-0 z-[80]"
               style={fvToolEditMode ? { userSelect: "none" } : undefined}
             >
-                <div className="relative w-full max-w-[1600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(20,12,6,0.82)] p-5 shadow-2xl backdrop-blur-[2px]">
+                <div className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto">
                   <button
                     onClick={() => {
                       setIsFieldViewOpen(false);
