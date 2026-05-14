@@ -5486,25 +5486,6 @@ export default function Page() {
                 </button>
               </div>
 
-              {/* ═══ EDYTOR BUDYNKÓW + PRZYCISKÓW ═══ */}
-              {(isOnFarmMap || currentMap === "city") && (
-                <div className="fixed right-4 z-[92] flex flex-col gap-1" style={{ top: "185px" }}>
-                  <button
-                    type="button"
-                    onClick={() => isOnFarmMap ? setNavEditMode(m => !m) : setCityNavEditMode(m => !m)}
-                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${(isOnFarmMap ? navEditMode : cityNavEditMode) ? "border-sky-400 bg-sky-900/80 text-sky-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
-                  >
-                    🖱️ {(isOnFarmMap ? navEditMode : cityNavEditMode) ? "Zakończ etykiety" : "Edytuj etykiety"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => isOnFarmMap ? setHitboxEditMode(m => !m) : setCityHitboxEditMode(m => !m)}
-                    className={`flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-black shadow-xl backdrop-blur-sm transition ${(isOnFarmMap ? hitboxEditMode : cityHitboxEditMode) ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] text-[#dfcfab]"}`}
-                  >
-                    🎯 {(isOnFarmMap ? hitboxEditMode : cityHitboxEditMode) ? "Zakończ hitboxy" : "Edytuj hitboxy"}
-                  </button>
-                </div>
-              )}
 
               {/* ═══ MUZYKA ═══ */}
               <div className="fixed right-4 z-[92]" style={{ top: "300px" }}>
@@ -6051,9 +6032,9 @@ export default function Page() {
                     )}
                 </div>
           )}
-          <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-4">
+          <div className="flex min-h-screen items-center justify-center">
             {!profile ? (
-              <div className="grid w-full max-w-5xl items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div style={{ transform: `scale(${gameScale})`, transformOrigin: "center center", width: "960px", display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: "1.5rem", alignItems: "center" }}>
                 <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
                   <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
                     <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
@@ -6226,7 +6207,7 @@ export default function Page() {
 
 
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
-                <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
+                <div className="fixed left-4 top-4 z-[95]">
                   <div className="flex flex-col items-start">
                     {/* Górny rząd: przycisk plecaka + avatar */}
                     <div className="flex flex-row items-start gap-2">
@@ -6240,7 +6221,7 @@ export default function Page() {
                       <img src={isBackpackOpen ? "/ui/backpack-open.png" : "/ui/backpack.png"} alt="Plecak" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
                     </button>
                     {/* Avatar gracza — po prawej od plecaka, nie rusza się przy otwarciu */}
-                    <div className="group relative flex flex-col items-center gap-1 cursor-default select-none">
+                    <div className={`group relative flex flex-col items-center gap-1 cursor-default select-none transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
                       <div className="flex h-[128px] w-[128px] items-center justify-center rounded-2xl border border-[#8b6a3e] bg-[rgba(38,24,14,0.94)] overflow-hidden shadow-2xl backdrop-blur-sm">
                         {avatarSkin >= 0
                           ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
@@ -10576,37 +10557,61 @@ export default function Page() {
                     ×
                   </button>
 
+                  {/* ─── Przycisk edycji hitboxów narzędzi ─── */}
+                  <button
+                    type="button"
+                    onClick={() => setFvToolEditMode(m => !m)}
+                    className={`absolute right-4 top-4 z-[91] flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-xl backdrop-blur-sm transition ${fvToolEditMode ? "border-orange-400 bg-orange-900/80 text-orange-300" : "border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.85)] text-[#dfcfab]"}`}
+                  >
+                    🎯 {fvToolEditMode ? "Zakończ edycję" : "Edytuj narzędzia"}
+                  </button>
+
                   {/* Konewka */}
                   <button
                     type="button"
-                    onClick={() => { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); }}
-                    onMouseEnter={() => setHoveredWateringCan(true)}
+                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); } }}
+                    onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
-                    className={`absolute right-4 top-16 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
-                      selectedTool === "watering_can"
-                        ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]"
-                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
-                    }`}
+                    onMouseDown={fvToolEditMode ? (e) => {
+                      e.preventDefault();
+                      const pos = fvKonewkaPos;
+                      fvToolDragRef.current = { btn: "konewka", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
                     <img src="/ui/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
+                    {fvToolEditMode && (
+                      <div
+                        onMouseDown={(e) => { e.stopPropagation(); const pos = fvKonewkaPos; fvToolDragRef.current = { btn: "konewka", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-orange-400/80 rounded-tl"
+                      />
+                    )}
                   </button>
 
                   {/* Zbierz */}
                   <button
                     type="button"
-                    onClick={() => { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); }}
-                    onMouseEnter={() => setHoveredSickle(true)}
+                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); } }}
+                    onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
-                    onMouseDown={() => setHoveredSickle(false)}
-                    className={`absolute right-4 top-44 z-[90] flex flex-col items-center justify-center rounded-xl border-2 w-24 h-24 transition-colors ${
-                      selectedTool === "sickle"
-                        ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]"
-                        : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"
-                    }`}
+                    onMouseDown={fvToolEditMode ? (e) => {
+                      e.preventDefault();
+                      const pos = fvZbierzPos;
+                      fvToolDragRef.current = { btn: "zbierz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    } : (e) => setHoveredSickle(false)}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
                     <img src="/ui/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
+                    {fvToolEditMode && (
+                      <div
+                        onMouseDown={(e) => { e.stopPropagation(); const pos = fvZbierzPos; fvToolDragRef.current = { btn: "zbierz", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-orange-400/80 rounded-tl"
+                      />
+                    )}
                   </button>
 
                   <div className="mb-4 pr-28">
