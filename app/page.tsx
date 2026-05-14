@@ -3929,14 +3929,11 @@ export default function Page() {
       return;
     }
 
-    // Znajdź email na podstawie loginu gracza
-    const { data: profileRow, error: lookupError } = await supabase
-      .from("profiles")
-      .select("email")
-      .ilike("login", identifier)
-      .single();
+    // Znajdź email na podstawie loginu gracza (RPC z SECURITY DEFINER omija RLS)
+    const { data: emailResult, error: lookupError } = await supabase
+      .rpc("get_email_by_login", { p_login: identifier });
 
-    if (lookupError || !profileRow?.email) {
+    if (lookupError || !emailResult) {
       setMessage({
         type: "error",
         title: "Nie znaleziono gracza",
@@ -3946,7 +3943,7 @@ export default function Page() {
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: profileRow.email,
+      email: emailResult as string,
       password,
     });
 
