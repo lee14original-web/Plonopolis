@@ -637,6 +637,7 @@ const ITEM_TIER_BY_QUALITY: Record<CompostQuality, [number,number,number,number,
   legendary: [ 0,  5, 20, 40, 35],
 };
 const JACKPOT_CHANCE = 0.5; // % szansy na jackpot per partia
+const MAX_LEGENDARY_EXP_MULT = 50; // cap: base EXP × wszystkie bonusy ≤ base × 50
 const ITEM_TIER_RARITY: Array<{ border: string; shadow: string; label: string; dot: string }> = [
   { border: "#22c55e", shadow: "rgba(34,197,94,0.30)",   label: "Standard",   dot: "🟢" }, // I1
   { border: "#38bdf8", shadow: "rgba(56,189,248,0.30)",  label: "Dobry",      dot: "🔵" }, // I2
@@ -4803,6 +4804,13 @@ export default function Page() {
     const _expEqPct = _snapBonuses?.expPct ?? 0;
     if (_expEqPct > 0 && actualExp > 0) {
       _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
+    }
+    // ─── Cap bezpieczeństwa dla legendarnych: base × wszystkie bonusy ≤ base × 50 ───
+    if (_plantedQuality === "legendary" && crop.expReward > 0) {
+      const _expCap = crop.expReward * MAX_LEGENDARY_EXP_MULT;
+      if (actualExp + _bonusExpTotal > _expCap) {
+        _bonusExpTotal = Math.max(0, _expCap - actualExp);
+      }
     }
     if (_bonusExpTotal > 0 && profile?.id) {
       // Pełna obsługa level-upu klient-side (jak handleAddExp)
