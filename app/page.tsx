@@ -654,7 +654,7 @@ const COMPOST_TIER_FIXED_BY_QUALITY: Record<CompostQuality, number> = {
   very_good: 2,
   legendary: 2,
 };
-type CompostBatch = { fill: number; scoreSum: number };
+type CompostBatch = { fill: number; scoreSum: number; cropIds?: string[] };
 const KOMPOST_MAX_BATCHES = 10;
 
 function getCompostQualityFromScore(score: number): CompostQuality {
@@ -2120,7 +2120,7 @@ export default function Page() {
     const uid = profile?.id ?? "";
     const clean = batches
       .slice(0, KOMPOST_MAX_BATCHES)
-      .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(b.fill))), scoreSum: Math.max(0, b.scoreSum) }))
+      .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(b.fill))), scoreSum: Math.max(0, b.scoreSum), cropIds: Array.isArray(b.cropIds) ? b.cropIds : [] }))
       .filter(b => b.fill > 0);
     setKompostBatches(clean);
     if (uid) try {
@@ -2577,9 +2577,9 @@ export default function Page() {
     const loadedBatches = lsLoadMigrate(KOMPOST_BATCHES_KEY, uid, s => {
       const arr = JSON.parse(s);
       if (!Array.isArray(arr)) return [];
-      return (arr as Array<{fill?:unknown;scoreSum?:unknown}>)
+      return (arr as Array<{fill?:unknown;scoreSum?:unknown;cropIds?:unknown}>)
         .slice(0, KOMPOST_MAX_BATCHES)
-        .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))), scoreSum: Math.max(0, Number(b?.scoreSum) || 0) }))
+        .map(b => ({ fill: Math.max(0, Math.min(10, Math.floor(Number(b?.fill) || 0))), scoreSum: Math.max(0, Number(b?.scoreSum) || 0), cropIds: Array.isArray(b?.cropIds) ? (b.cropIds as unknown[]).filter((x): x is string => typeof x === "string") : [] }))
         .filter(b => b.fill > 0);
     }, () => []);
     consumePendingLegacyCharges(loadedBatches, uid);
@@ -4380,7 +4380,7 @@ export default function Page() {
       const rarityMult = COMPOST_RARITY_MULT[rarityKey] ?? 1.0;
       const valuePerCrop = baseValue * rarityMult;
 
-      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum }));
+      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum, cropIds: Array.isArray(b.cropIds) ? [...b.cropIds] : [] }));
       let remaining = Math.min(count, have);
       let added = 0;
       while (remaining > 0) {
@@ -4388,13 +4388,16 @@ export default function Page() {
         // Jeśli brak partii lub ostatnia jest pełna — utwórz nową (o ile mieści się w cap)
         if (!last || last.fill >= 10) {
           if (batches.length >= KOMPOST_MAX_BATCHES) break;
-          last = { fill: 0, scoreSum: 0 };
+          last = { fill: 0, scoreSum: 0, cropIds: [] };
           batches.push(last);
         }
         const room = 10 - last.fill;
         const take = Math.min(remaining, room);
         last.fill += take;
         last.scoreSum += take * valuePerCrop;
+        // Śledź gatunki w partii (unikalny baseCropId)
+        if (!last.cropIds) last.cropIds = [];
+        if (baseCropId && !last.cropIds.includes(baseCropId)) last.cropIds.push(baseCropId);
         remaining -= take;
         added += take;
       }
@@ -4427,20 +4430,24 @@ export default function Page() {
       // Score = cena owocu × 0.25 (jak "rotten" uprawa — najsłabszy kompost)
       const valuePerFruit = tree ? tree.pricePerFruit * COMPOST_RARITY_MULT.rotten : 1.0;
 
-      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum }));
+      const batches: CompostBatch[] = kompostBatches.map(b => ({ fill: b.fill, scoreSum: b.scoreSum, cropIds: Array.isArray(b.cropIds) ? [...b.cropIds] : [] }));
       let remaining = Math.min(count, have);
       let added = 0;
       while (remaining > 0) {
         let last = batches[batches.length - 1];
         if (!last || last.fill >= 10) {
           if (batches.length >= KOMPOST_MAX_BATCHES) break;
-          last = { fill: 0, scoreSum: 0 };
+          last = { fill: 0, scoreSum: 0, cropIds: [] };
           batches.push(last);
         }
         const room = 10 - last.fill;
         const take = Math.min(remaining, room);
         last.fill += take;
         last.scoreSum += take * valuePerFruit;
+        // Śledź gatunki w partii (owoce jako "fruit_<id>")
+        if (!last.cropIds) last.cropIds = [];
+        const fruitSpeciesKey = `fruit_${fruitId}`;
+        if (!last.cropIds.includes(fruitSpeciesKey)) last.cropIds.push(fruitSpeciesKey);
         remaining -= take;
         added += take;
       }
@@ -4474,21 +4481,15 @@ export default function Page() {
     let extras = [...extraEqItems];
     const newHistoryEntries: Array<{label: string; color: string; icon: string; ts?: number; count?: number}> = [];
 
-    // Bonus różnorodności: liczymy unikalne gatunki upraw w plecaku
-    const uniqueCropIdsForBonus = new Set(
-      Object.keys(seedInventory)
-        .filter(k => Number(seedInventory[k]) > 0 && !isCompostKey(k))
-        .map(k => parseQualityKey(k).baseCropId)
-        .filter(Boolean)
-    );
-    const diversityCount = uniqueCropIdsForBonus.size;
-    const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2)); // +1% per 2 gatunki, max +5%
-    const diversityTierBoost = diversityCount >= 6;                         // przy 6+ : 30% szansa na wyższy tier
-    const itemDropChance = 10 + diversityItemBonus;                         // 10–15%
-
     for (const batch of readyBatches) {
       const score = batch.scoreSum / 10;
       const quality = getCompostQualityFromScore(score);
+
+      // Bonus różnorodności: unikalne gatunki wrzucone DO TEJ PARTII
+      const diversityCount = (batch.cropIds ?? []).length;
+      const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2)); // +1% per 2 gatunki, max +5%
+      const diversityTierBoost = diversityCount >= 6;                         // przy 6+ : 30% szansa na wyższy tier
+      const itemDropChance = 10 + diversityItemBonus;                         // 10–15%
 
       // Jackpot 0.5% — legendarny item bez względu na jakość partii
       if (Math.random() * 100 < JACKPOT_CHANCE) {
