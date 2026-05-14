@@ -2366,7 +2366,7 @@ export default function Page() {
     setFruitInventory_({});
   }
 
-  function applyProfileState(rawProfile: unknown) {
+  async function applyProfileState(rawProfile: unknown) {
     if (!rawProfile || typeof rawProfile !== "object" || Array.isArray(rawProfile)) {
       setProfile(null);
       setUnlockedPlots(getDefaultUnlockedPlots());
@@ -2791,7 +2791,7 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    await applyProfileState(extractRpcProfile(data));
 
     // Jeśli serwer zgubił bonus kompostu przy podlewaniu — przywróć go i zapisz
     if (_preservedCompostBonus && profile?.id) {
@@ -2973,7 +2973,7 @@ export default function Page() {
         return;
       }
 
-      applyProfileState(extractRpcProfile(data));
+      await applyProfileState(extractRpcProfile(data));
       // Zapisz jakość zasadzonego nasiona (dla EXP przy zbiorze)
       if (typeof window !== "undefined" && profile?.id) {
         const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
@@ -4267,7 +4267,7 @@ export default function Page() {
       return;
     }
 
-    applyProfileState(extractRpcProfile(data));
+    await applyProfileState(extractRpcProfile(data));
 
     setPlotToBuy(null);
     setSelectedPlotId(plotId);
@@ -4747,7 +4747,7 @@ export default function Page() {
     }
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
-    const nextProfile = applyProfileState(harvestRpcProfile);
+    const nextProfile = await applyProfileState(harvestRpcProfile);
     // Synchronizacja stanu klienta z DB.
     // Używamy Math.max per klucz (nie absolutnego przypisania), żeby równoległe żniwa
     // nie nadpisywały się wzajemnie mniejszą wartością (race condition przy masowym zbiorze).
@@ -5135,7 +5135,7 @@ export default function Page() {
         img.src = `/${targetBg}.png`;
       });
 
-      applyProfileState(extractRpcProfile(rpcData));
+      await applyProfileState(extractRpcProfile(rpcData));
       setIsMapLoading(false);
       setIsFieldViewOpen(false);
       setSelectedPlotId(null);
@@ -11619,7 +11619,7 @@ export default function Page() {
                   {/* Filtry jakości (kontekstowe) + sortowanie */}
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     {(() => {
-                      const qualOpts: { id: string; label: string }[] =
+                      const qualOpts: { id: string; label: string }[] | null =
                         marketBrowseFilter === "crop" ? [
                           { id:"all",       label:"Wszystkie" },
                           { id:"rotten",    label:"⚪ Popsute" },
