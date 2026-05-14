@@ -4741,9 +4741,17 @@ export default function Page() {
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = applyProfileState(harvestRpcProfile);
-    // Synchronizacja stanu klienta z DB — ref aktualizujemy PRZED setState (żeby kolejny harvest miał świeży snapshot)
-    seedInventoryRef.current = nextInventory;
-    setSeedInventory(nextInventory);
+    // Synchronizacja stanu klienta z DB.
+    // Używamy Math.max per klucz (nie absolutnego przypisania), żeby równoległe żniwa
+    // nie nadpisywały się wzajemnie mniejszą wartością (race condition przy masowym zbiorze).
+    setSeedInventory(prev => {
+      const _merged: Record<string, number> = { ...prev };
+      for (const [_k, _v] of Object.entries(nextInventory)) {
+        if (typeof _v === "number") _merged[_k] = Math.max(_merged[_k] ?? 0, _v);
+      }
+      seedInventoryRef.current = _merged; // ref zawsze = najnowszy stan
+      return _merged;
+    });
     // Dla LEGENDARNYCH klient sam nadpisał inventory (decyduje o opcji 0/1/2) — zapisz do DB.
     // Dla nie-legendarnych: SQL jest źródłem prawdy, NIE nadpisujemy DB pełnym obiektem
     // (chroni przed race condition przy zbiorze wielu pól naraz).
