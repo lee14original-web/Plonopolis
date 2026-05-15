@@ -11101,7 +11101,7 @@ export default function Page() {
 
                                               {/* ── OPIS JAKOŚCI (epic/rotten) ── */}
                                               {q === "epic" && (
-                                                <p className="text-[12px] text-purple-300/80 mb-2">✨ Wyższa szansa na epickie i legendarne plony</p>
+                                                <p className="text-[12px] text-purple-300/80 mb-2">🎲 Losuje jakość jak zwykłe nasiono, ale daje {crop.yieldAmount <= 2 ? "10–22" : "14–30"} szt. i EXP ×3–6</p>
                                               )}
                                               {q === "rotten" && (
                                                 <p className="text-[12px] text-[#9ca3af]/70 mb-2">⚠️ Obniżony plon przy zbiorze</p>
@@ -12059,7 +12059,7 @@ export default function Page() {
             {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[14px] font-black text-white">⚠️ Popsuta</span>}
           </p>
           <p className="mb-1 text-[14px] text-[#8b6a3e]">
-            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — po zbiorze losuje 1 z 3 nagród (każda po 33%)!" : hoveredSeedQuality === "epic" ? "Epickie nasiono — wyższy plon i EXP" : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
+            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — zawsze daje zwykłe + epickie plony i duży bonus EXP!" : hoveredSeedQuality === "epic" ? `Epickie nasiono — losuje jakość jak zwykłe, ale daje ${hoveredCrop.yieldAmount <= 2 ? "10–22" : "14–30"} szt. i EXP ×3–6` : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
           </p>
           {hoveredSeedQuality !== "rotten" && <>
             {(() => {
