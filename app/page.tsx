@@ -1874,6 +1874,8 @@ export default function Page() {
   const [hoveredTarg, setHoveredTarg] = React.useState(false);
   const [hoveredBank, setHoveredBank] = React.useState(false);
   const [hoveredRatusz, setHoveredRatusz] = React.useState(false);
+  const [townHallCamX, setTownHallCamX] = React.useState(0);
+  const thDragRef = React.useRef<{startX:number; startCamX:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -2974,20 +2976,49 @@ export default function Page() {
     fieldActionTimeoutsRef.current.set(plotId, _tid);
   }
 
-  // Sianie podczas przeciągania — cicha wersja bez komunikatów błędów
-  function tryDragPlant(plotId: number) {
-    if (!isDraggingPlantRef.current || !selectedSeedId || isCompostKey(selectedSeedId)) return;
+  // Akcja na polu podczas przeciągania — cicha wersja bez komunikatów błędów
+  function tryApplyFieldAction(plotId: number) {
+    if (!isDraggingPlantRef.current) return;
     if (dragPlantedFieldsRef.current.has(plotId)) return;
     if (!isPlotUnlocked(plotId)) return;
     if (pendingFieldActions[plotId]) return;
     const plot = getPlotCrop(plotId);
-    if (plot.cropId) return;
-    if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) {
-      isDraggingPlantRef.current = false;
+
+    // Konewka
+    if (selectedTool === "watering_can") {
+      if (!plot.cropId || plot.watered || isCropReady(plotId)) return;
+      dragPlantedFieldsRef.current.add(plotId);
+      void handleWaterPlot(plotId);
       return;
     }
-    dragPlantedFieldsRef.current.add(plotId);
-    void handlePlantFromSelectedSeed(plotId);
+    // Sierp
+    if (selectedTool === "sickle") {
+      if (!plot.cropId || !isCropReady(plotId)) return;
+      dragPlantedFieldsRef.current.add(plotId);
+      void handleHarvestPlot(plotId);
+      return;
+    }
+    // Kompost
+    if (selectedSeedId && isCompostKey(selectedSeedId)) {
+      if (plot.cropId || plot.compostBonus) return;
+      if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) { isDraggingPlantRef.current = false; return; }
+      dragPlantedFieldsRef.current.add(plotId);
+      void applyCompostToPlot(plotId, selectedSeedId);
+      return;
+    }
+    // Nasiono
+    if (selectedSeedId) {
+      if (plot.cropId) return;
+      if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) { isDraggingPlantRef.current = false; return; }
+      dragPlantedFieldsRef.current.add(plotId);
+      void handlePlantFromSelectedSeed(plotId);
+      return;
+    }
+    // Brak narzędzia/nasiona — zbierz gotowy plon
+    if (plot.cropId && isCropReady(plotId)) {
+      dragPlantedFieldsRef.current.add(plotId);
+      void handleHarvestPlot(plotId);
+    }
   }
 
   async function executePlantRpc(plotId: number, effectiveSeedId: string, _baseCropId: string, _seedQuality: string | null) {
@@ -4416,6 +4447,7 @@ export default function Page() {
     const ranOut = nextInv[compostKey] <= 0;
     if (ranOut) delete nextInv[compostKey];
     setSeedInventory(nextInv);
+    seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - 1 };
     // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
     if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
     // Persist
@@ -6208,53 +6240,92 @@ export default function Page() {
                   )}
 
                   {/* ═══ RATUSZ ═══ */}
-                    {currentMap === "city_townhall" && (
-                        <div className="pointer-events-auto absolute inset-0">
+                    {currentMap === "city_townhall" && (() => {
+                        const TH_W = 4096;
+                        const maxCamX = TH_W - BASE_W;
+                        return (
+                        <div
+                          className="pointer-events-auto absolute inset-0 overflow-hidden select-none cursor-grab active:cursor-grabbing"
+                          onMouseDown={(e) => {
+                            if (e.button !== 0) return;
+                            thDragRef.current = { startX: e.clientX / gameScale, startCamX: townHallCamX };
+                          }}
+                          onMouseMove={(e) => {
+                            if (!thDragRef.current) return;
+                            const dx = e.clientX / gameScale - thDragRef.current.startX;
+                            setTownHallCamX(Math.max(0, Math.min(maxCamX, thDragRef.current.startCamX - dx)));
+                          }}
+                          onMouseUp={() => { thDragRef.current = null; }}
+                          onMouseLeave={() => { thDragRef.current = null; }}
+                        >
+                          {/* Panorama 4096px — przesuwa się z kamerą */}
+                          <div
+                            className="absolute top-0 h-full"
+                            style={{ width: TH_W, transform: `translateX(-${townHallCamX}px)` }}
+                          >
+                            {/* Tło panoramy */}
+                            <img
+                              src="/ui/ratusz-panorama.png"
+                              className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+                              draggable={false}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            />
+                            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg,#1a0c06 0%,#2d1608 40%,#1e0e06 70%,#0f0703 100%)" }} />
 
-                          {/* Wróć do miasta */}
+                            {/* Ranking */}
+                            <button
+                              type="button"
+                              onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
+                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                              style={{ left: "22%", top: "55%", width: "14%" }}
+                            >
+                              <span className="text-3xl">🏆</span>
+                              <span className="text-base">Ranking</span>
+                            </button>
+
+                            {/* Gildia */}
+                            <button
+                              type="button"
+                              onClick={() => setShowGildiaPanel(true)}
+                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                              style={{ left: "44%", top: "55%", width: "14%" }}
+                            >
+                              <span className="text-3xl">⚔️</span>
+                              <span className="text-base">Gildia</span>
+                            </button>
+
+                            {/* Misje */}
+                            <button
+                              type="button"
+                              onClick={() => setShowMisjePanel(true)}
+                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
+                              style={{ left: "66%", top: "55%", width: "14%" }}
+                            >
+                              <span className="text-3xl">📜</span>
+                              <span className="text-base">Misje</span>
+                            </button>
+                          </div>
+
+                          {/* Przycisk Wróć — przyklejony do viewportu */}
                           <button
                             type="button"
-                            onClick={() => handleChangeMap("city")}
-                            className="absolute left-4 top-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60"
+                            onClick={() => { handleChangeMap("city"); setTownHallCamX(0); }}
+                            className="absolute left-4 top-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 z-10"
                           >
                             ← Wróć do miasta
                           </button>
 
-                          {/* Ranking */}
-                          <button
-                            type="button"
-                            onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
-                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "16%", top: "55%", width: "14%" }}
-                          >
-                            <span className="text-3xl">🏆</span>
-                            <span className="text-base">Ranking</span>
-                          </button>
-
-                          {/* Gildia */}
-                          <button
-                            type="button"
-                            onClick={() => setShowGildiaPanel(true)}
-                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "43%", top: "55%", width: "14%" }}
-                          >
-                            <span className="text-3xl">⚔️</span>
-                            <span className="text-base">Gildia</span>
-                          </button>
-
-                          {/* Misje */}
-                          <button
-                            type="button"
-                            onClick={() => setShowMisjePanel(true)}
-                            className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                            style={{ left: "70%", top: "55%", width: "14%" }}
-                          >
-                            <span className="text-3xl">📜</span>
-                            <span className="text-base">Misje</span>
-                          </button>
-
+                          {/* Wskaźnik pozycji kamery */}
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 pointer-events-none">
+                            {Array.from({length: 5}).map((_,i) => {
+                              const segW = maxCamX / 4;
+                              const active = Math.round(townHallCamX / segW) === i;
+                              return <div key={i} className={`h-1.5 rounded-full transition-all ${active ? "w-6 bg-amber-400" : "w-2 bg-white/20"}`} />;
+                            })}
+                          </div>
                         </div>
-                      )}
+                        );
+                      })()}
 
                                           {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
                     {currentMap !== "city" && currentMap !== "city_townhall" && currentMap.startsWith("city_") && (
@@ -11599,7 +11670,7 @@ export default function Page() {
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onDragStart={(e) => e.preventDefault()}
-                            onMouseEnter={() => { tryDragPlant(plotId); }}
+                            onMouseEnter={() => { tryApplyFieldAction(plotId); }}
                             onMouseDown={(e) => {
                               if (e.button !== 0) return;
                               e.preventDefault();
@@ -11613,49 +11684,42 @@ export default function Page() {
                                 return;
                               }
                               dragEndedRef.current = false;
-                              if (selectedSeedId && !isCompostKey(selectedSeedId) && isUnlocked) {
-                                const _plot = getPlotCrop(plotId);
-                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId]) {
-                                  isDraggingPlantRef.current = true;
-                                  dragPlantedFieldsRef.current = new Set([plotId]);
-                                  void handlePlantFromSelectedSeed(plotId);
-                                }
+                              if (!isUnlocked) return;
+                              const _plot = getPlotCrop(plotId);
+                              let _started = false;
+                              if (selectedTool === "watering_can") {
+                                if (_plot.cropId && !_plot.watered && !isCropReady(plotId)) _started = true;
+                              } else if (selectedTool === "sickle") {
+                                if (_plot.cropId && isCropReady(plotId)) _started = true;
+                              } else if (selectedSeedId && isCompostKey(selectedSeedId)) {
+                                if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0) _started = true;
+                              } else if (selectedSeedId) {
+                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId]) _started = true;
+                              } else if (_plot.cropId && isCropReady(plotId)) {
+                                _started = true;
+                              }
+                              if (_started) {
+                                isDraggingPlantRef.current = true;
+                                dragPlantedFieldsRef.current = new Set([plotId]);
+                                // Wykonaj akcję na pierwszym polu
+                                if (selectedTool === "watering_can") void handleWaterPlot(plotId);
+                                else if (selectedTool === "sickle") void handleHarvestPlot(plotId);
+                                else if (selectedSeedId && isCompostKey(selectedSeedId)) void applyCompostToPlot(plotId, selectedSeedId);
+                                else if (selectedSeedId) void handlePlantFromSelectedSeed(plotId);
+                                else void handleHarvestPlot(plotId);
                               }
                             }}
                             onClick={() => {
                               if (fieldHitboxEditMode) return;
                               setSelectedPlotId(plotId);
-
-                              if (!isUnlocked) {
-                                return;
-                              }
-
-                              if (selectedTool === "watering_can") {
-                                handleWaterPlot(plotId);
-                                return;
-                              }
-
-                              if (selectedTool === "sickle") {
-                                void handleHarvestPlot(plotId);
-                                return;
-                              }
-
-                              if (selectedSeedId && isCompostKey(selectedSeedId)) {
-                                void applyCompostToPlot(plotId, selectedSeedId);
-                                return;
-                              }
-
-                              if (selectedSeedId) {
-                                if (!dragEndedRef.current) {
-                                  handlePlantFromSelectedSeed(plotId);
-                                }
-                                dragEndedRef.current = false;
-                                return;
-                              }
-
-                              if (getPlotCrop(plotId).cropId && isCropReady(plotId)) {
-                                void handleHarvestPlot(plotId);
-                              }
+                              if (!isUnlocked) return;
+                              // Akcja już wykonana w onMouseDown (drag) — pomiń
+                              if (dragEndedRef.current) { dragEndedRef.current = false; return; }
+                              if (selectedTool === "watering_can") { handleWaterPlot(plotId); return; }
+                              if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
+                              if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
+                              if (selectedSeedId) { handlePlantFromSelectedSeed(plotId); return; }
+                              if (getPlotCrop(plotId).cropId && isCropReady(plotId)) void handleHarvestPlot(plotId);
                             }}
                             title={(() => {
                               if (!isUnlocked) return `Pole ${plotId} jest zablokowane`;
