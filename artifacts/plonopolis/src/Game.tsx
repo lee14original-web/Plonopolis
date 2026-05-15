@@ -5444,9 +5444,11 @@ export default function Page() {
         <div
           ref={mapContainerRef}
           className="relative overflow-hidden"
-          style={{ width: "100%", height: "100%", cursor: isOnFarmMap ? "grab" : undefined }}
+          style={{ width: "100%", height: "100%", cursor: isOnFarmMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
+          onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             if (!isOnFarmMap || e.button !== 0) return;
+            e.preventDefault();
             panDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
           onMouseMove={(e) => {
@@ -5455,6 +5457,7 @@ export default function Page() {
             const dy = e.clientY - panDragRef.current.startY;
             if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
               panDragRef.current.moved = true;
+              document.body.classList.add("plono-dragging");
               const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
               const minPanY = Math.min(0, BASE_H - FARM_MAP_H);
               setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
@@ -5463,11 +5466,13 @@ export default function Page() {
             }
           }}
           onMouseUp={() => {
+            document.body.classList.remove("plono-dragging");
             panDragRef.current.active = false;
             setIsPanDragging(false);
             if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
           }}
           onMouseLeave={() => {
+            document.body.classList.remove("plono-dragging");
             panDragRef.current.active = false;
             setIsPanDragging(false);
             panDragRef.current.moved = false;
@@ -5504,7 +5509,8 @@ export default function Page() {
         {/* Overlay kursora grabbing podczas przeciągania */}
         {isPanDragging && (
           <div
-            style={{ position: "absolute", inset: 0, zIndex: 99999, cursor: "grabbing" }}
+            style={{ position: "absolute", inset: 0, zIndex: 99999, cursor: "grabbing", userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
+            onDragStart={(e) => e.preventDefault()}
             onMouseMove={(e) => {
               const dx = e.clientX - panDragRef.current.startX;
               const dy = e.clientY - panDragRef.current.startY;
@@ -5514,6 +5520,7 @@ export default function Page() {
               setPanY(Math.max(minPanY, Math.min(0, panDragRef.current.startPanY + dy / gameScale)));
             }}
             onMouseUp={() => {
+              document.body.classList.remove("plono-dragging");
               panDragRef.current.active = false;
               setIsPanDragging(false);
               if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
