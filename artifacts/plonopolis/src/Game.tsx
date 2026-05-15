@@ -5448,6 +5448,8 @@ export default function Page() {
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             if (!isOnFarmMap || e.button !== 0) return;
+            const tgt = e.target as HTMLElement;
+            if (tgt.closest('[data-no-map-drag], button, [role="button"], a')) return;
             e.preventDefault();
             panDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
@@ -5675,6 +5677,7 @@ export default function Page() {
                   {isOnFarmMap && (
   <button
     type="button"
+    data-no-map-drag="true"
     onClick={() => {
       setHoveredPolaUprawne(false);
       setIsFieldViewOpen(true);
@@ -5700,6 +5703,7 @@ export default function Page() {
                         {/* Dom — na drzwiach domu */}
                         <button
                           type="button"
+                          data-no-map-drag="true"
                           onClick={() => { setHoveredDom(false); setShowDomModal(true); setDomTab("profil"); }}
                           title=""
                           onMouseEnter={() => setHoveredDom(true)}
@@ -5715,6 +5719,7 @@ export default function Page() {
                           return (
                             <button
                               type="button"
+                              data-no-map-drag="true"
                               title=""
                               onMouseEnter={() => { if (_barnUnlocked) setHoveredStodola(true); else setHoveredBarnLock(true); }}
                               onMouseLeave={() => { setHoveredBarnLock(false); setHoveredStodola(false); }}
@@ -5736,6 +5741,7 @@ export default function Page() {
                       {/* Do miasta */}
                       <button
                         type="button"
+                        data-no-map-drag="true"
                         onClick={() => handleChangeMap("city")}
                         title=""
                         onMouseEnter={() => setHoveredDoMiasta(true)}
@@ -5751,6 +5757,7 @@ export default function Page() {
                         return (
                           <button
                             type="button"
+                            data-no-map-drag="true"
                             title=""
                             onMouseEnter={() => { if (_hiveUnlocked) setHoveredUl(true); else setHoveredHiveLock(true); }}
                             onMouseLeave={() => { setHoveredHiveLock(false); setHoveredUl(false); }}
@@ -5772,6 +5779,7 @@ export default function Page() {
                       {/* Lada dla klientów — sprzedaż słoików miodu */}
                       <button
                         type="button"
+                        data-no-map-drag="true"
                         title=""
                         onMouseEnter={() => setHoveredLada(true)}
                         onMouseLeave={() => setHoveredLada(false)}
@@ -5783,6 +5791,7 @@ export default function Page() {
                       {/* Kompostownik */}
                       <button
                         type="button"
+                        data-no-map-drag="true"
                         title=""
                         onMouseEnter={() => setHoveredKompostownik(true)}
                         onMouseLeave={() => setHoveredKompostownik(false)}
@@ -5798,6 +5807,7 @@ export default function Page() {
                         return (
                           <button
                             type="button"
+                            data-no-map-drag="true"
                             title=""
                             onMouseEnter={() => { if (_sadUnlocked) setHoveredSad(true); else setHoveredSadLock(true); }}
                             onMouseLeave={() => { setHoveredSadLock(false); setHoveredSad(false); }}
