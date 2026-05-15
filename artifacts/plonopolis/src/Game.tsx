@@ -413,7 +413,7 @@ interface CharEquipItem {
   bonuses: EquipBonus[];
 }
 type CharEquipped = Record<EquipSlot, {id:string;upg:number}|null>;
-type BarnAnimalState = { owned:number; slots:number; hunger:number; lastFedAt:number; storage:number; prodStart:number; };
+type BarnAnimalState = { owned:number; slots:number; hunger:number; lastFedAt:number; storage:number; prodStart:number; baseProdStart:number; };
 type BarnState = Record<string,BarnAnimalState>;
 type BarnItems = Record<string,number>;
 interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; }
@@ -837,7 +837,7 @@ const ANIMALS: AnimalDef[] = [
 ];
 function defaultBarnState(): BarnState {
   const s: BarnState = {};
-  ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 }; });
+  ANIMALS.forEach(a => { s[a.id] = { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0, baseProdStart:0 }; });
   return s;
 }
 
@@ -2549,7 +2549,7 @@ export default function Page() {
     const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
     const _dbBarnHasData = !!(_dbBarn && Object.values(_dbBarn).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
     if (_dbBarnHasData) {
-      ANIMALS.forEach(a => { const d = (_dbBarn as Record<string,{owned:number;slots:number;prodStart:number}>)[a.id]; if (d) { if (typeof d.owned === "number") _lsBarn[a.id].owned = d.owned; if (typeof d.slots === "number") _lsBarn[a.id].slots = d.slots; if (typeof d.prodStart === "number" && d.prodStart > 0) _lsBarn[a.id].prodStart = d.prodStart; } });
+      ANIMALS.forEach(a => { const d = (_dbBarn as Record<string,{owned:number;slots:number;prodStart:number}>)[a.id]; if (d) { if (typeof d.owned === "number") _lsBarn[a.id].owned = d.owned; if (typeof d.slots === "number") _lsBarn[a.id].slots = d.slots; if (typeof d.prodStart === "number" && d.prodStart > 0) { _lsBarn[a.id].prodStart = d.prodStart; _lsBarn[a.id].baseProdStart = d.prodStart; } } });
     } else if (uid) {
       ANIMALS.forEach(a => { const st = _lsBarn[a.id]; if (st && st.owned > 0) void supabase.rpc("sync_barn_owned", { p_user_id: uid, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots }); });
     }
@@ -10110,7 +10110,7 @@ export default function Page() {
                 const res = rpc.data as { ok: boolean; collected: number; item_id: string; new_prod_start: number; new_barn_items: Record<string,number> };
                 if (res.collected === 0) { setMessage({type:"info",title:`${a.icon} Brak produktów`,text:`${a.name} jeszcze pracuje — wróć później.`}); return; }
                 saveBarnItems(res.new_barn_items);
-                saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start}});
+                saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start, baseProdStart: res.new_prod_start}});
                 setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${res.collected} ${item.name}`});
               })();
             };
@@ -10130,13 +10130,13 @@ export default function Page() {
                 if (res.total === 0) { setMessage({type:"info",title:"Nic do odbioru",text:"Żadne zwierzę nie jest jeszcze gotowe."}); return; }
                 saveBarnItems(res.new_barn_items);
                 const newState = {...barnState};
-                res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start}; });
+                res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start, baseProdStart: r.new_prod_start}; });
                 saveBarnState(newState);
                 setMessage({type:"success",title:"Odebrano wszystko!",text:`+${res.total} produktów. Sprzedaj je w Ladzie dla klientów.`});
               })();
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
-            const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
+            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0); }, 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
                 <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
@@ -10154,7 +10154,8 @@ export default function Page() {
                       const locked = lvl < a.unlockLevel;
                       const st = barnState[a.id];
                       const hasAnimals = st.owned > 0;
-                      const hasProd = st.storage > 0;
+                      const _bpsS = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0;
+                      const hasProd = _bpsS > 0 && Math.floor((barnNow - _bpsS) / a.prodMs) >= 1;
                       return (
                         <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
                           disabled={locked}
@@ -10213,7 +10214,7 @@ export default function Page() {
                                     <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
                                     <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {st.storage > 0 && <span title={`${st.storage} cykli × ${st.owned} ${a.name.toLowerCase()} = ${st.storage * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{st.storage}/{a.storageMax} (={st.storage * st.owned}{item.icon})</span>}
+                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const scOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), a.storageMax) : 0; return scOv > 0 ? <span title={`${scOv} cykli × ${st.owned} ${a.name.toLowerCase()} = ${scOv * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{scOv}/{a.storageMax} (={scOv * st.owned}{item.icon})</span> : null; })()}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -10249,9 +10250,14 @@ export default function Page() {
                       const h = barnCurrentHunger(st, opiekaPts);
                       const hs = barnHungerStatus(h);
                       const effMs = barnEffProdMs(a, h);
-                      const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
-                      const pct = st.prodStart > 0 ? Math.min(100, ((barnNow - st.prodStart) / effMs) * 100) : 0;
-                      const storageFull = st.storage >= a.storageMax;
+                      // Server-aligned: use baseProdStart + BASE prodMs (matches collect_animal RPC)
+                      const _bps = (st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0);
+                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0;
+                      const storageFull = serverCycles >= a.storageMax;
+                      const _cycleStart = _bps > 0 ? _bps + serverCycles * a.prodMs : 0;
+                      const remaining = _cycleStart > 0 && !storageFull ? Math.max(0, _cycleStart + a.prodMs - barnNow) : 0;
+                      const pct = _cycleStart > 0 ? Math.min(100, ((barnNow - _cycleStart) / a.prodMs) * 100) : 0;
+                      void effMs;
                       const nextUpg = st.slots - a.startSlots;
                       const upgCost = nextUpg < a.slotUpgCosts.length ? a.slotUpgCosts[nextUpg] : null;
                       return (
@@ -10274,7 +10280,7 @@ export default function Page() {
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
                                     <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {st.storage} / {a.storageMax} cykli {st.storage > 0 && st.owned > 0 && <span className="text-green-300">(= {st.storage * st.owned} {item.icon})</span>}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {serverCycles} / {a.storageMax} cykli {serverCycles > 0 && st.owned > 0 && <span className="text-green-300">(= {serverCycles * st.owned} {item.icon})</span>}</p>
                                     <p className="text-[9px] text-[#6b7280]">1 cykl = {st.owned} {item.name} ({st.owned} {st.owned === 1 ? "zwierzę" : "zwierząt"})</p>
                                   </div>
                                 </div>
@@ -10289,9 +10295,9 @@ export default function Page() {
                                   </>
                                 )}
                                 {st.owned === 0 && <p className="text-xs text-[#6b7280] text-center">Brak zwierząt — kup pierwsze!</p>}
-                                {st.storage > 0 && st.owned > 0 && (
+                                {serverCycles > 0 && st.owned > 0 && (
                                   <button onClick={() => handleCollect(a)} className="mt-2 w-full rounded-xl border border-green-500/60 bg-green-900/20 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
-                                    ✅ Odbierz {st.storage * st.owned} {item.icon} ({st.storage} cykli × {st.owned})
+                                    ✅ Odbierz {serverCycles * st.owned} {item.icon} ({serverCycles} cykli × {st.owned})
                                   </button>
                                 )}
                               </div>
