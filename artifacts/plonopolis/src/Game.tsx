@@ -5925,6 +5925,27 @@ export default function Page() {
               )}
               {/* ═══ WARSTWA STATYCZNA — miasto i inne lokacje (bez panu) ═══ */}
               <div className="absolute inset-0 z-20 pointer-events-none">
+
+                  {/* ── DEV: panel edytora farmy ── */}
+                  {isOnFarmMap && profile && (
+                    <div className="pointer-events-auto absolute top-2 left-1/2 -translate-x-1/2 flex gap-2 z-[200]" style={{zIndex:200}}>
+                      <button
+                        type="button"
+                        onClick={() => { setNavEditMode(p => !p); setHitboxEditMode(false); }}
+                        className={`rounded-lg border px-3 py-1 text-[11px] font-black shadow transition ${navEditMode ? "border-sky-400 bg-sky-900/90 text-sky-200" : "border-sky-700/60 bg-black/80 text-sky-400 hover:bg-sky-950"}`}
+                      >
+                        {navEditMode ? "✅ Etykiety ON" : "🏷 Edytuj etykiety"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setHitboxEditMode(p => !p); setNavEditMode(false); }}
+                        className={`rounded-lg border px-3 py-1 text-[11px] font-black shadow transition ${hitboxEditMode ? "border-orange-400 bg-orange-900/90 text-orange-200" : "border-orange-700/60 bg-black/80 text-orange-400 hover:bg-orange-950"}`}
+                      >
+                        {hitboxEditMode ? "✅ Hitboxy ON" : "🎯 Edytuj hitboxy"}
+                      </button>
+                    </div>
+                  )}
+
                   {currentMap === "city" && (
                     <>
                       {/* ── Hitboxy ── */}
@@ -6024,6 +6045,24 @@ export default function Page() {
                           </div>
                         </div>
                       )}
+
+                      {/* ── DEV: przyciski toggle edytora miasta ── */}
+                      <div className="pointer-events-auto absolute top-2 left-1/2 -translate-x-1/2 flex gap-2" style={{zIndex:200}}>
+                        <button
+                          type="button"
+                          onClick={() => { setCityNavEditMode(p => !p); setCityHitboxEditMode(false); }}
+                          className={`rounded-lg border px-3 py-1 text-[11px] font-black shadow transition ${cityNavEditMode ? "border-sky-400 bg-sky-900/90 text-sky-200" : "border-sky-700/60 bg-black/80 text-sky-400 hover:bg-sky-950"}`}
+                        >
+                          {cityNavEditMode ? "✅ Etykiety ON" : "🏷 Edytuj etykiety"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setCityHitboxEditMode(p => !p); setCityNavEditMode(false); }}
+                          className={`rounded-lg border px-3 py-1 text-[11px] font-black shadow transition ${cityHitboxEditMode ? "border-orange-400 bg-orange-900/90 text-orange-200" : "border-orange-700/60 bg-black/80 text-orange-400 hover:bg-orange-950"}`}
+                        >
+                          {cityHitboxEditMode ? "✅ Hitboxy ON" : "🎯 Edytuj hitboxy"}
+                        </button>
+                      </div>
 
                       {/* ══ EDYTOR HITBOXÓW MIASTA ══ */}
                       {cityHitboxEditMode && (
