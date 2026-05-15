@@ -132,12 +132,10 @@ begin
   -- ── Wybór jakości plonu ────────────────────────────────────────────────────
   if v_actual_planted_q = 'rotten' then
     v_target_quality := 'rotten';                    -- zawsze popsute z popsutego
-  elsif v_actual_planted_q = 'epic' then
-    v_target_quality := 'epic';                      -- zawsze epickie z epickiego
   elsif v_actual_planted_q = 'legendary' then
-    v_target_quality := 'good';                      -- legendarny rozdziela klient (3 opcje)
+    v_target_quality := 'good';                      -- legendarny rozdziela klient
   else
-    -- Zwykłe nasiono: losuj jakość plonu z uwzględnieniem Szczęścia
+    -- Zwykłe i epickie nasiono: losuj jakość plonu z uwzględnieniem Szczęścia
     -- Bazowo: 10% popsuta | 85% zwykła | 4% epicka | 1% legendarna
     -- Przy 100 pkt Szczęścia: 5% popsuta | 74% zwykła | 15% epicka | 6% legendarna
     v_luck_eff         := least(100.0, greatest(0.0, p_szczescie::numeric));
@@ -159,12 +157,20 @@ begin
   end if;
 
   -- ── Losowy bazowy yield ──────────────────────────────────────────────────
-  -- yield_amount <= 2 → uprawy lvl 1-6 → losowo 1-3 szt.
-  -- yield_amount >  2 → uprawy lvl 7-25 → losowo 2-5 szt.
-  if v_crop.yield_amount <= 2 then
-    v_base_yield := 1 + floor(random() * 3)::integer;   -- 1, 2 lub 3
+  -- Epic: lvl 1-6 → 10-22 szt.; lvl 7-25 → 14-30 szt.
+  -- Inne: lvl 1-6 → 1-3 szt.;   lvl 7-25 → 2-5 szt.
+  if v_actual_planted_q = 'epic' then
+    if v_crop.yield_amount <= 2 then
+      v_base_yield := 10 + floor(random() * 13)::integer;  -- 10-22
+    else
+      v_base_yield := 14 + floor(random() * 17)::integer;  -- 14-30
+    end if;
   else
-    v_base_yield := 2 + floor(random() * 4)::integer;   -- 2, 3, 4 lub 5
+    if v_crop.yield_amount <= 2 then
+      v_base_yield := 1 + floor(random() * 3)::integer;   -- 1-3
+    else
+      v_base_yield := 2 + floor(random() * 4)::integer;   -- 2-5
+    end if;
   end if;
 
   v_gained_good      := case when v_target_quality = 'good'      then v_base_yield else 0 end;
@@ -246,10 +252,10 @@ begin
   v_plot_crops := v_plot_crops - (p_plot_id::text);
 
   -- ── EXP — system mnożników ───────────────────────────────────────────────
-  -- p_exp_mult_override = -1 → wymuś 0 EXP (legendarny opcja 0/1)
-  -- p_exp_mult_override > 0  → dokładny mnożnik (legendarny opcja EXP: 20-40x)
-  -- rotten                   → 0 EXP
-  -- epic                     → losowo 3-6x
+  -- p_exp_mult_override = -1 → wymuś 0 EXP
+  -- p_exp_mult_override > 0  → dokładny mnożnik (legendarny EXP: ×10-20 / ×12-25)
+  -- rotten (docelowy)        → 0 EXP
+  -- epic (nasiono)           → ×3-6 (chyba że trafił rotten → 0 EXP)
   -- good / legendary (base)  → 1x
   IF p_exp_mult_override = -1 THEN
     v_exp_mult := 0;

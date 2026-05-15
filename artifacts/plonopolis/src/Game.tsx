@@ -4664,11 +4664,7 @@ export default function Page() {
       }
     }
 
-    // ─── Epicki EXP — losowy mnożnik 3–6x ───
-    let _epicExpMult = 0;
-    if (_plantedQuality === "epic") {
-      _epicExpMult = Math.floor(Math.random() * 4) + 3; // 3–6
-    }
+    // ─── Epicki EXP — SQL oblicza ×3-6 server-side (uwzględnia rotten roll → 0 EXP) ───
 
     // ─── Parametry bonusów do RPC (atomicznie po stronie SQL — anti-race) ───
     // Dla legendarnych: zerujemy compost/extra/bonusDrop (klient sam aplikuje legendarny dropy).
@@ -4686,10 +4682,10 @@ export default function Page() {
       p_zrecznosc: effectiveStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      // -1 = wymuś 0 EXP; 0 = jakość decyduje; >0 = dokładny mnożnik
+      // -1 = wymuś 0 EXP; 0 = SQL decyduje; >0 = dokładny mnożnik (legendarny)
       p_exp_mult_override: _plantedQuality === "legendary"
         ? _legExpMult
-        : _epicExpMult,
+        : 0,
       // Atomicznie po stronie SQL (eliminuje race condition przy zbiorze wielu pól naraz)
       p_compost_yield_extra: _compostYieldExtraForRpc,
       p_extra_harvest_pct:   _extraHarvestPctForRpc,
@@ -11047,7 +11043,7 @@ export default function Page() {
                                           const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
                                           // Plony i EXP zależne od jakości
                                           const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
-                                          const yieldText = q === "legendary" ? (crop.yieldAmount <= 2 ? "20–60 zw. + 5–12 epic." : "30–80 zw. + 8–18 epic.") : q === "epic" ? "8–20 szt." : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
+                                          const yieldText = q === "legendary" ? (crop.yieldAmount <= 2 ? "20–60 zw. + 5–12 epic." : "30–80 zw. + 8–18 epic.") : q === "epic" ? (crop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt.") : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
                                           const expText = q === "legendary" ? (crop.yieldAmount <= 2 ? `${crop.expReward * 10}–${crop.expReward * 20}` : `${crop.expReward * 12}–${crop.expReward * 25}`) : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
                                           const tipNode = (
                                             <>
@@ -11085,7 +11081,7 @@ export default function Page() {
                                                 <div className="flex items-center justify-between mb-1.5">
                                                   <span className="text-[13px] text-[#8b6a3e]/80">🌾 Plon</span>
                                                   <span className="text-[14px] font-black text-white">
-                                                    {q === "epic" ? "8–20 szt." : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. 🟫` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
+                                                    {q === "epic" ? (crop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt.") : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. 🟫` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
                                                   </span>
                                                 </div>
                                               )}
@@ -12129,11 +12125,16 @@ export default function Page() {
                 <p>⭐ {hoveredCrop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich nasion</p>
                 <p>📚 EXP ×{hoveredCrop.yieldAmount <= 2 ? "10–20" : "12–25"}</p>
               </div>
+            ) : hoveredSeedQuality === "epic" ? (
+              <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(34,197,94,0.08)] p-2 text-[13px]">
+                <p className="font-black text-green-300">🎲 Losuje jakość (jak zwykłe nasiono)</p>
+                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt."} • ⭐ EXP ×3–6</p>
+              </div>
             ) : (
-              <p className="mt-1">🌾 Zbiór: {hoveredSeedQuality === "epic" ? "8–20 szt." : `${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
+              <p className="mt-1">🌾 Zbiór: {`${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
             )}
-            {hoveredSeedQuality !== "legendary" && (
-              <p className="mt-1">⭐ EXP: +{hoveredSeedQuality === "epic" ? `${hoveredCrop.expReward * 3}–${hoveredCrop.expReward * 6}` : hoveredCrop.expReward}</p>
+            {hoveredSeedQuality !== "legendary" && hoveredSeedQuality !== "epic" && (
+              <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
             )}
           </>}
         </div>
