@@ -1880,9 +1880,9 @@ export default function Page() {
   const [thHitboxEditMode, setThHitboxEditMode] = React.useState(false);
   const [thMouseOnPanorama, setThMouseOnPanorama] = React.useState({x:0, y:0});
   const [townHallHitboxes, setTownHallHitboxes] = React.useState<THHitbox[]>([
-    { id:"ranking", label:"Ranking",      x:500,  y:820, width:380, height:130, action:"ranking" },
-    { id:"club",    label:"Klub Rolnika", x:1030, y:820, width:460, height:130, action:"club"    },
-    { id:"event",   label:"Event",        x:1650, y:820, width:380, height:130, action:"event"   },
+    { id:"ranking", label:"Ranking",      x:280,  y:358, width:689, height:826, action:"ranking" },
+    { id:"club",    label:"Klub Rolnika", x:1305, y:542, width:1489, height:807, action:"club"  },
+    { id:"event",   label:"Event",        x:3075, y:354, width:798, height:791, action:"event"  },
   ]);
   const thContainerRef = React.useRef<HTMLDivElement>(null);
   const thHbDragRef = React.useRef<{hbId:string; startX:number; startY:number; startHbX:number; startHbY:number; mode:"move"|"resize"; startW:number; startH:number} | null>(null);
@@ -2660,6 +2660,12 @@ export default function Page() {
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const backgroundMap = getDisplayBackgroundMap(currentMap);
+  React.useEffect(() => {
+    if (currentMap === "city_townhall" && rankingData.length === 0 && !rankingLoading) {
+      void loadRanking();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMap]);
 
   const xpPercent = useMemo(() => {
     if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
@@ -6321,7 +6327,6 @@ export default function Page() {
                                   >
                                     <span className="text-orange-200 font-bold text-sm pointer-events-none">{hb.label}</span>
                                     <span className="text-[10px] text-orange-300/70 ml-2 pointer-events-none">({hb.x},{hb.y})</span>
-                                    {/* Resize handle */}
                                     <div
                                       className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 cursor-se-resize"
                                       style={{ borderTopLeftRadius: 3 }}
@@ -6333,16 +6338,62 @@ export default function Page() {
                                   </div>
                                 );
                               }
+
+                              const hbStyle: React.CSSProperties = {
+                                left: hb.x, top: hb.y, width: hb.width, height: hb.height,
+                                border: "1px solid rgba(255,215,120,0.18)",
+                                background: "transparent",
+                                transition: "all 0.18s ease",
+                              };
+                              const onHover = (e: React.MouseEvent<HTMLDivElement>, enter: boolean) => {
+                                const el = e.currentTarget as HTMLDivElement;
+                                el.style.background = enter ? "rgba(255,215,120,0.05)" : "transparent";
+                                el.style.boxShadow = enter ? "0 0 18px rgba(255,215,120,0.22)" : "none";
+                              };
+
+                              if (hb.action === "ranking") {
+                                const miniRanking = [...rankingData]
+                                  .sort((a, b) => (b.farm_power ?? 0) - (a.farm_power ?? 0))
+                                  .slice(0, 10);
+                                return (
+                                  <div
+                                    key={hb.id}
+                                    className="absolute cursor-pointer overflow-hidden"
+                                    style={hbStyle}
+                                    onClick={() => triggerHitbox(hb.action)}
+                                    onMouseEnter={(e) => onHover(e, true)}
+                                    onMouseLeave={(e) => onHover(e, false)}
+                                  >
+                                    <div className="absolute inset-0 flex flex-col justify-center px-4 py-3 pointer-events-none">
+                                      {rankingLoading ? (
+                                        <span className="text-yellow-200/50 text-xs text-center">Ładowanie rankingu...</span>
+                                      ) : miniRanking.length === 0 ? (
+                                        <span className="text-yellow-200/40 text-xs text-center">Brak danych rankingu</span>
+                                      ) : (
+                                        <div className="flex flex-col gap-[3px]">
+                                          {miniRanking.map((p, i) => (
+                                            <div key={p.user_id} className="flex items-baseline gap-1.5">
+                                              <span className={`text-[11px] font-black w-6 text-right shrink-0 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-amber-500" : "text-yellow-200/60"}`}>{i + 1}.</span>
+                                              <span className="text-[11px] text-yellow-100/90 truncate flex-1 font-medium">{p.player_name}</span>
+                                              <span className="text-[10px] text-yellow-300/70 font-mono shrink-0">{(p.farm_power ?? 0).toLocaleString()}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              }
+
                               return (
                                 <div
                                   key={hb.id}
-                                  className="absolute flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] cursor-pointer transition hover:border-yellow-400 hover:brightness-110"
-                                  style={{ left: hb.x, top: hb.y, width: hb.width, height: hb.height }}
+                                  className="absolute cursor-pointer"
+                                  style={hbStyle}
                                   onClick={() => triggerHitbox(hb.action)}
-                                >
-                                  <span className="text-3xl pointer-events-none">{hbIcon(hb.action)}</span>
-                                  <span className="text-base font-black text-[#f9e7b2] pointer-events-none">{hb.label}</span>
-                                </div>
+                                  onMouseEnter={(e) => onHover(e, true)}
+                                  onMouseLeave={(e) => onHover(e, false)}
+                                />
                               );
                             })}
                           </div>
