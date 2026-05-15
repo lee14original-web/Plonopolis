@@ -1716,6 +1716,8 @@ export default function Page() {
   const fhStartHold = (fn: () => void) => { fn(); fhHoldRef.current = setInterval(fn, 80); };
   const fhContainerRef = React.useRef<HTMLDivElement>(null);
   const fhDragRef = React.useRef<{startMouseX:number,startMouseY:number,startOffsetX:number,startOffsetY:number}|null>(null);
+  const fieldViewScrollRef = React.useRef<HTMLDivElement>(null);
+  const fieldScrollDragRef = React.useRef<{active:boolean,startX:number,startY:number,scrollLeft:number,scrollTop:number,moved:boolean}|null>(null);
   const fhResizeRef = React.useRef<{startMouseX:number,startMouseY:number,startW:number,startH:number}|null>(null);
   const handleFhMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!fhContainerRef.current) return;
@@ -10946,7 +10948,34 @@ export default function Page() {
               className="fixed inset-0 z-[80]"
               style={fvToolEditMode ? { userSelect: "none" } : undefined}
             >
-                <div className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto">
+                <div
+                  ref={fieldViewScrollRef}
+                  className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto"
+                  style={{ cursor: fieldScrollDragRef.current?.active && fieldScrollDragRef.current?.moved ? "grabbing" : undefined, userSelect: fieldScrollDragRef.current?.moved ? "none" : undefined }}
+                  onMouseDown={(e) => {
+                    if (e.button !== 0) return;
+                    const tgt = e.target as HTMLElement;
+                    if (tgt.closest('button, [role="button"], a, input, select, textarea')) return;
+                    const el = fieldViewScrollRef.current;
+                    if (!el) return;
+                    fieldScrollDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop, moved: false };
+                  }}
+                  onMouseMove={(e) => {
+                    const drag = fieldScrollDragRef.current;
+                    if (!drag?.active) return;
+                    const el = fieldViewScrollRef.current;
+                    if (!el) return;
+                    const dx = e.clientX - drag.startX;
+                    const dy = e.clientY - drag.startY;
+                    if (!drag.moved && Math.sqrt(dx * dx + dy * dy) < 5) return;
+                    drag.moved = true;
+                    el.scrollLeft = drag.scrollLeft - dx;
+                    el.scrollTop = drag.scrollTop - dy;
+                  }}
+                  onMouseUp={() => { if (fieldScrollDragRef.current) fieldScrollDragRef.current.active = false; }}
+                  onMouseLeave={() => { if (fieldScrollDragRef.current) fieldScrollDragRef.current.active = false; }}
+                  onClickCapture={(e) => { if (fieldScrollDragRef.current?.moved) { e.stopPropagation(); e.preventDefault(); fieldScrollDragRef.current.moved = false; } }}
+                >
                   <button
                     onClick={() => {
                       setIsFieldViewOpen(false);
