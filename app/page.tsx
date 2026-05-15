@@ -7673,7 +7673,7 @@ export default function Page() {
                 <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                 {/* ─ Sidebar ─ */}
-                <div className="flex w-[264px] shrink-0 flex-col gap-3 border-r border-[#8b6a3e]/30 bg-black/20 p-8 pt-20">
+                <div className="flex w-[264px] shrink-0 flex-col gap-3 border-r border-[#8b6a3e]/30 bg-black/20 p-8 pt-20 overflow-y-auto">
                   <p className="mb-4 text-sm font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
                   {(["profil","eq","plecak"] as const).map(tab => (
                     <button key={tab} onClick={() => setDomTab(tab)}
@@ -7687,7 +7687,7 @@ export default function Page() {
                 </div>
 
                 {/* ─ Zawartość ─ */}
-                <div className="flex-1 overflow-y-auto p-9 pt-8 text-[#dfcfab]">
+                <div className="flex-1 min-h-0 overflow-y-auto p-9 pt-8 text-[#dfcfab]">
 
                   {/* ════ PROFIL ════ */}
                   {domTab === "profil" && (
