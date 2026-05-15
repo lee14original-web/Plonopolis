@@ -1880,15 +1880,16 @@ export default function Page() {
   const [thHitboxEditMode, setThHitboxEditMode] = React.useState(false);
   const [thMouseOnPanorama, setThMouseOnPanorama] = React.useState({x:0, y:0});
   const [townHallHitboxes, setTownHallHitboxes] = React.useState<THHitbox[]>([
-    { id:"ranking", label:"Ranking",      x:367,  y:369, width:589, height:843, action:"ranking" },
+    { id:"ranking", label:"Ranking",      x:259,  y:347, width:716, height:839, action:"ranking" },
     { id:"club",    label:"Klub Rolnika", x:1305, y:542, width:1489, height:807, action:"club"  },
     { id:"event",   label:"Event",        x:3075, y:354, width:798, height:791, action:"event"  },
   ]);
   const thContainerRef = React.useRef<HTMLDivElement>(null);
   const thHbDragRef = React.useRef<{hbId:string; startX:number; startY:number; startHbX:number; startHbY:number; mode:"move"|"resize"; startW:number; startH:number} | null>(null);
   const [thTextEditMode, setThTextEditMode] = React.useState(false);
-  const [rankingTextLayout, setRankingTextLayout] = React.useState({ startY:38, rowHeight:88, nameX:54, scoreRight:10, fontSize:20 });
-  const thTextDragRef = React.useRef<{prop:"startY"|"rowHeight"|"nameX"|"scoreRight"; startMX:number; startMY:number; startVal:number} | null>(null);
+  const [thShowPreviewRanking, setThShowPreviewRanking] = React.useState(true);
+  const [rankingTextLayout, setRankingTextLayout] = React.useState({ startX:0, startY:38, rowHeight:88, nameX:54, scoreRight:10, fontSize:20 });
+  const thTextDragRef = React.useRef<{prop:"startX"|"startY"|"rowHeight"|"nameX"|"scoreRight"; startMX:number; startMY:number; startVal:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -6295,6 +6296,7 @@ export default function Page() {
                               const dmx = (e.clientX - txtDrag.startMX) / gameScale / townHallScale;
                               const dmy = (e.clientY - txtDrag.startMY) / gameScale / townHallScale;
                               setRankingTextLayout(prev => {
+                                if (txtDrag.prop === "startX")     return { ...prev, startX:     Math.max(0,  Math.round(txtDrag.startVal + dmx)) };
                                 if (txtDrag.prop === "nameX")      return { ...prev, nameX:      Math.max(20, Math.round(txtDrag.startVal + dmx)) };
                                 if (txtDrag.prop === "scoreRight") return { ...prev, scoreRight: Math.max(0,  Math.round(txtDrag.startVal - dmx)) };
                                 if (txtDrag.prop === "startY")     return { ...prev, startY:     Math.max(0,  Math.round(txtDrag.startVal + dmy)) };
@@ -6328,7 +6330,7 @@ export default function Page() {
                             style={{ width: TH_W, height: imageH, transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: `${imageW}px ${imageH}px`, backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
                           >
                             {townHallHitboxes.map(hb => {
-                              if (thHitboxEditMode) {
+                              if (thHitboxEditMode && !(hb.action === "ranking" && thTextEditMode)) {
                                 const dragging = thHbDragRef.current?.hbId === hb.id;
                                 return (
                                   <div
@@ -6373,7 +6375,7 @@ export default function Page() {
                                   .slice(0, 9);
                                 const rtl = rankingTextLayout;
                                 const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
-                                const startDrag = (prop: "startY"|"rowHeight"|"nameX"|"scoreRight", val: number) => ({
+                                const startDrag = (prop: "startX"|"startY"|"rowHeight"|"nameX"|"scoreRight", val: number) => ({
                                   onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); thTextDragRef.current = { prop, startMX: e.clientX, startMY: e.clientY, startVal: val }; },
                                   onClick: (e: React.MouseEvent) => e.stopPropagation(),
                                 });
@@ -6384,7 +6386,7 @@ export default function Page() {
                                   { name:"PolowyKról",      score:"987"    }, { name:"StartingUp",     score:"432"    },
                                   { name:"Nowicjusz",       score:"100"    },
                                 ];
-                                const lbl = (txt: string, extra?: React.CSSProperties) => ({
+                                const lbl = (_txt: string, extra?: React.CSSProperties) => ({
                                   fontSize:10, color:"#ffd76a", fontFamily:"monospace", fontWeight:"bold" as const,
                                   textShadow:"0 2px 4px #000", background:"rgba(0,0,0,0.72)",
                                   border:"1px solid rgba(255,215,106,0.5)", borderRadius:3,
@@ -6402,75 +6404,88 @@ export default function Page() {
                                   >
                                     {/* ── Overlay edycji tekstu ── */}
                                     {thTextEditMode && (
-                                      <div className="absolute inset-0" style={{ overflow:"hidden", pointerEvents:"auto", background:"rgba(0,0,0,0.45)", zIndex:999 }}>
+                                      <div className="absolute inset-0" style={{ overflow:"hidden", pointerEvents:"auto", background:"rgba(0,0,0,0.55)", zIndex:999 }}>
 
                                         {/* ── Poziome linie wierszy ── */}
                                         {Array.from({ length: 9 }).map((_, i) => (
-                                          <div key={`rg-${i}`} style={{ position:"absolute", left:0, right:0, top: rtl.startY + i * rtl.rowHeight, height: rtl.rowHeight, borderTop:`${i===0?"2px solid":"1px solid"} rgba(255,215,106,${i===0?0.9:0.45})`, boxSizing:"border-box", pointerEvents:"none" }} />
+                                          <div key={`rg-${i}`} style={{ position:"absolute", left:0, right:0, top: rtl.startY + i*rtl.rowHeight, height:rtl.rowHeight, borderTop:`${i===0?"2px solid":"1px solid"} rgba(255,215,106,${i===0?0.85:0.4})`, boxSizing:"border-box", pointerEvents:"none" }} />
                                         ))}
-                                        {/* dolna krawędź ostatniego wiersza */}
-                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY + 9*rtl.rowHeight, height:2, background:"rgba(255,215,106,0.45)", pointerEvents:"none" }} />
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY+9*rtl.rowHeight, height:2, background:"rgba(255,215,106,0.4)", pointerEvents:"none" }} />
 
-                                        {/* ── Podgląd przykładowych wpisów ── */}
-                                        {PREVIEW.map((p, i) => (
-                                          <div key={`prev-${i}`} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left:0, right:0, display:"flex", alignItems:"center", height: rtl.rowHeight, pointerEvents:"none" }}>
-                                            <span style={{ width:rtl.nameX, textAlign:"right", fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:900, textShadow:"0 2px 4px #000", flexShrink:0 }}>{i+1}.</span>
-                                            <span style={{ flex:1, marginLeft:8, fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:600, textShadow:"0 2px 4px #000", overflow:"hidden", whiteSpace:"nowrap" }}>{p.name}</span>
-                                            <span style={{ flexShrink:0, marginRight:rtl.scoreRight, fontSize:Math.round(rtl.fontSize*0.9), color:"#ffd76a", fontFamily:"monospace", fontWeight:700, textShadow:"0 2px 4px #000" }}>{p.score}</span>
+                                        {/* ── Podgląd wpisów (preview lub prawdziwe dane) ── */}
+                                        {(thShowPreviewRanking ? PREVIEW : miniRanking.map(p => ({ name: p.player_name, score: (p.farm_power??0).toLocaleString("pl-PL") }))).map((p, i) => (
+                                          <div key={`row-${i}`} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left: rtl.startX, right:0, height:rtl.rowHeight, display:"flex", alignItems:"center", pointerEvents:"none" }}>
+                                            <span style={{ width: rtl.nameX - rtl.startX, textAlign:"right", fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:900, textShadow:"0 2px 4px #000, 0 0 8px #000", flexShrink:0 }}>{i+1}.</span>
+                                            <span style={{ flex:1, marginLeft:8, fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:700, textShadow:"0 2px 4px #000, 0 0 8px #000", overflow:"hidden", whiteSpace:"nowrap" }}>{p.name}</span>
+                                            <span style={{ flexShrink:0, marginRight:rtl.scoreRight, fontSize:Math.round(rtl.fontSize*0.9), color:"#ffd76a", fontFamily:"monospace", fontWeight:700, textShadow:"0 2px 4px #000, 0 0 8px #000" }}>{p.score}</span>
                                           </div>
                                         ))}
 
-                                        {/* ── Pionowa linia Nr / Nick (złota) — przeciągalna ── */}
-                                        <div style={{ position:"absolute", top:0, bottom:0, left:rtl.nameX, width:2, background:"rgba(255,215,106,0.85)", cursor:"ew-resize", zIndex:10 }} {...startDrag("nameX", rtl.nameX)}>
-                                          <span style={{ ...lbl(""), position:"absolute", top:28, left:4 }}>← Nr | Nick →<br/>nameX={rtl.nameX}</span>
+                                        {/* ── Pionowa linia startX (biała) — przeciągalna ── */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, left: rtl.startX, width:3, background:"rgba(255,255,255,0.7)", cursor:"ew-resize", zIndex:12 }} {...startDrag("startX", rtl.startX)}>
+                                          <span style={{ ...lbl(""), position:"absolute", top:12, left:4 }}>startX={rtl.startX}</span>
                                         </div>
-                                        {/* Etykieta nagłówkowa Nr */}
-                                        <div style={{ position:"absolute", top:4, left:0, width:rtl.nameX, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
+
+                                        {/* ── Pionowa linia nameX (złota) — przeciągalna ── */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, left: rtl.nameX, width:3, background:"rgba(255,215,106,0.9)", cursor:"ew-resize", zIndex:11 }} {...startDrag("nameX", rtl.nameX)}>
+                                          <span style={{ ...lbl(""), position:"absolute", top:40, left:4 }}>Nr | Nick<br/>nameX={rtl.nameX}</span>
+                                        </div>
+                                        {/* Nagłówki Nr / Nick */}
+                                        <div style={{ position:"absolute", top:4, left: rtl.startX, width: rtl.nameX - rtl.startX, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
                                           <span style={lbl("")}>Nr</span>
                                         </div>
-                                        {/* Etykieta nagłówkowa Nick */}
-                                        <div style={{ position:"absolute", top:4, left:rtl.nameX+6, pointerEvents:"none" }}>
+                                        <div style={{ position:"absolute", top:4, left: rtl.nameX+6, pointerEvents:"none" }}>
                                           <span style={lbl("")}>Nick</span>
                                         </div>
 
-                                        {/* ── Pionowa linia Moc farmy (zielona) — przeciągalna ── */}
-                                        <div style={{ position:"absolute", top:0, bottom:0, right:rtl.scoreRight, width:2, background:"rgba(100,255,150,0.85)", cursor:"ew-resize", zIndex:10 }} {...startDrag("scoreRight", rtl.scoreRight)}>
-                                          <span style={{ ...lbl(""), position:"absolute", top:28, right:4, color:"#86efac", border:"1px solid rgba(100,255,150,0.5)" }}>← Moc farmy<br/>right={rtl.scoreRight}</span>
+                                        {/* ── Pionowa linia scoreRight (zielona) — przeciągalna ── */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, right: rtl.scoreRight, width:3, background:"rgba(100,255,150,0.9)", cursor:"ew-resize", zIndex:11 }} {...startDrag("scoreRight", rtl.scoreRight)}>
+                                          <span style={{ ...lbl(""), position:"absolute", top:40, right:4, color:"#86efac", border:"1px solid rgba(100,255,150,0.5)" }}>Moc farmy<br/>right={rtl.scoreRight}</span>
                                         </div>
-                                        {/* Etykieta nagłówkowa Moc farmy */}
-                                        <div style={{ position:"absolute", top:4, right:rtl.scoreRight+6, pointerEvents:"none" }}>
+                                        <div style={{ position:"absolute", top:4, right: rtl.scoreRight+6, pointerEvents:"none" }}>
                                           <span style={{ ...lbl(""), color:"#86efac", border:"1px solid rgba(100,255,150,0.5)" }}>Moc farmy</span>
                                         </div>
 
-                                        {/* ── startY — złota belka — przeciągalna pionowo ── */}
-                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY-5, height:10, background:"rgba(255,160,0,0.85)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:11 }} {...startDrag("startY", rtl.startY)}>
-                                          <span style={{ fontSize:11, color:"#fff", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ StartY = {rtl.startY}</span>
+                                        {/* ── startY — belka — przeciągalna pionowo ── */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY-6, height:12, background:"rgba(255,180,0,0.9)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:13 }} {...startDrag("startY", rtl.startY)}>
+                                          <span style={{ fontSize:12, color:"#fff", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ StartY = {rtl.startY}</span>
                                         </div>
 
-                                        {/* ── rowHeight — pomarańczowa belka na końcu 1. wiersza — przeciągalna ── */}
-                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY+rtl.rowHeight-5, height:10, background:"rgba(210,70,10,0.85)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:11 }} {...startDrag("rowHeight", rtl.rowHeight)}>
-                                          <span style={{ fontSize:11, color:"#fed7aa", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ RowHeight = {rtl.rowHeight}</span>
+                                        {/* ── rowHeight — belka na końcu 1. wiersza — przeciągalna ── */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY+rtl.rowHeight-6, height:12, background:"rgba(200,70,10,0.9)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:13 }} {...startDrag("rowHeight", rtl.rowHeight)}>
+                                          <span style={{ fontSize:12, color:"#fed7aa", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ RowHeight = {rtl.rowHeight}</span>
                                         </div>
+
+                                        {/* ── Przełącznik preview/prawdziwe dane ── */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); setThShowPreviewRanking(p => !p); }}
+                                          style={{ position:"absolute", bottom:8, right:8, fontSize:11, fontFamily:"monospace", fontWeight:"bold", color: thShowPreviewRanking ? "#ffd76a" : "#86efac", background:"rgba(0,0,0,0.75)", border:`1px solid ${thShowPreviewRanking ? "rgba(255,215,106,0.6)" : "rgba(100,255,150,0.6)"}`, borderRadius:4, padding:"3px 8px", cursor:"pointer", zIndex:14 }}
+                                        >
+                                          {thShowPreviewRanking ? "👁️ Dane testowe" : "👁️ Prawdziwe dane"}
+                                        </button>
                                       </div>
                                     )}
-                                    {/* ── Treść rankingu ── */}
-                                    <div className="absolute inset-0 pointer-events-none" style={{ overflow:"hidden" }}>
-                                      {rankingLoading ? (
-                                        <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:rtl.fontSize, textShadow:shadow }}>Ładowanie rankingu...</span>
-                                      ) : miniRanking.length === 0 ? (
-                                        <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:rtl.fontSize, textShadow:shadow }}>Brak danych rankingu</span>
-                                      ) : miniRanking.map((p, i) => {
-                                        const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
-                                        const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
-                                        return (
-                                          <div key={p.user_id} style={{ position:"absolute", top: rtl.startY + i * rtl.rowHeight, left:0, right:0, display:"flex", alignItems:"baseline" }}>
-                                            <span style={{ color, fontSize:rtl.fontSize, fontWeight:900, width:rtl.nameX, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
-                                            <span style={{ color, fontSize:rtl.fontSize, fontWeight:weight, flex:1, marginLeft:8, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
-                                            <span style={{ color, fontSize:Math.round(rtl.fontSize*0.9), fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginRight:rtl.scoreRight }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
+                                    {/* ── Treść rankingu (normalny tryb) ── */}
+                                    {!thTextEditMode && (
+                                      <div className="absolute inset-0 pointer-events-none" style={{ overflow:"hidden" }}>
+                                        {rankingLoading ? (
+                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:rtl.fontSize, textShadow:shadow }}>Ładowanie rankingu...</span>
+                                        ) : miniRanking.length === 0 ? (
+                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:rtl.fontSize, textShadow:shadow }}>Brak danych rankingu</span>
+                                        ) : miniRanking.map((p, i) => {
+                                          const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
+                                          const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
+                                          return (
+                                            <div key={p.user_id} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left: rtl.startX, right:0, display:"flex", alignItems:"baseline" }}>
+                                              <span style={{ color, fontSize:rtl.fontSize, fontWeight:900, width: rtl.nameX - rtl.startX, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
+                                              <span style={{ color, fontSize:rtl.fontSize, fontWeight:weight, flex:1, marginLeft:8, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
+                                              <span style={{ color, fontSize:Math.round(rtl.fontSize*0.9), fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginRight:rtl.scoreRight }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               }
@@ -6562,6 +6577,13 @@ export default function Page() {
                                       </div>
                                     </div>
                                   ))}
+                                  <button
+                                    type="button"
+                                    className={`w-full rounded-xl border py-2 font-black hover:brightness-110 transition ${thShowPreviewRanking ? "border-amber-500/60 bg-amber-900/40 text-amber-200" : "border-green-500/60 bg-green-900/40 text-green-200"}`}
+                                    onClick={() => setThShowPreviewRanking(p => !p)}
+                                  >
+                                    {thShowPreviewRanking ? "👁️ Dane testowe (kliknij → prawdziwe)" : "👁️ Prawdziwe dane (kliknij → testowe)"}
+                                  </button>
                                   <button
                                     type="button"
                                     className="w-full rounded-xl border border-blue-500/60 bg-blue-900/40 py-2 font-black text-blue-200 hover:brightness-110 transition"
