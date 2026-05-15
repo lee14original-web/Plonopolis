@@ -5454,14 +5454,11 @@ export default function Page() {
           onMouseMove={(e) => {
             if (!panDragRef.current.active || panDragRef.current.moved) return;
             const dx = e.clientX - panDragRef.current.startX;
-            const dy = e.clientY - panDragRef.current.startY;
-            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            if (Math.abs(dx) > 4) {
               panDragRef.current.moved = true;
               document.body.classList.add("plono-dragging");
               const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
-              const minPanY = Math.min(0, BASE_H - FARM_MAP_H);
               setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
-              setPanY(Math.max(minPanY, Math.min(0, panDragRef.current.startPanY + dy / gameScale)));
               setIsPanDragging(true);
             }
           }}
@@ -5513,11 +5510,8 @@ export default function Page() {
             onDragStart={(e) => e.preventDefault()}
             onMouseMove={(e) => {
               const dx = e.clientX - panDragRef.current.startX;
-              const dy = e.clientY - panDragRef.current.startY;
               const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
-              const minPanY = Math.min(0, BASE_H - FARM_MAP_H);
               setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
-              setPanY(Math.max(minPanY, Math.min(0, panDragRef.current.startPanY + dy / gameScale)));
             }}
             onMouseUp={() => {
               document.body.classList.remove("plono-dragging");
