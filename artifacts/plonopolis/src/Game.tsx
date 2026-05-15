@@ -6374,11 +6374,15 @@ export default function Page() {
                                   .sort((a, b) => (b.farm_power ?? 0) - (a.farm_power ?? 0))
                                   .slice(0, 9);
                                 const rtl = rankingTextLayout;
-                                const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
-                                const startDrag = (prop: "startX"|"startY"|"rowHeight"|"nameX"|"scoreRight", val: number) => ({
-                                  onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); thTextDragRef.current = { prop, startMX: e.clientX, startMY: e.clientY, startVal: val }; },
-                                  onClick: (e: React.MouseEvent) => e.stopPropagation(),
-                                });
+                                const shadow = "0 1px 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.7)";
+                                type RankEntry = { name:string; score:string; color:string; weight:number };
+                                const renderRankingRows = (entries: RankEntry[]) => entries.map((p, i) => (
+                                  <div key={`r-${i}`} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left: rtl.startX, right:0, height: rtl.rowHeight, display:"flex", alignItems:"center", pointerEvents:"none" }}>
+                                    <span style={{ width: rtl.nameX - rtl.startX, textAlign:"right", fontSize:rtl.fontSize, color:p.color, fontWeight:900, textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
+                                    <span style={{ flex:1, marginLeft:8, fontSize:rtl.fontSize, color:p.color, fontWeight:p.weight, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.name}</span>
+                                    <span style={{ flexShrink:0, marginRight:rtl.scoreRight, fontSize:Math.round(rtl.fontSize*0.9), color:p.color, fontFamily:"monospace", fontWeight:700, textShadow:shadow }}>{p.score}</span>
+                                  </div>
+                                ));
                                 const PREVIEW = [
                                   { name:"PrzykładowyNick", score:"12 345" }, { name:"FarmerTest",     score:"8 901"  },
                                   { name:"Gracz123",        score:"4 567"  }, { name:"RolnikPro",      score:"2 110"  },
@@ -6386,6 +6390,14 @@ export default function Page() {
                                   { name:"PolowyKról",      score:"987"    }, { name:"StartingUp",     score:"432"    },
                                   { name:"Nowicjusz",       score:"100"    },
                                 ];
+                                const rankColor = (i: number) => i===0?"#fbbf24":i===1?"#d1d5db":i===2?"#c97c3a":"rgba(255,235,180,0.85)";
+                                const rankWeight = (i: number) => i===0?900:i<3?700:600;
+                                const previewEntries: RankEntry[] = PREVIEW.map((p, i) => ({ name:p.name, score:p.score, color:rankColor(i), weight:rankWeight(i) }));
+                                const realEntries: RankEntry[] = miniRanking.map((p, i) => ({ name:p.player_name, score:(p.farm_power??0).toLocaleString("pl-PL"), color:rankColor(i), weight:rankWeight(i) }));
+                                const startDrag = (prop: "startX"|"startY"|"rowHeight"|"nameX"|"scoreRight", val: number) => ({
+                                  onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); thTextDragRef.current = { prop, startMX: e.clientX, startMY: e.clientY, startVal: val }; },
+                                  onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                                });
                                 const lbl = (_txt: string, extra?: React.CSSProperties) => ({
                                   fontSize:10, color:"#ffd76a", fontFamily:"monospace", fontWeight:"bold" as const,
                                   textShadow:"0 2px 4px #000", background:"rgba(0,0,0,0.72)",
@@ -6413,13 +6425,7 @@ export default function Page() {
                                         <div style={{ position:"absolute", left:0, right:0, top: rtl.startY+9*rtl.rowHeight, height:2, background:"rgba(255,215,106,0.4)", pointerEvents:"none" }} />
 
                                         {/* ── Podgląd wpisów (preview lub prawdziwe dane) ── */}
-                                        {(thShowPreviewRanking ? PREVIEW : miniRanking.map(p => ({ name: p.player_name, score: (p.farm_power??0).toLocaleString("pl-PL") }))).map((p, i) => (
-                                          <div key={`row-${i}`} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left: rtl.startX, right:0, height:rtl.rowHeight, display:"flex", alignItems:"center", pointerEvents:"none" }}>
-                                            <span style={{ width: rtl.nameX - rtl.startX, textAlign:"right", fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:900, textShadow:"0 2px 4px #000, 0 0 8px #000", flexShrink:0 }}>{i+1}.</span>
-                                            <span style={{ flex:1, marginLeft:8, fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:700, textShadow:"0 2px 4px #000, 0 0 8px #000", overflow:"hidden", whiteSpace:"nowrap" }}>{p.name}</span>
-                                            <span style={{ flexShrink:0, marginRight:rtl.scoreRight, fontSize:Math.round(rtl.fontSize*0.9), color:"#ffd76a", fontFamily:"monospace", fontWeight:700, textShadow:"0 2px 4px #000, 0 0 8px #000" }}>{p.score}</span>
-                                          </div>
-                                        ))}
+                                        {renderRankingRows(thShowPreviewRanking ? previewEntries : realEntries)}
 
                                         {/* ── Pionowa linia startX (biała) — przeciągalna ── */}
                                         <div style={{ position:"absolute", top:0, bottom:0, left: rtl.startX, width:3, background:"rgba(255,255,255,0.7)", cursor:"ew-resize", zIndex:12 }} {...startDrag("startX", rtl.startX)}>
@@ -6473,17 +6479,7 @@ export default function Page() {
                                           <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:rtl.fontSize, textShadow:shadow }}>Ładowanie rankingu...</span>
                                         ) : miniRanking.length === 0 ? (
                                           <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:rtl.fontSize, textShadow:shadow }}>Brak danych rankingu</span>
-                                        ) : miniRanking.map((p, i) => {
-                                          const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
-                                          const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
-                                          return (
-                                            <div key={p.user_id} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left: rtl.startX, right:0, display:"flex", alignItems:"baseline" }}>
-                                              <span style={{ color, fontSize:rtl.fontSize, fontWeight:900, width: rtl.nameX - rtl.startX, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
-                                              <span style={{ color, fontSize:rtl.fontSize, fontWeight:weight, flex:1, marginLeft:8, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
-                                              <span style={{ color, fontSize:Math.round(rtl.fontSize*0.9), fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginRight:rtl.scoreRight }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
-                                            </div>
-                                          );
-                                        })}
+                                        ) : renderRankingRows(realEntries)}
                                       </div>
                                     )}
                                   </div>
