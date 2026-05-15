@@ -2151,9 +2151,10 @@ export default function Page() {
   };
   const [barnNow, setBarnNow] = React.useState(Date.now());
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
+  const barnStateRef = React.useRef<BarnState>(barnState);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
-  const saveBarnState = (next: BarnState) => { setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
+  const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
   const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_ITEMS_KEY, uid), JSON.stringify(next)); } catch {} };
   // SAD — state + persystencja
   const [orchardState, setOrchardState_] = React.useState<OrchardState>(defaultOrchardState());
@@ -2211,8 +2212,9 @@ export default function Page() {
     const opiekaPts = effectiveStats.opieka;
     const bonusChance = opiekaPts * 0.0015; // +0.15%/pkt
     const bonusMessages: string[] = [];
+    const freshBarn = barnStateRef.current;
     ANIMALS.forEach(a => {
-      const st = barnState[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 };
+      const st = freshBarn[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 };
       if (st.owned === 0) { next[a.id] = st; return; }
       let ns = { ...st };
       if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
