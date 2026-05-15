@@ -1962,7 +1962,7 @@ export default function Page() {
   const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
     dom:         {left:12.5, top:16.3, width:18.4, height:19.6},
     stodola:     {left:43.1, top:59.6, width:25.0, height:20.9},
-    doMiasta:    {left:82.8, top:57.6, width:10.1, height:8.1},
+    doMiasta:    {left:81.4, top:52.7, width:17.6, height:13.1},
     polaUprawne: {left:41.9, top:15.7, width:29.3, height:27.2},
     ul:          {left:77.0, top:73.2, width:15.6, height:13.0},
     lada:        {left:10.3, top:47.6, width:16.2, height:16.4},
