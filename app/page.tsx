@@ -6261,16 +6261,8 @@ export default function Page() {
                           {/* Panorama 4096px — przesuwa się z kamerą */}
                           <div
                             className="absolute top-0 h-full"
-                            style={{ width: TH_W, transform: `translateX(-${townHallCamX}px)` }}
+                            style={{ width: TH_W, height: 1536, transform: `translateX(-${townHallCamX}px)`, backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "4096px 1536px", backgroundRepeat: "no-repeat" }}
                           >
-                            {/* Tło panoramy */}
-                            <img
-                              src="/ui/ratusz-panorama.png"
-                              className="absolute inset-0 h-full w-full object-cover pointer-events-none"
-                              draggable={false}
-                              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                            />
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(160deg,#1a0c06 0%,#2d1608 40%,#1e0e06 70%,#0f0703 100%)" }} />
 
                             {/* Ranking */}
                             <button
