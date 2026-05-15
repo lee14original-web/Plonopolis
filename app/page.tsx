@@ -2545,6 +2545,7 @@ export default function Page() {
     } else if (uid) {
       ANIMALS.forEach(a => { const st = _lsBarn[a.id]; if (st && st.owned > 0) void supabase.rpc("sync_barn_owned", { p_user_id: uid, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots }); });
     }
+    barnStateRef.current = _lsBarn;
     setBarnState_(_lsBarn);
     // Sad: ładuj z localStorage, nadpisz owned/prodStart z DB (DB autorytarne dla timingów)
     const _lsOrch = lsLoadMigrate(ORCHARD_STATE_KEY, uid, s => migrateOrchardState(JSON.parse(s)), defaultOrchardState);
