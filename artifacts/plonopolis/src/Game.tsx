@@ -11366,6 +11366,7 @@ export default function Page() {
                                         alt={_plantedCrop?.name}
                                         className="pointer-events-none absolute inset-[8%] h-[84%] w-[84%] object-contain"
                                         style={{ imageRendering: "pixelated" }}
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = _plantedCrop?.spritePath ?? "/uprawy/carrot.png"; }}
                                       />
                                     );
                                   }
