@@ -6252,8 +6252,9 @@ export default function Page() {
                   {/* ═══ RATUSZ ═══ */}
                     {currentMap === "city_townhall" && (() => {
                         const TH_W = 4096;
-                        const TH_ACTIVE_W = 2560;
-                        const maxCamX = TH_ACTIVE_W - BASE_W;
+                        const townHallActiveMinX = 0;
+                        const townHallActiveMaxX = 3200;
+                        const maxCamX = Math.max(townHallActiveMinX, townHallActiveMaxX - BASE_W);
                         const triggerHitbox = (action: string) => {
                           if (action === "ranking") { void loadRanking(); setShowRankingPanel(true); }
                           else if (action === "club") setShowGildiaPanel(true);
