@@ -1886,6 +1886,9 @@ export default function Page() {
   ]);
   const thContainerRef = React.useRef<HTMLDivElement>(null);
   const thHbDragRef = React.useRef<{hbId:string; startX:number; startY:number; startHbX:number; startHbY:number; mode:"move"|"resize"; startW:number; startH:number} | null>(null);
+  const [thTextEditMode, setThTextEditMode] = React.useState(false);
+  const [rankingTextLayout, setRankingTextLayout] = React.useState({ startY:38, rowHeight:88, nameX:54, scoreRight:10, fontSize:20 });
+  const thTextDragRef = React.useRef<{prop:"startY"|"rowHeight"|"nameX"|"scoreRight"; startMX:number; startMY:number; startVal:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -6287,6 +6290,19 @@ export default function Page() {
                                 y: Math.round((e.clientY - rect.top) / gameScale / townHallScale),
                               });
                             }
+                            const txtDrag = thTextDragRef.current;
+                            if (txtDrag) {
+                              const dmx = (e.clientX - txtDrag.startMX) / gameScale / townHallScale;
+                              const dmy = (e.clientY - txtDrag.startMY) / gameScale / townHallScale;
+                              setRankingTextLayout(prev => {
+                                if (txtDrag.prop === "nameX")      return { ...prev, nameX:      Math.max(20, Math.round(txtDrag.startVal + dmx)) };
+                                if (txtDrag.prop === "scoreRight") return { ...prev, scoreRight: Math.max(0,  Math.round(txtDrag.startVal - dmx)) };
+                                if (txtDrag.prop === "startY")     return { ...prev, startY:     Math.max(0,  Math.round(txtDrag.startVal + dmy)) };
+                                if (txtDrag.prop === "rowHeight")  return { ...prev, rowHeight:  Math.max(20, Math.round(txtDrag.startVal + dmy)) };
+                                return prev;
+                              });
+                              return;
+                            }
                             const hbDrag = thHbDragRef.current;
                             if (hbDrag) {
                               const dx = (e.clientX - hbDrag.startX) / gameScale / townHallScale;
@@ -6303,8 +6319,8 @@ export default function Page() {
                               setTownHallCamX(Math.max(0, Math.min(maxCamX, thDragRef.current.startCamX - dx2)));
                             }
                           }}
-                          onMouseUp={() => { thDragRef.current = null; thHbDragRef.current = null; }}
-                          onMouseLeave={() => { thDragRef.current = null; thHbDragRef.current = null; }}
+                          onMouseUp={() => { thDragRef.current = null; thHbDragRef.current = null; thTextDragRef.current = null; }}
+                          onMouseLeave={() => { thDragRef.current = null; thHbDragRef.current = null; thTextDragRef.current = null; }}
                         >
                           {/* Panorama — przesuwa się z kamerą */}
                           <div
@@ -6355,39 +6371,63 @@ export default function Page() {
                                 const miniRanking = [...rankingData]
                                   .sort((a, b) => (b.farm_power ?? 0) - (a.farm_power ?? 0))
                                   .slice(0, 9);
+                                const rtl = rankingTextLayout;
+                                const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
+                                const startDrag = (prop: "startY"|"rowHeight"|"nameX"|"scoreRight", val: number) => ({
+                                  onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); thTextDragRef.current = { prop, startMX: e.clientX, startMY: e.clientY, startVal: val }; },
+                                  onClick: (e: React.MouseEvent) => e.stopPropagation(),
+                                });
                                 return (
                                   <div
                                     key={hb.id}
-                                    className="absolute cursor-pointer overflow-hidden"
-                                    style={hbStyle}
-                                    onClick={() => triggerHitbox(hb.action)}
-                                    onMouseEnter={(e) => onHover(e, true)}
-                                    onMouseLeave={(e) => onHover(e, false)}
+                                    className="absolute overflow-hidden"
+                                    style={{ ...hbStyle, cursor: thTextEditMode ? "default" : "pointer" }}
+                                    onClick={thTextEditMode ? undefined : () => triggerHitbox(hb.action)}
+                                    onMouseEnter={(e) => { if (!thTextEditMode) onHover(e, true); }}
+                                    onMouseLeave={(e) => { if (!thTextEditMode) onHover(e, false); }}
                                   >
-                                    <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
-                                      {(() => {
-                                        const rowStartY = 38;
-                                        const rowH = Math.round((hb.height - rowStartY - 16) / 9);
-                                        const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
-                                        if (rankingLoading) return (
-                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:18, textShadow:shadow }}>Ładowanie rankingu...</span>
+                                    {/* ── Overlay edycji tekstu ── */}
+                                    {thTextEditMode && (
+                                      <div className="absolute inset-0" style={{ overflow:"hidden", pointerEvents:"auto" }}>
+                                        {/* Poziome linie wierszy */}
+                                        {Array.from({ length: 9 }).map((_, i) => (
+                                          <div key={`rg-${i}`} style={{ position:"absolute", left:0, right:0, top: rtl.startY + i * rtl.rowHeight, height: rtl.rowHeight, borderTop:"1px dashed rgba(100,200,255,0.35)", boxSizing:"border-box", pointerEvents:"none" }} />
+                                        ))}
+                                        {/* Pionowa linia nameX (niebieska) — przeciągalna */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, left: rtl.nameX - 2, width:4, background:"rgba(100,180,255,0.55)", cursor:"ew-resize" }} {...startDrag("nameX", rtl.nameX)}>
+                                          <span style={{ position:"absolute", top:4, left:6, fontSize:9, color:"#93c5fd", fontFamily:"monospace", pointerEvents:"none", whiteSpace:"nowrap" }}>name={rtl.nameX}</span>
+                                        </div>
+                                        {/* Pionowa linia scoreRight (zielona) — przeciągalna */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, right: rtl.scoreRight - 2, width:4, background:"rgba(100,255,150,0.55)", cursor:"ew-resize" }} {...startDrag("scoreRight", rtl.scoreRight)}>
+                                          <span style={{ position:"absolute", top:4, right:6, fontSize:9, color:"#86efac", fontFamily:"monospace", pointerEvents:"none", whiteSpace:"nowrap" }}>score={rtl.scoreRight}</span>
+                                        </div>
+                                        {/* startY — pomarańczowa belka — przeciągalna pionowo */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY - 3, height:6, background:"rgba(255,180,50,0.7)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center" }} {...startDrag("startY", rtl.startY)}>
+                                          <span style={{ fontSize:9, color:"#fde68a", fontFamily:"monospace", pointerEvents:"none" }}>startY={rtl.startY}</span>
+                                        </div>
+                                        {/* rowHeight — czerwona belka na końcu 1. wiersza — przeciągalna pionowo */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY + rtl.rowHeight - 3, height:6, background:"rgba(255,100,50,0.7)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center" }} {...startDrag("rowHeight", rtl.rowHeight)}>
+                                          <span style={{ fontSize:9, color:"#fed7aa", fontFamily:"monospace", pointerEvents:"none" }}>rowH={rtl.rowHeight}</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* ── Treść rankingu ── */}
+                                    <div className="absolute inset-0 pointer-events-none" style={{ overflow:"hidden" }}>
+                                      {rankingLoading ? (
+                                        <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:rtl.fontSize, textShadow:shadow }}>Ładowanie rankingu...</span>
+                                      ) : miniRanking.length === 0 ? (
+                                        <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:rtl.fontSize, textShadow:shadow }}>Brak danych rankingu</span>
+                                      ) : miniRanking.map((p, i) => {
+                                        const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
+                                        const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
+                                        return (
+                                          <div key={p.user_id} style={{ position:"absolute", top: rtl.startY + i * rtl.rowHeight, left:0, right:0, display:"flex", alignItems:"baseline" }}>
+                                            <span style={{ color, fontSize:rtl.fontSize, fontWeight:900, width:rtl.nameX, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
+                                            <span style={{ color, fontSize:rtl.fontSize, fontWeight:weight, flex:1, marginLeft:8, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
+                                            <span style={{ color, fontSize:Math.round(rtl.fontSize*0.9), fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginRight:rtl.scoreRight }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
+                                          </div>
                                         );
-                                        if (miniRanking.length === 0) return (
-                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:18, textShadow:shadow }}>Brak danych rankingu</span>
-                                        );
-                                        return miniRanking.map((p, i) => {
-                                          const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
-                                          const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
-                                          const top = rowStartY + i * rowH;
-                                          return (
-                                            <div key={p.user_id} style={{ position:"absolute", top, left:14, right:14, display:"flex", alignItems:"baseline", gap:0 }}>
-                                              <span style={{ color, fontSize:20, fontWeight:900, width:40, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
-                                              <span style={{ color, fontSize:20, fontWeight:weight, flex:1, marginLeft:12, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
-                                              <span style={{ color, fontSize:18, fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginLeft:10 }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
-                                            </div>
-                                          );
-                                        });
-                                      })()}
+                                      })}
                                     </div>
                                   </div>
                                 );
@@ -6417,15 +6457,26 @@ export default function Page() {
 
                           <button
                             type="button"
-                            onClick={() => setThHitboxEditMode(prev => !prev)}
+                            onClick={() => { setThHitboxEditMode(prev => !prev); setThTextEditMode(false); }}
                             className={`absolute left-4 top-20 rounded-2xl border px-5 py-2.5 text-sm font-black shadow-2xl backdrop-blur-sm transition z-10 ${thHitboxEditMode ? "border-orange-400 bg-[rgba(120,50,10,0.95)] text-orange-200 hover:brightness-110" : "border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] text-[#f3e6c8] hover:border-yellow-400/60"}`}
                           >
                             {thHitboxEditMode ? "✅ Zakończ edycję" : "🛠️ Edytuj hitboxy"}
                           </button>
 
+                          {thHitboxEditMode && (
+                            <button
+                              type="button"
+                              onClick={() => setThTextEditMode(prev => !prev)}
+                              className={`absolute left-4 rounded-2xl border px-5 py-2.5 text-sm font-black shadow-2xl backdrop-blur-sm transition z-10 ${thTextEditMode ? "border-blue-400 bg-[rgba(10,30,80,0.95)] text-blue-200 hover:brightness-110" : "border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] text-[#f3e6c8] hover:border-blue-400/60"}`}
+                              style={{ top: 136 }}
+                            >
+                              {thTextEditMode ? "✅ Zakończ edycję tekstu" : "✏️ Edytuj tekst rankingu"}
+                            </button>
+                          )}
+
                           {/* ─── Panel edycji ─── */}
                           {thHitboxEditMode && (
-                            <div className="absolute left-4 top-40 z-20 w-72 rounded-2xl border border-orange-500/60 bg-[rgba(20,10,2,0.96)] p-4 text-xs text-orange-100 shadow-2xl backdrop-blur-sm space-y-3">
+                            <div className="absolute left-4 z-20 w-72 rounded-2xl border border-orange-500/60 bg-[rgba(20,10,2,0.96)] p-4 text-xs text-orange-100 shadow-2xl backdrop-blur-sm space-y-3" style={{ top: thTextEditMode ? 196 : 168 }}>
                               <div className="font-black text-orange-300 text-sm">🛠️ Tryb edycji hitboxów</div>
 
                               {/* Pozycja myszy */}
@@ -6445,17 +6496,39 @@ export default function Page() {
                                 ))}
                               </div>
 
-                              {/* Kopiuj JSON */}
+                              {/* Kopiuj hitboxy JSON */}
                               <button
                                 type="button"
                                 className="w-full rounded-xl border border-orange-500/60 bg-orange-900/40 py-2 font-black text-orange-200 hover:brightness-110 transition"
-                                onClick={() => {
-                                  const json = "const townHallHitboxes = " + JSON.stringify(townHallHitboxes, null, 2) + ";";
-                                  void navigator.clipboard.writeText(json);
-                                }}
+                                onClick={() => { void navigator.clipboard.writeText("const townHallHitboxes = " + JSON.stringify(townHallHitboxes, null, 2) + ";"); }}
                               >
-                                📋 Kopiuj JSON
+                                📋 Kopiuj JSON hitboxów
                               </button>
+
+                              {/* ── Sekcja layoutu tekstu ── */}
+                              {thTextEditMode && (
+                                <div className="border-t border-blue-500/30 pt-3 space-y-2">
+                                  <div className="font-black text-blue-300 text-sm">✏️ Layout tekstu rankingu</div>
+                                  <div className="text-blue-200/60 text-[10px]">Przeciągnij linie na tablicy lub użyj ±</div>
+                                  {(Object.entries(rankingTextLayout) as [keyof typeof rankingTextLayout, number][]).map(([k, v]) => (
+                                    <div key={k} className="flex items-center justify-between bg-black/30 rounded-lg px-2 py-1">
+                                      <span className="text-blue-200 font-mono w-24">{k}</span>
+                                      <div className="flex items-center gap-1">
+                                        <button type="button" onClick={() => setRankingTextLayout(prev => ({ ...prev, [k]: Math.max(0, prev[k] - 1) }))} className="text-blue-300 w-5 text-center hover:text-white font-bold">−</button>
+                                        <span className="font-mono text-blue-100 w-10 text-center">{v}</span>
+                                        <button type="button" onClick={() => setRankingTextLayout(prev => ({ ...prev, [k]: prev[k] + 1 }))} className="text-blue-300 w-5 text-center hover:text-white font-bold">+</button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    className="w-full rounded-xl border border-blue-500/60 bg-blue-900/40 py-2 font-black text-blue-200 hover:brightness-110 transition"
+                                    onClick={() => { void navigator.clipboard.writeText("const rankingTextLayout = " + JSON.stringify(rankingTextLayout, null, 2) + ";"); }}
+                                  >
+                                    📋 Kopiuj layout
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
 
