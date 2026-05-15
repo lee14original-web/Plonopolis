@@ -9892,10 +9892,12 @@ export default function Page() {
               if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
               if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
               const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile!.id);
-              if (error) return;
-              saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
-              await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
-              await loadProfile(profile!.id);
+              if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
+              const newBarnState = {...barnState, [a.id]: {...st, owned: st.owned+1}};
+              saveBarnState(newBarnState);
+              setProfile(prev => prev ? {...prev, money: prev.money - a.buyPrice} : prev);
+              const syncRes = await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
+              if (syncRes.error) { setMessage({type:"error",title:"Błąd synchronizacji!",text:syncRes.error.message}); return; }
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
             const handleBuySlot = async (a: AnimalDef) => {
@@ -9905,10 +9907,12 @@ export default function Page() {
               const cost = a.slotUpgCosts[upg];
               if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
               const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile!.id);
-              if (error) return;
-              saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
-              await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
-              await loadProfile(profile!.id);
+              if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
+              const newBarnState = {...barnState, [a.id]: {...st, slots: st.slots+1}};
+              saveBarnState(newBarnState);
+              setProfile(prev => prev ? {...prev, money: prev.money - cost} : prev);
+              const syncRes = await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
+              if (syncRes.error) { setMessage({type:"error",title:"Błąd synchronizacji!",text:syncRes.error.message}); return; }
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
             const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
