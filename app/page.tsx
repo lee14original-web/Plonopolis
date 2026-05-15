@@ -6252,9 +6252,8 @@ export default function Page() {
                   {/* ═══ RATUSZ ═══ */}
                     {currentMap === "city_townhall" && (() => {
                         const TH_W = 4096;
-                        const townHallActiveMinX = 0;
-                        const townHallActiveMaxX = 3200;
-                        const maxCamX = Math.max(townHallActiveMinX, townHallActiveMaxX - BASE_W);
+                        const townHallScale = 0.82;
+                        const maxCamX = Math.round(TH_W * townHallScale) - BASE_W; // 3358 - 1920 = 1438
                         const triggerHitbox = (action: string) => {
                           if (action === "ranking") { void loadRanking(); setShowRankingPanel(true); }
                           else if (action === "club") setShowGildiaPanel(true);
@@ -6275,14 +6274,14 @@ export default function Page() {
                             const rect = thContainerRef.current?.getBoundingClientRect();
                             if (rect) {
                               setThMouseOnPanorama({
-                                x: Math.round((e.clientX - rect.left) / gameScale + townHallCamX),
-                                y: Math.round((e.clientY - rect.top) / gameScale),
+                                x: Math.round(((e.clientX - rect.left) / gameScale + townHallCamX) / townHallScale),
+                                y: Math.round((e.clientY - rect.top) / gameScale / townHallScale),
                               });
                             }
                             const hbDrag = thHbDragRef.current;
                             if (hbDrag) {
-                              const dx = (e.clientX - hbDrag.startX) / gameScale;
-                              const dy = (e.clientY - hbDrag.startY) / gameScale;
+                              const dx = (e.clientX - hbDrag.startX) / gameScale / townHallScale;
+                              const dy = (e.clientY - hbDrag.startY) / gameScale / townHallScale;
                               setTownHallHitboxes(prev => prev.map(hb => {
                                 if (hb.id !== hbDrag.hbId) return hb;
                                 if (hbDrag.mode === "move")   return { ...hb, x: Math.max(0, Math.round(hbDrag.startHbX + dx)), y: Math.max(0, Math.round(hbDrag.startHbY + dy)) };
@@ -6301,7 +6300,7 @@ export default function Page() {
                           {/* Panorama — przesuwa się z kamerą */}
                           <div
                             className="absolute top-0"
-                            style={{ width: TH_W, height: 1536, transform: `translateX(-${townHallCamX}px)`, backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "4096px 1536px", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
+                            style={{ width: TH_W, height: Math.ceil(BASE_H / townHallScale), transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "4096px 1536px", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
                           >
                             {townHallHitboxes.map(hb => {
                               if (thHitboxEditMode) {
