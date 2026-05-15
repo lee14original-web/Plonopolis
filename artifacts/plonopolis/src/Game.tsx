@@ -1888,7 +1888,7 @@ export default function Page() {
   const thHbDragRef = React.useRef<{hbId:string; startX:number; startY:number; startHbX:number; startHbY:number; mode:"move"|"resize"; startW:number; startH:number} | null>(null);
   const [thTextEditMode, setThTextEditMode] = React.useState(false);
   const [thShowPreviewRanking, setThShowPreviewRanking] = React.useState(true);
-  const [rankingTextLayout, setRankingTextLayout] = React.useState({ startX:0, startY:24, rowHeight:89, nameX:148, scoreRight:26, fontSize:28 });
+  const [rankingTextLayout, setRankingTextLayout] = React.useState({ startX:0, startY:22, rowHeight:89, nameX:165, scoreRight:28, fontSize:28 });
   const thTextDragRef = React.useRef<{prop:"startX"|"startY"|"rowHeight"|"nameX"|"scoreRight"; startMX:number; startMY:number; startVal:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
