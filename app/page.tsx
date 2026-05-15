@@ -1880,7 +1880,7 @@ export default function Page() {
   const [thHitboxEditMode, setThHitboxEditMode] = React.useState(false);
   const [thMouseOnPanorama, setThMouseOnPanorama] = React.useState({x:0, y:0});
   const [townHallHitboxes, setTownHallHitboxes] = React.useState<THHitbox[]>([
-    { id:"ranking", label:"Ranking",      x:280,  y:358, width:689, height:826, action:"ranking" },
+    { id:"ranking", label:"Ranking",      x:367,  y:369, width:589, height:843, action:"ranking" },
     { id:"club",    label:"Klub Rolnika", x:1305, y:542, width:1489, height:807, action:"club"  },
     { id:"event",   label:"Event",        x:3075, y:354, width:798, height:791, action:"event"  },
   ]);
