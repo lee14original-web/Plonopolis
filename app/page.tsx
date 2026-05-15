@@ -1668,6 +1668,8 @@ function getMapDisplayName(mapId: string | null | undefined) {
 
 const BASE_W = 1920;
 const BASE_H = 1280;
+const FARM_MAP_W = 2560;
+const FARM_MAP_H = 1440;
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -2150,6 +2152,10 @@ export default function Page() {
     setSlotBoxCustom(v); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(SLOT_BOX_KEY, uid), JSON.stringify(v)); } catch { /* ignore */ }
   };
   const [barnNow, setBarnNow] = React.useState(Date.now());
+  const [panX, setPanX] = React.useState(0);
+  const [panY, setPanY] = React.useState(0);
+  const [isPanDragging, setIsPanDragging] = React.useState(false);
+  const panDragRef = React.useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false });
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
   const barnStateRef = React.useRef<BarnState>(barnState);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
@@ -5112,6 +5118,10 @@ export default function Page() {
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
 
+      // Reset pan przy zmianie mapy
+      setPanX(0); setPanY(0); setIsPanDragging(false);
+      panDragRef.current = { active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false };
+
       // Reset wszystkich hover-stanów — mapa znika zanim onMouseLeave zdąży zadziałać
       setHoveredBarnLock(false);
       setHoveredHiveLock(false);
@@ -5434,16 +5444,55 @@ export default function Page() {
         <div
           ref={mapContainerRef}
           className="relative overflow-hidden"
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", cursor: isOnFarmMap ? "grab" : undefined }}
+          onMouseDown={(e) => {
+            if (!isOnFarmMap || e.button !== 0) return;
+            panDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPanX: panX, startPanY: panY, moved: false };
+          }}
+          onMouseMove={(e) => {
+            if (!panDragRef.current.active || panDragRef.current.moved) return;
+            const dx = e.clientX - panDragRef.current.startX;
+            const dy = e.clientY - panDragRef.current.startY;
+            if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+              panDragRef.current.moved = true;
+              const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
+              const minPanY = Math.min(0, BASE_H - FARM_MAP_H);
+              setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+              setPanY(Math.max(minPanY, Math.min(0, panDragRef.current.startPanY + dy / gameScale)));
+              setIsPanDragging(true);
+            }
+          }}
+          onMouseUp={() => {
+            panDragRef.current.active = false;
+            setIsPanDragging(false);
+            if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
+          }}
+          onMouseLeave={() => {
+            panDragRef.current.active = false;
+            setIsPanDragging(false);
+            panDragRef.current.moved = false;
+          }}
+          onClickCapture={(e) => {
+            if (panDragRef.current.moved) { e.stopPropagation(); panDragRef.current.moved = false; }
+          }}
         >
-        {/* Tło mapy — zmienia się wraz z poziomem gracza */}
-        <img
-          src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
-          alt="Mapa gry"
-          className="pointer-events-none absolute inset-0 h-full w-full select-none"
-          draggable={false}
-          style={{imageRendering:"pixelated"}}
-        />
+        {/* Tło mapy — przesuwa się wraz z panowaniem */}
+        <div style={{
+          position: "absolute", top: 0, left: 0,
+          width: isOnFarmMap ? `${FARM_MAP_W}px` : "100%",
+          height: isOnFarmMap ? `${FARM_MAP_H}px` : "100%",
+          transform: isOnFarmMap ? `translate(${panX}px,${panY}px)` : undefined,
+          willChange: isOnFarmMap ? "transform" : undefined,
+        }}>
+          <img
+            src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
+            alt="Mapa gry"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none"
+            draggable={false}
+            style={{imageRendering:"pixelated"}}
+          />
+        </div>
+        {/* Overlay ładowania — statyczny (nie przesuwa się) */}
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
             <div className="w-[1280px] overflow-hidden rounded-full border-2 border-[#8b6a3e]/80 bg-black/70 backdrop-blur-sm shadow-2xl">
@@ -5451,6 +5500,25 @@ export default function Page() {
             </div>
             <p className="text-6xl font-black text-[#f9e7b2] drop-shadow-lg tracking-wide order-first">Ładowanie mapy...</p>
           </div>
+        )}
+        {/* Overlay kursora grabbing podczas przeciągania */}
+        {isPanDragging && (
+          <div
+            style={{ position: "absolute", inset: 0, zIndex: 99999, cursor: "grabbing" }}
+            onMouseMove={(e) => {
+              const dx = e.clientX - panDragRef.current.startX;
+              const dy = e.clientY - panDragRef.current.startY;
+              const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
+              const minPanY = Math.min(0, BASE_H - FARM_MAP_H);
+              setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+              setPanY(Math.max(minPanY, Math.min(0, panDragRef.current.startPanY + dy / gameScale)));
+            }}
+            onMouseUp={() => {
+              panDragRef.current.active = false;
+              setIsPanDragging(false);
+              if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
+            }}
+          />
         )}
 
         <div className="relative z-[1] h-full w-full">
@@ -5594,7 +5662,15 @@ export default function Page() {
 
 
           {profile && (
-                <div className="absolute inset-0 z-20 pointer-events-none">
+            <>
+              {/* ═══ WARSTWA FARMY — przesuwa się z mapą (drag-to-pan) ═══ */}
+              {isOnFarmMap && (
+                <div className="pointer-events-none" style={{
+                  position:"absolute", top:0, left:0,
+                  width:`${FARM_MAP_W}px`, height:`${FARM_MAP_H}px`,
+                  transform:`translate(${panX}px,${panY}px)`,
+                  zIndex:20,
+                }}>
                   {isOnFarmMap && (
   <button
     type="button"
@@ -5844,7 +5920,10 @@ export default function Page() {
                       </div>
                     </div>
                   )}
-
+                </div>
+              )}
+              {/* ═══ WARSTWA STATYCZNA — miasto i inne lokacje (bez panu) ═══ */}
+              <div className="absolute inset-0 z-20 pointer-events-none">
                   {currentMap === "city" && (
                     <>
                       {/* ── Hitboxy ── */}
@@ -6052,7 +6131,8 @@ export default function Page() {
                         </div>
                       </div>
                     )}
-                </div>
+              </div>
+            </>
           )}
           <div className="relative" style={{ width: BASE_W, height: BASE_H }}>
             {!profile ? (
