@@ -135,7 +135,7 @@ begin
   elsif v_actual_planted_q = 'legendary' then
     v_target_quality := 'good';                      -- legendarny rozdziela klient
   else
-    -- Zwykłe i epickie nasiono: losuj jakość plonu z uwzględnieniem Szczęścia
+    -- Progi jakości z uwzględnieniem Szczęścia
     -- Bazowo: 10% popsuta | 85% zwykła | 4% epicka | 1% legendarna
     -- Przy 100 pkt Szczęścia: 5% popsuta | 74% zwykła | 15% epicka | 6% legendarna
     v_luck_eff         := least(100.0, greatest(0.0, p_szczescie::numeric));
@@ -144,15 +144,19 @@ begin
     v_legendary_chance := least(0.06,   0.01 + v_luck_eff * 0.0005);
     v_good_chance      := 1.0 - v_rotten_thresh - v_epic_chance - v_legendary_chance;
 
-    v_q_roll := random();
-    if v_q_roll < v_rotten_thresh then
-      v_target_quality := 'rotten';
-    elsif v_q_roll < v_rotten_thresh + v_good_chance then
-      v_target_quality := 'good';
-    elsif v_q_roll < v_rotten_thresh + v_good_chance + v_epic_chance then
-      v_target_quality := 'epic';
-    else
-      v_target_quality := 'legendary';
+    -- Zwykłe: jeden rzut na całą partię
+    -- Epickie: każda sztuka losuje osobno (pętla po ustaleniu yield poniżej)
+    if v_actual_planted_q != 'epic' then
+      v_q_roll := random();
+      if v_q_roll < v_rotten_thresh then
+        v_target_quality := 'rotten';
+      elsif v_q_roll < v_rotten_thresh + v_good_chance then
+        v_target_quality := 'good';
+      elsif v_q_roll < v_rotten_thresh + v_good_chance + v_epic_chance then
+        v_target_quality := 'epic';
+      else
+        v_target_quality := 'legendary';
+      end if;
     end if;
   end if;
 
@@ -173,10 +177,26 @@ begin
     end if;
   end if;
 
-  v_gained_good      := case when v_target_quality = 'good'      then v_base_yield else 0 end;
-  v_gained_epic      := case when v_target_quality = 'epic'      then v_base_yield else 0 end;
-  v_gained_rotten    := case when v_target_quality = 'rotten'    then v_base_yield else 0 end;
-  v_gained_legendary := case when v_target_quality = 'legendary' then v_base_yield else 0 end;
+  if v_actual_planted_q = 'epic' then
+    -- Per-seed quality rolls: każda z v_base_yield sztuk losuje jakość osobno
+    for v_loop_i in 1..v_base_yield loop
+      v_q_roll := random();
+      if v_q_roll < v_rotten_thresh then
+        v_gained_rotten    := v_gained_rotten    + 1;
+      elsif v_q_roll < v_rotten_thresh + v_good_chance then
+        v_gained_good      := v_gained_good      + 1;
+      elsif v_q_roll < v_rotten_thresh + v_good_chance + v_epic_chance then
+        v_gained_epic      := v_gained_epic      + 1;
+      else
+        v_gained_legendary := v_gained_legendary + 1;
+      end if;
+    end loop;
+  else
+    v_gained_good      := case when v_target_quality = 'good'      then v_base_yield else 0 end;
+    v_gained_epic      := case when v_target_quality = 'epic'      then v_base_yield else 0 end;
+    v_gained_rotten    := case when v_target_quality = 'rotten'    then v_base_yield else 0 end;
+    v_gained_legendary := case when v_target_quality = 'legendary' then v_base_yield else 0 end;
+  end if;
 
   -- ── Zręczność: szansa na podwojenie finalnego zbioru ────────────────────
   v_zrecznosc_eff    := case when p_zrecznosc <= 50
