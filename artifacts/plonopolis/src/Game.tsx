@@ -2549,10 +2549,17 @@ export default function Page() {
     // Barn: ładuj z localStorage, nadpisz owned/slots/prodStart z DB (DB autorytarne dla timingów)
     const _lsBarn = lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState);
     const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
-    const _dbBarnHasData = !!(_dbBarn && Object.values(_dbBarn).some(v => ((v as { owned?: number })?.owned ?? 0) > 0));
+    // _dbBarnIsSet = true gdy admin ustawił barn_state (nawet na {}); null = nowe konto bez danych
+    const _dbBarnIsSet = _dbBarn !== null && _dbBarn !== undefined;
+    const _dbBarnHasData = _dbBarnIsSet && Object.values(_dbBarn).some(v => ((v as { owned?: number })?.owned ?? 0) > 0);
     if (_dbBarnHasData) {
+      // DB ma zwierzęta — nadpisz localStorage danymi z bazy
       ANIMALS.forEach(a => { const d = (_dbBarn as Record<string,{owned:number;slots:number;prodStart:number}>)[a.id]; if (d) { if (typeof d.owned === "number") _lsBarn[a.id].owned = d.owned; if (typeof d.slots === "number") _lsBarn[a.id].slots = d.slots; if (typeof d.prodStart === "number" && d.prodStart > 0) { _lsBarn[a.id].prodStart = d.prodStart; _lsBarn[a.id].baseProdStart = d.prodStart; } } });
+    } else if (_dbBarnIsSet) {
+      // DB ma pusty {} (reset admina) — wyzeruj owned w localStorage zamiast re-synchronizować
+      ANIMALS.forEach(a => { _lsBarn[a.id] = { ..._lsBarn[a.id], owned: 0, prodStart: 0, baseProdStart: 0, storage: 0 }; });
     } else if (uid) {
+      // DB null = nowe konto bez barn_state — synchronizuj ze stanu lokalnego
       ANIMALS.forEach(a => { const st = _lsBarn[a.id]; if (st && st.owned > 0) void supabase.rpc("sync_barn_owned", { p_user_id: uid, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots }); });
     }
     barnStateRef.current = _lsBarn;
