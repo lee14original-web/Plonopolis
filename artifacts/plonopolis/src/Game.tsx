@@ -6364,22 +6364,30 @@ export default function Page() {
                                     onMouseEnter={(e) => onHover(e, true)}
                                     onMouseLeave={(e) => onHover(e, false)}
                                   >
-                                    <div className="absolute inset-0 flex flex-col justify-center px-4 py-3 pointer-events-none">
-                                      {rankingLoading ? (
-                                        <span className="text-yellow-200/50 text-xs text-center">Ładowanie rankingu...</span>
-                                      ) : miniRanking.length === 0 ? (
-                                        <span className="text-yellow-200/40 text-xs text-center">Brak danych rankingu</span>
-                                      ) : (
-                                        <div className="flex flex-col gap-[3px]">
-                                          {miniRanking.map((p, i) => (
-                                            <div key={p.user_id} className="flex items-baseline gap-1.5">
-                                              <span className={`text-[11px] font-black w-6 text-right shrink-0 ${i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-amber-500" : "text-yellow-200/60"}`}>{i + 1}.</span>
-                                              <span className="text-[11px] text-yellow-100/90 truncate flex-1 font-medium">{p.player_name}</span>
-                                              <span className="text-[10px] text-yellow-300/70 font-mono shrink-0">{(p.farm_power ?? 0).toLocaleString()}</span>
+                                    <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
+                                      {(() => {
+                                        const rowStartY = 38;
+                                        const rowH = Math.round((hb.height - rowStartY - 16) / 10);
+                                        const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
+                                        if (rankingLoading) return (
+                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:18, textShadow:shadow }}>Ładowanie rankingu...</span>
+                                        );
+                                        if (miniRanking.length === 0) return (
+                                          <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.4)", fontSize:18, textShadow:shadow }}>Brak danych rankingu</span>
+                                        );
+                                        return miniRanking.map((p, i) => {
+                                          const color = i === 0 ? "#fbbf24" : i === 1 ? "#d1d5db" : i === 2 ? "#c97c3a" : "rgba(255,235,180,0.82)";
+                                          const weight = i === 0 ? 900 : i < 3 ? 700 : 600;
+                                          const top = rowStartY + i * rowH;
+                                          return (
+                                            <div key={p.user_id} style={{ position:"absolute", top, left:14, right:14, display:"flex", alignItems:"baseline", gap:0 }}>
+                                              <span style={{ color, fontSize:17, fontWeight:900, width:36, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
+                                              <span style={{ color, fontSize:17, fontWeight:weight, flex:1, marginLeft:10, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
+                                              <span style={{ color, fontSize:15, fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginLeft:8 }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
                                             </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                          );
+                                        });
+                                      })()}
                                     </div>
                                   </div>
                                 );
