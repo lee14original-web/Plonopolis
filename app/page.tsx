@@ -6354,7 +6354,7 @@ export default function Page() {
                               if (hb.action === "ranking") {
                                 const miniRanking = [...rankingData]
                                   .sort((a, b) => (b.farm_power ?? 0) - (a.farm_power ?? 0))
-                                  .slice(0, 10);
+                                  .slice(0, 9);
                                 return (
                                   <div
                                     key={hb.id}
@@ -6367,7 +6367,7 @@ export default function Page() {
                                     <div className="absolute inset-0 pointer-events-none" style={{ overflow: "hidden" }}>
                                       {(() => {
                                         const rowStartY = 38;
-                                        const rowH = Math.round((hb.height - rowStartY - 16) / 10);
+                                        const rowH = Math.round((hb.height - rowStartY - 16) / 9);
                                         const shadow = "0 1px 6px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6)";
                                         if (rankingLoading) return (
                                           <span style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", color:"rgba(255,235,160,0.5)", fontSize:18, textShadow:shadow }}>Ładowanie rankingu...</span>
@@ -6381,9 +6381,9 @@ export default function Page() {
                                           const top = rowStartY + i * rowH;
                                           return (
                                             <div key={p.user_id} style={{ position:"absolute", top, left:14, right:14, display:"flex", alignItems:"baseline", gap:0 }}>
-                                              <span style={{ color, fontSize:17, fontWeight:900, width:36, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
-                                              <span style={{ color, fontSize:17, fontWeight:weight, flex:1, marginLeft:10, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
-                                              <span style={{ color, fontSize:15, fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginLeft:8 }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
+                                              <span style={{ color, fontSize:20, fontWeight:900, width:40, textAlign:"right", textShadow:shadow, flexShrink:0 }}>{i+1}.</span>
+                                              <span style={{ color, fontSize:20, fontWeight:weight, flex:1, marginLeft:12, textShadow:shadow, overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis" }}>{p.player_name}</span>
+                                              <span style={{ color, fontSize:18, fontWeight:700, fontFamily:"monospace", textShadow:shadow, flexShrink:0, marginLeft:10 }}>{(p.farm_power ?? 0).toLocaleString("pl-PL")}</span>
                                             </div>
                                           );
                                         });
