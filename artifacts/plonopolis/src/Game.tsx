@@ -1927,7 +1927,7 @@ export default function Page() {
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
     dom:         {left:24.6, top:26.4},
-    stodola:     {left:54.9, top:52.1},
+    stodola:     {left:54.9, top:67.0},
     doMiasta:    {left:93.0, top:58.0},
     polaUprawne: {left:56.8, top:27.1},
     ul:          {left:82.8, top:73.5},
@@ -7665,7 +7665,7 @@ export default function Page() {
           {/* ═══ DOM MODAL ═══ */}
           {showDomModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[92vh] w-full max-w-[1650px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+              <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-[1650px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
 
                 {/* ─ Zamknij ─ */}
                 <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
@@ -8706,7 +8706,7 @@ export default function Page() {
                   )}
                 </div>
                 <div
-                  className="relative w-full max-w-[920px] h-[92vh] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col transition-all duration-700"
+                  className="relative w-full max-w-[920px] max-h-[calc(100vh-40px)] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col transition-all duration-700"
                   style={milestoneGlow ? { boxShadow: `0 0 50px ${milestoneGlow}55, 0 0 100px ${milestoneGlow}22` } : undefined}>
                   <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); setShowKompostHelp(false); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
                   {/* Przycisk pomocy ? */}
@@ -9401,7 +9401,7 @@ export default function Page() {
             };
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="relative flex w-full max-w-[650px] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5">
+                <div className="relative flex w-full max-w-[650px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5 overflow-y-auto">
                   <button onClick={() => setShowUlModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
                   {/* Header */}
                   <div className="flex items-center gap-4">
@@ -9575,7 +9575,7 @@ export default function Page() {
 
               return (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                  <div className="relative flex w-full max-w-[640px] h-[92vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                  <div className="relative flex w-full max-w-[640px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
                     <div
                       className="absolute left-4 top-4 z-30"
                       onMouseEnter={openLadaInfo}
@@ -10137,7 +10137,7 @@ export default function Page() {
             const totalStorage = ANIMALS.reduce((s,a) => s + (barnState[a.id]?.storage??0), 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-                <div className="relative flex h-[92vh] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+                <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
                   <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                   {/* ─ Sidebar ─ */}
@@ -10484,7 +10484,7 @@ export default function Page() {
             const invTotal = Object.values(fruitInventory).reduce<number>((s,v) => s + (Number(v) || 0), 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSadModal(false)}>
-                <div className="relative max-h-[92vh] w-full max-w-[1100px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="relative max-h-[calc(100vh-40px)] w-full max-w-[1100px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setShowSadModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
                   {/* Header */}
                   <div className="shrink-0 border-b border-[#8b6a3e]/40 px-6 py-4">
