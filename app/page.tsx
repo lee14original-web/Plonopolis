@@ -2611,7 +2611,7 @@ export default function Page() {
   const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
-  const isOnFarmMap = currentMap.startsWith("farm");
+  const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const backgroundMap = getDisplayBackgroundMap(currentMap);
 
   const xpPercent = useMemo(() => {
@@ -5491,7 +5491,7 @@ export default function Page() {
             alt="Mapa gry"
             className="pointer-events-none absolute inset-0 h-full w-full select-none"
             draggable={false}
-            style={{imageRendering:"pixelated"}}
+            style={isOnFarmMap ? {imageRendering:"pixelated"} : {}}
           />
         </div>
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
