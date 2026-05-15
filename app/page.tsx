@@ -77,6 +77,7 @@ type GameMessage = {
   to_username: string | null;
   to_avatar_skin?: number | null;
   type: "received" | "sent" | "system";
+  category: "system" | "received" | "sent" | "market";
   subject: string;
   body: string;
   read: boolean;
@@ -1811,12 +1812,13 @@ export default function Page() {
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
   const [showMisjePanel, setShowMisjePanel] = useState(false);
   const [showMessagePanel, setShowMessagePanel] = useState(false);
-  const [messageTab, setMessageTab] = useState<"systemowe"|"otrzymane"|"wyslane">("systemowe");
+  const [messageTab, setMessageTab] = useState<"systemowe"|"otrzymane"|"wyslane"|"targ">("systemowe");
   const [selectedMsgIds, setSelectedMsgIds] = useState<Set<string>>(new Set());
   const [gameMessages, setGameMessages] = useState<GameMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMarketCount, setUnreadMarketCount] = useState(0);
   const [showCompose, setShowCompose] = useState(false);
   const [composeRecipient, setComposeRecipient] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
@@ -3194,11 +3196,10 @@ export default function Page() {
     }, 30000);
     return () => clearInterval(interval);
   }, [profile?.id]);
-  // ─── Oznacz jako przeczytane gdy gracz patrzy na zakładkę Otrzymane ───
+  // ─── Oznacz jako przeczytane gdy gracz patrzy na zakładkę Otrzymane lub Targ ───
   useEffect(() => {
-    if (showMessagePanel && messageTab === "otrzymane") {
-      void markAsRead();
-    }
+    if (showMessagePanel && messageTab === "otrzymane") void markAsRead("received");
+    if (showMessagePanel && messageTab === "targ")     void markAsRead("market");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showMessagePanel, messageTab]);
 
@@ -5236,6 +5237,7 @@ export default function Page() {
     const sentMessages: GameMessage[] = (sentRaw ?? []).map(m => ({
       ...m,
       type: "sent" as const,
+      category: "sent" as const,
       // Priorytet: to_username z DB (nowe wiadomości), fallback: lookup z profiles (stare)
       to_username: (m.to_username as string | null) ?? recipientLoginMap[m.to_user_id ?? ""] ?? null,
       from_avatar_skin: avatarSkin >= 0 ? avatarSkin : 0,
@@ -5250,21 +5252,31 @@ export default function Page() {
     }
 
     // Skrzynka: tylko received i system (pomijamy stare kopie type="sent" przechowywane u nadawcy)
+    // Wiadomości z targu (subject startsWith "Targ") trafiają do kategorii "market"
+    const isMarketSubject = (subject: string) =>
+      subject?.startsWith("Targ") || subject?.startsWith("🏪") || subject?.startsWith("targ");
+
     const inboxMessages = ((inboxData ?? []).filter(
       m => m.type === "received" || m.type === "system"
     ) as GameMessage[]).map(m => ({
       ...m,
+      category: (m.type === "system"
+        ? "system"
+        : isMarketSubject(m.subject ?? "")
+          ? "market"
+          : "received") as GameMessage["category"],
       from_avatar_skin: senderAvatarMap[m.from_user_id ?? ""] ?? 0,
     }));
 
     const combined: GameMessage[] = [
       ...inboxMessages,
-      ...sentMessages,
-      ...((sysData ?? []).filter(s => !inboxMessages.some(d => d.id === s.id)) as GameMessage[]),
+      ...sentMessages.map(m => ({ ...m, category: "sent" as const })),
+      ...((sysData ?? []).filter(s => !inboxMessages.some(d => d.id === s.id)) as GameMessage[]).map(s => ({ ...s, category: "system" as const })),
     ];
     combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     setGameMessages(combined);
-    setUnreadCount(combined.filter(m => !m.read && m.to_user_id === profile.id && m.type === "received").length);
+    setUnreadCount(combined.filter(m => !m.read && m.to_user_id === profile.id && m.category === "received").length);
+    setUnreadMarketCount(combined.filter(m => !m.read && m.to_user_id === profile.id && m.category === "market").length);
     setMessagesLoading(false);
   }
 
@@ -5393,15 +5405,16 @@ export default function Page() {
     setBlockedUsers(updated);
   }
 
-  async function markAsRead() {
+  async function markAsRead(category: "received" | "market" = "received") {
     if (!profile) return;
     const unreadIds = gameMessages
-      .filter(m => !m.read && m.to_user_id === profile.id && m.type === "received")
+      .filter(m => !m.read && m.to_user_id === profile.id && m.category === category)
       .map(m => m.id);
     if (unreadIds.length === 0) return;
     await supabase.from("messages").update({ read: true }).in("id", unreadIds);
     setGameMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, read: true } : m));
-    setUnreadCount(0);
+    if (category === "received") setUnreadCount(0);
+    else setUnreadMarketCount(0);
   }
 
     if (!isDesktop) {
@@ -6861,14 +6874,18 @@ export default function Page() {
                 <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/30 bg-black/20 px-4 pt-3 pb-0">
                   {([
                     { key: "systemowe", label: "Systemowe", icon: "🔔" },
-                    { key: "otrzymane", label: "Otrzymane", icon: "📩" },
+                    { key: "otrzymane", label: "Otrzymane", icon: "📥" },
                     { key: "wyslane",   label: "Wysłane",   icon: "📤" },
+                    { key: "targ",      label: "Targ",      icon: "🏪" },
                   ] as const).map(tab => (
                     <button key={tab.key} onClick={() => { setMessageTab(tab.key); setSelectedMsgIds(new Set()); }}
                       className={`flex items-center gap-2 rounded-t-xl px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] transition border-b-2 ${messageTab === tab.key ? "border-[#d8ba7a] text-[#f9e7b2] bg-[rgba(80,50,20,0.3)]" : "border-transparent text-[#8b6a3e] hover:text-[#dfcfab]"}`}>
                       {tab.icon} {tab.label}
                       {tab.key === "otrzymane" && unreadCount > 0 && (
                         <span className="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-xs font-black text-white">{unreadCount}</span>
+                      )}
+                      {tab.key === "targ" && unreadMarketCount > 0 && (
+                        <span className="ml-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-black text-white">{unreadMarketCount}</span>
                       )}
                     </button>
                   ))}
@@ -6977,15 +6994,17 @@ export default function Page() {
                     </div>
                   ) : (() => {
                     const filtered = gameMessages.filter(m => {
-                      if (messageTab === "systemowe") return m.type === "system";
-                      if (messageTab === "otrzymane") return m.type === "received";
-                      if (messageTab === "wyslane")   return m.type === "sent";
+                      if (messageTab === "systemowe") return m.category === "system";
+                      if (messageTab === "otrzymane") return m.category === "received";
+                      if (messageTab === "wyslane")   return m.category === "sent";
+                      if (messageTab === "targ")      return m.category === "market";
                       return false;
                     });
+                    const emptyIcon = messageTab === "systemowe" ? "🔔" : messageTab === "otrzymane" ? "📥" : messageTab === "targ" ? "🏪" : "📤";
                     if (filtered.length === 0) return (
                       <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-[#8b6a3e]">
-                        <span className="text-7xl opacity-40">{messageTab === "systemowe" ? "🔔" : messageTab === "otrzymane" ? "📩" : "📤"}</span>
-                        <p className="text-base">Brak wiadomości</p>
+                        <span className="text-7xl opacity-40">{emptyIcon}</span>
+                        <p className="text-base">{messageTab === "targ" ? "Brak powiadomień handlowych" : "Brak wiadomości"}</p>
                       </div>
                     );
                     const selectable = messageTab !== "systemowe";
@@ -7018,10 +7037,10 @@ export default function Page() {
                         )}
                         {filtered.map(msg => (
                           <div key={msg.id}
-                            className={`relative rounded-2xl border p-5 transition ${selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.type !== "sent" ? "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]" : "border-[#8b6a3e]/40 bg-black/20"}`}>
+                            className={`relative rounded-2xl border p-5 transition ${selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.category !== "sent" ? (msg.category === "market" ? "border-amber-500/60 bg-[rgba(80,45,5,0.45)]" : "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]") : "border-[#8b6a3e]/40 bg-black/20"}`}>
 
                             {/* Checkbox zaznaczania */}
-                            {msg.type !== "system" && (
+                            {msg.category !== "system" && (
                               <input type="checkbox"
                                 checked={selectedMsgIds.has(msg.id)}
                                 onChange={() => setSelectedMsgIds(prev => { const n = new Set(prev); n.has(msg.id) ? n.delete(msg.id) : n.add(msg.id); return n; })}
@@ -7033,11 +7052,13 @@ export default function Page() {
                               {new Date(msg.created_at).toLocaleDateString("pl-PL", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
                             </p>
 
-                            {/* Received / System: Od kogo → Tytuł → Treść */}
-                            {(msg.type === "received" || msg.type === "system") && (<>
+                            {/* Received / System / Market: Od kogo → Tytuł → Treść */}
+                            {(msg.category === "received" || msg.category === "system" || msg.category === "market") && (<>
                               <div className="mb-2 flex items-center gap-3">
-                                {msg.type === "system" ? (
+                                {msg.category === "system" ? (
                                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8b6a3e]/50 bg-black/30 text-xl">🔧</span>
+                                ) : msg.category === "market" ? (
+                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/60 bg-amber-950/40 text-xl">🏪</span>
                                 ) : (
                                   <img
                                     src={ALL_SKINS[msg.from_avatar_skin ?? 0] ?? ALL_SKINS[0]}
@@ -7047,19 +7068,19 @@ export default function Page() {
                                   />
                                 )}
                                 <div>
-                                  <p className={`text-xs font-bold ${msg.type === "system" ? "text-red-400 tracking-wide uppercase" : "text-[#8b6a3e]"}`}>
-                                    {msg.type === "system" ? "⚙️ System Plonopolis" : (msg.from_username ?? "Nieznany")}
+                                  <p className={`text-xs font-bold ${msg.category === "system" ? "text-red-400 tracking-wide uppercase" : msg.category === "market" ? "text-amber-400 tracking-wide uppercase" : "text-[#8b6a3e]"}`}>
+                                    {msg.category === "system" ? "⚙️ System Plonopolis" : msg.category === "market" ? "🏪 System Targu" : (msg.from_username ?? "Nieznany")}
                                   </p>
                                   <p className={`text-lg font-black ${!msg.read ? "text-[#f9e7b2]" : "text-[#dfcfab]"}`}>
                                     {msg.subject || "(bez tytułu)"}
                                   </p>
                                 </div>
                               </div>
-                              <p className={`text-base leading-relaxed whitespace-pre-wrap ${msg.type === "system" ? "text-white" : "text-[#dfcfab]/90"}`}>{msg.body}</p>
+                              <p className={`text-base leading-relaxed whitespace-pre-wrap ${msg.category === "system" ? "text-white" : msg.category === "market" ? "text-amber-100/90" : "text-[#dfcfab]/90"}`}>{msg.body}</p>
                             </>)}
 
                             {/* Sent: Od kogo (ja) → Do kogo → Tytuł → Treść */}
-                            {msg.type === "sent" && (<>
+                            {msg.category === "sent" && (<>
                               <div className="mb-2 flex items-center gap-3">
                                 <div className="flex shrink-0 flex-col items-center gap-1">
                                   <img
@@ -7094,8 +7115,18 @@ export default function Page() {
                               <p className="text-base leading-relaxed text-[#dfcfab]/90 whitespace-pre-wrap">{msg.body}</p>
                             </>)}
 
-                            {/* Akcje (tylko received) */}
-                            {msg.type === "received" && (
+                            {/* Akcje — Targ: tylko Usuń */}
+                            {msg.category === "market" && (
+                              <div className="mt-4 flex justify-end border-t border-[#8b6a3e]/20 pt-4">
+                                <button type="button"
+                                  onClick={() => void deleteMessage(msg.id)}
+                                  className="rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
+                                  🗑️ Usuń
+                                </button>
+                              </div>
+                            )}
+                            {/* Akcje — Otrzymane: Zapisz / Blokuj / Odpowiedz / Usuń */}
+                            {msg.category === "received" && (
                               <div className="mt-4 flex flex-wrap gap-2 border-t border-[#8b6a3e]/20 pt-4">
                                 <button type="button"
                                   onClick={() => void toggleSaveMessage(msg.id, msg.saved)}
