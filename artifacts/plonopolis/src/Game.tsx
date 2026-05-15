@@ -2227,20 +2227,21 @@ export default function Page() {
       const st = freshBarn[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0, baseProdStart:0 };
       if (st.owned === 0) { next[a.id] = st; return; }
       let ns = { ...st };
-      if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
+      const effStorMax = a.storageMax * Math.max(1, ns.owned);
+      if (ns.storage >= effStorMax) { ns.prodStart = 0; next[a.id] = ns; return; }
       if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[a.id] = ns; return; }
       const h = barnCurrentHunger(ns, opiekaPts);
       const effMs = barnEffProdMs(a, h);
       const elapsed = barnNow - ns.prodStart;
       if (elapsed >= effMs) {
         // 1 cykl = 1 jednostka storage. Liczymy ILE pełnych cykli się zmieściło (offline-safe).
-        const freeSlots = a.storageMax - ns.storage;
+        const freeSlots = effStorMax - ns.storage;
         const fullCycles = Math.min(Math.floor(elapsed / effMs), freeSlots);
         let cyclesToAdd = fullCycles;
         // Bonus opieki: dla każdego cyklu szansa na dodatkowy
         if (bonusChance > 0) {
           for (let i = 0; i < fullCycles; i++) {
-            if (ns.storage + cyclesToAdd >= a.storageMax) break;
+            if (ns.storage + cyclesToAdd >= effStorMax) break;
             if (Math.random() < bonusChance) {
               cyclesToAdd += 1;
               const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
@@ -2248,8 +2249,8 @@ export default function Page() {
             }
           }
         }
-        ns.storage = Math.min(a.storageMax, ns.storage + cyclesToAdd);
-        if (ns.storage >= a.storageMax) {
+        ns.storage = Math.min(effStorMax, ns.storage + cyclesToAdd);
+        if (ns.storage >= effStorMax) {
           ns.prodStart = 0;
         } else {
           // Zachowaj resztę czasu po pełnych cyklach (nie marnuj postępu)
@@ -7558,7 +7559,7 @@ export default function Page() {
                                   <p className="mt-1 text-[11px] text-[#8b6a3e]">
                                     Produkuje: <span className="text-[#dfcfab] font-bold">{item?.icon} {item?.name}</span>
                                     {" · "}Czas: <span className="text-[#dfcfab] font-bold">{a.prodMs/3600000}h</span>
-                                    {" · "}Magazyn: <span className="text-[#dfcfab] font-bold">{a.storageMax} cykli</span>
+                                    {" · "}Magazyn: <span className="text-[#dfcfab] font-bold">{a.storageMax} na zwierzę</span>
                                   </p>
                                   <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
                                     Karma: {a.feed.map(f => `${f.icon} ${f.name}`).join(" lub ")}
@@ -10203,7 +10204,7 @@ export default function Page() {
               })();
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
-            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0); }, 0);
+            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const _esm = a.storageMax * Math.max(1, st.owned); return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), _esm) : 0); }, 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
                 <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
@@ -10281,7 +10282,7 @@ export default function Page() {
                                     <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
                                     <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const scOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), a.storageMax) : 0; return scOv > 0 ? <span title={`${scOv} cykli × ${st.owned} ${a.name.toLowerCase()} = ${scOv * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{scOv}/{a.storageMax} (={scOv * st.owned}{item.icon})</span> : null; })()}
+                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const _esmOv = a.storageMax * Math.max(1, st.owned); const scOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), _esmOv) : 0; return scOv > 0 ? <span title={`${scOv} cykli × ${st.owned} ${a.name.toLowerCase()} = ${scOv * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{scOv}/{_esmOv} (={scOv * st.owned}{item.icon})</span> : null; })()}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -10290,7 +10291,7 @@ export default function Page() {
                                     </div>
                                     <div className="flex justify-between text-[9px] text-[#6b7280]">
                                       <span style={{color:hs.color}}>{hs.label.split(" ")[0]} {Math.round(h)}%</span>
-                                      <span>{st.storage >= a.storageMax ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
+                                      <span>{st.storage >= a.storageMax * Math.max(1, st.owned) ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
                                     </div>
                                   </>
                                 )}
@@ -10319,8 +10320,9 @@ export default function Page() {
                       const effMs = barnEffProdMs(a, h);
                       // Server-aligned: use baseProdStart + BASE prodMs (matches collect_animal RPC)
                       const _bps = (st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0);
-                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0;
-                      const storageFull = serverCycles >= a.storageMax;
+                      const effStorMax = a.storageMax * Math.max(1, st.owned);
+                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), effStorMax) : 0;
+                      const storageFull = serverCycles >= effStorMax;
                       const _cycleStart = _bps > 0 ? _bps + serverCycles * a.prodMs : 0;
                       const remaining = _cycleStart > 0 && !storageFull ? Math.max(0, _cycleStart + a.prodMs - barnNow) : 0;
                       const pct = _cycleStart > 0 ? Math.min(100, ((barnNow - _cycleStart) / a.prodMs) * 100) : 0;
@@ -10347,7 +10349,7 @@ export default function Page() {
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
                                     <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {serverCycles} / {a.storageMax} cykli {serverCycles > 0 && st.owned > 0 && <span className="text-green-300">(= {serverCycles * st.owned} {item.icon})</span>}</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {serverCycles} / {effStorMax} cykli {serverCycles > 0 && st.owned > 0 && <span className="text-green-300">(= {serverCycles * st.owned} {item.icon})</span>}</p>
                                     <p className="text-[9px] text-[#6b7280]">1 cykl = {st.owned} {item.name} ({st.owned} {st.owned === 1 ? "zwierzę" : "zwierząt"})</p>
                                   </div>
                                 </div>
