@@ -805,35 +805,35 @@ const ANIMAL_ITEMS: AnimalItemDef[] = [
   { id:"rogi_byka",       name:"Rogi Byka",        icon:"🦴", sellPrice:2500 },
 ];
 const ANIMALS: AnimalDef[] = [
-  { id:"kura",   name:"Kura",    icon:"🐔", unlockLevel:3,  prodMs:4*3600000,  itemId:"jajko",           storageMax:6, startSlots:2, maxSlots:12, buyPrice:600,
-    slotUpgCosts:[100,160,260,420,670,1070,1710,2740,4380,7000],
+  { id:"kura",   name:"Kura",    icon:"🐔", unlockLevel:3,  prodMs:4*3600000,  itemId:"jajko",           storageMax:1, startSlots:2, maxSlots:24, buyPrice:600,
+    slotUpgCosts:barnSlotCosts(600,22),
     feed:[{cropId:"carrot",name:"Marchew",icon:"🥕",points:10},{cropId:"potato",name:"Ziemniak",icon:"🥔",points:15}] },
-  { id:"krolik", name:"Królik",  icon:"🐇", unlockLevel:5,  prodMs:8*3600000,  itemId:"futro_krolika",   storageMax:5, startSlots:2, maxSlots:10, buyPrice:1800,
-    slotUpgCosts:barnSlotCosts(1800,8),
+  { id:"krolik", name:"Królik",  icon:"🐇", unlockLevel:5,  prodMs:8*3600000,  itemId:"futro_krolika",   storageMax:1, startSlots:2, maxSlots:20, buyPrice:1800,
+    slotUpgCosts:barnSlotCosts(1800,18),
     feed:[{cropId:"carrot",name:"Marchew",icon:"🥕",points:12},{cropId:"lettuce",name:"Sałata",icon:"🥬",points:18}] },
-  { id:"krowa",  name:"Krowa",   icon:"🐄", unlockLevel:7,  prodMs:12*3600000, itemId:"mleko",           storageMax:4, startSlots:1, maxSlots:8,  buyPrice:4500,
-    slotUpgCosts:barnSlotCosts(4500,7),
+  { id:"krowa",  name:"Krowa",   icon:"🐄", unlockLevel:7,  prodMs:12*3600000, itemId:"mleko",           storageMax:1, startSlots:1, maxSlots:16, buyPrice:4500,
+    slotUpgCosts:barnSlotCosts(4500,15),
     feed:[{cropId:"lettuce",name:"Sałata",icon:"🥬",points:15},{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:30}] },
-  { id:"kaczka", name:"Kaczka",  icon:"🦆", unlockLevel:9,  prodMs:16*3600000, itemId:"piora",           storageMax:4, startSlots:1, maxSlots:8,  buyPrice:9000,
-    slotUpgCosts:barnSlotCosts(9000,7),
+  { id:"kaczka", name:"Kaczka",  icon:"🦆", unlockLevel:9,  prodMs:16*3600000, itemId:"piora",           storageMax:1, startSlots:1, maxSlots:16, buyPrice:9000,
+    slotUpgCosts:barnSlotCosts(9000,15),
     feed:[{cropId:"radish",name:"Rzodkiewka",icon:"🌱",points:15},{cropId:"sunflower",name:"Słonecznik",icon:"🌻",points:35}] },
-  { id:"owca",   name:"Owca",    icon:"🐑", unlockLevel:11, prodMs:20*3600000, itemId:"welna",           storageMax:3, startSlots:1, maxSlots:6,  buyPrice:18000,
-    slotUpgCosts:barnSlotCosts(18000,5),
+  { id:"owca",   name:"Owca",    icon:"🐑", unlockLevel:11, prodMs:20*3600000, itemId:"welna",           storageMax:1, startSlots:1, maxSlots:12, buyPrice:18000,
+    slotUpgCosts:barnSlotCosts(18000,11),
     feed:[{cropId:"cabbage",name:"Kapusta",icon:"🥦",points:20},{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:35}] },
-  { id:"swinia", name:"Świnia",  icon:"🐖", unlockLevel:13, prodMs:24*3600000, itemId:"nawoz_naturalny", storageMax:3, startSlots:1, maxSlots:5,  buyPrice:35000,
-    slotUpgCosts:barnSlotCosts(35000,4),
+  { id:"swinia", name:"Świnia",  icon:"🐖", unlockLevel:13, prodMs:24*3600000, itemId:"nawoz_naturalny", storageMax:1, startSlots:1, maxSlots:10, buyPrice:35000,
+    slotUpgCosts:barnSlotCosts(35000,9),
     feed:[{cropId:"tomato",name:"Pomidor",icon:"🍅",points:20},{cropId:"pumpkin",name:"Dynia",icon:"🎃",points:40}] },
-  { id:"koza",   name:"Koza",    icon:"🐐", unlockLevel:15, prodMs:30*3600000, itemId:"mleko_kozie",     storageMax:2, startSlots:1, maxSlots:4,  buyPrice:65000,
-    slotUpgCosts:barnSlotCosts(65000,3),
+  { id:"koza",   name:"Koza",    icon:"🐐", unlockLevel:15, prodMs:30*3600000, itemId:"mleko_kozie",     storageMax:1, startSlots:1, maxSlots:8,  buyPrice:65000,
+    slotUpgCosts:barnSlotCosts(65000,7),
     feed:[{cropId:"grape",name:"Winogrono",icon:"🍇",points:40},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:60}] },
-  { id:"indyk",  name:"Indyk",   icon:"🦃", unlockLevel:17, prodMs:36*3600000, itemId:"duze_piora",      storageMax:2, startSlots:1, maxSlots:4,  buyPrice:120000,
-    slotUpgCosts:barnSlotCosts(120000,3),
+  { id:"indyk",  name:"Indyk",   icon:"🦃", unlockLevel:17, prodMs:36*3600000, itemId:"duze_piora",      storageMax:1, startSlots:1, maxSlots:8,  buyPrice:120000,
+    slotUpgCosts:barnSlotCosts(120000,7),
     feed:[{cropId:"sunflower",name:"Słonecznik",icon:"🌻",points:35},{cropId:"chili",name:"Papryczka chili",icon:"🌶️",points:50}] },
-  { id:"kon",    name:"Koń",     icon:"🐎", unlockLevel:20, prodMs:48*3600000, itemId:"energia_robocza", storageMax:2, startSlots:1, maxSlots:3,  buyPrice:250000,
-    slotUpgCosts:barnSlotCosts(250000,2),
+  { id:"kon",    name:"Koń",     icon:"🐎", unlockLevel:20, prodMs:48*3600000, itemId:"energia_robocza", storageMax:1, startSlots:1, maxSlots:6,  buyPrice:250000,
+    slotUpgCosts:barnSlotCosts(250000,5),
     feed:[{cropId:"rapeseed",name:"Rzepak",icon:"🌾",points:50},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:70}] },
-  { id:"byk",    name:"Byk",     icon:"🐂", unlockLevel:25, prodMs:72*3600000, itemId:"rogi_byka",       storageMax:1, startSlots:1, maxSlots:2,  buyPrice:600000,
-    slotUpgCosts:[25000],
+  { id:"byk",    name:"Byk",     icon:"🐂", unlockLevel:25, prodMs:72*3600000, itemId:"rogi_byka",       storageMax:1, startSlots:1, maxSlots:4,  buyPrice:600000,
+    slotUpgCosts:barnSlotCosts(600000,3),
     feed:[{cropId:"pumpkin",name:"Dynia",icon:"🎃",points:50},{cropId:"asparagus",name:"Szparagi",icon:"🌿",points:80}] },
 ];
 function defaultBarnState(): BarnState {
@@ -2227,30 +2227,29 @@ export default function Page() {
       const st = freshBarn[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0, baseProdStart:0 };
       if (st.owned === 0) { next[a.id] = st; return; }
       let ns = { ...st };
-      const effStorMax = a.storageMax * Math.max(1, ns.owned);
-      if (ns.storage >= effStorMax) { ns.prodStart = 0; next[a.id] = ns; return; }
+      // storageMax=1 oznacza max 1 cykl — po 1 cyklu timer staje; owned mnoży ilość produktów przy odbiorze
+      if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
       if (ns.prodStart === 0) { ns.prodStart = barnNow; changed = true; next[a.id] = ns; return; }
       const h = barnCurrentHunger(ns, opiekaPts);
       const effMs = barnEffProdMs(a, h);
       const elapsed = barnNow - ns.prodStart;
       if (elapsed >= effMs) {
-        // 1 cykl = 1 jednostka storage. Liczymy ILE pełnych cykli się zmieściło (offline-safe).
-        const freeSlots = effStorMax - ns.storage;
+        const freeSlots = a.storageMax - ns.storage;
         const fullCycles = Math.min(Math.floor(elapsed / effMs), freeSlots);
         let cyclesToAdd = fullCycles;
-        // Bonus opieki: dla każdego cyklu szansa na dodatkowy
+        // Bonus opieki: szansa na dodatkowy produkt przy odbiorze (nie dodatkowy cykl)
         if (bonusChance > 0) {
           for (let i = 0; i < fullCycles; i++) {
-            if (ns.storage + cyclesToAdd >= effStorMax) break;
+            if (ns.storage + cyclesToAdd >= a.storageMax) break;
             if (Math.random() < bonusChance) {
               cyclesToAdd += 1;
               const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
-              if (item) bonusMessages.push(`${a.icon} ${a.name} dała dodatkowy cykl ${item.name}! ${item.icon}`);
+              if (item) bonusMessages.push(`${a.icon} ${a.name} dała bonus ${item.name}! ${item.icon}`);
             }
           }
         }
-        ns.storage = Math.min(effStorMax, ns.storage + cyclesToAdd);
-        if (ns.storage >= effStorMax) {
+        ns.storage = Math.min(a.storageMax, ns.storage + cyclesToAdd);
+        if (ns.storage >= a.storageMax) {
           ns.prodStart = 0;
         } else {
           // Zachowaj resztę czasu po pełnych cyklach (nie marnuj postępu)
@@ -10204,7 +10203,7 @@ export default function Page() {
               })();
             };
             const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
-            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const _esm = a.storageMax * Math.max(1, st.owned); return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), _esm) : 0); }, 0);
+            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) * st.owned : 0); }, 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
                 <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
@@ -10282,7 +10281,7 @@ export default function Page() {
                                     <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
                                     <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
                                   </div>
-                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const _esmOv = a.storageMax * Math.max(1, st.owned); const scOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), _esmOv) : 0; return scOv > 0 ? <span title={`${scOv} cykli × ${st.owned} ${a.name.toLowerCase()} = ${scOv * st.owned} ${item.name}`} className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{scOv}/{_esmOv} (={scOv * st.owned}{item.icon})</span> : null; })()}
+                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const cyclesOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), a.storageMax) : 0; const itemsOv = cyclesOv * st.owned; return itemsOv > 0 ? <span className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{itemsOv}/{st.owned} {item.icon}</span> : null; })()}
                                 </div>
                                 {st.owned > 0 && (
                                   <>
@@ -10291,7 +10290,7 @@ export default function Page() {
                                     </div>
                                     <div className="flex justify-between text-[9px] text-[#6b7280]">
                                       <span style={{color:hs.color}}>{hs.label.split(" ")[0]} {Math.round(h)}%</span>
-                                      <span>{st.storage >= a.storageMax * Math.max(1, st.owned) ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
+                                      <span>{st.storage >= a.storageMax ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
                                     </div>
                                   </>
                                 )}
@@ -10320,9 +10319,10 @@ export default function Page() {
                       const effMs = barnEffProdMs(a, h);
                       // Server-aligned: use baseProdStart + BASE prodMs (matches collect_animal RPC)
                       const _bps = (st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0);
-                      const effStorMax = a.storageMax * Math.max(1, st.owned);
-                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), effStorMax) : 0;
-                      const storageFull = serverCycles >= effStorMax;
+                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0;
+                      const storageFull = serverCycles >= a.storageMax;
+                      const itemsReady = serverCycles * st.owned;
+                      const itemsMax = a.storageMax * st.owned;
                       const _cycleStart = _bps > 0 ? _bps + serverCycles * a.prodMs : 0;
                       const remaining = _cycleStart > 0 && !storageFull ? Math.max(0, _cycleStart + a.prodMs - barnNow) : 0;
                       const pct = _cycleStart > 0 ? Math.min(100, ((barnNow - _cycleStart) / a.prodMs) * 100) : 0;
@@ -10349,8 +10349,8 @@ export default function Page() {
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
                                     <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Storage: {serverCycles} / {effStorMax} cykli {serverCycles > 0 && st.owned > 0 && <span className="text-green-300">(= {serverCycles * st.owned} {item.icon})</span>}</p>
-                                    <p className="text-[9px] text-[#6b7280]">1 cykl = {st.owned} {item.name} ({st.owned} {st.owned === 1 ? "zwierzę" : "zwierząt"})</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Magazyn: <span className={itemsReady > 0 ? "text-green-300 font-bold" : ""}>{itemsReady} / {itemsMax} {item.name}</span></p>
+                                    <p className="text-[9px] text-[#6b7280]">Po 1 cyklu ({a.prodMs/3600000}h): {st.owned} {item.name} naraz</p>
                                   </div>
                                 </div>
                                 {st.owned > 0 && (
@@ -10364,9 +10364,9 @@ export default function Page() {
                                   </>
                                 )}
                                 {st.owned === 0 && <p className="text-xs text-[#6b7280] text-center">Brak zwierząt — kup pierwsze!</p>}
-                                {serverCycles > 0 && st.owned > 0 && (
+                                {itemsReady > 0 && (
                                   <button onClick={() => handleCollect(a)} className="mt-2 w-full rounded-xl border border-green-500/60 bg-green-900/20 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
-                                    ✅ Odbierz {serverCycles * st.owned} {item.icon} ({serverCycles} cykli × {st.owned})
+                                    ✅ Odbierz {itemsReady} {item.icon}
                                   </button>
                                 )}
                               </div>
