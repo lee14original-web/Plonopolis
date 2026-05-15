@@ -9894,7 +9894,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile!.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
-              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
+              await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
               await loadProfile(profile!.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
@@ -9907,7 +9907,7 @@ export default function Page() {
               const {error} = await supabase.from("profiles").update({money: displayMoney - cost}).eq("id", profile!.id);
               if (error) return;
               saveBarnState({...barnState, [a.id]: {...st, slots: st.slots+1}});
-              void supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
+              await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots+1 });
               await loadProfile(profile!.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${st.slots+1} / ${a.maxSlots}`});
             };
