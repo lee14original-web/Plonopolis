@@ -5866,9 +5866,20 @@ export default function Page() {
                           </div>
                         );
                       })}
-                      <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
-                        <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet:</div>
-                        {Object.entries(navLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-sky-500 bg-black/95 p-4 pointer-events-auto shadow-2xl" style={{zIndex:200,minWidth:420}}>
+                        <div className="font-black text-sky-300 text-sm mb-3 text-center tracking-wide">🏷 ETYKIETY — pozycje (do podania mi)</div>
+                        <table className="w-full text-[11px] text-sky-100 border-collapse">
+                          <thead><tr className="text-sky-400 text-[10px]"><th className="text-left pb-1 pr-3">nazwa</th><th className="pb-1 pr-3">left %</th><th className="pb-1">top %</th></tr></thead>
+                          <tbody>
+                            {Object.entries(navLabelPos).map(([id,lp]) => (
+                              <tr key={id} className="border-t border-sky-900">
+                                <td className="pr-3 py-0.5 font-bold text-sky-300">{id}</td>
+                                <td className="pr-3 py-0.5 text-center font-mono text-yellow-300">{lp.left.toFixed(1)}</td>
+                                <td className="py-0.5 text-center font-mono text-yellow-300">{lp.top.toFixed(1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
@@ -5913,11 +5924,22 @@ export default function Page() {
                           </div>
                         );
                       })}
-                      <div className="absolute bottom-2 left-2 rounded-xl border border-orange-600 bg-black/90 p-2 text-[10px] text-orange-200 max-w-[270px] pointer-events-auto" style={{zIndex:60}}>
-                        <div className="font-black text-orange-400 mb-1">📋 Pozycje hitboxów:</div>
-                        {Object.entries(navHitboxPos).map(([id,hp]) => (
-                          <div key={id}>{id}: {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% {hp.width.toFixed(1)}%×{hp.height.toFixed(1)}%</div>
-                        ))}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-orange-500 bg-black/95 p-4 pointer-events-auto shadow-2xl" style={{zIndex:200,minWidth:500}}>
+                        <div className="font-black text-orange-300 text-sm mb-3 text-center tracking-wide">🎯 HITBOXY — pozycje (do podania mi)</div>
+                        <table className="w-full text-[11px] text-orange-100 border-collapse">
+                          <thead><tr className="text-orange-400 text-[10px]"><th className="text-left pb-1 pr-3">nazwa</th><th className="pb-1 pr-3">left %</th><th className="pb-1 pr-3">top %</th><th className="pb-1 pr-3">width %</th><th className="pb-1">height %</th></tr></thead>
+                          <tbody>
+                            {Object.entries(navHitboxPos).map(([id,hp]) => (
+                              <tr key={id} className="border-t border-orange-900">
+                                <td className="pr-3 py-0.5 font-bold text-orange-300">{id}</td>
+                                <td className="pr-3 py-0.5 text-center font-mono text-yellow-300">{hp.left.toFixed(1)}</td>
+                                <td className="pr-3 py-0.5 text-center font-mono text-yellow-300">{hp.top.toFixed(1)}</td>
+                                <td className="pr-3 py-0.5 text-center font-mono text-green-300">{hp.width.toFixed(1)}</td>
+                                <td className="py-0.5 text-center font-mono text-green-300">{hp.height.toFixed(1)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
