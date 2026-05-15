@@ -5435,10 +5435,20 @@ export default function Page() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#1e3112" }}>
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
+      {/* Ambient backdrop — rozmyte tło farmy zasłania czarne paski po bokach */}
+      {isOnFarmMap && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
+          backgroundImage: `url(/mapy/${backgroundMap}.png)`,
+          backgroundSize: "cover", backgroundPosition: "center",
+          filter: "blur(18px) brightness(0.45)",
+          transform: "scale(1.12)",
+        }} />
+      )}
         <main
           className="overflow-hidden"
-          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2 }}
+          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2, zIndex: 1 }}
           onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); }}
         >
         <div
