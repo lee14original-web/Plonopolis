@@ -6688,7 +6688,7 @@ export default function Page() {
           {/* ═══ MODAL RANKINGU ═══ */}
             {showRankingPanel && (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="flex max-h-[calc(100vh-40px)] w-full max-w-[1631px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+                <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1631px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
 
                   {/* Header */}
                   <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
@@ -6824,7 +6824,7 @@ export default function Page() {
           {/* ═══ MODAL WIADOMOŚCI ═══ */}
           {showMessagePanel && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-              <div className="flex h-[92vh] w-full max-w-4xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+              <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-4xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
 
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-5">
@@ -7324,7 +7324,7 @@ export default function Page() {
           {/* ═══ SHOP MODAL ═══ */}
           {showShopModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-[1500px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+              <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1500px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
                 <button onClick={() => { setShowShopModal(false); setShopCart({}); setShopError(""); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
                 {/* Sidebar — kategorie sklepu */}
                 <div className="flex w-[308px] shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
@@ -7667,7 +7667,7 @@ export default function Page() {
           {/* ═══ DOM MODAL ═══ */}
           {showDomModal && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[calc(100vh-32px)] max-h-[calc(100vh-32px)] w-full max-w-[1650px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+              <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1650px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
 
                 {/* ─ Zamknij ─ */}
                 <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
@@ -10139,7 +10139,7 @@ export default function Page() {
             const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0); }, 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-                <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+                <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
                   <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
                   {/* ─ Sidebar ─ */}
@@ -10492,7 +10492,7 @@ export default function Page() {
             const invTotal = Object.values(fruitInventory).reduce<number>((s,v) => s + (Number(v) || 0), 0);
             return (
               <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSadModal(false)}>
-                <div className="relative max-h-[calc(100vh-40px)] w-full max-w-[1100px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1100px] flex-col overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl" onClick={e => e.stopPropagation()}>
                   <button onClick={() => setShowSadModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
                   {/* Header */}
                   <div className="shrink-0 border-b border-[#8b6a3e]/40 px-6 py-4">
@@ -12350,7 +12350,7 @@ export default function Page() {
       {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
       {showMarketModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="relative flex max-h-[calc(100vh-40px)] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] shadow-2xl mx-2"
+          <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-5xl flex-col overflow-hidden rounded-[24px] border border-[#8b6a3e] shadow-2xl mx-2"
             style={{ background: `url('/mapy/targ_tlo.png') center/cover no-repeat, rgba(18,10,5,0.98)` }}>
             {/* Nagłówek */}
             <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.97),rgba(76,48,23,0.97))] px-6 py-4">
