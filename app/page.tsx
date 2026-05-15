@@ -417,7 +417,7 @@ type CharEquipped = Record<EquipSlot, {id:string;upg:number}|null>;
 type BarnAnimalState = { owned:number; slots:number; hunger:number; lastFedAt:number; storage:number; prodStart:number; baseProdStart:number; };
 type BarnState = Record<string,BarnAnimalState>;
 type BarnItems = Record<string,number>;
-interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; }
+interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; n1:string; n24:string; n5:string; }
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
@@ -793,17 +793,25 @@ function barnSlotCosts(buyPrice: number, upgrades: number): number[] {
   for (let i = 0; i < upgrades; i++) { r.push(c); c = Math.round(c * 1.6); } return r;
 }
 const ANIMAL_ITEMS: AnimalItemDef[] = [
-  { id:"jajko",           name:"Jajko",           icon:"🥚", sellPrice:40   },
-  { id:"futro_krolika",   name:"Futro Królika",    icon:"🐇", sellPrice:80   },
-  { id:"mleko",           name:"Mleko",            icon:"🥛", sellPrice:140  },
-  { id:"piora",           name:"Pióra",            icon:"🪶", sellPrice:220  },
-  { id:"welna",           name:"Wełna",            icon:"🧶", sellPrice:320  },
-  { id:"nawoz_naturalny", name:"Nawóz Naturalny",  icon:"💩", sellPrice:450  },
-  { id:"mleko_kozie",     name:"Mleko Kozie",      icon:"🥛", sellPrice:650  },
-  { id:"duze_piora",      name:"Duże Pióra",       icon:"🪶", sellPrice:900  },
-  { id:"energia_robocza", name:"Energia Robocza",  icon:"⚡", sellPrice:1400 },
-  { id:"rogi_byka",       name:"Rogi Byka",        icon:"🦴", sellPrice:2500 },
+  { id:"jajko",           name:"Jajko",           icon:"🥚", sellPrice:40,   n1:"jajko",         n24:"jajka",        n5:"jajek"          },
+  { id:"futro_krolika",   name:"Futro Królika",    icon:"🐇", sellPrice:80,   n1:"futro",         n24:"futra",        n5:"futer"          },
+  { id:"mleko",           name:"Mleko",            icon:"🥛", sellPrice:140,  n1:"mleko",         n24:"mleka",        n5:"mleka"          },
+  { id:"piora",           name:"Pióra",            icon:"🪶", sellPrice:220,  n1:"pióro",         n24:"pióra",        n5:"piór"           },
+  { id:"welna",           name:"Wełna",            icon:"🧶", sellPrice:320,  n1:"wełnę",         n24:"wełny",        n5:"wełny"          },
+  { id:"nawoz_naturalny", name:"Nawóz Naturalny",  icon:"💩", sellPrice:450,  n1:"nawóz",         n24:"nawozy",       n5:"nawozów"        },
+  { id:"mleko_kozie",     name:"Mleko Kozie",      icon:"🥛", sellPrice:650,  n1:"mleko kozie",   n24:"mleka koziego",n5:"mleka koziego"  },
+  { id:"duze_piora",      name:"Duże Pióra",       icon:"🪶", sellPrice:900,  n1:"duże pióro",    n24:"duże pióra",   n5:"dużych piór"    },
+  { id:"energia_robocza", name:"Energia Robocza",  icon:"⚡", sellPrice:1400, n1:"energię",       n24:"energie",      n5:"energii"        },
+  { id:"rogi_byka",       name:"Rogi Byka",        icon:"🦴", sellPrice:2500, n1:"róg",           n24:"rogi",         n5:"rogów"          },
 ];
+function plItem(n: number, item: AnimalItemDef): string {
+  const abs = Math.abs(n);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (abs === 1) return item.n1;
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return item.n24;
+  return item.n5;
+}
 const ANIMALS: AnimalDef[] = [
   { id:"kura",   name:"Kura",    icon:"🐔", unlockLevel:3,  prodMs:4*3600000,  itemId:"jajko",           storageMax:1, startSlots:2, maxSlots:24, buyPrice:600,
     slotUpgCosts:barnSlotCosts(600,22),
@@ -7556,9 +7564,16 @@ export default function Page() {
                                     {locked && <span className="rounded-full border border-red-500/40 bg-red-900/20 px-2 py-0.5 text-[10px] font-bold text-red-300">🔒 Zablokowane</span>}
                                   </div>
                                   <p className="mt-1 text-[11px] text-[#8b6a3e]">
-                                    Produkuje: <span className="text-[#dfcfab] font-bold">{item?.icon} {item?.name}</span>
-                                    {" · "}Czas: <span className="text-[#dfcfab] font-bold">{a.prodMs/3600000}h</span>
-                                    {" · "}Magazyn: <span className="text-[#dfcfab] font-bold">{a.storageMax} na zwierzę</span>
+                                    {canBuy
+                                      ? <>{item?.icon} <span className="text-[#dfcfab] font-bold">Produkcja po zakupie: {owned+1} {item ? plItem(owned+1, item) : "szt."} co {a.prodMs/3600000}h</span></>
+                                      : <>{item?.icon} <span className="text-[#dfcfab] font-bold">Produkcja: {owned > 0 ? `${owned} ${item ? plItem(owned, item) : "szt."}` : `1 ${item ? item.n1 : "szt."} / szt.`} co {a.prodMs/3600000}h</span></>
+                                    }
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
+                                    {canBuy
+                                      ? <>Magazyn po zakupie: <span className="text-[#dfcfab] font-bold">{owned+1} {item ? plItem(owned+1, item) : "szt."}</span></>
+                                      : owned > 0 ? <>Magazyn: <span className="text-[#dfcfab] font-bold">{owned} {item ? plItem(owned, item) : "szt."}</span></> : null
+                                    }
                                   </p>
                                   <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
                                     Karma: {a.feed.map(f => `${f.icon} ${f.name}`).join(" lub ")}
@@ -10349,8 +10364,8 @@ export default function Page() {
                                   <span className="text-2xl">{item.icon}</span>
                                   <div className="flex-1">
                                     <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Magazyn: <span className={itemsReady > 0 ? "text-green-300 font-bold" : ""}>{itemsReady} / {itemsMax} {item.name}</span></p>
-                                    <p className="text-[9px] text-[#6b7280]">Po 1 cyklu ({a.prodMs/3600000}h): {st.owned} {item.name} naraz</p>
+                                    <p className="text-[10px] text-[#8b6a3e]">Magazyn: <span className={itemsReady > 0 ? "text-green-300 font-bold" : ""}>{itemsReady} / {itemsMax} {plItem(itemsMax, item)}</span></p>
+                                    <p className="text-[9px] text-[#6b7280]">Produkcja: {st.owned > 0 ? `${st.owned} ${plItem(st.owned, item)}` : `1 ${item.n1} / szt.`} co {a.prodMs/3600000}h</p>
                                   </div>
                                 </div>
                                 {st.owned > 0 && (
@@ -10452,7 +10467,7 @@ export default function Page() {
                                 <div className="flex flex-col gap-1 text-[11px] text-[#dfcfab]">
                                   <div className="flex justify-between"><span>Produkuje</span><span className="font-bold">{item.icon} {item.name}</span></div>
                                   <div className="flex justify-between"><span>Czas (normalne)</span><span className="font-bold">{a.prodMs/3600000}h</span></div>
-                                  <div className="flex justify-between"><span>Storage max</span><span className="font-bold">{a.storageMax} szt</span></div>
+                                  <div className="flex justify-between"><span>Pojemność magazynu</span><span className="font-bold">{Math.max(1,st.owned) * a.storageMax} {plItem(Math.max(1,st.owned) * a.storageMax, item)}</span></div>
                                   <div className="flex justify-between"><span>Cena sprzedaży</span><span className="font-bold text-amber-400">{item.sellPrice.toLocaleString()} 💰</span></div>
                                   <div className="flex justify-between"><span>Cena zwierzęcia</span><span className="font-bold">{a.buyPrice.toLocaleString()} 💰</span></div>
                                 </div>
