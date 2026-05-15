@@ -420,6 +420,7 @@ type BarnItems = Record<string,number>;
 interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number; n1:string; n24:string; n5:string; }
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
+interface THHitbox { id:string; label:string; x:number; y:number; width:number; height:number; action:string; }
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
 const UPGRADE_COST   = [0,50,100,250,500,1200,2500,5000,10000,20000,40000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
@@ -1876,6 +1877,15 @@ export default function Page() {
   const [hoveredRatusz, setHoveredRatusz] = React.useState(false);
   const [townHallCamX, setTownHallCamX] = React.useState(0);
   const thDragRef = React.useRef<{startX:number; startCamX:number} | null>(null);
+  const [thHitboxEditMode, setThHitboxEditMode] = React.useState(false);
+  const [thMouseOnPanorama, setThMouseOnPanorama] = React.useState({x:0, y:0});
+  const [townHallHitboxes, setTownHallHitboxes] = React.useState<THHitbox[]>([
+    { id:"ranking", label:"Ranking",      x:500,  y:820, width:380, height:130, action:"ranking" },
+    { id:"club",    label:"Klub Rolnika", x:1030, y:820, width:460, height:130, action:"club"    },
+    { id:"event",   label:"Event",        x:1650, y:820, width:380, height:130, action:"event"   },
+  ]);
+  const thContainerRef = React.useRef<HTMLDivElement>(null);
+  const thHbDragRef = React.useRef<{hbId:string; startX:number; startY:number; startHbX:number; startHbY:number; mode:"move"|"resize"; startW:number; startH:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
@@ -6243,69 +6253,148 @@ export default function Page() {
                     {currentMap === "city_townhall" && (() => {
                         const TH_W = 2560;
                         const maxCamX = TH_W - BASE_W;
+                        const triggerHitbox = (action: string) => {
+                          if (action === "ranking") { void loadRanking(); setShowRankingPanel(true); }
+                          else if (action === "club") setShowGildiaPanel(true);
+                          else if (action === "event") setShowMisjePanel(true);
+                        };
+                        const hbIcon = (action: string) => action === "ranking" ? "🏆" : action === "club" ? "⚔️" : "📜";
                         return (
                         <div
-                          className="pointer-events-auto absolute inset-0 overflow-hidden select-none cursor-grab active:cursor-grabbing"
+                          ref={thContainerRef}
+                          className="pointer-events-auto absolute inset-0 overflow-hidden select-none"
+                          style={{ cursor: thHitboxEditMode ? "default" : thDragRef.current ? "grabbing" : "grab" }}
                           onMouseDown={(e) => {
                             if (e.button !== 0) return;
+                            if (thHitboxEditMode) return;
                             thDragRef.current = { startX: e.clientX / gameScale, startCamX: townHallCamX };
                           }}
                           onMouseMove={(e) => {
-                            if (!thDragRef.current) return;
-                            const dx = e.clientX / gameScale - thDragRef.current.startX;
-                            setTownHallCamX(Math.max(0, Math.min(maxCamX, thDragRef.current.startCamX - dx)));
+                            const rect = thContainerRef.current?.getBoundingClientRect();
+                            if (rect) {
+                              setThMouseOnPanorama({
+                                x: Math.round((e.clientX - rect.left) / gameScale + townHallCamX),
+                                y: Math.round((e.clientY - rect.top) / gameScale),
+                              });
+                            }
+                            const hbDrag = thHbDragRef.current;
+                            if (hbDrag) {
+                              const dx = (e.clientX - hbDrag.startX) / gameScale;
+                              const dy = (e.clientY - hbDrag.startY) / gameScale;
+                              setTownHallHitboxes(prev => prev.map(hb => {
+                                if (hb.id !== hbDrag.hbId) return hb;
+                                if (hbDrag.mode === "move")   return { ...hb, x: Math.max(0, Math.round(hbDrag.startHbX + dx)), y: Math.max(0, Math.round(hbDrag.startHbY + dy)) };
+                                return { ...hb, width: Math.max(80, Math.round(hbDrag.startW + dx)), height: Math.max(40, Math.round(hbDrag.startH + dy)) };
+                              }));
+                              return;
+                            }
+                            if (thDragRef.current) {
+                              const dx2 = e.clientX / gameScale - thDragRef.current.startX;
+                              setTownHallCamX(Math.max(0, Math.min(maxCamX, thDragRef.current.startCamX - dx2)));
+                            }
                           }}
-                          onMouseUp={() => { thDragRef.current = null; }}
-                          onMouseLeave={() => { thDragRef.current = null; }}
+                          onMouseUp={() => { thDragRef.current = null; thHbDragRef.current = null; }}
+                          onMouseLeave={() => { thDragRef.current = null; thHbDragRef.current = null; }}
                         >
-                          {/* Panorama 4096px — przesuwa się z kamerą */}
+                          {/* Panorama — przesuwa się z kamerą */}
                           <div
-                            className="absolute top-0 h-full"
+                            className="absolute top-0"
                             style={{ width: TH_W, height: 1536, transform: `translateX(-${townHallCamX}px)`, backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "2560px 1536px", backgroundRepeat: "no-repeat" }}
                           >
-
-                            {/* Ranking */}
-                            <button
-                              type="button"
-                              onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
-                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "28%", top: "55%", width: "13%" }}
-                            >
-                              <span className="text-3xl">🏆</span>
-                              <span className="text-base">Ranking</span>
-                            </button>
-
-                            {/* Gildia */}
-                            <button
-                              type="button"
-                              onClick={() => setShowGildiaPanel(true)}
-                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "43.5%", top: "55%", width: "13%" }}
-                            >
-                              <span className="text-3xl">⚔️</span>
-                              <span className="text-base">Gildia</span>
-                            </button>
-
-                            {/* Misje */}
-                            <button
-                              type="button"
-                              onClick={() => setShowMisjePanel(true)}
-                              className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "59%", top: "55%", width: "13%" }}
-                            >
-                              <span className="text-3xl">📜</span>
-                              <span className="text-base">Misje</span>
-                            </button>
+                            {townHallHitboxes.map(hb => {
+                              if (thHitboxEditMode) {
+                                const dragging = thHbDragRef.current?.hbId === hb.id;
+                                return (
+                                  <div
+                                    key={hb.id}
+                                    className="absolute flex items-center justify-center cursor-move"
+                                    style={{ left: hb.x, top: hb.y, width: hb.width, height: hb.height, border: `2px solid ${dragging ? "#f97316" : "#fb923c"}`, background: dragging ? "rgba(249,115,22,0.25)" : "rgba(194,65,12,0.18)" }}
+                                    onMouseDown={(e) => {
+                                      if (e.button !== 0) return;
+                                      e.stopPropagation(); e.preventDefault();
+                                      thHbDragRef.current = { hbId: hb.id, startX: e.clientX, startY: e.clientY, startHbX: hb.x, startHbY: hb.y, mode: "move", startW: hb.width, startH: hb.height };
+                                    }}
+                                  >
+                                    <span className="text-orange-200 font-bold text-sm pointer-events-none">{hb.label}</span>
+                                    <span className="text-[10px] text-orange-300/70 ml-2 pointer-events-none">({hb.x},{hb.y})</span>
+                                    {/* Resize handle */}
+                                    <div
+                                      className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 cursor-se-resize"
+                                      style={{ borderTopLeftRadius: 3 }}
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation(); e.preventDefault();
+                                        thHbDragRef.current = { hbId: hb.id, startX: e.clientX, startY: e.clientY, startHbX: hb.x, startHbY: hb.y, mode: "resize", startW: hb.width, startH: hb.height };
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div
+                                  key={hb.id}
+                                  className="absolute flex flex-col items-center justify-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] cursor-pointer transition hover:border-yellow-400 hover:brightness-110"
+                                  style={{ left: hb.x, top: hb.y, width: hb.width, height: hb.height }}
+                                  onClick={() => triggerHitbox(hb.action)}
+                                >
+                                  <span className="text-3xl pointer-events-none">{hbIcon(hb.action)}</span>
+                                  <span className="text-base font-black text-[#f9e7b2] pointer-events-none">{hb.label}</span>
+                                </div>
+                              );
+                            })}
                           </div>
 
-                          {/* Przycisk Wróć — przyklejony do viewportu */}
+                          {/* ─── Przyciski stałe (viewport) ─── */}
                           <button
                             type="button"
-                            onClick={() => { handleChangeMap("city"); setTownHallCamX(0); }}
+                            onClick={() => { handleChangeMap("city"); setTownHallCamX(0); setThHitboxEditMode(false); }}
                             className="absolute left-4 top-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 z-10"
                           >
                             ← Wróć do miasta
                           </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setThHitboxEditMode(prev => !prev)}
+                            className={`absolute left-4 top-20 rounded-2xl border px-5 py-2.5 text-sm font-black shadow-2xl backdrop-blur-sm transition z-10 ${thHitboxEditMode ? "border-orange-400 bg-[rgba(120,50,10,0.95)] text-orange-200 hover:brightness-110" : "border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] text-[#f3e6c8] hover:border-yellow-400/60"}`}
+                          >
+                            {thHitboxEditMode ? "✅ Zakończ edycję" : "🛠️ Edytuj hitboxy"}
+                          </button>
+
+                          {/* ─── Panel edycji ─── */}
+                          {thHitboxEditMode && (
+                            <div className="absolute left-4 top-40 z-20 w-72 rounded-2xl border border-orange-500/60 bg-[rgba(20,10,2,0.96)] p-4 text-xs text-orange-100 shadow-2xl backdrop-blur-sm space-y-3">
+                              <div className="font-black text-orange-300 text-sm">🛠️ Tryb edycji hitboxów</div>
+
+                              {/* Pozycja myszy */}
+                              <div className="flex gap-2 items-center bg-black/30 rounded-lg px-3 py-1.5">
+                                <span className="text-orange-400 font-bold">Mysz:</span>
+                                <span className="font-mono">{thMouseOnPanorama.x}, {thMouseOnPanorama.y}</span>
+                              </div>
+
+                              {/* Lista hitboxów */}
+                              <div className="space-y-2">
+                                {townHallHitboxes.map(hb => (
+                                  <div key={hb.id} className="bg-black/30 rounded-lg px-3 py-2 space-y-0.5">
+                                    <div className="font-black text-orange-200">{hb.label}</div>
+                                    <div className="font-mono text-orange-100/80">x={hb.x}  y={hb.y}</div>
+                                    <div className="font-mono text-orange-100/80">w={hb.width}  h={hb.height}</div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Kopiuj JSON */}
+                              <button
+                                type="button"
+                                className="w-full rounded-xl border border-orange-500/60 bg-orange-900/40 py-2 font-black text-orange-200 hover:brightness-110 transition"
+                                onClick={() => {
+                                  const json = "const townHallHitboxes = " + JSON.stringify(townHallHitboxes, null, 2) + ";";
+                                  void navigator.clipboard.writeText(json);
+                                }}
+                              >
+                                📋 Kopiuj JSON
+                              </button>
+                            </div>
+                          )}
 
                           {/* Wskaźnik pozycji kamery */}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 pointer-events-none">
