@@ -6241,7 +6241,7 @@ export default function Page() {
 
                   {/* ═══ RATUSZ ═══ */}
                     {currentMap === "city_townhall" && (() => {
-                        const TH_W = 4096;
+                        const TH_W = 2560;
                         const maxCamX = TH_W - BASE_W;
                         return (
                         <div
@@ -6261,7 +6261,7 @@ export default function Page() {
                           {/* Panorama 4096px — przesuwa się z kamerą */}
                           <div
                             className="absolute top-0 h-full"
-                            style={{ width: TH_W, height: 1536, transform: `translateX(-${townHallCamX}px)`, backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "4096px 1536px", backgroundRepeat: "no-repeat" }}
+                            style={{ width: TH_W, height: 1536, transform: `translateX(-${townHallCamX}px)`, backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "2560px 1536px", backgroundRepeat: "no-repeat" }}
                           >
 
                             {/* Ranking */}
@@ -6269,7 +6269,7 @@ export default function Page() {
                               type="button"
                               onClick={() => { void loadRanking(); setShowRankingPanel(true); }}
                               className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "22%", top: "55%", width: "14%" }}
+                              style={{ left: "28%", top: "55%", width: "13%" }}
                             >
                               <span className="text-3xl">🏆</span>
                               <span className="text-base">Ranking</span>
@@ -6280,7 +6280,7 @@ export default function Page() {
                               type="button"
                               onClick={() => setShowGildiaPanel(true)}
                               className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "44%", top: "55%", width: "14%" }}
+                              style={{ left: "43.5%", top: "55%", width: "13%" }}
                             >
                               <span className="text-3xl">⚔️</span>
                               <span className="text-base">Gildia</span>
@@ -6291,7 +6291,7 @@ export default function Page() {
                               type="button"
                               onClick={() => setShowMisjePanel(true)}
                               className="absolute flex flex-col items-center gap-1 rounded-2xl border-2 border-[#f4cf78]/50 bg-[rgba(18,11,5,0.93)] px-6 py-4 font-black text-[#f9e7b2] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400 hover:brightness-110"
-                              style={{ left: "66%", top: "55%", width: "14%" }}
+                              style={{ left: "59%", top: "55%", width: "13%" }}
                             >
                               <span className="text-3xl">📜</span>
                               <span className="text-base">Misje</span>
