@@ -1678,6 +1678,12 @@ function getMapDisplayName(mapId: string | null | undefined) {
 
 const BASE_W = 1920;
 const BASE_H = 1280;
+// Ratusz: 4096×1536 grafika, skalowanie do BASE_H → maxCamX i centrum
+const TH_IMAGE_W = 4096;
+const TH_IMAGE_H = 1536;
+const TH_SCALE = Math.min(BASE_H / TH_IMAGE_H, 1);
+const TH_MAX_CAM_X = Math.max(0, Math.round(TH_IMAGE_W * TH_SCALE) - BASE_W);
+const TH_CENTER_CAM_X = Math.round(TH_MAX_CAM_X / 2);
 const FARM_MAP_W = 2560;
 const FARM_MAP_H = 1440;
 
@@ -3570,10 +3576,14 @@ export default function Page() {
   }, [showUlModal]);
   React.useEffect(() => {
     if (currentMap !== "city_townhall") return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleChangeMap("city"); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (showRankingPanel) { setShowRankingPanel(false); return; }
+      handleChangeMap("city");
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [currentMap]);
+  }, [currentMap, showRankingPanel]);
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -6147,7 +6157,7 @@ export default function Page() {
                       />
                       <button
                         type="button"
-                        onClick={() => handleChangeMap("city_townhall")}
+                        onClick={() => { handleChangeMap("city_townhall"); setTownHallCamX(TH_CENTER_CAM_X); }}
                         onMouseEnter={() => setHoveredRatusz(true)}
                         onMouseLeave={() => setHoveredRatusz(false)}
                         data-zone="ratusz"
@@ -6502,7 +6512,7 @@ export default function Page() {
                           {/* ─── Przyciski stałe (viewport) ─── */}
                           <button
                             type="button"
-                            onClick={() => { handleChangeMap("city"); setTownHallCamX(0); setThHitboxEditMode(false); }}
+                            onClick={() => { handleChangeMap("city"); setThHitboxEditMode(false); }}
                             className="absolute left-4 top-4 rounded-2xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-base font-black text-[#f3e6c8] shadow-2xl backdrop-blur-sm transition hover:border-yellow-400/60 z-10"
                           >
                             ← Wróć do miasta
