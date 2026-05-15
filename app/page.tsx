@@ -1784,6 +1784,18 @@ export default function Page() {
       document.removeEventListener("mouseup", handleUp);
     };
   }, [fvToolEditMode, isFieldViewOpen]);
+  // Globalne mouseup — kończy drag-to-plant
+  React.useEffect(() => {
+    const onUp = () => {
+      if (isDraggingPlantRef.current) {
+        isDraggingPlantRef.current = false;
+        dragEndedRef.current = true;
+        dragPlantedFieldsRef.current.clear();
+      }
+    };
+    window.addEventListener("mouseup", onUp);
+    return () => window.removeEventListener("mouseup", onUp);
+  }, []);
   const [plotCrops, setPlotCrops] = useState<Record<number, PlotCropState>>({});
   const [seedInventory, setSeedInventory] = useState<SeedInventory>(getDefaultSeedInventory());
   const [selectedSeedId, setSelectedSeedId] = useState<string | null>(null);
@@ -1798,6 +1810,10 @@ export default function Page() {
   // Refs do fresh state — używane w setTimeout callbackach (closure capture by stary state)
   const seedInventoryRef = React.useRef<SeedInventory>({});
   const plotCropsRef = React.useRef<Record<number, PlotCropState>>({});
+  // Drag-to-plant refs
+  const isDraggingPlantRef = React.useRef(false);
+  const dragPlantedFieldsRef = React.useRef<Set<number>>(new Set());
+  const dragEndedRef = React.useRef(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [gameScale, setGameScale] = useState(() =>
     typeof window !== "undefined" ? Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
@@ -2956,6 +2972,22 @@ export default function Page() {
       void executePlantRpc(plotId, effectiveSeedId, _baseCropId, _seedQuality);
     }, _plantDurMs);
     fieldActionTimeoutsRef.current.set(plotId, _tid);
+  }
+
+  // Sianie podczas przeciągania — cicha wersja bez komunikatów błędów
+  function tryDragPlant(plotId: number) {
+    if (!isDraggingPlantRef.current || !selectedSeedId || isCompostKey(selectedSeedId)) return;
+    if (dragPlantedFieldsRef.current.has(plotId)) return;
+    if (!isPlotUnlocked(plotId)) return;
+    if (pendingFieldActions[plotId]) return;
+    const plot = getPlotCrop(plotId);
+    if (plot.cropId) return;
+    if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) {
+      isDraggingPlantRef.current = false;
+      return;
+    }
+    dragPlantedFieldsRef.current.add(plotId);
+    void handlePlantFromSelectedSeed(plotId);
   }
 
   async function executePlantRpc(plotId: number, effectiveSeedId: string, _baseCropId: string, _seedQuality: string | null) {
@@ -11049,7 +11081,7 @@ export default function Page() {
             >
                 <div
                   ref={fieldViewScrollRef}
-                  className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto"
+                  className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto select-none"
                   style={{ cursor: fieldScrollDragRef.current?.active && fieldScrollDragRef.current?.moved ? "grabbing" : undefined, userSelect: fieldScrollDragRef.current?.moved ? "none" : undefined }}
                   onMouseDown={(e) => {
                     if (e.button !== 0) return;
@@ -11566,15 +11598,30 @@ export default function Page() {
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
-                            onMouseDown={fieldHitboxEditMode ? (e) => {
-                              if ((e.target as HTMLElement).dataset.resizeHandle) return;
+                            onDragStart={(e) => e.preventDefault()}
+                            onMouseEnter={() => { tryDragPlant(plotId); }}
+                            onMouseDown={(e) => {
+                              if (e.button !== 0) return;
                               e.preventDefault();
-                              const rect = fhContainerRef.current?.getBoundingClientRect();
-                              if (!rect) return;
-                              const pctX = ((e.clientX - rect.left) / rect.width) * 100;
-                              const pctY = ((e.clientY - rect.top) / rect.height) * 100;
-                              fhDragRef.current = { startMouseX: pctX, startMouseY: pctY, startOffsetX: fhOffsetX, startOffsetY: fhOffsetY };
-                            } : undefined}
+                              if (fieldHitboxEditMode) {
+                                if ((e.target as HTMLElement).dataset.resizeHandle) return;
+                                const rect = fhContainerRef.current?.getBoundingClientRect();
+                                if (!rect) return;
+                                const pctX = ((e.clientX - rect.left) / rect.width) * 100;
+                                const pctY = ((e.clientY - rect.top) / rect.height) * 100;
+                                fhDragRef.current = { startMouseX: pctX, startMouseY: pctY, startOffsetX: fhOffsetX, startOffsetY: fhOffsetY };
+                                return;
+                              }
+                              dragEndedRef.current = false;
+                              if (selectedSeedId && !isCompostKey(selectedSeedId) && isUnlocked) {
+                                const _plot = getPlotCrop(plotId);
+                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId]) {
+                                  isDraggingPlantRef.current = true;
+                                  dragPlantedFieldsRef.current = new Set([plotId]);
+                                  void handlePlantFromSelectedSeed(plotId);
+                                }
+                              }
+                            }}
                             onClick={() => {
                               if (fieldHitboxEditMode) return;
                               setSelectedPlotId(plotId);
@@ -11599,7 +11646,10 @@ export default function Page() {
                               }
 
                               if (selectedSeedId) {
-                                handlePlantFromSelectedSeed(plotId);
+                                if (!dragEndedRef.current) {
+                                  handlePlantFromSelectedSeed(plotId);
+                                }
+                                dragEndedRef.current = false;
                                 return;
                               }
 
