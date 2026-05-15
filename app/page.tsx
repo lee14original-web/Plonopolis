@@ -12128,7 +12128,7 @@ export default function Page() {
               </div>
             ) : hoveredSeedQuality === "epic" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(34,197,94,0.08)] p-2 text-[13px]">
-                <p className="font-black text-green-300">🎲 Losuje jakość (jak zwykłe nasiono)</p>
+                <p className="font-black text-green-300">🎲 Każda sztuka losuje jakość osobno</p>
                 <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt."} • ⭐ EXP ×3–6</p>
               </div>
             ) : (
