@@ -7508,10 +7508,24 @@ export default function Page() {
                         if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
                         if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
                         if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca w stodole!",text:`Kup więcej slotów dla ${a.name} w Stodole.`}); return; }
+                        // 1. Odejmij pieniądze
                         const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
-                        if (error) return;
-                        saveBarnState({...barnState, [a.id]: {...st, owned: st.owned+1}});
-                        void supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
+                        if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
+                        // 2. Zaktualizuj lokalnie (optymistycznie)
+                        const newOwned = st.owned + 1;
+                        saveBarnState({...barnState, [a.id]: {...st, owned: newOwned}});
+                        setProfile(prev => prev ? {...prev, money: (prev.money ?? 0) - a.buyPrice} : prev);
+                        // 3. Synchronizuj z bazą — AWAIT (musi zakończyć się przed loadProfile)
+                        const syncRes = await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: newOwned, p_new_slots: st.slots });
+                        if (syncRes.error) {
+                          // Rollback: przywróć pieniądze i lokalny stan
+                          saveBarnState(barnState);
+                          await supabase.from("profiles").update({money: displayMoney}).eq("id", profile.id);
+                          setProfile(prev => prev ? {...prev, money: displayMoney} : prev);
+                          setMessage({type:"error",title:"Błąd zakupu!",text:"Zwierzę nie zostało zapisane. Złoto zwrócone."});
+                          return;
+                        }
+                        // 4. Odśwież profil po synchronizacji (barn_state w DB ma już owned=newOwned)
                         await loadProfile(profile.id);
                         setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
                       };
@@ -10093,16 +10107,31 @@ export default function Page() {
             const bonusChancePct = (opiekaPts * 0.15).toFixed(1);
             const hungerReducePct = (opiekaPts * 0.3).toFixed(1);
             const handleBuyAnimal = async (a: AnimalDef) => {
+              if (!profile?.id) return;
               const st = barnState[a.id];
+              if (!st) return;
+              if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
               if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
               if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
-              const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile!.id);
-              if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
-              const newBarnState = {...barnState, [a.id]: {...st, owned: st.owned+1}};
-              saveBarnState(newBarnState);
+              // 1. Odejmij pieniądze
+              const {error} = await supabase.from("profiles").update({money: displayMoney - a.buyPrice}).eq("id", profile.id);
+              if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
+              // 2. Zaktualizuj lokalnie (optymistycznie)
+              const newOwned = st.owned + 1;
+              saveBarnState({...barnState, [a.id]: {...st, owned: newOwned}});
               setProfile(prev => prev ? {...prev, money: (prev.money ?? 0) - a.buyPrice} : prev);
-              const syncRes = await supabase.rpc("sync_barn_owned", { p_user_id: profile!.id, p_animal_id: a.id, p_new_owned: st.owned+1, p_new_slots: st.slots });
-              if (syncRes.error) { setMessage({type:"error",title:"Błąd synchronizacji!",text:syncRes.error.message}); return; }
+              // 3. Synchronizuj z bazą — AWAIT
+              const syncRes = await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: newOwned, p_new_slots: st.slots });
+              if (syncRes.error) {
+                // Rollback: przywróć pieniądze i lokalny stan
+                saveBarnState(barnState);
+                await supabase.from("profiles").update({money: displayMoney}).eq("id", profile.id);
+                setProfile(prev => prev ? {...prev, money: displayMoney} : prev);
+                setMessage({type:"error",title:"Błąd zakupu!",text:"Zwierzę nie zostało zapisane. Złoto zwrócone."});
+                return;
+              }
+              // 4. Odśwież profil po synchronizacji
+              await loadProfile(profile.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
             const handleBuySlot = async (a: AnimalDef) => {
