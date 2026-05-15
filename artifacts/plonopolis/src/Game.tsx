@@ -7550,7 +7550,9 @@ export default function Page() {
                             const slots = st?.slots ?? a.startSlots;
                             const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
                             const locked = lvl < a.unlockLevel;
-                            const noSlot = !locked && owned >= slots;
+                            const needSlot = !locked && owned >= slots && slots < a.maxSlots;
+                            const atMax = !locked && owned >= slots && slots >= a.maxSlots;
+                            const noSlot = needSlot || atMax;
                             const tooPoor = !locked && !noSlot && displayMoney < a.buyPrice;
                             const canBuy = !locked && !noSlot && !tooPoor;
                             return (
@@ -7580,8 +7582,15 @@ export default function Page() {
                                   </p>
                                   <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
                                     Posiadasz: <span className={`font-black ${owned > 0 ? "text-emerald-300" : "text-[#dfcfab]"}`}>{owned}/{slots}</span>
+                                    <span className="text-[#6b7280]"> (max {a.maxSlots})</span>
                                     {" · "}Sprzedaż: <span className="text-amber-300 font-bold">{item?.sellPrice.toLocaleString()} 💰/szt</span>
                                   </p>
+                                  {needSlot && (
+                                    <p className="mt-0.5 text-[10px] text-amber-300/80">🏗️ Sloty pełne — kup więcej w Stodole (do {a.maxSlots} szt.)</p>
+                                  )}
+                                  {atMax && (
+                                    <p className="mt-0.5 text-[10px] text-[#6b7280]">✦ Osiągnięto maksimum {a.maxSlots} {a.name.toLowerCase()}.</p>
+                                  )}
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0">
                                   <p className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</p>
@@ -7589,7 +7598,7 @@ export default function Page() {
                                     disabled={!canBuy}
                                     onClick={() => void handleBuyAnimalShop(a)}
                                     className={`rounded-xl border px-4 py-2 text-sm font-black transition ${canBuy ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50" : "cursor-not-allowed border-[#374151] bg-black/20 text-[#6b7280]"}`}>
-                                    {locked ? `🔒 LVL ${a.unlockLevel}` : noSlot ? "Brak slotów" : tooPoor ? "Za mało 💰" : "🛒 Kup"}
+                                    {locked ? `🔒 LVL ${a.unlockLevel}` : atMax ? "Maks. zwierząt" : needSlot ? "🏗️ Kup slot" : tooPoor ? "Za mało 💰" : "🛒 Kup"}
                                   </button>
                                 </div>
                               </div>
