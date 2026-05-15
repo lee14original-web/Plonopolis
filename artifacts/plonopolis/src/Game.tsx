@@ -2224,7 +2224,7 @@ export default function Page() {
     const bonusMessages: string[] = [];
     const freshBarn = barnStateRef.current;
     ANIMALS.forEach(a => {
-      const st = freshBarn[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0 };
+      const st = freshBarn[a.id] ?? { owned:0, slots:a.startSlots, hunger:80, lastFedAt:0, storage:0, prodStart:0, baseProdStart:0 };
       if (st.owned === 0) { next[a.id] = st; return; }
       let ns = { ...st };
       if (ns.storage >= a.storageMax) { ns.prodStart = 0; next[a.id] = ns; return; }
