@@ -1928,7 +1928,7 @@ export default function Page() {
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
     dom:         {left:20.7, top:22.0},
     stodola:     {left:54.9, top:52.1},
-    doMiasta:    {left:51.9, top:89.0},
+    doMiasta:    {left:89.8, top:59.4},
     polaUprawne: {left:56.8, top:27.1},
     ul:          {left:84.4, top:85.2},
     lada:        {left:17.6, top:61.0},
@@ -1960,7 +1960,7 @@ export default function Page() {
   const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
     dom:         {left:6.8,  top:11.1, width:29.9, height:28.1},
     stodola:     {left:40.5, top:50.7, width:29.7, height:28.1},
-    doMiasta:    {left:36.1, top:82.8, width:31.4, height:15.9},
+    doMiasta:    {left:80.2, top:51.0, width:14.0, height:11.1},
     polaUprawne: {left:41.9, top:15.7, width:29.3, height:27.2},
     ul:          {left:73.2, top:68.7, width:23.1, height:23.9},
     lada:        {left:6.8,  top:44.4, width:21.2, height:20.3},
