@@ -6377,6 +6377,20 @@ export default function Page() {
                                   onMouseDown: (e: React.MouseEvent) => { e.stopPropagation(); e.preventDefault(); thTextDragRef.current = { prop, startMX: e.clientX, startMY: e.clientY, startVal: val }; },
                                   onClick: (e: React.MouseEvent) => e.stopPropagation(),
                                 });
+                                const PREVIEW = [
+                                  { name:"PrzykładowyNick", score:"12 345" }, { name:"FarmerTest",     score:"8 901"  },
+                                  { name:"Gracz123",        score:"4 567"  }, { name:"RolnikPro",      score:"2 110"  },
+                                  { name:"WioskaX",         score:"1 890"  }, { name:"Farmer99",       score:"1 245"  },
+                                  { name:"PolowyKról",      score:"987"    }, { name:"StartingUp",     score:"432"    },
+                                  { name:"Nowicjusz",       score:"100"    },
+                                ];
+                                const lbl = (txt: string, extra?: React.CSSProperties) => ({
+                                  fontSize:10, color:"#ffd76a", fontFamily:"monospace", fontWeight:"bold" as const,
+                                  textShadow:"0 2px 4px #000", background:"rgba(0,0,0,0.72)",
+                                  border:"1px solid rgba(255,215,106,0.5)", borderRadius:3,
+                                  padding:"1px 5px", whiteSpace:"nowrap" as const, pointerEvents:"none" as const,
+                                  ...extra,
+                                });
                                 return (
                                   <div
                                     key={hb.id}
@@ -6388,26 +6402,54 @@ export default function Page() {
                                   >
                                     {/* ── Overlay edycji tekstu ── */}
                                     {thTextEditMode && (
-                                      <div className="absolute inset-0" style={{ overflow:"hidden", pointerEvents:"auto" }}>
-                                        {/* Poziome linie wierszy */}
+                                      <div className="absolute inset-0" style={{ overflow:"hidden", pointerEvents:"auto", background:"rgba(0,0,0,0.45)", zIndex:999 }}>
+
+                                        {/* ── Poziome linie wierszy ── */}
                                         {Array.from({ length: 9 }).map((_, i) => (
-                                          <div key={`rg-${i}`} style={{ position:"absolute", left:0, right:0, top: rtl.startY + i * rtl.rowHeight, height: rtl.rowHeight, borderTop:"1px dashed rgba(100,200,255,0.35)", boxSizing:"border-box", pointerEvents:"none" }} />
+                                          <div key={`rg-${i}`} style={{ position:"absolute", left:0, right:0, top: rtl.startY + i * rtl.rowHeight, height: rtl.rowHeight, borderTop:`${i===0?"2px solid":"1px solid"} rgba(255,215,106,${i===0?0.9:0.45})`, boxSizing:"border-box", pointerEvents:"none" }} />
                                         ))}
-                                        {/* Pionowa linia nameX (niebieska) — przeciągalna */}
-                                        <div style={{ position:"absolute", top:0, bottom:0, left: rtl.nameX - 2, width:4, background:"rgba(100,180,255,0.55)", cursor:"ew-resize" }} {...startDrag("nameX", rtl.nameX)}>
-                                          <span style={{ position:"absolute", top:4, left:6, fontSize:9, color:"#93c5fd", fontFamily:"monospace", pointerEvents:"none", whiteSpace:"nowrap" }}>name={rtl.nameX}</span>
+                                        {/* dolna krawędź ostatniego wiersza */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY + 9*rtl.rowHeight, height:2, background:"rgba(255,215,106,0.45)", pointerEvents:"none" }} />
+
+                                        {/* ── Podgląd przykładowych wpisów ── */}
+                                        {PREVIEW.map((p, i) => (
+                                          <div key={`prev-${i}`} style={{ position:"absolute", top: rtl.startY + i*rtl.rowHeight, left:0, right:0, display:"flex", alignItems:"center", height: rtl.rowHeight, pointerEvents:"none" }}>
+                                            <span style={{ width:rtl.nameX, textAlign:"right", fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:900, textShadow:"0 2px 4px #000", flexShrink:0 }}>{i+1}.</span>
+                                            <span style={{ flex:1, marginLeft:8, fontSize:rtl.fontSize, color:"#ffd76a", fontWeight:600, textShadow:"0 2px 4px #000", overflow:"hidden", whiteSpace:"nowrap" }}>{p.name}</span>
+                                            <span style={{ flexShrink:0, marginRight:rtl.scoreRight, fontSize:Math.round(rtl.fontSize*0.9), color:"#ffd76a", fontFamily:"monospace", fontWeight:700, textShadow:"0 2px 4px #000" }}>{p.score}</span>
+                                          </div>
+                                        ))}
+
+                                        {/* ── Pionowa linia Nr / Nick (złota) — przeciągalna ── */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, left:rtl.nameX, width:2, background:"rgba(255,215,106,0.85)", cursor:"ew-resize", zIndex:10 }} {...startDrag("nameX", rtl.nameX)}>
+                                          <span style={{ ...lbl(""), position:"absolute", top:28, left:4 }}>← Nr | Nick →<br/>nameX={rtl.nameX}</span>
                                         </div>
-                                        {/* Pionowa linia scoreRight (zielona) — przeciągalna */}
-                                        <div style={{ position:"absolute", top:0, bottom:0, right: rtl.scoreRight - 2, width:4, background:"rgba(100,255,150,0.55)", cursor:"ew-resize" }} {...startDrag("scoreRight", rtl.scoreRight)}>
-                                          <span style={{ position:"absolute", top:4, right:6, fontSize:9, color:"#86efac", fontFamily:"monospace", pointerEvents:"none", whiteSpace:"nowrap" }}>score={rtl.scoreRight}</span>
+                                        {/* Etykieta nagłówkowa Nr */}
+                                        <div style={{ position:"absolute", top:4, left:0, width:rtl.nameX, display:"flex", justifyContent:"center", pointerEvents:"none" }}>
+                                          <span style={lbl("")}>Nr</span>
                                         </div>
-                                        {/* startY — pomarańczowa belka — przeciągalna pionowo */}
-                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY - 3, height:6, background:"rgba(255,180,50,0.7)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center" }} {...startDrag("startY", rtl.startY)}>
-                                          <span style={{ fontSize:9, color:"#fde68a", fontFamily:"monospace", pointerEvents:"none" }}>startY={rtl.startY}</span>
+                                        {/* Etykieta nagłówkowa Nick */}
+                                        <div style={{ position:"absolute", top:4, left:rtl.nameX+6, pointerEvents:"none" }}>
+                                          <span style={lbl("")}>Nick</span>
                                         </div>
-                                        {/* rowHeight — czerwona belka na końcu 1. wiersza — przeciągalna pionowo */}
-                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY + rtl.rowHeight - 3, height:6, background:"rgba(255,100,50,0.7)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center" }} {...startDrag("rowHeight", rtl.rowHeight)}>
-                                          <span style={{ fontSize:9, color:"#fed7aa", fontFamily:"monospace", pointerEvents:"none" }}>rowH={rtl.rowHeight}</span>
+
+                                        {/* ── Pionowa linia Moc farmy (zielona) — przeciągalna ── */}
+                                        <div style={{ position:"absolute", top:0, bottom:0, right:rtl.scoreRight, width:2, background:"rgba(100,255,150,0.85)", cursor:"ew-resize", zIndex:10 }} {...startDrag("scoreRight", rtl.scoreRight)}>
+                                          <span style={{ ...lbl(""), position:"absolute", top:28, right:4, color:"#86efac", border:"1px solid rgba(100,255,150,0.5)" }}>← Moc farmy<br/>right={rtl.scoreRight}</span>
+                                        </div>
+                                        {/* Etykieta nagłówkowa Moc farmy */}
+                                        <div style={{ position:"absolute", top:4, right:rtl.scoreRight+6, pointerEvents:"none" }}>
+                                          <span style={{ ...lbl(""), color:"#86efac", border:"1px solid rgba(100,255,150,0.5)" }}>Moc farmy</span>
+                                        </div>
+
+                                        {/* ── startY — złota belka — przeciągalna pionowo ── */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY-5, height:10, background:"rgba(255,160,0,0.85)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:11 }} {...startDrag("startY", rtl.startY)}>
+                                          <span style={{ fontSize:11, color:"#fff", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ StartY = {rtl.startY}</span>
+                                        </div>
+
+                                        {/* ── rowHeight — pomarańczowa belka na końcu 1. wiersza — przeciągalna ── */}
+                                        <div style={{ position:"absolute", left:0, right:0, top: rtl.startY+rtl.rowHeight-5, height:10, background:"rgba(210,70,10,0.85)", cursor:"ns-resize", display:"flex", alignItems:"center", justifyContent:"center", zIndex:11 }} {...startDrag("rowHeight", rtl.rowHeight)}>
+                                          <span style={{ fontSize:11, color:"#fed7aa", fontFamily:"monospace", fontWeight:"bold", textShadow:"0 1px 3px #000", pointerEvents:"none" }}>⬆⬇ RowHeight = {rtl.rowHeight}</span>
                                         </div>
                                       </div>
                                     )}
