@@ -6251,9 +6251,12 @@ export default function Page() {
 
                   {/* ═══ RATUSZ ═══ */}
                     {currentMap === "city_townhall" && (() => {
-                        const TH_W = 4096;
-                        const townHallScale = 0.82;
-                        const maxCamX = Math.round(TH_W * townHallScale) - BASE_W; // 3358 - 1920 = 1438
+                        const imageW = 4096;
+                        const imageH = 1536;
+                        const townHallScale = Math.min(BASE_H / imageH, 1);
+                        const renderedW = Math.round(imageW * townHallScale);
+                        const TH_W = imageW;
+                        const maxCamX = Math.max(0, renderedW - BASE_W);
                         const triggerHitbox = (action: string) => {
                           if (action === "ranking") { void loadRanking(); setShowRankingPanel(true); }
                           else if (action === "club") setShowGildiaPanel(true);
@@ -6300,7 +6303,7 @@ export default function Page() {
                           {/* Panorama — przesuwa się z kamerą */}
                           <div
                             className="absolute top-0"
-                            style={{ width: TH_W, height: Math.ceil(BASE_H / townHallScale), transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: "4096px 1536px", backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
+                            style={{ width: TH_W, height: imageH, transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: `${imageW}px ${imageH}px`, backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
                           >
                             {townHallHitboxes.map(hb => {
                               if (thHitboxEditMode) {
