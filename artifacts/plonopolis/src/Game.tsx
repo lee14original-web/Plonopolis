@@ -6257,8 +6257,8 @@ export default function Page() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.min(0, prev + Math.round(BASE_W * 0.5))); }}
-                          className="pointer-events-auto absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
-                          style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                          className="pointer-events-auto absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                          style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
                           aria-label="Przewiń w lewo"
                         >‹</button>
                       )}
@@ -6266,8 +6266,8 @@ export default function Page() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.max(-FARM_MAX_PAN, prev - Math.round(BASE_W * 0.5))); }}
-                          className="pointer-events-auto absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
-                          style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                          className="pointer-events-auto absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                          style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
                           aria-label="Przewiń w prawo"
                         >›</button>
                       )}
@@ -6776,8 +6776,8 @@ export default function Page() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setTownHallCamX(prev => Math.max(0, prev - Math.round(BASE_W * 0.5))); }}
-                              className="absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
-                              style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                              className="absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                              style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
                               aria-label="Przewiń w lewo"
                             >‹</button>
                           )}
@@ -6785,12 +6785,12 @@ export default function Page() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setTownHallCamX(prev => Math.min(maxCamX, prev + Math.round(BASE_W * 0.5))); }}
-                              className="absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
-                              style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                              className="absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                              style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
                               aria-label="Przewiń w prawo"
                             >›</button>
                           )}
-                          <style>{`@keyframes thArrowPulse { 0%,100%{opacity:0.35;transform:translateY(-50%) scale(1)} 50%{opacity:0.85;transform:translateY(-50%) scale(1.1)} }`}</style>
+                          <style>{`@keyframes thArrowPulse { 0%,100%{opacity:0.5;transform:translateY(-50%) scale(1)} 50%{opacity:1;transform:translateY(-50%) scale(1.25)} }`}</style>
 
                           {/* Wskaźnik pozycji kamery */}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 pointer-events-none">
