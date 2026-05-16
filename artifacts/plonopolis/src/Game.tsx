@@ -189,7 +189,7 @@ const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
 const MAX_FIELDS = 100;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25] as const;
-const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25"];
+const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
 
 
