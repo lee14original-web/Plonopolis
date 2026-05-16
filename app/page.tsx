@@ -5118,20 +5118,23 @@ export default function Page() {
       ]);
     } else {
       const _now2 = Date.now();
-      // SQL jest źródłem prawdy — liczymy diff prev→next dla logu (ref już zaktualizowany)
-      const _qualGained: Record<CropQuality, number> = {
-        good:      Math.max(0, (nextInventory[getQualityKey(crop.id, "good")]      ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")]      ?? 0)),
-        epic:      Math.max(0, (nextInventory[getQualityKey(crop.id, "epic")]      ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "epic")]      ?? 0)),
-        rotten:    Math.max(0, (nextInventory[getQualityKey(crop.id, "rotten")]    ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "rotten")]    ?? 0)),
-        legendary: Math.max(0, (nextInventory[getQualityKey(crop.id, "legendary")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "legendary")] ?? 0)),
+      // SQL jest źródłem prawdy — używamy gained_* zwróconych przez RPC (per-pole, atomiczne).
+      // NIE używamy diffu prev→next, bo prevInventorySnapshot jest wspólny dla równoległych zbiorów
+      // i psuje wynik przy "Zbierz wszystko" (każde kolejne pole widzi wyższy nextInventory).
+      const _gainedLegendaryLog = (typeof (_rpcWrapper as { gained_legendary?: unknown }).gained_legendary === "number") ? (_rpcWrapper as { gained_legendary: number }).gained_legendary : 0;
+      const _qualGainedRpc: Record<CropQuality, number> = {
+        good:      Math.max(0, _gainedGood),
+        epic:      Math.max(0, _gainedEpic),
+        rotten:    Math.max(0, _gainedRotten),
+        legendary: Math.max(0, _gainedLegendaryLog),
       };
-      const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => _qualGained[_q] > 0);
+      const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => _qualGainedRpc[_q] > 0);
       const _logEvents = _diffQuals.map((_q, _idx) => {
         return {
           id: ++harvestEventIdRef.current,
           cropId: crop.id,
           cropName: crop.name,
-          baseAmount: _qualGained[_q],
+          baseAmount: _qualGainedRpc[_q],
           bonusAmount: 0,
           bonusSource: _idx === 0 && _zrecznoscionTriggered ? "Zręczność 🎯" : null,
           baseExp: _idx === 0 ? actualExp : 0,
