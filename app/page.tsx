@@ -190,7 +190,7 @@ const MAX_LEVEL = 50;
 const MAX_FIELDS = 100;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
-const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall"];
+const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall","city_liga"];
 
 
 const CROP_QUALITY_DEFS = {
@@ -1889,6 +1889,7 @@ export default function Page() {
   const [hoveredTarg, setHoveredTarg] = React.useState(false);
   const [hoveredBank, setHoveredBank] = React.useState(false);
   const [hoveredRatusz, setHoveredRatusz] = React.useState(false);
+  const [hoveredLiga, setHoveredLiga] = React.useState(false);
   const [townHallCamX, setTownHallCamX] = React.useState(0);
   const thDragRef = React.useRef<{startX:number; startCamX:number} | null>(null);
   const [thHitboxEditMode, setThHitboxEditMode] = React.useState(false);
@@ -2055,18 +2056,20 @@ export default function Page() {
   const [cityNavEditMode, setCityNavEditMode] = React.useState(false);
   const [cityHitboxEditMode, setCityHitboxEditMode] = React.useState(false);
   const [cityHitboxPos, setCityHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
-    naFarme: {left:8.8,  top:71.5, width:25.4, height:24.0},
-    sklep:   {left:6.7,  top:37.8, width:25.9, height:30.4},
-    targ:    {left:35.5, top:45.4, width:25.6, height:22.0},
-    bank:    {left:81.8, top:47.9, width:10.9, height:23.9},
-    ratusz:  {left:64.7, top:8.4,  width:15.7, height:49.8},
+    naFarme: {left:6.3,  top:74.2, width:12.2, height:21.7},
+    sklep:   {left:5.9,  top:35.7, width:14.7, height:34.2},
+    targ:    {left:22.1, top:45.3, width:20.6, height:24.4},
+    bank:    {left:58.2, top:44.5, width:9.9,  height:27.5},
+    ratusz:  {left:44.7, top:20.1, width:9.3,  height:40.9},
+    liga:    {left:70.0, top:44.0, width:12.0, height:25.0},
   });
   const [cityLabelPos, setCityLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    naFarme: {left:20.9, top:81.8},
-    sklep:   {left:27.5, top:56.8},
-    targ:    {left:47.6, top:54.2},
-    bank:    {left:87.4, top:62.8},
-    ratusz:  {left:73.2, top:40.2},
+    naFarme: {left:12.3, top:83.2},
+    sklep:   {left:15.6, top:54.4},
+    targ:    {left:34.6, top:56.2},
+    bank:    {left:62.9, top:59.1},
+    ratusz:  {left:49.2, top:49.7},
+    liga:    {left:76.0, top:72.0},
   });
   const cityHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   const cityLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
@@ -6299,6 +6302,17 @@ export default function Page() {
                     style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
                     title=""
                   />
+                  <button
+                    type="button"
+                    onClick={() => handleChangeMap("city_liga")}
+                    onMouseEnter={() => setHoveredLiga(true)}
+                    onMouseLeave={() => setHoveredLiga(false)}
+                    data-no-map-drag="true"
+                    data-zone="liga"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.liga.left}%`, top:`${cityHitboxPos.liga.top}%`, width:`${cityHitboxPos.liga.width}%`, height:`${cityHitboxPos.liga.height}%` }}
+                    title=""
+                  />
                   {/* ── Etykiety ── */}
                   {([
                     {id:"naFarme", name:"Na farmę"},
@@ -6306,6 +6320,7 @@ export default function Page() {
                     {id:"targ",    name:"Targ"},
                     {id:"bank",    name:"Bank"},
                     {id:"ratusz",  name:"Ratusz"},
+                    {id:"liga",    name:"Liga Farmerów"},
                   ] as Array<{id:string,name:string}>).map(b => {
                     const lp = cityLabelPos[b.id];
                     return (
@@ -6323,6 +6338,7 @@ export default function Page() {
                         {id:"targ",    name:"Targ"},
                         {id:"bank",    name:"Bank"},
                         {id:"ratusz",  name:"Ratusz"},
+                        {id:"liga",    name:"Liga Farmerów"},
                       ] as Array<{id:string,name:string}>).map(b => {
                         const lp = cityLabelPos[b.id];
                         return (
@@ -6353,6 +6369,7 @@ export default function Page() {
                         {id:"targ",    name:"Targ"},
                         {id:"bank",    name:"Bank"},
                         {id:"ratusz",  name:"Ratusz"},
+                        {id:"liga",    name:"Liga Farmerów"},
                       ] as Array<{id:string,name:string}>).map(b => {
                         const hp = cityHitboxPos[b.id];
                         return (
@@ -12961,6 +12978,13 @@ export default function Page() {
           <p className="mb-2 font-black text-purple-300">Ratusz</p>
           <p className="mb-1 text-[18px]">Rankingi i osiągnięcia graczy.</p>
           <p className="text-[16px] text-[#8b6a3e]">Sprawdź tablicę wyników i porównaj swoje postępy z innymi farmerami Plonopolis.</p>
+        </div>
+      )}
+      {hoveredLiga && currentMap === "city" && !!profile && (
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-green-300">Liga Farmerów</p>
+          <p className="mb-1 text-[18px]">Rywalizuj z innymi farmerami.</p>
+          <p className="text-[16px] text-[#8b6a3e]">Sezony, nagrody i rankingi ligowe — pokaż, że jesteś najlepszym farmerem w Plonopolis.</p>
         </div>
       )}
     {/* Tooltip konewki podążający za kursorem */}
