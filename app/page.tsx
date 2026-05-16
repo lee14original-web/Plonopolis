@@ -6411,6 +6411,7 @@ export default function Page() {
                   )}
 
                   {/* ─── Strzałki nawigacji farmy ─── */}
+                  <style>{`@keyframes thArrowPulse { 0%,100%{opacity:0.5;transform:translateY(-50%) scale(1)} 50%{opacity:1;transform:translateY(-50%) scale(1.25)} }`}</style>
                   {isOnFarmMap && (
                     <>
                       {panX < 0 && (
@@ -6845,8 +6846,8 @@ export default function Page() {
 
                           {/* Wskaźnik pozycji kamery */}
                           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10 pointer-events-none">
-                            {Array.from({length: 5}).map((_,i) => {
-                              const segW = maxCamX / 4;
+                            {Array.from({length: 3}).map((_,i) => {
+                              const segW = maxCamX / 2;
                               const active = Math.round(townHallCamX / segW) === i;
                               return <div key={i} className={`h-1.5 rounded-full transition-all ${active ? "w-6 bg-amber-400" : "w-2 bg-white/20"}`} />;
                             })}
