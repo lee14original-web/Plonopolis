@@ -2069,7 +2069,7 @@ export default function Page() {
     targ:    {left:34.6, top:56.2},
     bank:    {left:62.9, top:59.1},
     ratusz:  {left:49.2, top:49.7},
-    liga:    {left:76.0, top:72.0},
+    liga:    {left:85.1, top:58.9},
   });
   const cityHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   const cityLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
@@ -6324,36 +6324,24 @@ export default function Page() {
                   ] as Array<{id:string,name:string}>).map(b => {
                     const lp = cityLabelPos[b.id];
                     return (
-                      <span key={b.id} className="pointer-events-none absolute rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl -translate-x-1/2" style={{left:`${lp.left}%`,top:`${lp.top}%`}}>
+                      <span
+                        key={b.id}
+                        className={`absolute rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl -translate-x-1/2 ${cityNavEditMode ? "pointer-events-auto cursor-move outline outline-2 outline-sky-400/80 select-none" : "pointer-events-none"}`}
+                        style={{left:`${lp.left}%`,top:`${lp.top}%`}}
+                        onMouseDown={cityNavEditMode ? (e => { e.preventDefault(); e.stopPropagation(); cityLabelDragRef.current = {id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }) : undefined}
+                      >
                         {b.name}
+                        {cityNavEditMode && (
+                          <span className="block text-center text-[11px] font-normal text-sky-300 leading-tight mt-1 whitespace-nowrap">
+                            {lp.left.toFixed(1)}% {lp.top.toFixed(1)}%
+                          </span>
+                        )}
                       </span>
                     );
                   })}
-                  {/* ══ EDYTOR ETYKIET MIASTA ══ */}
+                  {/* ══ PANEL KOORDYNATÓW ETYKIET ══ */}
                   {cityNavEditMode && (
                     <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
-                      {([
-                        {id:"naFarme", name:"Na farmę"},
-                        {id:"sklep",   name:"Sklep"},
-                        {id:"targ",    name:"Targ"},
-                        {id:"bank",    name:"Bank"},
-                        {id:"ratusz",  name:"Ratusz"},
-                        {id:"liga",    name:"Liga Farmerów"},
-                      ] as Array<{id:string,name:string}>).map(b => {
-                        const lp = cityLabelPos[b.id];
-                        return (
-                          <div key={`cle${b.id}`}
-                            className="absolute cursor-move pointer-events-auto select-none"
-                            style={{ left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", border:"2px dashed #38bdf8", background:"rgba(56,189,248,0.18)", borderRadius:8, padding:"2px 4px", userSelect:"none" }}
-                            onMouseDown={e => { e.preventDefault(); cityLabelDragRef.current = {id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }}
-                          >
-                            <span className="block text-[9px] font-black text-sky-200 whitespace-nowrap leading-none text-center" style={{background:"rgba(0,0,0,0.7)",padding:"1px 3px",borderRadius:4}}>
-                              {b.name}<br/>
-                              <span className="text-sky-400">{lp.left.toFixed(1)}% {lp.top.toFixed(1)}%</span>
-                            </span>
-                          </div>
-                        );
-                      })}
                       <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
                         <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet (miasto):</div>
                         {Object.entries(cityLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
