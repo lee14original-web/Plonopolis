@@ -1687,6 +1687,12 @@ const TH_MAX_CAM_X = Math.max(0, Math.round(TH_IMAGE_W * TH_SCALE) - BASE_W);
 const TH_CENTER_CAM_X = Math.round(TH_MAX_CAM_X / 2);
 const FARM_MAP_W = 2560;
 const FARM_MAP_H = 1440;
+// Nowe grafiki farmy 4096×1536 — logika identyczna jak Ratusz
+const FARM_IMG_W = 4096;
+const FARM_IMG_H = 1536;
+const FARM_SCALE = Math.min(BASE_H / FARM_IMG_H, 1);           // ≈ 0.8333
+const FARM_RENDERED_W = Math.round(FARM_IMG_W * FARM_SCALE);   // ≈ 3413
+const FARM_MAX_PAN = Math.max(0, FARM_RENDERED_W - BASE_W);    // ≈ 1493
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -5594,8 +5600,7 @@ export default function Page() {
             if (Math.abs(dx) > 4) {
               panDragRef.current.moved = true;
               document.body.classList.add("plono-dragging");
-              const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
-              setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+              setPanX(Math.max(-FARM_MAX_PAN, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
               setIsPanDragging(true);
             }
           }}
@@ -5618,9 +5623,10 @@ export default function Page() {
         {/* Tło mapy — przesuwa się wraz z panowaniem */}
         <div style={{
           position: "absolute", top: 0, left: 0,
-          width: isOnFarmMap ? `${FARM_MAP_W}px` : "100%",
-          height: isOnFarmMap ? `${FARM_MAP_H}px` : "100%",
-          transform: isOnFarmMap ? `translate(${panX}px,${panY}px)` : undefined,
+          width: isOnFarmMap ? `${FARM_IMG_W}px` : "100%",
+          height: isOnFarmMap ? `${FARM_IMG_H}px` : "100%",
+          transform: isOnFarmMap ? `translateX(${panX}px) scale(${FARM_SCALE})` : undefined,
+          transformOrigin: isOnFarmMap ? "top left" : undefined,
           willChange: isOnFarmMap ? "transform" : undefined,
         }}>
           <img
@@ -5628,7 +5634,7 @@ export default function Page() {
             alt="Mapa gry"
             className="pointer-events-none absolute inset-0 h-full w-full select-none"
             draggable={false}
-            style={isOnFarmMap ? {imageRendering:"pixelated"} : {}}
+            style={isOnFarmMap ? {imageRendering:"pixelated", width: FARM_IMG_W, height: FARM_IMG_H} : {}}
           />
         </div>
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
@@ -5647,8 +5653,7 @@ export default function Page() {
             onDragStart={(e) => e.preventDefault()}
             onMouseMove={(e) => {
               const dx = e.clientX - panDragRef.current.startX;
-              const minPanX = Math.min(0, BASE_W - FARM_MAP_W);
-              setPanX(Math.max(minPanX, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+              setPanX(Math.max(-FARM_MAX_PAN, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
             }}
             onMouseUp={() => {
               document.body.classList.remove("plono-dragging");
@@ -5805,8 +5810,9 @@ export default function Page() {
               {isOnFarmMap && (
                 <div className="pointer-events-none" style={{
                   position:"absolute", top:0, left:0,
-                  width:`${FARM_MAP_W}px`, height:`${FARM_MAP_H}px`,
-                  transform:`translate(${panX}px,${panY}px)`,
+                  width:`${FARM_IMG_W}px`, height:`${FARM_IMG_H}px`,
+                  transform:`translateX(${panX}px) scale(${FARM_SCALE})`,
+                  transformOrigin:"top left",
                   zIndex:20,
                 }}>
                   {isOnFarmMap && (
