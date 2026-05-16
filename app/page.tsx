@@ -2699,6 +2699,16 @@ export default function Page() {
       kompostownik:{left:70.8, top:17.2, width:9.7,  height:19.8},
       sad:         {left:16.1, top:76.8, width:18.7, height:19.0},
     },
+    farm15: {
+      dom:         {left:17.0, top:10.0, width:13.7, height:30.0},
+      stodola:     {left:45.2, top:55.8, width:18.8, height:27.0},
+      doMiasta:    {left:64.7, top:0.0,  width:12.6, height:13.4},
+      polaUprawne: {left:41.9, top:11.7, width:22.2, height:31.0},
+      ul:          {left:74.1, top:69.6, width:12.6, height:25.2},
+      lada:        {left:13.8, top:47.0, width:12.5, height:20.5},
+      kompostownik:{left:73.5, top:18.1, width:11.0, height:28.5},
+      sad:         {left:11.9, top:74.0, width:20.8, height:21.2},
+    },
   };
   const FARM_LABEL_OVERRIDES: Record<string, Record<string,{left:number,top:number}>> = {
     farm5: {
@@ -2720,6 +2730,16 @@ export default function Page() {
       lada:        {left:21.0, top:52.9},
       kompostownik:{left:74.9, top:26.7},
       sad:         {left:26.9, top:83.8},
+    },
+    farm15: {
+      dom:         {left:26.0, top:24.0},
+      stodola:     {left:55.2, top:63.6},
+      doMiasta:    {left:70.2, top:10.3},
+      polaUprawne: {left:53.9, top:27.2},
+      ul:          {left:80.2, top:85.2},
+      lada:        {left:20.2, top:61.5},
+      kompostownik:{left:78.3, top:27.9},
+      sad:         {left:22.3, top:84.1},
     },
   };
   const activeHitboxPos = FARM_HITBOX_OVERRIDES[backgroundMap] ?? navHitboxPos;
