@@ -1983,14 +1983,14 @@ export default function Page() {
   const [navEditMode, setNavEditMode] = React.useState(false);
   // pozycje etykiet (niezależne od hitboxów)
   const [navLabelPos, setNavLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
-    dom:         {left:19.2, top:21.0},
-    stodola:     {left:73.0, top:19.4},
-    doMiasta:    {left:64.6, top:82.7},
-    polaUprawne: {left:47.6, top:58.3},
-    ul:          {left:82.8, top:73.5},
-    lada:        {left:46.4, top:27.4},
-    kompostownik:{left:90.5, top:46.7},
-    sad:         {left:11.7, top:50.6},
+    dom:         {left:26.7, top:25.1},
+    stodola:     {left:56.6, top:65.6},
+    doMiasta:    {left:77.4, top:11.3},
+    polaUprawne: {left:55.4, top:29.8},
+    ul:          {left:78.6, top:81.1},
+    lada:        {left:22.3, top:62.6},
+    kompostownik:{left:80.1, top:32.7},
+    sad:         {left:35.4, top:82.2},
   });
   const navLabelDragRef = React.useRef<{id:string,startX:number,startY:number,startPos:{left:number,top:number}}|null>(null);
   React.useEffect(() => {
@@ -2015,14 +2015,14 @@ export default function Page() {
   }, []);
   const [hitboxEditMode, setHitboxEditMode] = React.useState(false);
   const [navHitboxPos, setNavHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
-    dom:         {left:12.1, top:14.1, width:15.5, height:16.5},
-    stodola:     {left:65.3, top:12.5, width:20.1, height:18.4},
-    doMiasta:    {left:56.6, top:74.9, width:15.9, height:13.2},
-    polaUprawne: {left:34.5, top:43.1, width:29.3, height:27.2},
-    ul:          {left:75.9, top:66.3, width:13.7, height:18.0},
-    lada:        {left:40.0, top:19.2, width:11.4, height:14.4},
-    kompostownik:{left:83.6, top:40.8, width:13.6, height:16.6},
-    sad:         {left:1.4,  top:38.8, width:16.6, height:22.1},
+    dom:         {left:18.9, top:12.6, width:13.7, height:30.0},
+    stodola:     {left:47.7, top:56.9, width:18.8, height:27.0},
+    doMiasta:    {left:69.2, top:0.0,  width:15.4, height:17.3},
+    polaUprawne: {left:43.4, top:15.3, width:24.3, height:32.8},
+    ul:          {left:71.1, top:72.0, width:15.8, height:22.4},
+    lada:        {left:17.3, top:51.5, width:9.8,  height:19.8},
+    kompostownik:{left:75.7, top:23.5, width:9.6,  height:19.7},
+    sad:         {left:28.0, top:71.8, width:14.7, height:28.6},
   });
   const navHitboxDragRef = React.useRef<{type:"move"|"resize",id:string,startX:number,startY:number,startPos:{left:number,top:number,width:number,height:number}}|null>(null);
   React.useEffect(() => {
