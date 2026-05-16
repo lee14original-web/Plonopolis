@@ -2075,7 +2075,8 @@ export default function Page() {
       const dh = cityHitboxDragRef.current;
       if (dh && mapContainerRef.current) {
         const rect = mapContainerRef.current.getBoundingClientRect();
-        const dx = ((e.clientX - dh.startX) / rect.width) * 100;
+        const cityDragScaleX = BASE_W / FARM_RENDERED_W;
+        const dx = ((e.clientX - dh.startX) / rect.width) * 100 * cityDragScaleX;
         const dy = ((e.clientY - dh.startY) / rect.height) * 100;
         setCityHitboxPos(prev => {
           const p = {...prev[dh.id]};
@@ -2092,7 +2093,8 @@ export default function Page() {
       const dl = cityLabelDragRef.current;
       if (dl && mapContainerRef.current) {
         const rect = mapContainerRef.current.getBoundingClientRect();
-        const dx = ((e.clientX - dl.startX) / rect.width) * 100;
+        const cityDragScaleX = BASE_W / FARM_RENDERED_W;
+        const dx = ((e.clientX - dl.startX) / rect.width) * 100 * cityDragScaleX;
         const dy = ((e.clientY - dl.startY) / rect.height) * 100;
         setCityLabelPos(prev => ({
           ...prev,
@@ -2677,6 +2679,8 @@ export default function Page() {
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
+  const isOnCityMap = !!profile && currentMap === "city";
+  const isOnPanMap = isOnFarmMap || isOnCityMap;
   const backgroundMap = getDisplayBackgroundMap(currentMap);
   // Per-mapowe pozycje hitboxów i etykiet — klucz to backgroundMap
   const FARM_HITBOX_OVERRIDES: Record<string, Record<string,{left:number,top:number,width:number,height:number}>> = {
@@ -5368,8 +5372,8 @@ export default function Page() {
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
 
-      // Reset pan przy zmianie mapy (farma → środek, reszta → 0)
-      setPanX(targetMap.startsWith("farm") ? FARM_CENTER_PAN : 0); setPanY(0); setIsPanDragging(false);
+      // Reset pan przy zmianie mapy (farma/miasto → środek, reszta → 0)
+      setPanX((targetMap.startsWith("farm") || targetMap === "city") ? FARM_CENTER_PAN : 0); setPanY(0); setIsPanDragging(false);
       panDragRef.current = { active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false };
 
       // Reset wszystkich hover-stanów — mapa znika zanim onMouseLeave zdąży zadziałać
@@ -5698,8 +5702,8 @@ export default function Page() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
-      {/* Ambient backdrop — rozmyte tło farmy zasłania czarne paski po bokach */}
-      {isOnFarmMap && (
+      {/* Ambient backdrop — rozmyte tło farmy/miasta zasłania czarne paski po bokach */}
+      {(isOnFarmMap || isOnCityMap) && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
           backgroundImage: `url(/mapy/${backgroundMap}.png)`,
@@ -5716,10 +5720,10 @@ export default function Page() {
         <div
           ref={mapContainerRef}
           className="relative overflow-hidden"
-          style={{ width: "100%", height: "100%", cursor: isOnFarmMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
+          style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
-            if (!isOnFarmMap || e.button !== 0) return;
+            if (!isOnPanMap || e.button !== 0) return;
             const tgt = e.target as HTMLElement;
             if (tgt.closest('[data-no-map-drag], button, [role="button"], a')) return;
             e.preventDefault();
@@ -5754,18 +5758,18 @@ export default function Page() {
         {/* Tło mapy — przesuwa się wraz z panowaniem */}
         <div style={{
           position: "absolute", top: 0, left: 0,
-          width: isOnFarmMap ? `${FARM_IMG_W}px` : "100%",
-          height: isOnFarmMap ? `${FARM_IMG_H}px` : "100%",
-          transform: isOnFarmMap ? `translateX(${panX}px) scale(${FARM_SCALE})` : undefined,
-          transformOrigin: isOnFarmMap ? "top left" : undefined,
-          willChange: isOnFarmMap ? "transform" : undefined,
+          width: isOnPanMap ? `${FARM_IMG_W}px` : "100%",
+          height: isOnPanMap ? `${FARM_IMG_H}px` : "100%",
+          transform: isOnPanMap ? `translateX(${panX}px) scale(${FARM_SCALE})` : undefined,
+          transformOrigin: isOnPanMap ? "top left" : undefined,
+          willChange: isOnPanMap ? "transform" : undefined,
         }}>
           <img
             src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
             alt="Mapa gry"
             className="pointer-events-none absolute inset-0 h-full w-full select-none"
             draggable={false}
-            style={isOnFarmMap ? {imageRendering:"pixelated", width: FARM_IMG_W, height: FARM_IMG_H} : {}}
+            style={isOnPanMap ? {imageRendering:"pixelated", width: FARM_IMG_W, height: FARM_IMG_H} : {}}
           />
         </div>
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
@@ -6227,6 +6231,157 @@ export default function Page() {
                   )}
                 </div>
               )}
+              {/* ═══ WARSTWA MIASTA — przesuwa się z mapą (drag-to-pan) ═══ */}
+              {isOnCityMap && (
+                <div
+                  className="pointer-events-none"
+                  style={{
+                    position: "absolute", top: 0, left: 0,
+                    width: `${FARM_IMG_W}px`, height: `${FARM_IMG_H}px`,
+                    transform: `translateX(${panX}px) scale(${FARM_SCALE})`,
+                    transformOrigin: "top left",
+                    zIndex: 20,
+                  }}
+                >
+                  {/* ── Hitboxy ── */}
+                  <button
+                    type="button"
+                    onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
+                    onMouseEnter={() => setHoveredNaFarme(true)}
+                    onMouseLeave={() => setHoveredNaFarme(false)}
+                    data-no-map-drag="true"
+                    data-zone="naFarme"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
+                    title=""
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
+                    onMouseEnter={() => setHoveredSklep(true)}
+                    onMouseLeave={() => setHoveredSklep(false)}
+                    data-no-map-drag="true"
+                    data-zone="sklep"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
+                    title=""
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
+                    onMouseEnter={() => setHoveredTarg(true)}
+                    onMouseLeave={() => setHoveredTarg(false)}
+                    data-no-map-drag="true"
+                    data-zone="targ"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
+                    title=""
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleChangeMap("city_bank")}
+                    onMouseEnter={() => setHoveredBank(true)}
+                    onMouseLeave={() => setHoveredBank(false)}
+                    data-no-map-drag="true"
+                    data-zone="bank"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
+                    title=""
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { handleChangeMap("city_townhall"); setTownHallCamX(TH_CENTER_CAM_X); }}
+                    onMouseEnter={() => setHoveredRatusz(true)}
+                    onMouseLeave={() => setHoveredRatusz(false)}
+                    data-no-map-drag="true"
+                    data-zone="ratusz"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
+                    style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
+                    title=""
+                  />
+                  {/* ── Etykiety ── */}
+                  {([
+                    {id:"naFarme", name:"Na farmę"},
+                    {id:"sklep",   name:"Sklep"},
+                    {id:"targ",    name:"Targ"},
+                    {id:"bank",    name:"Bank"},
+                    {id:"ratusz",  name:"Ratusz"},
+                  ] as Array<{id:string,name:string}>).map(b => {
+                    const lp = cityLabelPos[b.id];
+                    return (
+                      <span key={b.id} className="pointer-events-none absolute rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl -translate-x-1/2" style={{left:`${lp.left}%`,top:`${lp.top}%`}}>
+                        {b.name}
+                      </span>
+                    );
+                  })}
+                  {/* ══ EDYTOR ETYKIET MIASTA ══ */}
+                  {cityNavEditMode && (
+                    <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
+                      {([
+                        {id:"naFarme", name:"Na farmę"},
+                        {id:"sklep",   name:"Sklep"},
+                        {id:"targ",    name:"Targ"},
+                        {id:"bank",    name:"Bank"},
+                        {id:"ratusz",  name:"Ratusz"},
+                      ] as Array<{id:string,name:string}>).map(b => {
+                        const lp = cityLabelPos[b.id];
+                        return (
+                          <div key={`cle${b.id}`}
+                            className="absolute cursor-move pointer-events-auto select-none"
+                            style={{ left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", border:"2px dashed #38bdf8", background:"rgba(56,189,248,0.18)", borderRadius:8, padding:"2px 4px", userSelect:"none" }}
+                            onMouseDown={e => { e.preventDefault(); cityLabelDragRef.current = {id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }}
+                          >
+                            <span className="block text-[9px] font-black text-sky-200 whitespace-nowrap leading-none text-center" style={{background:"rgba(0,0,0,0.7)",padding:"1px 3px",borderRadius:4}}>
+                              {b.name}<br/>
+                              <span className="text-sky-400">{lp.left.toFixed(1)}% {lp.top.toFixed(1)}%</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
+                        <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet (miasto):</div>
+                        {Object.entries(cityLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
+                      </div>
+                    </div>
+                  )}
+                  {/* ══ EDYTOR HITBOXÓW MIASTA ══ */}
+                  {cityHitboxEditMode && (
+                    <div className="absolute inset-0 pointer-events-none" style={{zIndex:57}}>
+                      {([
+                        {id:"naFarme", name:"Na farmę"},
+                        {id:"sklep",   name:"Sklep"},
+                        {id:"targ",    name:"Targ"},
+                        {id:"bank",    name:"Bank"},
+                        {id:"ratusz",  name:"Ratusz"},
+                      ] as Array<{id:string,name:string}>).map(b => {
+                        const hp = cityHitboxPos[b.id];
+                        return (
+                          <div key={`che${b.id}`}
+                            className="absolute cursor-move pointer-events-auto select-none"
+                            style={{ left:`${hp.left}%`, top:`${hp.top}%`, width:`${hp.width}%`, height:`${hp.height}%`, border:"2px dashed #f97316", background:"rgba(249,115,22,0.15)", borderRadius:4, userSelect:"none", boxSizing:"border-box" }}
+                            onMouseDown={e => { e.preventDefault(); cityHitboxDragRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                          >
+                            <span className="block text-[9px] font-black text-orange-200 whitespace-nowrap leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 4px",borderRadius:3,display:"inline-block"}}>
+                              {b.name} · {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% · {hp.width.toFixed(1)}×{hp.height.toFixed(1)}
+                            </span>
+                            <div
+                              className="absolute bottom-0 right-0 cursor-se-resize pointer-events-auto"
+                              style={{width:14,height:14,background:"#f97316",borderRadius:"3px 0 3px 0"}}
+                              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); cityHitboxDragRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
+                            />
+                          </div>
+                        );
+                      })}
+                      <div className="absolute bottom-2 left-2 rounded-xl border border-orange-600 bg-black/90 p-2 text-[10px] text-orange-200 max-w-[270px] pointer-events-auto" style={{zIndex:60}}>
+                        <div className="font-black text-orange-400 mb-1">📋 Pozycje hitboxów (miasto):</div>
+                        {Object.entries(cityHitboxPos).map(([id,hp]) => (
+                          <div key={id}>{id}: {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% {hp.width.toFixed(1)}%×{hp.height.toFixed(1)}%</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* ═══ WARSTWA STATYCZNA — miasto i inne lokacje (bez panu) ═══ */}
               <div className="absolute inset-0 z-20 pointer-events-none">
 
@@ -6283,104 +6438,6 @@ export default function Page() {
 
                   {currentMap === "city" && (
                     <>
-                      {/* ── Hitboxy ── */}
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap(getMapForLevel(profile?.level))}
-                        onMouseEnter={() => setHoveredNaFarme(true)}
-                        onMouseLeave={() => setHoveredNaFarme(false)}
-                        data-zone="naFarme"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
-                        title=""
-                      />
-                      <button
-                        type="button"
-                        onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
-                        onMouseEnter={() => setHoveredSklep(true)}
-                        onMouseLeave={() => setHoveredSklep(false)}
-                        data-zone="sklep"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
-                        title=""
-                      />
-                      <button
-                        type="button"
-                        onClick={() => { setShowMarketModal(true); setMarketTab("browse"); void loadMarketData(); }}
-                        onMouseEnter={() => setHoveredTarg(true)}
-                        onMouseLeave={() => setHoveredTarg(false)}
-                        data-zone="targ"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
-                        title=""
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleChangeMap("city_bank")}
-                        onMouseEnter={() => setHoveredBank(true)}
-                        onMouseLeave={() => setHoveredBank(false)}
-                        data-zone="bank"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
-                        title=""
-                      />
-                      <button
-                        type="button"
-                        onClick={() => { handleChangeMap("city_townhall"); setTownHallCamX(TH_CENTER_CAM_X); }}
-                        onMouseEnter={() => setHoveredRatusz(true)}
-                        onMouseLeave={() => setHoveredRatusz(false)}
-                        data-zone="ratusz"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
-                        title=""
-                      />
-                      {/* ── Etykiety ── */}
-                      {([
-                        {id:"naFarme", name:"Na farmę"},
-                        {id:"sklep",   name:"Sklep"},
-                        {id:"targ",    name:"Targ"},
-                        {id:"bank",    name:"Bank"},
-                        {id:"ratusz",  name:"Ratusz"},
-                      ] as Array<{id:string,name:string}>).map(b => {
-                        const lp = cityLabelPos[b.id];
-                        return (
-                          <span key={b.id} className="pointer-events-none absolute rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl -translate-x-1/2" style={{left:`${lp.left}%`,top:`${lp.top}%`}}>
-                            {b.name}
-                          </span>
-                        );
-                      })}
-
-                      {/* ══ EDYTOR ETYKIET MIASTA ══ */}
-                      {cityNavEditMode && (
-                        <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
-                          {([
-                            {id:"naFarme", name:"Na farmę"},
-                            {id:"sklep",   name:"Sklep"},
-                            {id:"targ",    name:"Targ"},
-                            {id:"bank",    name:"Bank"},
-                            {id:"ratusz",  name:"Ratusz"},
-                          ] as Array<{id:string,name:string}>).map(b => {
-                            const lp = cityLabelPos[b.id];
-                            return (
-                              <div key={`cle${b.id}`}
-                                className="absolute cursor-move pointer-events-auto select-none"
-                                style={{ left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", border:"2px dashed #38bdf8", background:"rgba(56,189,248,0.18)", borderRadius:8, padding:"2px 4px", userSelect:"none" }}
-                                onMouseDown={e => { e.preventDefault(); cityLabelDragRef.current = {id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...lp}}; }}
-                              >
-                                <span className="block text-[9px] font-black text-sky-200 whitespace-nowrap leading-none text-center" style={{background:"rgba(0,0,0,0.7)",padding:"1px 3px",borderRadius:4}}>
-                                  {b.name}<br/>
-                                  <span className="text-sky-400">{lp.left.toFixed(1)}% {lp.top.toFixed(1)}%</span>
-                                </span>
-                              </div>
-                            );
-                          })}
-                          <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
-                            <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet (miasto):</div>
-                            {Object.entries(cityLabelPos).map(([id,lp]) => <div key={id}>{id}: left={lp.left.toFixed(1)}% top={lp.top.toFixed(1)}%</div>)}
-                          </div>
-                        </div>
-                      )}
-
                       {/* ── DEV: przyciski toggle edytora miasta ── */}
                       <div className="pointer-events-auto absolute top-2 left-1/2 -translate-x-1/2 flex gap-2" style={{zIndex:200}}>
                         <button
@@ -6398,43 +6455,32 @@ export default function Page() {
                           {cityHitboxEditMode ? "✅ Hitboxy ON" : "🎯 Edytuj hitboxy"}
                         </button>
                       </div>
-
-                      {/* ══ EDYTOR HITBOXÓW MIASTA ══ */}
-                      {cityHitboxEditMode && (
-                        <div className="absolute inset-0 pointer-events-none" style={{zIndex:57}}>
-                          {([
-                            {id:"naFarme", name:"Na farmę"},
-                            {id:"sklep",   name:"Sklep"},
-                            {id:"targ",    name:"Targ"},
-                            {id:"bank",    name:"Bank"},
-                            {id:"ratusz",  name:"Ratusz"},
-                          ] as Array<{id:string,name:string}>).map(b => {
-                            const hp = cityHitboxPos[b.id];
-                            return (
-                              <div key={`che${b.id}`}
-                                className="absolute cursor-move pointer-events-auto select-none"
-                                style={{ left:`${hp.left}%`, top:`${hp.top}%`, width:`${hp.width}%`, height:`${hp.height}%`, border:"2px dashed #f97316", background:"rgba(249,115,22,0.15)", borderRadius:4, userSelect:"none", boxSizing:"border-box" }}
-                                onMouseDown={e => { e.preventDefault(); cityHitboxDragRef.current = {type:"move",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
-                              >
-                                <span className="block text-[9px] font-black text-orange-200 whitespace-nowrap leading-none" style={{background:"rgba(0,0,0,0.75)",padding:"1px 4px",borderRadius:3,display:"inline-block"}}>
-                                  {b.name} · {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% · {hp.width.toFixed(1)}×{hp.height.toFixed(1)}
-                                </span>
-                                <div
-                                  className="absolute bottom-0 right-0 cursor-se-resize pointer-events-auto"
-                                  style={{width:14,height:14,background:"#f97316",borderRadius:"3px 0 3px 0"}}
-                                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); cityHitboxDragRef.current = {type:"resize",id:b.id,startX:e.clientX,startY:e.clientY,startPos:{...hp}}; }}
-                                />
-                              </div>
-                            );
-                          })}
-                          <div className="absolute bottom-2 left-2 rounded-xl border border-orange-600 bg-black/90 p-2 text-[10px] text-orange-200 max-w-[270px] pointer-events-auto" style={{zIndex:60}}>
-                            <div className="font-black text-orange-400 mb-1">📋 Pozycje hitboxów (miasto):</div>
-                            {Object.entries(cityHitboxPos).map(([id,hp]) => (
-                              <div key={id}>{id}: {hp.left.toFixed(1)}% {hp.top.toFixed(1)}% {hp.width.toFixed(1)}%×{hp.height.toFixed(1)}%</div>
-                            ))}
-                          </div>
-                        </div>
+                      {/* ─── Strzałki nawigacji miasta ─── */}
+                      {panX < 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.min(0, prev + Math.round(BASE_W * 0.5))); }}
+                          className="pointer-events-auto absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                          style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
+                          aria-label="Przewiń w lewo"
+                        >‹</button>
                       )}
+                      {panX > -FARM_MAX_PAN && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.max(-FARM_MAX_PAN, prev - Math.round(BASE_W * 0.5))); }}
+                          className="pointer-events-auto absolute z-30 text-[6rem] text-amber-400 hover:text-amber-200 transition-colors"
+                          style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 20px rgba(255,180,0,1), 0 0 45px rgba(200,110,0,0.7)" }}
+                          aria-label="Przewiń w prawo"
+                        >›</button>
+                      )}
+                      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                        {Array.from({length: 3}).map((_,i) => {
+                          const segW = FARM_MAX_PAN / 2;
+                          const active = Math.round(-panX / segW) === i;
+                          return <div key={i} className={`h-1.5 rounded-full transition-all ${active ? "w-6 bg-amber-400" : "w-2 bg-white/20"}`} />;
+                        })}
+                      </div>
                     </>
                   )}
 
