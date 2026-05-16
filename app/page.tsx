@@ -2677,6 +2677,33 @@ export default function Page() {
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const backgroundMap = getDisplayBackgroundMap(currentMap);
+  // Per-mapowe pozycje hitboxów i etykiet — klucz to backgroundMap
+  const FARM_HITBOX_OVERRIDES: Record<string, Record<string,{left:number,top:number,width:number,height:number}>> = {
+    farm5: {
+      dom:         {left:21.2, top:11.5, width:13.7, height:30.0},
+      stodola:     {left:46.9, top:49.5, width:18.8, height:27.0},
+      doMiasta:    {left:69.2, top:0.0,  width:15.4, height:17.3},
+      polaUprawne: {left:43.0, top:8.5,  width:24.3, height:32.8},
+      ul:          {left:72.1, top:67.9, width:15.8, height:22.4},
+      lada:        {left:19.0, top:48.1, width:9.8,  height:19.8},
+      kompostownik:{left:74.6, top:17.7, width:9.6,  height:19.7},
+      sad:         {left:27.0, top:68.7, width:14.7, height:28.6},
+    },
+  };
+  const FARM_LABEL_OVERRIDES: Record<string, Record<string,{left:number,top:number}>> = {
+    farm5: {
+      dom:         {left:28.7, top:25.3},
+      stodola:     {left:57.2, top:62.7},
+      doMiasta:    {left:77.4, top:11.3},
+      polaUprawne: {left:55.1, top:22.6},
+      ul:          {left:79.8, top:81.6},
+      lada:        {left:23.6, top:57.9},
+      kompostownik:{left:78.7, top:27.5},
+      sad:         {left:33.8, top:80.5},
+    },
+  };
+  const activeHitboxPos = FARM_HITBOX_OVERRIDES[backgroundMap] ?? navHitboxPos;
+  const activeLabelPos  = FARM_LABEL_OVERRIDES[backgroundMap]  ?? navLabelPos;
   React.useEffect(() => {
     if (currentMap === "city_townhall" && rankingData.length === 0 && !rankingLoading) {
       void loadRanking();
@@ -5829,10 +5856,10 @@ export default function Page() {
     data-zone="polaUprawne"
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
-      left: `${navHitboxPos.polaUprawne.left}%`,
-      top: `${navHitboxPos.polaUprawne.top}%`,
-      width: `${navHitboxPos.polaUprawne.width}%`,
-      height: `${navHitboxPos.polaUprawne.height}%`,
+      left: `${activeHitboxPos.polaUprawne.left}%`,
+      top: `${activeHitboxPos.polaUprawne.top}%`,
+      width: `${activeHitboxPos.polaUprawne.width}%`,
+      height: `${activeHitboxPos.polaUprawne.height}%`,
       zIndex: 4,
     }}
     title=""
@@ -5851,7 +5878,7 @@ export default function Page() {
                           onMouseLeave={() => setHoveredDom(false)}
                           data-zone="dom"
                           className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                          style={{ left:`${navHitboxPos.dom.left}%`, top:`${navHitboxPos.dom.top}%`, width:`${navHitboxPos.dom.width}%`, height:`${navHitboxPos.dom.height}%`, zIndex: 20 }}
+                          style={{ left:`${activeHitboxPos.dom.left}%`, top:`${activeHitboxPos.dom.top}%`, width:`${activeHitboxPos.dom.width}%`, height:`${activeHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
                         {/* Stodoła */}
                         {(() => {
@@ -5875,7 +5902,7 @@ export default function Page() {
                                 setShowStodolaModal(true);
                               }}
                               className={`pointer-events-auto absolute transition-all duration-300 ${_barnUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
-                              style={{ left:`${navHitboxPos.stodola.left}%`, top:`${navHitboxPos.stodola.top}%`, width:`${navHitboxPos.stodola.width}%`, height:`${navHitboxPos.stodola.height}%`, zIndex: 20 }}
+                              style={{ left:`${activeHitboxPos.stodola.left}%`, top:`${activeHitboxPos.stodola.top}%`, width:`${activeHitboxPos.stodola.width}%`, height:`${activeHitboxPos.stodola.height}%`, zIndex: 20 }}
                             />
                           );
                         })()}
@@ -5889,7 +5916,7 @@ export default function Page() {
                         onMouseLeave={() => setHoveredDoMiasta(false)}
                         data-zone="doMiasta"
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navHitboxPos.doMiasta.left}%`, top:`${navHitboxPos.doMiasta.top}%`, width:`${navHitboxPos.doMiasta.width}%`, height:`${navHitboxPos.doMiasta.height}%`, zIndex: 20 }}
+                        style={{ left:`${activeHitboxPos.doMiasta.left}%`, top:`${activeHitboxPos.doMiasta.top}%`, width:`${activeHitboxPos.doMiasta.width}%`, height:`${activeHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                       />
                       {/* Ul */}
                       {(() => {
@@ -5913,7 +5940,7 @@ export default function Page() {
                               setShowUlModal(true);
                             }}
                             className={`pointer-events-auto absolute transition-all duration-300 ${_hiveUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
-                            style={{ left:`${navHitboxPos.ul.left}%`, top:`${navHitboxPos.ul.top}%`, width:`${navHitboxPos.ul.width}%`, height:`${navHitboxPos.ul.height}%`, zIndex: 20 }}
+                            style={{ left:`${activeHitboxPos.ul.left}%`, top:`${activeHitboxPos.ul.top}%`, width:`${activeHitboxPos.ul.width}%`, height:`${activeHitboxPos.ul.height}%`, zIndex: 20 }}
                           />
                         );
                       })()}
@@ -5927,7 +5954,7 @@ export default function Page() {
                         data-zone="lada"
                         onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navHitboxPos.lada.left}%`, top:`${navHitboxPos.lada.top}%`, width:`${navHitboxPos.lada.width}%`, height:`${navHitboxPos.lada.height}%`, zIndex: 20 }}
+                        style={{ left:`${activeHitboxPos.lada.left}%`, top:`${activeHitboxPos.lada.top}%`, width:`${activeHitboxPos.lada.width}%`, height:`${activeHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
                       {/* Kompostownik */}
                       <button
@@ -5939,7 +5966,7 @@ export default function Page() {
                         data-zone="kompostownik"
                         onClick={() => { setHoveredKompostownik(false); setShowKompostModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${navHitboxPos.kompostownik.left}%`, top:`${navHitboxPos.kompostownik.top}%`, width:`${navHitboxPos.kompostownik.width}%`, height:`${navHitboxPos.kompostownik.height}%`, zIndex: 20 }}
+                        style={{ left:`${activeHitboxPos.kompostownik.left}%`, top:`${activeHitboxPos.kompostownik.top}%`, width:`${activeHitboxPos.kompostownik.width}%`, height:`${activeHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                       />
                       {/* Sad */}
                       {(() => {
@@ -5963,14 +5990,14 @@ export default function Page() {
                               setShowSadModal(true);
                             }}
                             className={`pointer-events-auto absolute transition-all duration-300 ${_sadUnlocked ? "hover:scale-105" : "cursor-not-allowed"}`}
-                            style={{ left:`${navHitboxPos.sad.left}%`, top:`${navHitboxPos.sad.top}%`, width:`${navHitboxPos.sad.width}%`, height:`${navHitboxPos.sad.height}%`, zIndex: 20 }}
+                            style={{ left:`${activeHitboxPos.sad.left}%`, top:`${activeHitboxPos.sad.top}%`, width:`${activeHitboxPos.sad.width}%`, height:`${activeHitboxPos.sad.height}%`, zIndex: 20 }}
                           />
                         );
                       })()}
                       {/* Etykiety nawigacyjne — niezależne od hitboxów */}
                       {(["dom","stodola","doMiasta","polaUprawne","ul","lada","kompostownik","sad"] as const).map(id => {
                         const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne",ul:"Ul",lada:"Lada",kompostownik:"Kompostownik",sad:"Sad"};
-                        const lp = navLabelPos[id];
+                        const lp = activeLabelPos[id];
                         return (
                           <div key={`lbl${id}`} className="pointer-events-none absolute select-none"
                             style={{left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", zIndex:22}}>
@@ -5996,7 +6023,7 @@ export default function Page() {
                         {id:"kompostownik", name:"Kompostownik"},
                         {id:"sad",          name:"Sad"},
                       ] as Array<{id:string,name:string}>).map(nb => {
-                        const lp = navLabelPos[nb.id];
+                        const lp = activeLabelPos[nb.id];
                         return (
                           <div key={`nle${nb.id}`}
                             className="absolute cursor-move pointer-events-auto select-none"
@@ -6022,7 +6049,7 @@ export default function Page() {
                         <table className="w-full text-[11px] text-sky-100 border-collapse">
                           <thead><tr className="text-sky-400 text-[10px]"><th className="text-left pb-1 pr-3">nazwa</th><th className="pb-1 pr-3">left %</th><th className="pb-1">top %</th></tr></thead>
                           <tbody>
-                            {Object.entries(navLabelPos).map(([id,lp]) => (
+                            {Object.entries(activeLabelPos).map(([id,lp]) => (
                               <tr key={id} className="border-t border-sky-900">
                                 <td className="pr-3 py-0.5 font-bold text-sky-300">{id}</td>
                                 <td className="pr-3 py-0.5 text-center font-mono text-yellow-300">{lp.left.toFixed(1)}</td>
