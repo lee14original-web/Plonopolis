@@ -1638,6 +1638,7 @@ function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
 function getMapForLevel(level: number | null | undefined) {
   const safeLevel = level ?? DEFAULT_LEVEL;
 
+  if (safeLevel >= 30) return "farm30";
   if (safeLevel >= 25) return "farm25";
   if (safeLevel >= 20) return "farm20";
   if (safeLevel >= 15) return "farm15";
