@@ -1693,6 +1693,7 @@ const FARM_IMG_H = 1536;
 const FARM_SCALE = Math.min(BASE_H / FARM_IMG_H, 1);           // ≈ 0.8333
 const FARM_RENDERED_W = Math.round(FARM_IMG_W * FARM_SCALE);   // ≈ 3413
 const FARM_MAX_PAN = Math.max(0, FARM_RENDERED_W - BASE_W);    // ≈ 1493
+const FARM_CENTER_PAN = -Math.round(FARM_MAX_PAN / 2);         // ≈ -747
 
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -5364,8 +5365,8 @@ export default function Page() {
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
 
-      // Reset pan przy zmianie mapy
-      setPanX(0); setPanY(0); setIsPanDragging(false);
+      // Reset pan przy zmianie mapy (farma → środek, reszta → 0)
+      setPanX(targetMap.startsWith("farm") ? FARM_CENTER_PAN : 0); setPanY(0); setIsPanDragging(false);
       panDragRef.current = { active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false };
 
       // Reset wszystkich hover-stanów — mapa znika zanim onMouseLeave zdąży zadziałać
@@ -6244,6 +6245,37 @@ export default function Page() {
                         {hitboxEditMode ? "✅ Hitboxy ON" : "🎯 Edytuj hitboxy"}
                       </button>
                     </div>
+                  )}
+
+                  {/* ─── Strzałki nawigacji farmy ─── */}
+                  {isOnFarmMap && (
+                    <>
+                      {panX < 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.min(0, prev + Math.round(BASE_W * 0.5))); }}
+                          className="pointer-events-auto absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
+                          style={{ left:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                          aria-label="Przewiń w lewo"
+                        >‹</button>
+                      )}
+                      {panX > -FARM_MAX_PAN && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setPanX(prev => Math.max(-FARM_MAX_PAN, prev - Math.round(BASE_W * 0.5))); }}
+                          className="pointer-events-auto absolute z-30 text-5xl text-amber-400/80 hover:text-amber-300 transition-colors"
+                          style={{ right:24, top:"50%", transform:"translateY(-50%)", animation:"thArrowPulse 2s ease-in-out infinite 0.4s", background:"none", border:"none", cursor:"pointer", lineHeight:1, textShadow:"0 0 12px rgba(180,120,0,0.6)" }}
+                          aria-label="Przewiń w prawo"
+                        >›</button>
+                      )}
+                      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                        {Array.from({length: 3}).map((_,i) => {
+                          const segW = FARM_MAX_PAN / 2;
+                          const active = Math.round(-panX / segW) === i;
+                          return <div key={i} className={`h-1.5 rounded-full transition-all ${active ? "w-6 bg-amber-400" : "w-2 bg-white/20"}`} />;
+                        })}
+                      </div>
+                    </>
                   )}
 
                   {currentMap === "city" && (
