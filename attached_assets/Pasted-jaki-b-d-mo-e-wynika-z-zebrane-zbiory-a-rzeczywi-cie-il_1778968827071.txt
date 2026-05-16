@@ -1,0 +1,138 @@
+jaki błąd może wynikać z zebrane zbiory a rzeczywiście ile mam w plecaku?
+
+
+Na screenach widać bardzo możliwy problem logiczny:
+
+popup „Ostatnie zbiory” pokazuje:
+🥕 x29
+specjalna marchew x10
+
+Ale w plecaku:
+
+specjalna marchew = 5
+normalna marchew = 10
+
+Czyli najpewniej:
+
+🚨 Problem:
+
+popup pokazuje:
+
+ILE WYPADŁO Z POLA
+
+a plecak pokazuje:
+
+ILE FINALNIE ZOSTAŁO DODANE
+Najbardziej prawdopodobne przyczyny
+1. ❌ LIMIT MAGAZYNU / STACKA
+
+Np:
+
+zebrałeś 10,
+ale miejsce było tylko na 5,
+popup pokazuje loot,
+inventory pokazuje real add.
+
+To NAJBARDZIEJ wygląda na ten przypadek.
+
+Sprawdź:
+
+max stack,
+inventory capacity,
+item limit.
+2. ❌ DOUBLE RNG / DOUBLE CALCULATION
+
+Możliwe:
+
+const rewards = rollRewards()
+showPopup(rewards)
+
+const finalRewards = rollRewards()
+addToInventory(finalRewards)
+
+Czyli:
+
+popup używa pierwszego losowania,
+inventory drugiego.
+
+Bardzo częsty bug.
+
+3. ❌ BONUSY liczą się tylko w popupie
+
+Np:
+
+popup pokazuje bonus x2,
+inventory dodaje bazową ilość.
+4. ❌ ASYNC / RACE CONDITION
+
+Popup odpala przed:
+
+sync inventory,
+rollbackiem,
+walidacją.
+
+Np:
+
+serwer odrzuca część itemów,
+UI dalej pokazuje pełny loot.
+5. ❌ Zaokrąglenia / mnożniki
+
+Np:
+
+popup = Math.ceil()
+inventory = Math.floor()
+6. ❌ Inventory overwrite
+
+Bardzo możliwe przy Twojej architekturze sync/localStorage.
+
+Np:
+
+inventory += rewards
+chwilę później loadProfile()
+nadpisuje starszym stanem.
+
+Miałeś już podobny problem ze zwierzętami.
+
+Co bym sprawdził najpierw
+🔥 1. Czy popup używa EXACT SAME DATA co inventory
+
+Powinno być:
+
+const rewards = calculateHarvestRewards()
+
+await addItemsToInventory(rewards)
+
+showHarvestPopup(rewards)
+
+NIE:
+
+showPopup(calculateRewards())
+addInventory(calculateRewards())
+🔥 2. Czy inventory ma limity
+
+Sprawdź:
+
+stack size,
+max capacity,
+partial add.
+🔥 3. Czy loadProfile nie nadpisuje inventory
+
+To bardzo podejrzane patrząc na wcześniejsze bugi.
+
+Najlepsza architektura
+Serwer:
+const rewards = calculateRewards()
+addToInventory(rewards)
+
+return rewards
+Front:
+const rewards = await harvestCrop()
+
+showPopup(rewards)
+
+Czyli:
+
+popup pokazuje WYŁĄCZNIE dane potwierdzone przez backend,
+nigdy lokalne przewidywania.
+
+To eliminuje 90% takich bugów.
