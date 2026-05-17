@@ -12590,6 +12590,21 @@ export default function Page() {
                               const activePlot = FIELD_VIEW_PLOTS.find((plot) => plot.id === selectedPlotId);
                               if (!activePlot) return null;
 
+                              // Oblicz etykietę — jeśli nie ma żadnej akcjonalnej wskazówki, nie renderuj tooltipa.
+                              // "Wybierz nasiono" NIE pojawia się tu: jest obsłużone przez setMessage w confirmSelectedPlot.
+                              const _plotReady = getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId);
+                              const _hintText = selectedTool === "watering_can"
+                                ? "Kliknij pole, aby podlać"
+                                : selectedTool === "sickle"
+                                ? "Kliknij gotową uprawę, aby zebrać"
+                                : selectedSeedId
+                                ? `Kliknij pole, aby posadzić ${CROPS.find((c) => c.id === parseQualityKey(selectedSeedId).baseCropId)?.name ?? "roślinę"}`
+                                : _plotReady
+                                ? "Enter lub kliknij pole, aby zebrać"
+                                : null;
+
+                              if (!_hintText) return null;
+
                               return (
                                 <div className="pointer-events-none absolute inset-0">
                                   <div
@@ -12599,17 +12614,7 @@ export default function Page() {
                                       top: activePlot.top,
                                     }}
                                   >
-                                    {selectedTool === "watering_can"
-                                      ? "Kliknij pole, aby podlać"
-                                      : selectedTool === "sickle"
-                                      ? "Kliknij gotową uprawę, aby zebrać"
-                                      : selectedSeedId
-                                      ? `Kliknij pole, aby posadzić ${
-                                          CROPS.find((crop) => crop.id === selectedSeedId)?.name ?? "roślinę"
-                                        }`
-                                      : getPlotCrop(selectedPlotId).cropId && isCropReady(selectedPlotId)
-                                      ? "Enter lub kliknij pole, aby zebrać"
-                                      : "Wybierz nasiono z plecaka albo narzędzie"}
+                                    {_hintText}
                                   </div>
                                 </div>
                               );
