@@ -4991,14 +4991,16 @@ export default function Page() {
     // - dla nie-legendarnych: SQL już zapisał jakościowe klucze — używamy rpcInv jako bazę
     let nextInventory: Record<string, number>;
     let _totalYield = 0;
+    let _legGood = 0;
+    let _legEpic = 0;
 
     if (_plantedQuality === "legendary") {
       nextInventory = { ...prevInventorySnapshot };
       // lvl 1-6 (yieldAmount<=2): 20–60 good + 5–12 epic; lvl 7-25: 30–80 good + 8–18 epic
-      const _legGood = crop.yieldAmount <= 2
+      _legGood = crop.yieldAmount <= 2
         ? Math.floor(Math.random() * 41) + 20   // 20–60
         : Math.floor(Math.random() * 51) + 30;  // 30–80
-      const _legEpic = crop.yieldAmount <= 2
+      _legEpic = crop.yieldAmount <= 2
         ? Math.floor(Math.random() * 8) + 5     // 5–12
         : Math.floor(Math.random() * 11) + 8;   // 8–18
       nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legGood;
@@ -5130,15 +5132,14 @@ export default function Page() {
       setTimeout(() => setCompostNotice(null), 5000);
     }
 
-    // Dodaj do logu zbiorów
+    // Dodaj do logu zbiorów — źródłem prawdy są wartości obliczone przez frontend/RPC,
+    // NIE diff inventory (snapshot-prone przy równoległych zbiorach).
     if (_plantedQuality === "legendary") {
       const _now = Date.now();
-      const _legGoodLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "good")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "good")] ?? 0));
-      const _legEpicLog = Math.max(0, (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) - (prevInventorySnapshot[getQualityKey(crop.id, "epic")] ?? 0));
       setHarvestLog(prev => [
         ...prev.filter(e => _now - e.timestamp < 25000),
-        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legGoodLog, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp, timestamp: _now, quality: "good" as const },
-        ...(_legEpicLog > 0 ? [{ id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpicLog, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: 0, timestamp: _now, quality: "epic" as const }] : []),
+        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legGood, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp + _bonusExpTotal, timestamp: _now, quality: "good" as const },
+        ...(_legEpic > 0 ? [{ id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpic, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: 0, timestamp: _now, quality: "epic" as const }] : []),
       ]);
     } else {
       const _now2 = Date.now();
@@ -5161,7 +5162,7 @@ export default function Page() {
           baseAmount: _qualGainedRpc[_q],
           bonusAmount: 0,
           bonusSource: _idx === 0 && _zrecznoscionTriggered ? "Zręczność 🎯" : null,
-          baseExp: _idx === 0 ? actualExp : 0,
+          baseExp: _idx === 0 ? actualExp + _bonusExpTotal : 0,
           timestamp: _now2,
           quality: _q,
         };
