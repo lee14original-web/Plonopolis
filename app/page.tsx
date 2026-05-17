@@ -2697,7 +2697,9 @@ export default function Page() {
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
   const displayLevel = profile?.level ?? DEFAULT_LEVEL;
   const displayXp = profile?.xp ?? DEFAULT_XP;
-  const displayXpToNextLevel = profile?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL;
+  // Zawsze czytaj z lokalnej XP_TABLE — niezależnie od wartości w DB (która aktualizuje się przy zbiorze).
+  // Eliminuje stare wartości wyświetlane po zmianie krzywej XP.
+  const displayXpToNextLevel = displayLevel > 0 ? getXpForLevel(displayLevel) : DEFAULT_XP_TO_NEXT_LEVEL;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
