@@ -12496,12 +12496,13 @@ export default function Page() {
                                   const _plantedCrop = getPlantedCrop(plotId);
                                   const _stage = getGrowthStage(plotId);
                                   const _stagedSrc = _plantedCrop ? getCropStageSprite(_plantedCrop.id, _stage) : null;
+                                  const _isReady = isCropReady(plotId);
                                   if (_stagedSrc) {
                                     return (
                                       <img
                                         src={_stagedSrc}
                                         alt={_plantedCrop?.name}
-                                        className="pointer-events-none absolute inset-[8%] h-[84%] w-[84%] object-contain"
+                                        className={`pointer-events-none absolute inset-[8%] h-[84%] w-[84%] object-contain${_isReady ? " animate-pulse" : ""}`}
                                         style={{ imageRendering: "pixelated" }}
                                         onError={(e) => { (e.currentTarget as HTMLImageElement).src = _plantedCrop?.spritePath ?? "/uprawy/carrot.png"; }}
                                       />
@@ -12509,7 +12510,7 @@ export default function Page() {
                                   }
                                   return (
                                     <div
-                                      className="pointer-events-none absolute inset-[8%]"
+                                      className={`pointer-events-none absolute inset-[8%]${_isReady ? " animate-pulse" : ""}`}
                                       style={{
                                         backgroundImage: `url('${_plantedCrop?.spritePath ?? "/uprawy/carrot.png"}')`,
                                         backgroundSize: "100% 100%",
@@ -12520,7 +12521,7 @@ export default function Page() {
                                   );
                                 })()}
 
-                                {/* Ikona aktywnego kompostu — duża na środku gdy puste, mała w rogu gdy posadzone */}
+                                {/* Ikona kompostu — lewy górny róg (rozmiar = 💧), duża na środku gdy puste */}
                                 {(() => {
                                   const _cb = getPlotCrop(plotId).compostBonus;
                                   if (!_cb) return null;
@@ -12529,16 +12530,14 @@ export default function Page() {
                                   const _tColor = _tIdx === 0 ? "#9ca3af" : _tIdx === 1 ? "#fbbf24" : "#a78bfa";
                                   const _hasCrop = !!getPlotCrop(plotId).cropId;
                                   if (_hasCrop) {
-                                    // Mała badge w lewym górnym rogu (żeby nie kolidowała z 💧 po prawej)
                                     return (
                                       <div
-                                        className="pointer-events-none absolute left-1 top-1 z-10 flex items-center gap-0.5 rounded-full px-1 py-0.5 text-[12px] font-black shadow-lg"
-                                        style={{ background: `${_tColor}33`, border: `1px solid ${_tColor}`, color: _tColor }}>
+                                        className="pointer-events-none absolute left-0.5 top-0.5 z-10 flex items-center rounded-full px-1 py-0.5 text-[18px] leading-none shadow-lg"
+                                        style={{ background: `${_tColor}33`, border: `1px solid ${_tColor}` }}>
                                         <span>{_def.icon}</span>
                                       </div>
                                     );
                                   }
-                                  // Duża centralna ikona na pustym polu
                                   return (
                                     <div
                                       className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
@@ -12552,11 +12551,31 @@ export default function Page() {
                                   );
                                 })()}
 
+                                {/* Kropla podlewania — centrum, 20% mniejsza niż poprzednio */}
                                 {getPlotCrop(plotId).watered && (
-                                  <div className="absolute right-1 top-1 z-10 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[18px]">
+                                  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/20 px-1 py-0.5 text-[14px] leading-none">
                                     💧
                                   </div>
                                 )}
+
+                                {/* Badge jakości — prawy górny róg (tylko gdy posadzone) */}
+                                {(() => {
+                                  const _pq = getPlotCrop(plotId).plantedQuality;
+                                  if (!getPlotCrop(plotId).cropId) return null;
+                                  if (_pq === "epic") return (
+                                    <div className="pointer-events-none absolute right-0.5 top-0.5 z-10 animate-pulse rounded px-0.5 py-px text-[8px] font-black leading-tight tracking-wide"
+                                      style={{ background: "rgba(88,28,135,0.70)", border: "1px solid rgba(167,139,250,0.65)", color: "#d8b4fe", textShadow: "0 0 5px rgba(167,139,250,0.9)" }}>
+                                      EPIC
+                                    </div>
+                                  );
+                                  if (_pq === "legendary") return (
+                                    <div className="pointer-events-none absolute right-0.5 top-0.5 z-10 animate-pulse rounded px-0.5 py-px text-[8px] font-black leading-tight tracking-wide"
+                                      style={{ background: "rgba(120,53,15,0.70)", border: "1px solid rgba(251,191,36,0.65)", color: "#fde68a", textShadow: "0 0 5px rgba(251,191,36,0.9)" }}>
+                                      Legend
+                                    </div>
+                                  );
+                                  return null;
+                                })()}
 
                                 {/* Pasek postępu sadzenia/zbioru */}
                                 {pendingFieldActions[plotId] && (() => {
