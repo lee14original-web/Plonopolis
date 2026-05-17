@@ -48,24 +48,6 @@ uri = "file://artifacts/mockup-sandbox/public/beekeeper_suit.png"
 type = "image"
 title = "beekeeper suit"
 
-[[generated]]
-id = "YCdd6aObxRthKfY1221Kp"
-uri = "file://attached_assets/farm15_test.png"
-type = "image"
-title = "cozy farm level 15 test"
-
-[[generated]]
-id = "Fgmv3eEQL_qBG6WnVvkhJ"
-uri = "file://attached_assets/farm15_v2.png"
-type = "image"
-title = "painterly cozy farm15 v2"
-
-[[generated]]
-id = "pin-FTsryXje_eGA9_2bf"
-uri = "file://attached_assets/farm15_v3.png"
-type = "image"
-title = "vivid illustrated farm15 v3"
-
 [[outputs]]
 id = "TqOBc58_UcpgIvwnjHuOY"
 uri = "file://attached_assets/Kod_poprawiony.txt"
