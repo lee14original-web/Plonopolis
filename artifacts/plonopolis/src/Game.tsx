@@ -121,12 +121,6 @@ type MarketReturn = {
   claimed: boolean;
 };
 
-type FarmUpgradeModal = {
-  level: number;
-  title: string;
-  text: string;
-};
-
 type FarmPlot = {
   id: number;
   left: string;
@@ -1476,10 +1470,6 @@ function getXpForLevel(level: number) {
   return XP_TABLE[level] ?? 999999999;
 }
 
-function getFarmUpgradeStorageKey(userId: string, level: number) {
-  return `plonopolis_farm_upgrade_seen_${userId}_${level}`;
-}
-
 function getDefaultUnlockedPlots() {
   // Pola 1–20 odblokowane od startu
   return Array.from({ length: 20 }, (_, i) => i + 1);
@@ -1601,58 +1591,6 @@ function serializeSeedInventory(value: SeedInventory) {
   );
 }
 
-function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
-  if (level === 5) {
-    return {
-      level,
-      title: "Farma ulepszona!",
-      text: "Twoje gospodarstwo rozrosło się! Odblokowano nowy wygląd farmy.",
-    };
-  }
-
-  if (level === 10) {
-    return {
-      level,
-      title: "Nowy poziom farmy!",
-      text: "Twoja farma wygląda teraz jeszcze lepiej. Kolejne ulepszenia przed Tobą!",
-    };
-  }
-
-  if (level === 15) {
-    return {
-      level,
-      title: "Rozbudowa farmy!",
-      text: "Twoje gospodarstwo staje się coraz większe i bardziej zaawansowane.",
-    };
-  }
-
-  if (level === 20) {
-    return {
-      level,
-      title: "Zaawansowana farma!",
-      text: "Twoja farma osiągnęła nowy poziom rozwoju!",
-    };
-  }
-
-  if (level === 25) {
-    return {
-      level,
-      title: "Profesjonalne ranczo!",
-      text: "Twoje gospodarstwo stało się nowoczesnym i dobrze prosperującym ranczem. Odblokowano kolejny wygląd farmy!",
-    };
-  }
-
-  if (level === 30) {
-    return {
-      level,
-      title: "Elitarna farma!",
-      text: "Twoja farma wyróżnia się na tle innych gospodarstw. Ranczo osiągnęło elitarny poziom rozwoju!",
-    };
-  }
-
-  return null;
-}
-
 function getMapForLevel(level: number | null | undefined) {
   const safeLevel = level ?? DEFAULT_LEVEL;
 
@@ -1725,7 +1663,6 @@ export default function Page() {
     const t = setTimeout(() => setMessage(null), ms);
     return () => clearTimeout(t);
   }, [message]);
-  const [farmUpgradeModal, setFarmUpgradeModal] = useState<FarmUpgradeModal | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
@@ -2458,7 +2395,6 @@ export default function Page() {
     setPlotObstacles({});
     setPlotCrops({});
     setSeedInventory(getDefaultSeedInventory());
-    setFarmUpgradeModal(null);
     setPlotToBuy(null);
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
@@ -3344,30 +3280,6 @@ export default function Page() {
     return Math.min(20 + Math.max(level - 1, 0) * 2, MAX_FIELDS);
   }
 
-  function showFarmUpgradeModalOnce(userId: string, level: number) {
-    if (Array.prototype.indexOf.call(FARM_UPGRADE_LEVELS, level) === -1) return;
-
-    const modalData = getFarmUpgradeMessage(level);
-    if (!modalData) return;
-
-    if (typeof window === "undefined") return;
-
-    const storageKey = getFarmUpgradeStorageKey(userId, level);
-    const alreadySeen = window.localStorage.getItem(storageKey);
-
-    if (alreadySeen === "1") return;
-
-    setFarmUpgradeModal(modalData);
-  }
-
-  function closeFarmUpgradeModal() {
-    if (typeof window !== "undefined" && profile && farmUpgradeModal) {
-      const storageKey = getFarmUpgradeStorageKey(profile.id, farmUpgradeModal.level);
-      window.localStorage.setItem(storageKey, "1");
-    }
-
-    setFarmUpgradeModal(null);
-  }
 
   const unlockedPlotsCount = unlockedPlots.length;
 
@@ -5031,10 +4943,6 @@ export default function Page() {
     });
     // SQL jest źródłem prawdy dla WSZYSTKICH typów (w tym legendarnych).
     // NIE nadpisujemy DB pełnym obiektem — chroni przed race condition przy masowym zbiorze.
-
-    if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
-      showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
-    }
 
     // EXP tego pola — SQL zwraca dokładną wartość (base × mult × bonus%).
     // NIE używamy diffu rpcProf.xp - prevXp: przy "Zbierz wszystko" xp akumuluje się
@@ -12778,37 +12686,6 @@ export default function Page() {
         )}
 
 
-          {farmUpgradeModal && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4">
-              <div className="relative w-full max-w-xl rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                <button
-                  onClick={closeFarmUpgradeModal}
-                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-[#e0b96a]/50 bg-black/20 text-xl font-bold text-[#f8e5b5] transition hover:bg-black/35"
-                  aria-label="Zamknij komunikat ulepszenia farmy"
-                >
-                  ×
-                </button>
-
-                <div className="pr-12">
-                  <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Ulepszenie farmy</p>
-                  <h2 className="mt-3 text-3xl font-black text-[#fff1c7]">{farmUpgradeModal.title}</h2>
-                  <p className="mt-4 text-base leading-7 text-[#f2ddb0]">{farmUpgradeModal.text}</p>
-                  <p className="mt-4 text-sm font-semibold text-[#d8ba7a]">
-                    Osiągnięto poziom {farmUpgradeModal.level}.
-                  </p>
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={closeFarmUpgradeModal}
-                    className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
-                  >
-                    Super
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {harvestLog.length > 0 && (() => {
             const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
