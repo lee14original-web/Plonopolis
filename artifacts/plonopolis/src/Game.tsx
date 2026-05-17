@@ -4925,24 +4925,12 @@ export default function Page() {
     const prevXpToNext = displayXpToNextLevel;
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
-    const prevInventorySnapshot: Record<string, number> = { ...seedInventoryRef.current };
-    // jakość PLONU jest losowana osobno dla każdej sztuki — patrz niżej
-    // Jakość ZASADZONEGO nasiona (decyduje o EXP) — z localStorage
-    // Jakość ZASADZONEGO nasiona (z pola w DB — bez localStorage)
+    // Jakość zasadzonego nasiona (z pola w DB — decyduje o ścieżce EXP i popup)
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
-    const _plantedQDef = CROP_QUALITY_DEFS[_plantedQuality as keyof typeof CROP_QUALITY_DEFS] ?? CROP_QUALITY_DEFS["good"];
 
-    // ─── Legendarny drop — zawsze: zwykłe + epickie + EXP ───
-    let _legExpMult = 0;
-    if (_plantedQuality === "legendary") {
-      // lvl 1-6 (yieldAmount<=2): EXP ×10–20; lvl 7-25: EXP ×12–25
-      if (crop.yieldAmount <= 2) {
-        _legExpMult = Math.floor(Math.random() * 11) + 10; // 10–20
-      } else {
-        _legExpMult = Math.floor(Math.random() * 14) + 12; // 12–25
-      }
-    }
+    // ─── Legendarny drop: SQL liczy server-side (eliminuje race condition) ───
+    // _legExpMult usuwamy — SQL zwraca legendary_exp_mult w odpowiedzi RPC
 
     // ─── Epicki EXP — SQL oblicza ×3-6 server-side (uwzględnia rotten roll → 0 EXP) ───
 
@@ -4961,11 +4949,9 @@ export default function Page() {
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: effectiveStats.zrecznosc ?? 0,
       // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
-      p_planted_quality: _plantedQuality === "legendary" ? "good" : _plantedQuality,
-      // -1 = wymuś 0 EXP; 0 = SQL decyduje; >0 = dokładny mnożnik (legendarny)
-      p_exp_mult_override: _plantedQuality === "legendary"
-        ? _legExpMult
-        : 0,
+      p_planted_quality: _plantedQuality,
+      // 0 = SQL decyduje (legendarny i epic EXP mult generowany server-side)
+      p_exp_mult_override: 0,
       // Atomicznie po stronie SQL (eliminuje race condition przy zbiorze wielu pól naraz)
       p_compost_yield_extra: _compostYieldExtraForRpc,
       p_extra_harvest_pct:   _extraHarvestPctForRpc,
@@ -4986,56 +4972,27 @@ export default function Page() {
       : {};
     const _zrecznoscionTriggered = _rpcWrapper.zrecznosc_triggered ?? false;
 
-    // Buduj nextInventory:
-    // - dla legendarnych: SQL nie dodał itemów — startujemy od snapshotu i dodajemy ręcznie
-    // - dla nie-legendarnych: SQL już zapisał jakościowe klucze — używamy rpcInv jako bazę
-    let nextInventory: Record<string, number>;
-    let _totalYield = 0;
-    let _legGood = 0;
-    let _legEpic = 0;
-
-    if (_plantedQuality === "legendary") {
-      nextInventory = { ...prevInventorySnapshot };
-      // lvl 1-6 (yieldAmount<=2): 20–60 good + 5–12 epic; lvl 7-25: 30–80 good + 8–18 epic
-      _legGood = crop.yieldAmount <= 2
-        ? Math.floor(Math.random() * 41) + 20   // 20–60
-        : Math.floor(Math.random() * 51) + 30;  // 30–80
-      _legEpic = crop.yieldAmount <= 2
-        ? Math.floor(Math.random() * 8) + 5     // 5–12
-        : Math.floor(Math.random() * 11) + 8;   // 8–18
-      nextInventory[getQualityKey(crop.id, "good")] = (nextInventory[getQualityKey(crop.id, "good")] ?? 0) + _legGood;
-      nextInventory[getQualityKey(crop.id, "epic")] = (nextInventory[getQualityKey(crop.id, "epic")] ?? 0) + _legEpic;
-      _totalYield = _legGood + _legEpic;
-    } else {
-      // SQL zapisał jakości per sztuka — buduj z rpcInv (pełne inventory po zbiorze)
-      const _rawNext: Record<string, number> = {};
-      for (const [_k, _v] of Object.entries(rpcInv)) {
-        if (typeof _v === "number") _rawNext[_k] = _v;
-      }
-      // Migracja: usuń stare klucze bez sufiksu jakości (np. "carrot" → "carrot_good")
-      nextInventory = parseSeedInventory(_rawNext);
-      // Oblicz łączny zysk (diff) dla _totalYield
-      _totalYield = (["rotten","good","epic","legendary"] as CropQuality[]).reduce((_s, _q) => {
-        const _key = getQualityKey(crop.id, _q);
-        return _s + Math.max(0, (nextInventory[_key] ?? 0) - (prevInventorySnapshot[_key] ?? 0));
-      }, 0);
+    // Buduj nextInventory ze zwróconego przez SQL inventory (źródło prawdy dla WSZYSTKICH typów).
+    // Legendarny drop obliczany server-side — eliminuje race condition klient-side przy
+    // masowym zbiorze (każdy równoległy harvest ma własny FOR UPDATE lock w SQL).
+    const _rawNext: Record<string, number> = {};
+    for (const [_k, _v] of Object.entries(rpcInv)) {
+      if (typeof _v === "number") _rawNext[_k] = _v;
     }
+    // Migracja: usuń stare klucze bez sufiksu jakości (np. "carrot" → "carrot_good")
+    const nextInventory: Record<string, number> = parseSeedInventory(_rawNext);
 
     // ─── Bonus z kompostu (zachowany — używany do EXP bonus i notice) ───
     const _compostBonusOnPlot = plot.compostBonus ?? null;
 
     // ─── Wartości zwrócone przez RPC (atomicznie aplikowane przez SQL) ───
-    // SQL już dodał: bazowy yield + zręczność + compost yield + % extra harvest + % bonus drop.
-    // Eliminuje race condition przy zbiorze wielu pól naraz.
-    const _gainedGood   = (typeof (_rpcWrapper as { gained_good?: unknown }).gained_good   === "number") ? (_rpcWrapper as { gained_good: number }).gained_good   : 0;
-    const _gainedEpic   = (typeof (_rpcWrapper as { gained_epic?: unknown }).gained_epic   === "number") ? (_rpcWrapper as { gained_epic: number }).gained_epic   : 0;
-    const _gainedRotten = (typeof (_rpcWrapper as { gained_rotten?: unknown }).gained_rotten === "number") ? (_rpcWrapper as { gained_rotten: number }).gained_rotten : 0;
-    if (_plantedQuality !== "legendary") {
-      // Dla NIE-legendarnych: SQL jest źródłem prawdy. nextInventory = sparsowany rpcInv.
-      // Nie liczymy diff'a względem prevInventorySnapshot (race-prone) — używamy gained_* z RPC.
-      const _gainedLegendary = (typeof (_rpcWrapper as { gained_legendary?: unknown }).gained_legendary === "number") ? (_rpcWrapper as { gained_legendary: number }).gained_legendary : 0;
-      _totalYield = _gainedGood + _gainedEpic + _gainedRotten + _gainedLegendary;
-    }
+    // SQL jest źródłem prawdy dla WSZYSTKICH typów nasion (good / epic / rotten / legendary).
+    // gained_* = dokładnie to, co SQL dodał do DB w tej transakcji.
+    const _gainedGood      = (typeof (_rpcWrapper as { gained_good?: unknown }).gained_good      === "number") ? (_rpcWrapper as { gained_good: number }).gained_good           : 0;
+    const _gainedEpic      = (typeof (_rpcWrapper as { gained_epic?: unknown }).gained_epic      === "number") ? (_rpcWrapper as { gained_epic: number }).gained_epic           : 0;
+    const _gainedRotten    = (typeof (_rpcWrapper as { gained_rotten?: unknown }).gained_rotten  === "number") ? (_rpcWrapper as { gained_rotten: number }).gained_rotten       : 0;
+    const _gainedLegendary = (typeof (_rpcWrapper as { gained_legendary?: unknown }).gained_legendary === "number") ? (_rpcWrapper as { gained_legendary: number }).gained_legendary : 0;
+    const _totalYield      = _gainedGood + _gainedEpic + _gainedRotten + _gainedLegendary;
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = await applyProfileState(harvestRpcProfile);
@@ -5050,12 +5007,8 @@ export default function Page() {
       seedInventoryRef.current = _merged; // ref zawsze = najnowszy stan
       return _merged;
     });
-    // Dla LEGENDARNYCH klient sam nadpisał inventory (decyduje o opcji 0/1/2) — zapisz do DB.
-    // Dla nie-legendarnych: SQL jest źródłem prawdy, NIE nadpisujemy DB pełnym obiektem
-    // (chroni przed race condition przy zbiorze wielu pól naraz).
-    if (_plantedQuality === "legendary") {
-      await supabase.from("profiles").update({ seed_inventory: nextInventory }).eq("id", profile!.id);
-    }
+    // SQL jest źródłem prawdy dla WSZYSTKICH typów (w tym legendarnych).
+    // NIE nadpisujemy DB pełnym obiektem — chroni przed race condition przy masowym zbiorze.
 
     if (nextProfile && (nextProfile.level ?? DEFAULT_LEVEL) > previousLevel) {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
@@ -5132,37 +5085,35 @@ export default function Page() {
       setTimeout(() => setCompostNotice(null), 5000);
     }
 
-    // Dodaj do logu zbiorów — źródłem prawdy są wartości obliczone przez frontend/RPC,
-    // NIE diff inventory (snapshot-prone przy równoległych zbiorach).
-    if (_plantedQuality === "legendary") {
-      const _now = Date.now();
-      setHarvestLog(prev => [
-        ...prev.filter(e => _now - e.timestamp < 25000),
-        { id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legGood, bonusAmount: 0, bonusSource: `🌟 ×${_legExpMult} EXP`, baseExp: actualExp + _bonusExpTotal, timestamp: _now, quality: "good" as const },
-        ...(_legEpic > 0 ? [{ id: ++harvestEventIdRef.current, cropId: crop.id, cropName: crop.name, baseAmount: _legEpic, bonusAmount: 0, bonusSource: "🌟 Legendarne", baseExp: 0, timestamp: _now, quality: "epic" as const }] : []),
-      ]);
-    } else {
+    // Dodaj do logu zbiorów — wyłącznie gained_* z RPC (SQL jest źródłem prawdy).
+    // Dotyczy WSZYSTKICH typów nasion: good / epic / rotten / legendary.
+    // Eliminuje rozbieżności przy równoległym "Zbierz wszystko" (brak diff/snapshot).
+    {
       const _now2 = Date.now();
-      // SQL jest źródłem prawdy — używamy gained_* zwróconych przez RPC (per-pole, atomiczne).
-      // NIE używamy diffu prev→next, bo prevInventorySnapshot jest wspólny dla równoległych zbiorów
-      // i psuje wynik przy "Zbierz wszystko" (każde kolejne pole widzi wyższy nextInventory).
-      const _gainedLegendaryLog = (typeof (_rpcWrapper as { gained_legendary?: unknown }).gained_legendary === "number") ? (_rpcWrapper as { gained_legendary: number }).gained_legendary : 0;
+      const _legExpMultRpc = (typeof (_rpcWrapper as { legendary_exp_mult?: unknown }).legendary_exp_mult === "number")
+        ? (_rpcWrapper as { legendary_exp_mult: number }).legendary_exp_mult : 0;
       const _qualGainedRpc: Record<CropQuality, number> = {
         good:      Math.max(0, _gainedGood),
         epic:      Math.max(0, _gainedEpic),
         rotten:    Math.max(0, _gainedRotten),
-        legendary: Math.max(0, _gainedLegendaryLog),
+        legendary: Math.max(0, _gainedLegendary),
       };
       const _diffQuals = (["rotten","good","epic","legendary"] as CropQuality[]).filter(_q => _qualGainedRpc[_q] > 0);
       const _logEvents = _diffQuals.map((_q, _idx) => {
+        const _isFirst = _idx === 0;
+        const _bonusSrc = _isFirst
+          ? (_plantedQuality === "legendary" && _legExpMultRpc > 0
+              ? `🌟 ×${_legExpMultRpc} EXP`
+              : _zrecznoscionTriggered ? "Zręczność 🎯" : null)
+          : null;
         return {
           id: ++harvestEventIdRef.current,
           cropId: crop.id,
           cropName: crop.name,
           baseAmount: _qualGainedRpc[_q],
           bonusAmount: 0,
-          bonusSource: _idx === 0 && _zrecznoscionTriggered ? "Zręczność 🎯" : null,
-          baseExp: _idx === 0 ? actualExp + _bonusExpTotal : 0,
+          bonusSource: _bonusSrc,
+          baseExp: _isFirst ? actualExp + _bonusExpTotal : 0,
           timestamp: _now2,
           quality: _q,
         };
