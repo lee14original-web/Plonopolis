@@ -4921,8 +4921,6 @@ export default function Page() {
     setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const previousLevel = displayLevel;
-    const prevXp = displayXp;
-    const prevXpToNext = displayXpToNextLevel;
 
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     // Jakość zasadzonego nasiona (z pola w DB — decyduje o ścieżce EXP i popup)
@@ -4943,12 +4941,16 @@ export default function Page() {
       : 0;
     const _extraHarvestPctForRpc = _plantedQuality !== "legendary" ? (_snapBonuses?.extraHarvestPct ?? 0) : 0;
     const _bonusDropPctForRpc    = _plantedQuality !== "legendary" ? (_snapBonuses?.bonusDropPct ?? 0) : 0;
+    // Łączny % bonus EXP (eq + kompost Nauki) — SQL aplikuje atomicznie, eliminuje race condition
+    // klient-side profiles.update przy "Zbierz wszystko".
+    const _expEqPctForRpc     = _snapBonuses?.expPct ?? 0;
+    const _compostExpPctForRpc = (_compostBonusForRpc?.type === "exp") ? (_compostBonusForRpc.value ?? 0) : 0;
+    const _expBonusPctForRpc  = _expEqPctForRpc + _compostExpPctForRpc;
 
     const { data, error } = await supabase.rpc("game_harvest_plot", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: effectiveStats.zrecznosc ?? 0,
-      // Dla legendarnych: zawsze "good" (uprawa bazowa), mult. EXP override osobno
       p_planted_quality: _plantedQuality,
       // 0 = SQL decyduje (legendarny i epic EXP mult generowany server-side)
       p_exp_mult_override: 0,
@@ -4957,6 +4959,8 @@ export default function Page() {
       p_extra_harvest_pct:   _extraHarvestPctForRpc,
       p_bonus_drop_pct:      _bonusDropPctForRpc,
       p_szczescie:           effectiveStats.szczescie ?? 0,
+      // Bonus EXP atomicznie — SQL zwraca exp_gained (fix: inflated popup przy "Zbierz wszystko")
+      p_exp_bonus_pct:       _expBonusPctForRpc,
     });
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
@@ -5014,70 +5018,16 @@ export default function Page() {
       showFarmUpgradeModalOnce(nextProfile.id, nextProfile.level ?? DEFAULT_LEVEL);
     }
 
-    // Oblicz faktyczny EXP przyznany przez Supabase
-    let actualExp = crop.expReward;
-    if (rpcProf) {
-      if ((rpcProf.level ?? previousLevel) > previousLevel) {
-        actualExp = (prevXpToNext - prevXp) + (rpcProf.xp ?? 0);
-      } else {
-        actualExp = Math.max(0, (rpcProf.xp ?? 0) - prevXp);
-      }
-    }
-
-    // ─── Bonusy EXP: kompost Nauki + eq (% EXP, % EXP z upraw) ───
-    let _bonusExpTotal = 0;
-    if (_compostBonusOnPlot?.type === "exp" && actualExp > 0) {
-      _bonusExpTotal += Math.round(actualExp * (_compostBonusOnPlot.value / 100));
-    }
-    // Używamy SNAPSHOTU z chwili kliknięcia (anti-exploit przebierania)
-    const _expEqPct = _snapBonuses?.expPct ?? 0;
-    if (_expEqPct > 0 && actualExp > 0) {
-      _bonusExpTotal += Math.round(actualExp * (_expEqPct / 100));
-    }
-    // ─── Cap bezpieczeństwa dla legendarnych: base × wszystkie bonusy ≤ base × 50 ───
-    if (_plantedQuality === "legendary" && crop.expReward > 0) {
-      const _expCap = crop.expReward * MAX_LEGENDARY_EXP_MULT;
-      if (actualExp + _bonusExpTotal > _expCap) {
-        _bonusExpTotal = Math.max(0, _expCap - actualExp);
-      }
-    }
-    if (_bonusExpTotal > 0 && profile?.id) {
-      // Pełna obsługa level-upu klient-side (jak handleAddExp)
-      const _baseXp = (rpcProf?.xp ?? 0);
-      const _baseLevel = (rpcProf?.level ?? previousLevel);
-      const _baseXpToNext = (rpcProf?.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL);
-      let _newXp = _baseXp + _bonusExpTotal;
-      let _newLevel = _baseLevel;
-      let _newXpToNext = _baseXpToNext;
-      while (_newXp >= _newXpToNext && _newLevel < MAX_LEVEL) {
-        _newLevel += 1;
-        _newXp = _newXp - _newXpToNext;
-        _newXpToNext = getXpForLevel(_newLevel);
-      }
-      if (_newLevel >= MAX_LEVEL) { _newLevel = MAX_LEVEL; _newXp = 0; _newXpToNext = 0; }
-      const _updateData: Record<string, unknown> = {
-        xp: _newXp,
-        level: _newLevel,
-        xp_to_next_level: _newXpToNext,
-      };
-      // Levelup spowodowany bonusem → zmień też mapę (jak po normalnym lvl up)
-      if (_newLevel > _baseLevel) {
-        _updateData.current_map = getMapForLevel(_newLevel);
-        _updateData.location = getMapForLevel(_newLevel);
-      }
-      await supabase.from("profiles").update(_updateData).eq("id", profile.id);
-      setProfile(p => p ? {
-        ...p,
-        xp: _newXp,
-        level: _newLevel,
-        xp_to_next_level: _newXpToNext,
-        ...(_newLevel > _baseLevel ? { current_map: getMapForLevel(_newLevel), location: getMapForLevel(_newLevel) } : {}),
-      } : p);
-      actualExp += _bonusExpTotal;
-      if (_newLevel > _baseLevel) {
-        showFarmUpgradeModalOnce(profile.id, _newLevel);
-      }
-    }
+    // EXP tego pola — SQL zwraca dokładną wartość (base × mult × bonus%).
+    // NIE używamy diffu rpcProf.xp - prevXp: przy "Zbierz wszystko" xp akumuluje się
+    // w każdym kolejnym RPC (FOR UPDATE serializacja) → diff byłby coraz większy.
+    // SQL sam aplikuje cap (legendarny ≤ exp_reward × 50) i bonus EXP atomicznie.
+    const _expGainedRpc = (typeof (_rpcWrapper as { exp_gained?: unknown }).exp_gained === "number")
+      ? (_rpcWrapper as { exp_gained: number }).exp_gained
+      : null;
+    const actualExp = _expGainedRpc !== null
+      ? Math.max(0, _expGainedRpc)
+      : Math.max(0, crop.expReward);
 
     // ─── Powiadomienie o aktywacji kompostu ───
     if (_compostBonusOnPlot) {
@@ -5113,7 +5063,7 @@ export default function Page() {
           baseAmount: _qualGainedRpc[_q],
           bonusAmount: 0,
           bonusSource: _bonusSrc,
-          baseExp: _isFirst ? actualExp + _bonusExpTotal : 0,
+          baseExp: _isFirst ? actualExp : 0,
           timestamp: _now2,
           quality: _q,
         };
