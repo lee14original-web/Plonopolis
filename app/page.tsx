@@ -2695,11 +2695,25 @@ export default function Page() {
   }
 
   const displayLocation = profile?.location ?? DEFAULT_LOCATION;
-  const displayLevel = profile?.level ?? DEFAULT_LEVEL;
-  const displayXp = profile?.xp ?? DEFAULT_XP;
-  // Zawsze czytaj z lokalnej XP_TABLE — niezależnie od wartości w DB (która aktualizuje się przy zbiorze).
-  // Eliminuje stare wartości wyświetlane po zmianie krzywej XP.
-  const displayXpToNextLevel = displayLevel > 0 ? getXpForLevel(displayLevel) : DEFAULT_XP_TO_NEXT_LEVEL;
+  // Symulacja client-side poziomowania dla wyświetlania.
+  // Potrzebna gdy profile.xp > getXpForLevel(level) — np. po zmianie tabeli XP między zbiorami.
+  // SQL zaktualizuje DB przy następnym zbiorze; client pokazuje stan "jak po aktualizacji".
+  {
+    // blok tylko dla type-narrowing — wartości trafiają do zmiennych zewnętrznych poniżej
+  }
+  const _rawLevel = profile?.level ?? DEFAULT_LEVEL;
+  const _rawXp    = profile?.xp    ?? DEFAULT_XP;
+  let _simLevel   = _rawLevel;
+  let _simXp      = _rawXp;
+  let _simToNext  = _simLevel > 0 ? getXpForLevel(_simLevel) : DEFAULT_XP_TO_NEXT_LEVEL;
+  while (_simLevel < MAX_LEVEL && _simToNext > 0 && _simXp >= _simToNext) {
+    _simXp    -= _simToNext;
+    _simLevel += 1;
+    _simToNext = getXpForLevel(_simLevel);
+  }
+  const displayLevel       = _simLevel;
+  const displayXp          = _simXp;
+  const displayXpToNextLevel = _simLevel >= MAX_LEVEL ? 0 : _simToNext;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
