@@ -10158,7 +10158,7 @@ export default function Page() {
                   <div className="flex justify-between gap-3">
                     <span className="text-[#8b6a3e]">Avatar</span>
                     <span className="text-right font-bold text-[#d8ba7a]">
-                      {avatarSkin < 0 ? "Brak" : avatarSkin < SKINS_MALE.length ? `Rolnik M${avatarSkin + 1}` : avatarSkin < SKINS_MALE.length + SKINS_FEMALE.length ? `Rolniczka F${avatarSkin - SKINS_MALE.length + 1}` : (EPIC_SKINS[avatarSkin - EPIC_SKIN_START]?.name ?? "Epickie")}
+                      {avatarSkin < 0 ? "Brak" : (AVATAR_META[avatarSkin]?.name ?? "—")}
                     </span>
                   </div>
                   <div className="flex justify-between gap-3">
