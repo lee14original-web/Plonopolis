@@ -2062,7 +2062,7 @@ export default function Page() {
     targ:    {left:21.6, top:41.3, width:20.4, height:26.9},
     bank:    {left:59.0, top:39.6, width:12.1, height:27.3},
     ratusz:  {left:42.3, top:5.1,  width:12.0, height:49.8},
-    liga:    {left:75.9, top:24.4, width:22.7, height:32.4},
+    liga:    {left:75.5, top:19.1, width:23.1, height:58.5},
   });
   const [cityLabelPos, setCityLabelPos] = React.useState<Record<string,{left:number,top:number}>>({
     naFarme: {left:15.4, top:83.0},
