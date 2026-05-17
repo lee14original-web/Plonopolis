@@ -48,6 +48,12 @@ uri = "file://artifacts/mockup-sandbox/public/beekeeper_suit.png"
 type = "image"
 title = "beekeeper suit"
 
+[[generated]]
+id = "YCdd6aObxRthKfY1221Kp"
+uri = "file://attached_assets/farm15_test.png"
+type = "image"
+title = "cozy farm level 15 test"
+
 [[outputs]]
 id = "TqOBc58_UcpgIvwnjHuOY"
 uri = "file://attached_assets/Kod_poprawiony.txt"
