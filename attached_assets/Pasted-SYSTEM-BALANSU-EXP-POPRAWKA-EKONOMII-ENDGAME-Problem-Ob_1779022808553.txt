@@ -1,0 +1,137 @@
+SYSTEM BALANSU EXP — POPRAWKA EKONOMII ENDGAME
+
+Problem:
+Obecnie endgame economy daje zbyt dużo EXP przez stackowanie wielu multiplikatorów jednocześnie:
+- rarity crops
+- extra harvest
+- equipment bonuses
+- stat bonuses
+- compost
+- watering
+- yield scaling
+
+Efekt:
+- poziomy 10–30 wpadają za szybko
+- leveling skaluje się razem z ekonomią
+- rarity traci wartość
+- gracz przechodzi przez progression za szybko
+
+WAŻNE:
+Nie nerfić:
+- ilości plonów
+- endgame fantasy
+- dużych zbiorów
+- liczby przedmiotów
+
+Gracz ma czuć potęgę farmy.
+
+NAPRAWIĆ:
+Tylko skalowanie EXP.
+
+==================================================
+ZMIANY DO WPROWADZENIA
+==================================================
+
+1. ODDZIELIĆ EXP OD YIELD
+
+Aktualnie legendary crops prawdopodobnie zwiększają:
+- ilość plonów
+- oraz EXP w tej samej skali
+
+To trzeba zmienić.
+
+NOWE ZASADY:
+
+GOOD:
+- yield x1
+- exp x1
+
+EPIC:
+- yield x3
+- exp x1.5
+
+LEGENDARY:
+- yield x5
+- exp x2
+
+Czyli rarity dalej daje ogromny loot,
+ale nie niszczy progression.
+
+==================================================
+
+2. DODAĆ HARD CAP NA EXP MULTIPLIERS
+
+Wszystkie bonusy EXP:
+- equipment
+- compost
+- statystyki
+- inne mnożniki
+
+mają mieć globalny limit.
+
+PRZYKŁAD:
+max total exp bonus = +300%
+
+Czyli:
+finalExpMultiplier <= 4.0
+
+==================================================
+
+3. ZWIĘKSZYĆ XP CURVE OD LVL 8–10
+
+Level 1–3:
+ma być szybki i przyjemny.
+
+Level 3:
+odblokowuje zwierzęta
+i to jest dobry pacing.
+
+ALE:
+poziomy 10+ muszą rosnąć dużo wolniej.
+
+Cel:
+- lvl 1–3 → 30–90 minut
+- lvl 10 → kilka godzin
+- lvl 20+ → długoterminowy midgame
+- lvl 30+ → realny endgame
+
+==================================================
+
+4. NIE NERFIĆ ENDGAME LOOTU
+
+Liczby typu:
+- 1000+ plonów
+- setki legendary cropów
+
+są dobre dla satysfakcji gracza.
+
+Problemem nie jest loot.
+Problemem jest EXP.
+
+==================================================
+
+5. DODAĆ DIMINISHING RETURNS DLA RARITY EXP
+
+Rarity ma mocno zwiększać loot,
+ale słabiej zwiększać EXP.
+
+EXP progression ma być kontrolowany,
+nawet jeśli ekonomia rośnie bardzo mocno.
+
+==================================================
+
+CEL KOŃCOWY
+
+- ogromna ekonomia
+- wielkie zbiory
+- mocne endgame buildy
+- dużo przedmiotów
+- satysfakcjonujące liczby
+
+ALE:
+
+- wolniejszy leveling
+- dłuższy progression
+- lepszy pacing
+- większa wartość unlocków
+- dłuższy retention
