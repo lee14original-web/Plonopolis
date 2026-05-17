@@ -188,7 +188,7 @@ const DEFAULT_LOCATION = "Startowa Polana";
 const DEFAULT_MAP = "farm1";
 const MAX_LEVEL = 50;
 const MAX_FIELDS = 100;
-const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25] as const;
+const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25, 30] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall","city_liga"];
 
@@ -1629,6 +1629,22 @@ function getFarmUpgradeMessage(level: number): FarmUpgradeModal | null {
       level,
       title: "Zaawansowana farma!",
       text: "Twoja farma osiągnęła nowy poziom rozwoju!",
+    };
+  }
+
+  if (level === 25) {
+    return {
+      level,
+      title: "Profesjonalne ranczo!",
+      text: "Twoje gospodarstwo stało się nowoczesnym i dobrze prosperującym ranczem. Odblokowano kolejny wygląd farmy!",
+    };
+  }
+
+  if (level === 30) {
+    return {
+      level,
+      title: "Elitarna farma!",
+      text: "Twoja farma wyróżnia się na tle innych gospodarstw. Ranczo osiągnęło elitarny poziom rozwoju!",
     };
   }
 
