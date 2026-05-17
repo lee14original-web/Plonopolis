@@ -2053,6 +2053,7 @@ export default function Page() {
   }, []);
 
   // ══ MIASTO — EDYTOR HITBOXÓW I ETYKIET ══
+  const [ligaTab, setLigaTab] = React.useState<"ranking"|"wyzwanie"|"nagrody">("ranking");
   const [cityNavEditMode, setCityNavEditMode] = React.useState(false);
   const [cityHitboxEditMode, setCityHitboxEditMode] = React.useState(false);
   const [cityHitboxPos, setCityHitboxPos] = React.useState<Record<string,{left:number,top:number,width:number,height:number}>>({
@@ -2813,7 +2814,7 @@ export default function Page() {
   const activeHitboxPos = FARM_HITBOX_OVERRIDES[backgroundMap] ?? navHitboxPos;
   const activeLabelPos  = FARM_LABEL_OVERRIDES[backgroundMap]  ?? navLabelPos;
   React.useEffect(() => {
-    if (currentMap === "city_townhall" && rankingData.length === 0 && !rankingLoading) {
+    if ((currentMap === "city_townhall" || currentMap === "city_liga") && rankingData.length === 0 && !rankingLoading) {
       void loadRanking();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6856,8 +6857,187 @@ export default function Page() {
                         );
                       })()}
 
+                  {/* ═══ LIGA FARMERÓW ═══ */}
+                  {currentMap === "city_liga" && (() => {
+                    const myFP = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
+                    const sorted = [...rankingData].sort((a,b) => (b.farm_power??0)-(a.farm_power??0));
+                    const myRank = sorted.findIndex(p => p.user_id === profile?.id);
+                    const total = sorted.length;
+                    function getLigaTier(rank: number, tot: number): {name:string;color:string;icon:string;bg:string;border:string} {
+                      if (tot === 0 || rank < 0) return {name:"Liga Drewna",color:"#9ca3af",icon:"🌿",bg:"rgba(20,20,20,0.7)",border:"#374151"};
+                      if (rank === 0) return {name:"Liga Mistrzów",color:"#f97316",icon:"🏆",bg:"rgba(50,20,5,0.85)",border:"#f97316"};
+                      const pct = rank / tot;
+                      if (pct <= 0.10) return {name:"Liga Złota",color:"#f2ca69",icon:"🥇",bg:"rgba(45,30,0,0.85)",border:"#f2ca69"};
+                      if (pct <= 0.30) return {name:"Liga Srebrna",color:"#94a3b8",icon:"🥈",bg:"rgba(25,30,40,0.85)",border:"#94a3b8"};
+                      if (pct <= 0.60) return {name:"Liga Brązowa",color:"#c9952f",icon:"🥉",bg:"rgba(40,22,5,0.85)",border:"#c9952f"};
+                      return {name:"Liga Drewna",color:"#9ca3af",icon:"🌿",bg:"rgba(20,20,20,0.7)",border:"#374151"};
+                    }
+                    const myTier = getLigaTier(myRank, total);
+                    const TABS = [{id:"ranking",label:"🏆 Ranking"},{id:"wyzwanie",label:"⚔️ Wyzwanie"},{id:"nagrody",label:"🎁 Ligi & Nagrody"}] as const;
+                    return (
+                      <div className="pointer-events-auto absolute inset-0 overflow-hidden flex flex-col" style={{background:"linear-gradient(180deg,rgba(6,18,6,0.97) 0%,rgba(12,7,2,0.97) 100%)"}}>
+                        {/* Header */}
+                        <div className="shrink-0 flex items-center justify-between px-10 pt-6 pb-4 border-b border-green-900/40">
+                          <div className="flex items-center gap-5">
+                            <span className="text-5xl drop-shadow-[0_0_16px_rgba(34,197,94,0.6)]">🌾</span>
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.35em] text-green-600/70">Miasto · Rywalizacja</p>
+                              <h1 className="text-3xl font-black text-[#f9e7b2] leading-tight">Liga Farmerów</h1>
+                            </div>
+                          </div>
+                          {/* Moja liga + moc */}
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <p className="text-xs text-[#8b6a3e] uppercase tracking-widest">Moja Moc Farmy</p>
+                              <p className="text-2xl font-black text-yellow-300 tabular-nums">⭐ {myFP.toLocaleString("pl-PL")}</p>
+                            </div>
+                            <div className="flex flex-col items-center justify-center rounded-2xl px-5 py-3 border text-center" style={{background:myTier.bg,borderColor:myTier.border}}>
+                              <span className="text-2xl leading-none">{myTier.icon}</span>
+                              <p className="mt-1 text-sm font-black whitespace-nowrap" style={{color:myTier.color}}>{myTier.name}</p>
+                              {myRank >= 0 && <p className="text-[11px] text-white/50 mt-0.5">#{myRank+1} z {total}</p>}
+                            </div>
+                            <button type="button" onClick={() => { void handleChangeMap("city"); }}
+                              className="rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-3 text-sm font-black text-[#2f1b0c] shadow-lg hover:brightness-105 transition">
+                              ← Miasto
+                            </button>
+                          </div>
+                        </div>
+                        {/* Tabs */}
+                        <div className="shrink-0 flex gap-1 px-10 py-3 border-b border-green-900/30">
+                          {TABS.map(t => (
+                            <button key={t.id} type="button" onClick={() => setLigaTab(t.id)}
+                              className={`rounded-xl px-5 py-2 text-sm font-bold transition ${ligaTab===t.id ? "bg-green-900/70 text-green-300 border border-green-700/60" : "text-[#8b6a3e] hover:text-[#f3e6c8] hover:bg-white/5"}`}>
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto px-10 py-6">
+                          {/* ─── TAB: RANKING ─── */}
+                          {ligaTab === "ranking" && (
+                            <div>
+                              {rankingLoading ? (
+                                <div className="flex items-center justify-center h-48 text-[#8b6a3e]">
+                                  <span className="animate-pulse text-2xl">Ładowanie rankingu…</span>
+                                </div>
+                              ) : sorted.length === 0 ? (
+                                <p className="text-center text-[#8b6a3e] py-16">Brak graczy w rankingu.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {sorted.map((p, i) => {
+                                    const isMe = p.user_id === profile?.id;
+                                    const tier = getLigaTier(i, total);
+                                    const fp = p.farm_power ?? 0;
+                                    const maxFP = (sorted[0]?.farm_power ?? 1) || 1;
+                                    const barW = Math.round((fp / maxFP) * 100);
+                                    return (
+                                      <div key={p.user_id} className={`flex items-center gap-4 rounded-2xl border px-5 py-3 transition ${isMe ? "border-yellow-500/60 bg-yellow-500/10" : "border-[#8b6a3e]/20 bg-white/3 hover:bg-white/5"}`}>
+                                        <span className="w-8 text-center font-black text-[#d8ba7a] text-lg shrink-0">
+                                          {i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`}
+                                        </span>
+                                        <img src={ALL_SKINS[isMe?(avatarSkin>=0?avatarSkin:0):((p.avatar_skin??-1)>=0?(p.avatar_skin??0):0)]??ALL_SKINS[0]}
+                                          alt={p.player_name} className="h-12 w-12 rounded-full border-2 object-cover shrink-0"
+                                          style={{borderColor:tier.border,imageRendering:"pixelated"}} />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2">
+                                            <span className={`font-bold truncate ${isMe?"text-yellow-200":"text-[#f3e6c8]"}`}>{p.player_name}</span>
+                                            <span className="text-xs shrink-0" style={{color:tier.color}}>{tier.icon} {tier.name}</span>
+                                          </div>
+                                          <div className="mt-1 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                                            <div className="h-full rounded-full transition-all" style={{width:`${barW}%`,background:`linear-gradient(90deg,${tier.color}80,${tier.color})`}} />
+                                          </div>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                          <p className={`font-black tabular-nums text-lg ${isMe?"text-yellow-300":"text-[#f2ca69]"}`}>⭐ {fp.toLocaleString("pl-PL")}</p>
+                                          <p className="text-xs text-[#8b6a3e]">Poz. {i+1}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* ─── TAB: WYZWANIE ─── */}
+                          {ligaTab === "wyzwanie" && (
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.3em] text-green-600/60 mb-4">Wybierz przeciwnika i porównaj rancza</p>
+                              {rankingLoading ? (
+                                <div className="flex items-center justify-center h-48 text-[#8b6a3e]"><span className="animate-pulse text-2xl">Ładowanie…</span></div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {sorted.filter(p => p.user_id !== profile?.id).map((opp, i) => {
+                                    const oppFP = opp.farm_power ?? 0;
+                                    const winChance = oppFP === 0 ? 99 : Math.min(99, Math.max(1, Math.round(myFP / (myFP + oppFP) * 100)));
+                                    const chanceColor = winChance >= 60 ? "#4ade80" : winChance >= 40 ? "#f2ca69" : "#f87171";
+                                    const tier = getLigaTier(sorted.findIndex(s=>s.user_id===opp.user_id), total);
+                                    return (
+                                      <div key={opp.user_id} className="flex items-center gap-4 rounded-2xl border border-[#8b6a3e]/20 bg-white/3 px-5 py-4 hover:bg-white/5 transition">
+                                        <span className="w-6 text-center text-sm text-[#8b6a3e] shrink-0">{i+1}</span>
+                                        <img src={ALL_SKINS[((opp.avatar_skin??-1)>=0?(opp.avatar_skin??0):0)]??ALL_SKINS[0]}
+                                          alt={opp.player_name} className="h-12 w-12 rounded-full border-2 object-cover shrink-0"
+                                          style={{borderColor:tier.border,imageRendering:"pixelated"}} />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-bold text-[#f3e6c8] truncate">{opp.player_name}</p>
+                                          <p className="text-xs mt-0.5" style={{color:tier.color}}>{tier.icon} {tier.name} · ⭐ {(opp.farm_power??0).toLocaleString("pl-PL")} Mocy</p>
+                                        </div>
+                                        <div className="text-right shrink-0 mr-3">
+                                          <p className="text-xs text-[#8b6a3e]">Szansa zwycięstwa</p>
+                                          <p className="text-2xl font-black tabular-nums" style={{color:chanceColor}}>{winChance}%</p>
+                                        </div>
+                                        <button type="button"
+                                          onClick={() => setMessage({type:"info",title:"Liga Farmerów",text:`Wyzwania sezonowe pojawią się w następnym sezonie. Twoja Moc Farmy to ${myFP.toLocaleString("pl-PL")} vs ${(opp.farm_power??0).toLocaleString("pl-PL")} ${opp.player_name}.`})}
+                                          className="shrink-0 rounded-xl border border-green-700/60 bg-green-900/40 px-4 py-2 text-sm font-bold text-green-300 hover:bg-green-800/60 transition whitespace-nowrap">
+                                          Rzuć wyzwanie
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {/* ─── TAB: NAGRODY ─── */}
+                          {ligaTab === "nagrody" && (
+                            <div className="space-y-5">
+                              <p className="text-xs uppercase tracking-[0.3em] text-green-600/60 mb-2">Nagrody sezonowe przyznawane na koniec sezonu</p>
+                              {([
+                                {tier:"Liga Drewna",icon:"🌿",color:"#9ca3af",border:"#374151",bg:"rgba(20,20,20,0.7)",desc:"Idealna dla nowych farmerów.",rewards:["Mała ilość XP","Garść złota","Podstawowy ulepszacz upraw"],goal:"Zdobądź pierwsze doświadczenie w rywalizacji."},
+                                {tier:"Liga Brązowa",icon:"🥉",color:"#c9952f",border:"#c9952f",bg:"rgba(40,22,5,0.8)",desc:"Dla aktywnych farmerów.",rewards:["Dobra ilość XP","Lepsze złoto","Boostery prędkości upraw","Rzadkie nasiona"],goal:"Regularnie zbieraj plony i obsługuj klientów."},
+                                {tier:"Liga Srebrna",icon:"🥈",color:"#94a3b8",border:"#94a3b8",bg:"rgba(25,30,40,0.8)",desc:"Dla doświadczonych farmerów.",rewards:["Duża ilość XP","Boostery do klientów","Rzadkie i epiczne nasiona","Unikalny tytuł sezonu"],goal:"Rozwijaj farmę i wspinaj się w rankingu."},
+                                {tier:"Liga Złota",icon:"🥇",color:"#f2ca69",border:"#f2ca69",bg:"rgba(45,30,0,0.85)",desc:"Dla najlepszych farmerów.",rewards:["Ogromna ilość XP","Legendarne uprawy","Bardzo rzadkie ulepszacze","Specjalny avatar sezonowy","Tytuł przy nicku: np. Mistrz Zbiorów"],goal:"Bądź w top 10% graczy serwera."},
+                                {tier:"Liga Mistrzów",icon:"🏆",color:"#f97316",border:"#f97316",bg:"rgba(50,20,5,0.9)",desc:"Tylko dla absolutnej elity.",rewards:["Legendarny avatar z animowaną ramką","Unikalny kolor jednej litery nicku (token: 🎨 Farba Farmera)","Tytuł: Legenda Plonopolis / Cesarz Plonów","Nagroda do targu: token sprzedawalny innym graczom"],goal:"Zajmij pierwsze miejsca w globalnym rankingu."},
+                              ] as Array<{tier:string;icon:string;color:string;border:string;bg:string;desc:string;rewards:string[];goal:string}>).map(lt => (
+                                <div key={lt.tier} className="rounded-[20px] border p-6" style={{background:lt.bg,borderColor:lt.border}}>
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <span className="text-3xl">{lt.icon}</span>
+                                    <div>
+                                      <h3 className="text-xl font-black" style={{color:lt.color}}>{lt.tier}</h3>
+                                      <p className="text-sm text-[#8b6a3e]">{lt.desc}</p>
+                                    </div>
+                                  </div>
+                                  <ul className="space-y-1 mb-3">
+                                    {lt.rewards.map(r => (
+                                      <li key={r} className="flex items-center gap-2 text-sm text-[#dfcfab]">
+                                        <span style={{color:lt.color}}>✦</span> {r}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  <p className="text-xs text-[#8b6a3e] italic">Cel: {lt.goal}</p>
+                                </div>
+                              ))}
+                              <div className="rounded-2xl border border-green-900/40 bg-green-950/30 p-5 text-sm text-green-300/70 text-center">
+                                System sezonowy pojawi się w jednym z kolejnych aktualizacji Plonopolis. Buduj Moc Farmy już teraz!
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                                           {/* ═══ INNE LOKACJE MIEJSKIE ═══ */}
-                    {currentMap !== "city" && currentMap !== "city_townhall" && currentMap.startsWith("city_") && (
+                    {currentMap !== "city" && currentMap !== "city_townhall" && currentMap !== "city_liga" && currentMap.startsWith("city_") && (
                       <div className="pointer-events-auto absolute inset-0 flex items-center justify-center px-4">
                         <div className="w-full max-w-2xl rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.9)] p-8 text-center text-[#f3e6c8] shadow-2xl backdrop-blur-sm">
                           <p className="text-xs uppercase tracking-[0.35em] text-[#d8ba7a]">Miasto</p>

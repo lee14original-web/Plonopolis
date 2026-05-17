@@ -1,0 +1,170 @@
+# 🌾 Liga Farmerów — system rywalizacji rancz
+
+Nowy system rywalizacji graczy bez klasycznego PvP.
+
+Gracze nie walczą mieczami ani postaciami. Zamiast tego rywalizują rozwojem swoich gospodarstw, aktywnością i wynikami farmy.
+
+System ma zachować cozy farming klimat gry.
+
+---
+
+# 🏛️ Budynek w mieście
+
+## 🌾 Liga Farmerów
+
+Funkcje:
+- rankingi farmerów,
+- pojedynki rancz,
+- ligi sezonowe,
+- historia rywalizacji,
+- najlepsze farmy serwera,
+- nagrody sezonowe.
+
+---
+
+# ⭐ Moc Farmy
+
+System wykorzystuje istniejącą już statystykę:
+
+## ⭐ Moc Farmy
+
+Moc Farmy jest główną wartością używaną do:
+- rankingów,
+- lig,
+- pojedynków farmerów,
+- sezonów,
+- porównania rancz.
+
+---
+
+# 📊 Co wpływa na wynik rywalizacji
+
+| Statystyka | Wpływ |
+|---|---|
+| Moc Farmy | GŁÓWNY |
+| Wykonani klienci | DUŻY |
+| Łączna wartość zebranych plonów | ŚREDNI |
+
+Ważne:
+- liczy się wartość plonów, nie sama ilość,
+- zapobiega to farmieniu tylko najtańszych upraw,
+- aktywni gracze naturalnie rozwijają swoją pozycję.
+
+---
+
+# 🌾 Pojedynki Farmerów
+
+To nie jest klasyczna walka PvP.
+
+Gracze:
+- rywalizują,
+- porównują rancza,
+
+Przykładowe teksty:
+- „Rzuć wyzwanie farmerowi”
+- „Porównaj ranczo”
+- „Weź udział w konkursie”
+- „Liga Farmerów”
+
+Nie używać:
+- atak,
+- obrażenia,
+- HP,
+- walka mieczami.
+
+---
+
+# 📈 Szansa zwycięstwa
+
+Przed rywalizacją gracz widzi np.:
+
+```text
+Szansa na zwycięstwo: 68%
+
+
+
+Finalny system nagród ligowych
+🥉 Niskie ligi
+
+Nagrody:
+
+mała ilość XP,
+trochę złota,
+podstawowe ulepszacze.
+
+Cel:
+
+motywacja dla nowych graczy,
+poczucie progresu,
+wejście w system lig.
+🥈 Średnie ligi
+
+Nagrody:
+
+większa ilość XP,
+lepsze boostery,
+rzadkie nasiona.
+
+Cel:
+
+rozwój aktywnych farmerów,
+zachęta do regularnej gry.
+🥇 Wysokie ligi
+
+Nagrody:
+
+legendarne uprawy,
+bardzo rzadkie ulepszacze,
+tytuły sezonowe,
+specjalne avatary / skiny profilu,
+możliwość zmiany koloru 1 literki nicku.
+
+
+Kolor literki nicku
+
+To może być:
+
+token,
+voucher,
+
+Np:
+
+🎨 Farba Farmera — Sezon 3
+Pozwala zmienić kolor jednej litery nicku.
+
+I gracz:
+
+używa,
+albo sprzedaje na targu.
+
+
+Specjalne avatary / skiny
+
+To też świetny pomysł, bo:
+
+już masz system avatarów,
+łatwo to rozszerzyć,
+gracze kochają personalizację.
+
+Możesz zrobić:
+
+sezonowe avatary,
+epickie avatary,
+animowane ramki,
+złote obramowania,
+specjalne tła profilu.
+
+Tytuły sezonowe
+
+Mega ważne dla endgame.
+
+Np:
+
+Mistrz Zbiorów
+Król Farmerów
+Legenda Plonopolis
+Najlepszy Hodowca
+Cesarz Plonów
+
+I najlepiej:
+pokazywać przy nicku/profilu.
