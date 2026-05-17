@@ -1,0 +1,75 @@
+POPRAWKA GRAFIK FARMY — SPÓJNOŚĆ STYLU
+
+Grafiki farm1, farm5 i farm10 są najlepszym punktem odniesienia.
+Chcę, żeby kolejne poziomy farmy rozwijały ten sam klimat, a nie zmieniały fantasy świata.
+
+Cel stylu:
+- cozy farming
+- ciepłe światło
+- wiejska przytulna farma
+- organiczny układ
+- umiarkowana ilość detali
+- naturalna progresja
+- nie industrialna / nie premium showroom
+
+Problem:
+Od farm15 zaczyna się lekkie rozjechanie stylu, a farm20/farm25/farm30 są już za bardzo przeładowane i zbyt „bogate”.
+Budynki stają się za duże, dachy za ciemne/niebieskie, ule wyglądają jak powielone assety, a całość traci przytulność farm1–farm10.
+
+Najważniejszy kierunek:
+Nie robić coraz większych i coraz bardziej luksusowych budynków.
+Zamiast tego robić „bardziej doświadczoną farmę”:
+- więcej małych detali,
+- więcej naturalnych dekoracji,
+- więcej życia,
+- lepsze ogrodzenia,
+- więcej skrzynek, beczek, narzędzi,
+- delikatne ulepszenia budynków,
+- ale bez zmiany klimatu na bogatą przemysłową farmę.
+
+REFERENCJA:
+farm1, farm5 i farm10 są style guide.
+farm15, farm20, farm25, farm30 mają zostać poprawione w ich kierunku.
+
+KONKRETNE POPRAWKI:
+
+1. farm15
+- zostawić ogólny układ, ale uspokoić detal.
+- poprawić błąd kosmetyczny na domu: dziwne/niepotrzebne 3 okna w dachu/domu.
+- dom ma wyglądać jak naturalne ulepszenie farm10, nie jak nowy, przypadkowy budynek.
+- zmniejszyć wrażenie przeładowania.
+- zachować ciepły czerwony dach domu.
+
+2. farm20
+- zmniejszyć wizualną dominację dużej stodoły.
+- dach stodoły nie powinien być tak mocno niebieski i przyciągać całej uwagi.
+- mniej symetrii, więcej naturalności.
+- ule nie mogą wyglądać jak idealnie skopiowany rząd assetów.
+- zachować więcej pustej zielonej przestrzeni.
+
+3. farm25
+- jeszcze bardziej ograniczyć przeładowanie.
+- dom i stodoła są zbyt duże względem mapy.
+- zmniejszyć skalę budynków albo rozbić upgrade na mniejsze detale.
+- mniej identycznych uli.
+- nie robić z farmy “premium resortu”.
+- zachować cozy/wiejski klimat.
+
+4. farm30
+- największa poprawka.
+- obecnie wygląda zbyt bogato, ciężko i przeładowanie.
+- ma wyglądać jak maksymalnie rozwinięta przytulna farma, a nie przemysłowa farma premium.
+- ograniczyć liczbę identycznych uli.
+- zmniejszyć dominację dużych dachów.
+- dodać więcej naturalnych detali zamiast powiększania budynków.
+- zachować styl farm1/farm5/farm10.
+
+ZASADA:
+Progresja wizualna ma być:
+mała farma -> zadbana farma -> doświadczona farma -> piękna przytulna farma
+
+Nie:
+mała farma -> wielka bogata przemysłowa farma
+
+Ważne:
+Grafiki mają nadal pasować do miasta, sklepu i wnętrza ratusza/klubu farmera.
