@@ -10805,9 +10805,9 @@ export default function Page() {
               if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
               const { data, error } = await supabase.rpc("buy_barn_animal", { p_user_id: profile.id, p_animal_id: a.id });
               if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
-              const response = data as { barn_state?: BarnState; spent?: number } | null;
-              if (response?.barn_state) saveBarnState(response.barn_state);
-              setProfile(prev => prev ? {...prev, money: Math.max(0, (prev.money ?? 0) - Number(response?.spent ?? a.buyPrice))} : prev);
+              const response = data as { ok?: boolean } | null;
+              if (response?.ok === false) { setMessage({type:"error",title:"Błąd zakupu!",text:"Operacja nie powiodła się."}); return; }
+              await loadProfile(profile.id);
               setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
             };
             const handleBuySlot = async (a: AnimalDef) => {
@@ -10819,10 +10819,10 @@ export default function Page() {
               if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
               const { data, error } = await supabase.rpc("buy_barn_slot", { p_user_id: profile.id, p_animal_id: a.id });
               if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
-              const response = data as { barn_state?: BarnState; spent?: number; animal_state?: { slots?: number } } | null;
-              if (response?.barn_state) saveBarnState(response.barn_state);
-              setProfile(prev => prev ? {...prev, money: Math.max(0, (prev.money ?? 0) - Number(response?.spent ?? 0))} : prev);
+              const response = data as { ok?: boolean; animal_state?: { slots?: number } } | null;
+              if (response?.ok === false) { setMessage({type:"error",title:"Błąd!",text:"Operacja nie powiodła się."}); return; }
               const newSlots = response?.animal_state?.slots ?? (st.slots + 1);
+              await loadProfile(profile.id);
               setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${newSlots} / ${a.maxSlots}`});
             };
             const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
@@ -10834,9 +10834,9 @@ export default function Page() {
               const newH = Math.min(100, curH + points);
               const { data, error } = await supabase.rpc("feed_barn_animal", { p_user_id: profile.id, p_animal_id: a.id, p_crop_key: cropKey });
               if (error) { setMessage({type:"error",title:"Błąd karmienia!",text:error.message}); return; }
-              const response = data as { seed_inventory?: Record<string,number>; barn_state?: BarnState } | null;
-              if (response?.seed_inventory) setSeedInventory(response.seed_inventory);
-              if (response?.barn_state) saveBarnState(response.barn_state);
+              const response = data as { ok?: boolean } | null;
+              if (response?.ok === false) { setMessage({type:"error",title:"Błąd karmienia!",text:"Karmienie nie powiodło się."}); return; }
+              await loadProfile(profile.id);
               setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
             };
             const handleCollect = (a: AnimalDef) => {
