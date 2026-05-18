@@ -10601,7 +10601,7 @@ export default function Page() {
                     )}
                   </div>
                 </>
-              );
+              );D
             })()}
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
