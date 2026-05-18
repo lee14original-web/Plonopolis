@@ -3098,6 +3098,11 @@ export default function Page() {
     setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
     seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) - 1 };
 
+    // Gdy skończyły się nasiona — odznacz automatycznie
+    if ((seedInventoryRef.current[effectiveSeedId] ?? 0) <= 0 && selectedSeedId === effectiveSeedId) {
+      setSelectedSeedId(null);
+    }
+
     // Czas sadzenia z bonusem eq "% speed sadzenia"
     const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
     const _plantDurMs = Math.max(400, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
