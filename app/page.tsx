@@ -10361,8 +10361,8 @@ export default function Page() {
                             <p className="text-sm font-black text-amber-300 mb-2">👥 Typy klientów</p>
                             <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia.</p>
                             <div className="space-y-1 text-[12px]">
-                              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
-                                <span>Klient</span><span className="text-right">Produkty</span><span className="text-right">Bonus nagród</span><span className="text-right">Czas</span>
+                              <div className="grid grid-cols-[1fr_52px_104px_40px] gap-x-2 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
+                                <span>Klient</span><span className="text-center">Produkty</span><span className="text-center">Bonus nagród</span><span className="text-center">Czas</span>
                               </div>
                               {[
                                 { i:'🧑‍🌾', n:'Sąsiad',                   it:'1',      m:'×1.00', t:'12h' },
@@ -10375,11 +10375,11 @@ export default function Page() {
                                 { i:'🏗️',  n:'Centrum dystrybucji',     it:'7–9',    m:'×4.00', t:'48h' },
                                 { i:'🌍',   n:'Kontrakt międzynarodowy', it:'8–10',   m:'×5.00', t:'48h' },
                               ].map(c => (
-                                <div key={c.n} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
+                                <div key={c.n} className="grid grid-cols-[1fr_52px_104px_40px] gap-x-2 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
                                   <span className="font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
-                                  <span className="text-[#bfa274] text-right">{c.it}</span>
-                                  <span className="text-amber-300 font-bold text-right">{c.m}</span>
-                                  <span className="text-[#8b6a3e] text-right">{c.t}</span>
+                                  <span className="text-[#bfa274] text-center">{c.it}</span>
+                                  <span className="text-amber-300 font-bold text-center">{c.m}</span>
+                                  <span className="text-[#8b6a3e] text-center">{c.t}</span>
                                 </div>
                               ))}
                             </div>
