@@ -3384,13 +3384,25 @@ export default function Page() {
   useEffect(() => {
     if (!profile?.id) return;
     const interval = setInterval(async () => {
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("to_user_id", profile.id)
-        .eq("read", false)
-        .eq("type", "received");
-      if (typeof count === "number") setUnreadCount(count);
+      const [{ count: rcvCount }, { count: mktCount }] = await Promise.all([
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("to_user_id", profile.id)
+          .eq("read", false)
+          .eq("type", "received")
+          .not("subject", "ilike", "Targ%")
+          .not("subject", "ilike", "🏪%"),
+        supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("to_user_id", profile.id)
+          .eq("read", false)
+          .eq("type", "received")
+          .or("subject.ilike.Targ%,subject.ilike.🏪%"),
+      ]);
+      if (typeof rcvCount === "number") setUnreadCount(rcvCount);
+      if (typeof mktCount === "number") setUnreadMarketCount(mktCount);
     }, 30000);
     return () => clearInterval(interval);
   }, [profile?.id]);
@@ -5779,9 +5791,9 @@ export default function Page() {
                       title="Wiadomości"
                     >
                       <img src="/ui/mail.png" alt="Wiadomości" className="h-[128px] w-[128px] object-contain" style={{imageRendering:"pixelated"}} />
-                      {unreadCount > 0 && (
+                      {(unreadCount + unreadMarketCount) > 0 && (
                         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-lg">
-                          {unreadCount > 9 ? "9+" : unreadCount}
+                          {(unreadCount + unreadMarketCount) > 9 ? "9+" : (unreadCount + unreadMarketCount)}
                         </span>
                       )}
                     </button>
