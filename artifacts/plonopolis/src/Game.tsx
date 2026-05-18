@@ -10310,25 +10310,38 @@ export default function Page() {
               return (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
                   <div className="relative flex w-full max-w-[640px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
-                    <div
-                      className="absolute left-4 top-4 z-30"
-                      onMouseEnter={openLadaInfo}
-                      onMouseLeave={scheduleCloseLadaInfo}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => { if (showLadaInfo) { scheduleCloseLadaInfo(); } else { openLadaInfo(); } }}
-                        className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-500/70 bg-black/40 text-amber-300 font-black transition hover:border-amber-300 hover:text-amber-200 hover:scale-110"
-                        title="Pomoc — jak działa lada?"
-                      >?</button>
-                      {showLadaInfo && (
-                        <div
-                          onMouseEnter={openLadaInfo}
-                          onMouseLeave={scheduleCloseLadaInfo}
-                          className="absolute left-0 top-9 pt-2 w-[560px] max-w-[88vw] max-h-[78vh] overflow-y-auto rounded-2xl border border-amber-500/70 bg-[rgba(14,8,4,0.99)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm space-y-4"
-                        >
+                    <button
+                      type="button"
+                      onClick={() => setShowLadaInfo(v => !v)}
+                      className={`absolute left-4 top-4 z-30 flex h-9 w-9 items-center justify-center rounded-full border font-black transition hover:scale-110 ${showLadaInfo ? 'border-amber-300 bg-amber-900/60 text-amber-200' : 'border-amber-500/70 bg-black/40 text-amber-300 hover:border-amber-300 hover:text-amber-200'}`}
+                      title="Pomoc — jak działa lada?"
+                    >?</button>
+                    <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+
+                    <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
+                      <h2 className="text-3xl font-black text-[#f9e7b2] text-center">Lada dla klientów</h2>
+                    </div>
+
+                    {/* Pasek: czas do następnego klienta */}
+                    {nextSpawnAt !== null && (() => {
+                      const left = Math.max(0, nextSpawnAt - customerNow);
+                      const m = Math.floor(left / 60000);
+                      const s = Math.floor((left % 60000) / 1000);
+                      const isReady = left <= 0;
+                      return (
+                        <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
+                          {isReady
+                            ? '✨ Nowy klient lada chwila — odśwież listę!'
+                            : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="flex-1 overflow-y-auto p-5">
+                      {showLadaInfo ? (
+                        <div className="space-y-4 text-[#dfcfab]">
                           <div>
-                            <p className="text-lg font-black text-amber-300 mb-2">Lada dla klientów</p>
+                            <p className="text-base font-black text-amber-300 mb-2">Lada dla klientów</p>
                             <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i chcą kupić różne produkty:</p>
                             <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none mb-3">
                               <li>🌱 uprawy,</li>
@@ -10349,7 +10362,7 @@ export default function Page() {
                             <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia.</p>
                             <div className="space-y-1 text-[12px]">
                               <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
-                                <span>Klient</span><span>Produkty</span><span>Bonus nagród</span><span>Czas</span>
+                                <span>Klient</span><span className="text-right">Produkty</span><span className="text-right">Bonus nagród</span><span className="text-right">Czas</span>
                               </div>
                               {[
                                 { i:'🧑‍🌾', n:'Sąsiad',                   it:'1',      m:'×1.00', t:'12h' },
@@ -10418,31 +10431,7 @@ export default function Page() {
                             <p className="text-[12px] text-[#bfa274] mt-1">Nowi klienci pojawiają się automatycznie po pewnym czasie.</p>
                           </div>
                         </div>
-                      )}
-                    </div>
-                    <button onClick={() => setShowLadaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
-
-                    <div className="px-6 pt-6 pb-4 border-b border-amber-700/30">
-                      <h2 className="text-3xl font-black text-[#f9e7b2] text-center">Lada dla klientów</h2>
-                    </div>
-
-                    {/* Pasek: czas do następnego klienta */}
-                    {nextSpawnAt !== null && (() => {
-                      const left = Math.max(0, nextSpawnAt - customerNow);
-                      const m = Math.floor(left / 60000);
-                      const s = Math.floor((left % 60000) / 1000);
-                      const isReady = left <= 0;
-                      return (
-                        <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
-                          {isReady
-                            ? '✨ Nowy klient lada chwila — odśwież listę!'
-                            : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
-                        </div>
-                      );
-                    })()}
-
-                    <div className="flex-1 overflow-y-auto p-5">
-                      {customerLoading && customerOrders.length === 0 ? (
+                      ) : customerLoading && customerOrders.length === 0 ? (
                         <div className="text-center py-12">
                           <p className="text-3xl mb-2">⏳</p>
                           <p className="text-[#dfcfab] text-sm">Sprawdzam zamówienia...</p>
