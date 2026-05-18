@@ -3077,7 +3077,7 @@ export default function Page() {
       return;
     }
 
-    const amount = seedInventory[effectiveSeedId] ?? 0;
+    const amount = seedInventoryRef.current[effectiveSeedId] ?? 0;
     if (amount <= 0) {
       setMessage({
         type: "info",
