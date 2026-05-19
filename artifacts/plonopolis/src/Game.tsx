@@ -4464,24 +4464,12 @@ export default function Page() {
 
   async function handleAddExp(amount: number) {
     if (!profile) return;
-    const nextXp = displayXp + amount;
-    let nextLevel = displayLevel;
-    let nextXpStored = nextXp;
-    let nextXpToNextLevel = displayXpToNextLevel;
-    while (nextXpStored >= nextXpToNextLevel && nextLevel < MAX_LEVEL) {
-      nextLevel = Math.min(nextLevel + 1, MAX_LEVEL);
-      nextXpStored = nextXpStored - nextXpToNextLevel;
-      nextXpToNextLevel = getXpForLevel(nextLevel);
-    }
-    if (nextLevel >= MAX_LEVEL) { nextLevel = MAX_LEVEL; nextXpStored = 0; nextXpToNextLevel = 0; }
-    const nextMap = getMapForLevel(nextLevel);
-    const { error } = await supabase.from("profiles").update({
-      level: nextLevel, xp: nextXpStored, xp_to_next_level: nextXpToNextLevel,
-      location: displayLocation, current_map: nextMap, last_played_at: new Date().toISOString(),
-    }).eq("id", profile.id);
-    if (error) { setMessage({ type: "error", title: "Błąd zapisu", text: error.message }); return; }
+    const { data, error } = await supabase.rpc("dev_add_exp", { p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania EXP", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; added?: number; level?: number; xp?: number; xp_to_next_level?: number } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania EXP", text: response.error ?? "Nieznany błąd" }); return; }
     await loadProfile(profile.id);
-    setMessage({ type: "success", title: "EXP dodany!", text: `+${amount.toLocaleString("pl-PL")} EXP` });
+    setMessage({ type: "success", title: "EXP dodany!", text: `+${(response?.added ?? amount).toLocaleString("pl-PL")} EXP, poziom ${response?.level ?? "?"}.` });
   }
 
   async function handleUnlockPlot(plotId: number) {
