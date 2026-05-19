@@ -5465,6 +5465,18 @@ export default function Page() {
     void loadMessages();
   }
 
+  function openBlankCompose() {
+    setRecipientResolved(null);
+    setComposeRecipient("");
+    setRecipientSuggestions([]);
+    setComposeSubject("");
+    setComposeBody("");
+    setComposeError("");
+    setComposeSending(false);
+    setShowCompose(true);
+    setShowMessagePanel(true);
+  }
+
   function openComposeTo(userId: string, username: string) {
     setRecipientResolved({ id: userId, username });
     setComposeRecipient(username);
@@ -7546,7 +7558,7 @@ export default function Page() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setShowCompose(c => !c); setComposeError(""); }}
+                      onClick={openBlankCompose}
                       className="rounded-xl border border-[#d8ba7a]/70 bg-[rgba(80,50,10,0.5)] px-5 py-2 text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(100,70,15,0.7)]">
                       ✉️ Nowa +
                     </button>
@@ -7581,7 +7593,7 @@ export default function Page() {
                 {/* Treść */}
                 <div className="flex-1 overflow-y-auto p-5">
                   {showCompose ? (
-                    <div className="flex h-full flex-col gap-4">
+                    <div className="relative z-10 flex h-full flex-col gap-4 pointer-events-auto">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">✉️</span>
                         <h3 className="text-xl font-black text-[#f9e7b2]">Nowa wiadomość</h3>
