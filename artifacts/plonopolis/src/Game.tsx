@@ -4195,26 +4195,22 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Brak danych",
-        text: "Podaj login oraz hasło.",
+        text: "Podaj email oraz hasło.",
       });
       return;
     }
 
-    // Znajdź email na podstawie loginu gracza (RPC z SECURITY DEFINER omija RLS)
-    const { data: emailResult, error: lookupError } = await supabase
-      .rpc("get_email_by_login", { p_login: identifier });
-
-    if (lookupError || !emailResult) {
+    if (!identifier.includes("@")) {
       setMessage({
         type: "error",
-        title: "Nie znaleziono gracza",
-        text: "Nie znaleziono konta z takim loginem. Sprawdź pisownię.",
+        title: "Wymagany adres email",
+        text: "Zaloguj się adresem email. Logowanie loginem zostało wyłączone ze względów bezpieczeństwa.",
       });
       return;
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: emailResult as string,
+      email: identifier.trim(),
       password,
     });
 
