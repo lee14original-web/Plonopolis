@@ -47,6 +47,7 @@ type Profile = {
   plot_obstacles?: Record<string, { type: string; cost: number }> | null;
   orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
   barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
+  role?: "player" | "tester" | "moderator" | "admin" | "owner" | string | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -2654,6 +2655,7 @@ export default function Page() {
   const displayXpToNextLevel = _simLevel >= MAX_LEVEL ? 0 : _simToNext;
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
+  const canUseTestTools = ["tester", "admin", "owner"].includes(profile?.role ?? "");
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const isOnCityMap = !!profile && currentMap === "city";
   const isOnPanMap = isOnFarmMap || isOnCityMap;
@@ -4279,8 +4281,12 @@ export default function Page() {
 
   async function handleAddGold(amount: number) {
     if (!profile?.id) return;
-    const { error } = await supabase.from("profiles").update({ money: (profile.money ?? 0) + amount }).eq("id", profile.id);
-    if (!error) await loadProfile(profile.id);
+    const { data, error } = await supabase.rpc("dev_add_gold", { p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania złota", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; added?: number; money?: number } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania złota", text: response.error ?? "Nieznany błąd" }); return; }
+    setMessage({ type: "success", title: "Dodano złoto!", text: `Dodano ${(response?.added ?? amount).toLocaleString("pl-PL")} złota.` });
+    await loadProfile(profile.id);
   }
 
   async function handleAddSeeds(amount: number) {
@@ -5716,6 +5722,7 @@ export default function Page() {
                 @keyframes legendaryShimmer{0%{opacity:0;transform:translateX(-120%) rotate(20deg)}60%{opacity:0.55}100%{opacity:0;transform:translateX(120%) rotate(20deg)}}
 
               `}</style>
+              {canUseTestTools && (
               <div className="fixed right-4 bottom-6 z-[92] flex items-center gap-2">
                 <span className="text-4xl font-black text-orange-400 select-none" style={{animation:"arrowBlink 1.1s ease-in-out infinite",display:"inline-block"}}>➤</span>
                 <button onClick={() => setShowTestModal(true)}
@@ -5725,6 +5732,7 @@ export default function Page() {
                   <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 rounded-full bg-orange-500 animate-ping" />
                 </button>
               </div>
+              )}
 
 
               {/* ═══ MUZYKA ═══ */}
@@ -7937,7 +7945,7 @@ export default function Page() {
                         </div>
                       )}
 
-                      {showTestModal && (
+                      {showTestModal && canUseTestTools && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4">
               <div className="relative w-full max-w-[600px] rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] p-6 shadow-2xl text-[#dfcfab]">
                 <button onClick={() => setShowTestModal(false)} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
