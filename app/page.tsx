@@ -4321,24 +4321,24 @@ export default function Page() {
 
   async function handleAddBarnItems(amount: number) {
     if (!profile?.id) return;
-    const { data, error } = await supabase.rpc("test_add_barn_items", { p_user_id: profile.id, p_amount: amount });
-    if (!error && data) {
-      await loadProfile(profile.id);
-      setMessage({ type: "success", title: "Dodano produkty!", text: `+${amount} × ${ANIMAL_ITEMS.length} rodzajów produktów ze zwierząt.` });
-    } else {
-      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono sql_test_add_barn_items.sql w Supabase SQL Editor." });
-    }
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "barn_items", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania produktów", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; barn_items?: BarnItems } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania produktów", text: response.error ?? "Nieznany błąd" }); return; }
+    if (response?.barn_items) saveBarnItems(response.barn_items);
+    await loadProfile(profile.id);
+    setMessage({ type: "success", title: "Dodano produkty!", text: `+${response?.amount ?? amount} × ${ANIMAL_ITEMS.length} rodzajów produktów ze zwierząt.` });
   }
 
   async function handleAddFruits(amount: number) {
     if (!profile?.id) return;
-    const { data, error } = await supabase.rpc("test_add_fruits", { p_user_id: profile.id, p_amount: amount });
-    if (!error && data) {
-      await loadProfile(profile.id);
-      setMessage({ type: "success", title: "Dodano owoce!", text: `+${amount} × ${TREES.length} gatunków × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
-    } else {
-      setMessage({ type: "error", title: "Błąd", text: error?.message ?? "Nieznany błąd — sprawdź czy uruchomiono test_add_fruits w Supabase SQL Editor." });
-    }
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "fruits", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania owoców", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; fruit_inventory?: Record<string, number> } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania owoców", text: response.error ?? "Nieznany błąd" }); return; }
+    if (response?.fruit_inventory) saveFruitInventory(response.fruit_inventory);
+    await loadProfile(profile.id);
+    setMessage({ type: "success", title: "Dodano owoce!", text: `+${response?.amount ?? amount} × ${TREES.length} gatunków × 4 jakości (zwykły/soczysty/złoty/zgniłe).` });
   }
 
   async function handleAvatarSelect(idx: number) {
