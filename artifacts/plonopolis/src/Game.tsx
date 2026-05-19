@@ -8378,18 +8378,23 @@ export default function Page() {
                           if (!profile?.id || total === 0 || !canAfford) return;
                           setShopError("");
                           void (async () => {
-                            const newInv: Record<string,number> = {...seedInventory};
-                            for (const [id, qty] of Object.entries(shopCart)) {
-                              if ((qty as number) > 0) newInv[id] = (newInv[id] ?? 0) + (qty as number);
-                            }
-                            const cartTotal = Math.round(Object.entries(shopCart).reduce((s, [id, qty]) => {
-                              const bp = CROP_PRICES[id] ?? 0;
-                              const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
-                              return s + bp * disc * (qty as number);
-                            }, 0) * 100) / 100;
-                            const { error } = await supabase.from("profiles").update({ money: Math.round((displayMoney - cartTotal) * 100) / 100, seed_inventory: newInv }).eq("id", profile.id);
-                            if (!error) { setShopCart({}); setShopError(""); await loadProfile(profile.id); }
-                            else { setShopError("Blad: " + error.message); }
+                            const p_items = Object.entries(shopCart)
+                              .filter(([, qty]) => (qty as number) > 0)
+                              .map(([key, qty]) => {
+                                let crop_id = key;
+                                let quality = "good";
+                                for (const q of ["epic","legendary","rotten","good"]) {
+                                  if (key.endsWith(`_${q}`)) { crop_id = key.slice(0, -(q.length + 1)); quality = q; break; }
+                                }
+                                return { crop_id, quality, qty: qty as number };
+                              });
+                            const { data, error } = await supabase.rpc("buy_shop_seeds", { p_user_id: profile.id, p_items });
+                            if (error) { setShopError("Blad: " + error.message); return; }
+                            const response = data as { ok?: boolean; error?: string } | null;
+                            if (response?.ok === false) { setShopError("Blad: " + (response.error ?? "Operacja nie powiodła się.")); return; }
+                            setShopCart({});
+                            setShopError("");
+                            await loadProfile(profile.id);
                           })();
                         }}
                         className={`w-full rounded-xl py-2 font-black text-[21px] transition-all active:scale-95 ${total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
