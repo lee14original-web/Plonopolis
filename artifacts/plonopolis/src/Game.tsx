@@ -8740,18 +8740,25 @@ export default function Page() {
                         <button className="mt-3 block ml-auto rounded-lg border border-red-400/20 bg-red-950/15 px-3 py-1.5 text-[11px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
                           onClick={() => {
                             if (!profile?.id) return;
-                            const resetCost = 50000;
-                            if (displayMoney < resetCost) { alert("Potrzebujesz 50 000 💰 aby zresetować statystyki."); return; }
                             if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
                             void (async () => {
-                              const { error } = await supabase.from("profiles").update({ money: displayMoney - resetCost }).eq("id", profile.id);
-                              if (!error) {
-                                const totalSpent = Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0);
-                                const nextFsp = freeSkillPoints + totalSpent;
-                                setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(nextFsp);
-                                saveAvatarData(profile.id, avatarSkin, { ...DEFAULT_STATS }, nextFsp, prevLevelRef.current);
-                                await loadProfile(profile.id);
-                              }
+                              const { data, error } = await supabase.rpc("game_reset_player_stats");
+                              if (error) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: error.message }); return; }
+                              const response = data as {
+                                ok?: boolean;
+                                error?: string;
+                                spent?: number;
+                                player_stats?: PlayerStatsMap;
+                                free_skill_points?: number;
+                              } | null;
+                              if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: response.error ?? "Nieznany błąd." }); return; }
+                              const newStats = response?.player_stats ?? { ...DEFAULT_STATS };
+                              const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : freeSkillPoints;
+                              setPlayerStats(newStats);
+                              setFreeSkillPoints(newFsp);
+                              saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
+                              await loadProfile(profile.id);
+                              setMessage({ type: "success", title: "Statystyki zresetowane", text: `Odzyskano ${response?.spent ?? 0} punktów umiejętności.` });
                             })();
                           }}>🔄 Reset statystyk (50 000 💰)</button>
                       </div>
