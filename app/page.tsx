@@ -8748,6 +8748,7 @@ export default function Page() {
                                 ok?: boolean;
                                 error?: string;
                                 spent?: number;
+                                spent_points?: number;
                                 player_stats?: PlayerStatsMap;
                                 free_skill_points?: number;
                               } | null;
@@ -8758,7 +8759,7 @@ export default function Page() {
                               setFreeSkillPoints(newFsp);
                               saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
                               await loadProfile(profile.id);
-                              setMessage({ type: "success", title: "Statystyki zresetowane", text: `Odzyskano ${response?.spent ?? 0} punktów umiejętności.` });
+                              setMessage({ type: "success", title: "Statystyki zresetowane", text: `Odzyskano ${response?.spent_points ?? 0} punktów umiejętności. Koszt: ${response?.spent ?? 50000} 💰.` });
                             })();
                           }}>🔄 Reset statystyk (50 000 💰)</button>
                       </div>
