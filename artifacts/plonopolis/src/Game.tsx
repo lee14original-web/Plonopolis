@@ -4291,34 +4291,32 @@ export default function Page() {
 
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
-    // Zawsze używamy nowego formatu z sufiksem jakości — zapobiega rozbieżności client/DB
-    const goodKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono").map(c => `${c.id}_good`);
-    const qualityKeys: string[] = CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).flatMap(c => [`${c.id}_epic`, `${c.id}_rotten`, `${c.id}_legendary`]);
-    const allKeys = [...goodKeys, ...qualityKeys];
-    const newInv: Record<string,number> = { ...seedInventory };
-    for (const id of allKeys) newInv[id] = (newInv[id] ?? 0) + amount;
-    const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
-    if (!error) await loadProfile(profile.id);
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "seeds_all", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania nasion", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; seed_inventory?: Record<string, number> } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania nasion", text: response.error ?? "Nieznany błąd" }); return; }
+    setMessage({ type: "success", title: "Dodano nasiona!", text: `+${response?.amount ?? amount} szt. każdego rodzaju (wszystkie jakości).` });
+    await loadProfile(profile.id);
   }
 
   async function handleAddEpic(amount: number) {
     if (!profile?.id) return;
-    const newInv: Record<string,number> = { ...seedInventory };
-    CROPS.filter(c => c.id !== "test_nasiono" && c.epicSpritePath).forEach(c => {
-      newInv[`${c.id}_epic`] = (newInv[`${c.id}_epic`] ?? 0) + amount;
-    });
-    const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
-    if (!error) await loadProfile(profile.id);
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "seeds_epic", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania epickich nasion", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; seed_inventory?: Record<string, number> } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania epickich nasion", text: response.error ?? "Nieznany błąd" }); return; }
+    setMessage({ type: "success", title: "Dodano epickie nasiona!", text: `+${response?.amount ?? amount} szt. ⭐ każdego rodzaju.` });
+    await loadProfile(profile.id);
   }
 
   async function handleAddLegendary(amount: number) {
     if (!profile?.id) return;
-    const newInv: Record<string,number> = { ...seedInventory };
-    CROPS.filter(c => c.id !== "test_nasiono" && c.legendarySpritePath).forEach(c => {
-      newInv[`${c.id}_legendary`] = (newInv[`${c.id}_legendary`] ?? 0) + amount;
-    });
-    const { error } = await supabase.from("profiles").update({ seed_inventory: newInv }).eq("id", profile.id);
-    if (!error) await loadProfile(profile.id);
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "seeds_legendary", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania legendarnych nasion", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; seed_inventory?: Record<string, number> } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania legendarnych nasion", text: response.error ?? "Nieznany błąd" }); return; }
+    setMessage({ type: "success", title: "Dodano legendarne nasiona!", text: `+${response?.amount ?? amount} szt. 👑 każdego rodzaju.` });
+    await loadProfile(profile.id);
   }
 
   async function handleAddBarnItems(amount: number) {
@@ -8049,8 +8047,13 @@ export default function Page() {
                       onClick={async () => {
                         if (!profile?.id) return;
                         const allEpicIds = EPIC_SKINS.map((_, i) => EPIC_SKIN_START + i);
-                        const { error } = await supabase.from("profiles").update({ unlocked_epic_avatars: allEpicIds }).eq("id", profile.id);
-                        if (!error) setUnlockedEpicAvatars(allEpicIds);
+                        const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "epic_avatars", p_avatar_ids: allEpicIds });
+                        if (error) { setMessage({ type: "error", title: "Błąd odblokowania avatarów", text: error.message }); return; }
+                        const response = data as { ok?: boolean; error?: string; unlocked_epic_avatars?: number[] } | null;
+                        if (response?.ok === false) { setMessage({ type: "error", title: "Błąd odblokowania avatarów", text: response.error ?? "Nieznany błąd" }); return; }
+                        setUnlockedEpicAvatars(response?.unlocked_epic_avatars ?? allEpicIds);
+                        await loadProfile(profile.id);
+                        setMessage({ type: "success", title: "Avatary odblokowane!", text: "Wszystkie epickie avatary zostały odblokowane." });
                       }}
                       className="rounded-xl border border-green-500/60 bg-green-900/30 px-4 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
                       🔓 Odblokuj wszystkie epickie avatary
