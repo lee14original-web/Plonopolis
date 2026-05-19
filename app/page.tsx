@@ -5436,12 +5436,10 @@ export default function Page() {
       .select("blocked_users")
       .eq("id", recipientResolved.id)
       .single();
-    // Pobierz opłatę zawsze
-    await supabase.from("profiles").update({ money: (profile.money ?? 0) - MESSAGE_COST }).eq("id", profile.id);
     const blockedByRecipient = ((recipientProfile as {blocked_users?:string[]|null})?.blocked_users ?? []).includes(profile.id);
     if (blockedByRecipient) {
       setComposeSending(false);
-      setComposeError("Ta osoba cię zablokowała. Pobrano " + MESSAGE_COST + " 💰.");
+      setComposeError("Ta osoba cię zablokowała.");
       setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
       return;
     }
@@ -5455,7 +5453,8 @@ export default function Page() {
       p_to_username:   recipientResolved.username,
     });
     setComposeSending(false);
-    if (error) { setComposeError("Błąd wysyłania: " + error.message); return; }
+    if (error) { setComposeError(error.message); return; }
+    await loadProfile(profile.id);
     setMessageCooldowns(prev => ({ ...prev, [recipientResolved.id]: Date.now() }));
     setShowCompose(false);
     setComposeRecipient("");
