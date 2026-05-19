@@ -5398,12 +5398,11 @@ export default function Page() {
 
   async function searchPlayers(q: string) {
     if (q.trim().length < 2) { setRecipientSuggestions([]); return; }
-    const { data } = await supabase
-      .from("profiles")
-      .select("id,username")
-      .ilike("username", `%${q.trim()}%`)
-      .neq("id", profile?.id ?? "")
-      .limit(8);
+    const { data, error } = await supabase.rpc("search_message_recipients", {
+      p_query: q.trim(),
+      p_limit: 8,
+    });
+    if (error) { setRecipientSuggestions([]); return; }
     setRecipientSuggestions((data as {id:string;username:string}[]) ?? []);
   }
 
