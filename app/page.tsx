@@ -4413,53 +4413,35 @@ export default function Page() {
       "Kontynuować?"
     )) return;
     if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować całe konto?")) return;
-    const xpNeeded = getXpForLevel(1);
+    const { data, error } = await supabase.rpc("dev_reset_account");
+    if (error) { setMessage({ type: "error", title: "Błąd resetu", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; role?: string; level?: number; xp?: number; xp_to_next_level?: number; money?: number; current_map?: string } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
     const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
     const freshBarnState = defaultBarnState();
     const freshOrchardState = defaultOrchardState();
     const freshUnlockedPlots = Array.from({ length: 20 }, (_, i) => i + 1);
-    const { error } = await supabase.from("profiles").update({
-      level: 1, xp: 0, xp_to_next_level: xpNeeded, money: 10,
-      location: "farm1", current_map: "farm1",
-      unlocked_plots: freshUnlockedPlots, plot_crops: {}, seed_inventory: {},
-      avatar_skin: -1, player_stats: {}, free_skill_points: 3, prev_level: 1,
-      equipment_slots: 1, equipment: [], unlocked_epic_avatars: [],
-      hive_data: freshHive,
-    }).eq("id", profile.id);
-    // barn_items / fruit_inventory mają trigger blokujący direct update — używamy dedykowanych RPC
-    // plot_obstacles resetujemy przez dedykowaną RPC (generuje nowe losowe przeszkody)
-    await Promise.all([
-      supabase.rpc("sync_barn_items", { p_user_id: profile.id, p_items: {} }),
-      supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: {} }),
-      supabase.rpc("game_reset_plot_obstacles", { p_user_id: profile.id }),
-    ]);
-    if (!error) {
-      lastLoadedUserIdRef.current = null;
-      setEquipmentSlots(1); setEquipment([]);
-      setUnlockedEpicAvatars([]);
-      setUnlockedPlots(freshUnlockedPlots);
-      setPlotObstacles({});
-      setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
-      setAvatarChangeCount(0); setLastAvatarChangeAt(0);
-      saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1, 0, 0);
-      // Czyszczenie LS ekwipunku — bez tego applyProfileState przywróciłby stary stan z cache
-      saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
-      saveItemUpg({});
-      saveOwnedEqItems({});
-      saveExtraEqItems([]);
-      // Zwierzęta / sad / ul / kompostownik / produkty — local + state
-      setHiveData(freshHive);
-      saveBarnItems({});
-      saveBarnState(freshBarnState);
-      saveOrchardState(freshOrchardState);
-      saveFruitInventory({});
-      saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
-      try { localStorage.removeItem(KOMPOST_KEY); } catch {}
-      await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
-    } else {
-      setMessage({ type: "error", title: "Błąd resetu", text: error.message });
-    }
+    lastLoadedUserIdRef.current = null;
+    setEquipmentSlots(1); setEquipment([]);
+    setUnlockedEpicAvatars([]);
+    setUnlockedPlots(freshUnlockedPlots);
+    setPlotObstacles({});
+    setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
+    setAvatarChangeCount(0); setLastAvatarChangeAt(0);
+    saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1, 0, 0);
+    saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
+    saveItemUpg({});
+    saveOwnedEqItems({});
+    saveExtraEqItems([]);
+    setHiveData(freshHive);
+    saveBarnItems({});
+    saveBarnState(freshBarnState);
+    saveOrchardState(freshOrchardState);
+    saveFruitInventory({});
+    saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
+    try { localStorage.removeItem(KOMPOST_KEY); } catch {}
+    await loadProfile(profile.id);
+    setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
   }
 
   async function handleAddExp(amount: number) {
