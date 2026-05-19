@@ -4363,13 +4363,23 @@ export default function Page() {
       return;
     }
     const newSkin = response?.avatar_skin ?? idx;
+    const newChangeCount = typeof response?.avatar_change_count === "number"
+      ? response.avatar_change_count
+      : avatarChangeCount;
+    const newLastChangeAt = typeof response?.last_avatar_change_at === "number"
+      ? response.last_avatar_change_at
+      : lastAvatarChangeAt;
     setAvatarSkin(newSkin);
-    if (typeof response?.avatar_change_count === "number") setAvatarChangeCount(response.avatar_change_count);
-    if (typeof response?.last_avatar_change_at === "number") setLastAvatarChangeAt(response.last_avatar_change_at);
+    setAvatarChangeCount(newChangeCount);
+    setLastAvatarChangeAt(newLastChangeAt);
     saveAvatarDataLS(
-      profile.id, newSkin, playerStats, freeSkillPoints, prevLevelRef.current,
-      typeof response?.avatar_change_count === "number" ? response.avatar_change_count : undefined,
-      typeof response?.last_avatar_change_at === "number" ? response.last_avatar_change_at : undefined,
+      profile.id,
+      newSkin,
+      playerStats,
+      freeSkillPoints,
+      prevLevelRef.current,
+      newChangeCount,
+      newLastChangeAt,
     );
     await loadProfile(profile.id);
     setShowSkinModal(false);
