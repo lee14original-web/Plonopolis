@@ -5601,7 +5601,7 @@ export default function Page() {
           onMouseDown={(e) => {
             if (!isOnPanMap || e.button !== 0) return;
             const tgt = e.target as HTMLElement;
-            if (tgt.closest('[data-no-map-drag], button, [role="button"], a')) return;
+            if (tgt.closest('[data-no-map-drag], button, [role="button"], a, input, textarea, select')) return;
             e.preventDefault();
             panDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
