@@ -8792,58 +8792,37 @@ export default function Page() {
                     const handleUpg = async (slot: EquipSlot, eqD: { id: string; upg: number }) => {
                       const nextU = eqD.upg+1; const cost = getUpgradeCost(eqD.id, nextU);
                       if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
-                      if (nextU <= 3) {
-                        // +1..+3: tylko złoto, RNG po stronie serwera
-                        const { data, error: rpcErr } = await supabase.rpc("game_roll_equipment_upgrade", {
-                          p_item_id: eqD.id,
-                          p_current_upg: eqD.upg,
-                          p_luck: effectiveStats.szczescie ?? 0,
-                        });
-                        if (rpcErr) { setMessage({ type:"error", title:"Błąd ulepszenia", text: rpcErr.message }); return; }
-                        const response = data as {
-                          ok?: boolean; error?: string; item_id?: string;
-                          current_upg?: number; target_upg?: number;
-                          new_upg?: number; success?: boolean; cost?: number; chance?: number;
-                        } | null;
-                        if (response?.ok === false) { setMessage({ type:"error", title:"Błąd ulepszenia", text: response.error ?? "Nieznany błąd." }); return; }
-                        const fu = response?.new_upg ?? eqD.upg;
-                        if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
-                        else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
-                        saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
-                        saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
-                        await loadProfile(profile!.id);
+                      const { data, error: rpcErr } = await supabase.rpc("game_roll_equipment_upgrade", {
+                        p_item_id: eqD.id,
+                        p_current_upg: eqD.upg,
+                        p_luck: effectiveStats.szczescie ?? 0,
+                      });
+                      if (rpcErr) { setMessage({ type:"error", title:"Błąd ulepszenia", text: rpcErr.message }); return; }
+                      const response = data as {
+                        ok?: boolean; error?: string; item_id?: string; item_name?: string; slot?: string;
+                        current_upg?: number; target_upg?: number; new_upg?: number;
+                        success?: boolean; cost?: number; chance?: number;
+                        materials?: Array<{ mat_id: string; qty: number; have?: number }>;
+                        missing_materials?: Array<{ mat_id: string; need: number; have: number }>;
+                        barn_items?: BarnItems;
+                      } | null;
+                      if (response?.ok === false) {
+                        if (response.missing_materials && response.missing_materials.length > 0) {
+                          const txt = response.missing_materials.map(m => `${m.mat_id} ${m.have}/${m.need}`).join(", ");
+                          setMessage({ type:"error", title:"Brak materiałów!", text:`Brakuje: ${txt}` });
+                        } else {
+                          setMessage({ type:"error", title:"Błąd ulepszenia", text: response.error ?? "Nieznany błąd." });
+                        }
                         return;
                       }
-                      // TODO: upgrade +4..+10 czeka na RPC z obsługą materiałów po stronie serwera
-                      // Sprawdź materiały (od +4)
-                      const mats = getUpgradeMaterials(eqD.id, nextU);
-                      const missing = mats.filter(m => (barnItems[m.matId] ?? 0) < m.qty);
-                      if (missing.length > 0) {
-                        const txt = missing.map(m => {
-                          const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
-                          const have = barnItems[m.matId] ?? 0;
-                          return `${md?.icon ?? "•"} ${md?.name ?? m.matId}: ${have}/${m.qty}`;
-                        }).join("\n");
-                        setMessage({ type:"error", title:"Brak materiałów!", text:txt });
-                        return;
-                      }
-                      const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile!.id);
-                      if (me) return;
-                      // Odejmij materiały lokalnie
-                      if (mats.length > 0) {
-                        const newBarn = { ...barnItems };
-                        mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
-                        saveBarnItems(newBarn);
-                      }
-                      const _luckUpgBonus = Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005);
-                      const ok = Math.random() < Math.min(1, UPGRADE_CHANCE[nextU] + _luckUpgBonus);
-                      let fu;
-                      if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                      else if (eqD.upg <= 6) { fu = eqD.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${eqD.upg}.` }); }
-                      else { fu = eqD.upg-1; setMessage({ type:"error", title:`⬇ Item cofa się do +${eqD.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                      const fu = response?.new_upg ?? eqD.upg;
+                      if (response?.barn_items) saveBarnItems(response.barn_items);
                       saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
                       saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
                       await loadProfile(profile!.id);
+                      if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
+                      else if (fu < eqD.upg) { setMessage({ type:"error", title:`⬇ Item cofa się do +${fu}!`, text:"Ulepszenie nie powiodło się." }); }
+                      else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
                     };
                     return (
                       <div>
@@ -9105,55 +9084,36 @@ export default function Page() {
                               const cost = getUpgradeCost(entry.id, nextU);
                               if (displayMoney < cost) { setMessage({ type:"error", title:"Za mało złota!", text:`Potrzebujesz ${cost.toLocaleString()} 💰` }); return; }
                               if (!profile?.id) return;
-                              if (nextU <= 3) {
-                                // +1..+3: tylko złoto, RNG po stronie serwera
-                                const { data, error: rpcErr } = await supabase.rpc("game_roll_equipment_upgrade", {
-                                  p_item_id: entry.id,
-                                  p_current_upg: entry.upg,
-                                  p_luck: effectiveStats.szczescie ?? 0,
-                                });
-                                if (rpcErr) { setMessage({ type:"error", title:"Błąd ulepszenia", text: rpcErr.message }); return; }
-                                const response = data as {
-                                  ok?: boolean; error?: string; item_id?: string;
-                                  current_upg?: number; target_upg?: number;
-                                  new_upg?: number; success?: boolean; cost?: number; chance?: number;
-                                } | null;
-                                if (response?.ok === false) { setMessage({ type:"error", title:"Błąd ulepszenia", text: response.error ?? "Nieznany błąd." }); return; }
-                                const fu = response?.new_upg ?? entry.upg;
-                                if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
-                                else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
-                                saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: fu } : e));
-                                await loadProfile(profile.id);
+                              const { data, error: rpcErr } = await supabase.rpc("game_roll_equipment_upgrade", {
+                                p_item_id: entry.id,
+                                p_current_upg: entry.upg,
+                                p_luck: effectiveStats.szczescie ?? 0,
+                              });
+                              if (rpcErr) { setMessage({ type:"error", title:"Błąd ulepszenia", text: rpcErr.message }); return; }
+                              const response = data as {
+                                ok?: boolean; error?: string; item_id?: string; item_name?: string; slot?: string;
+                                current_upg?: number; target_upg?: number; new_upg?: number;
+                                success?: boolean; cost?: number; chance?: number;
+                                materials?: Array<{ mat_id: string; qty: number; have?: number }>;
+                                missing_materials?: Array<{ mat_id: string; need: number; have: number }>;
+                                barn_items?: BarnItems;
+                              } | null;
+                              if (response?.ok === false) {
+                                if (response.missing_materials && response.missing_materials.length > 0) {
+                                  const txt = response.missing_materials.map(m => `${m.mat_id} ${m.have}/${m.need}`).join(", ");
+                                  setMessage({ type:"error", title:"Brak materiałów!", text:`Brakuje: ${txt}` });
+                                } else {
+                                  setMessage({ type:"error", title:"Błąd ulepszenia", text: response.error ?? "Nieznany błąd." });
+                                }
                                 return;
                               }
-                              // TODO: upgrade +4..+10 czeka na RPC z obsługą materiałów po stronie serwera
-                              // Sprawdź materiały (od +4)
-                              const mats = getUpgradeMaterials(entry.id, nextU);
-                              const missing = mats.filter(m => (barnItems[m.matId] ?? 0) < m.qty);
-                              if (missing.length > 0) {
-                                const txt = missing.map(m => {
-                                  const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
-                                  const have = barnItems[m.matId] ?? 0;
-                                  return `${md?.icon ?? "•"} ${md?.name ?? m.matId}: ${have}/${m.qty}`;
-                                }).join("\n");
-                                setMessage({ type:"error", title:"Brak materiałów!", text:txt });
-                                return;
-                              }
-                              const { error: me } = await supabase.from("profiles").update({ money: displayMoney - cost }).eq("id", profile.id);
-                              if (me) return;
-                              if (mats.length > 0) {
-                                const newBarn = { ...barnItems };
-                                mats.forEach(m => { newBarn[m.matId] = (newBarn[m.matId] ?? 0) - m.qty; });
-                                saveBarnItems(newBarn);
-                              }
-                              const _luckUpgBonusEx = Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005);
-                              const ok = Math.random() < Math.min(1, UPGRADE_CHANCE[nextU] + _luckUpgBonusEx);
-                              let fu: number;
-                              if (ok) { fu = nextU; setMessage({ type:"success", title:`✨ +${nextU} udane!`, text:`Koszt: ${cost.toLocaleString()} 💰` }); }
-                              else if (entry.upg <= 6) { fu = entry.upg; setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${entry.upg}.` }); }
-                              else { fu = entry.upg - 1; setMessage({ type:"error", title:`⬇ Item cofa się do +${entry.upg-1}!`, text:"Ulepszenie nie powiodło się." }); }
+                              const fu = response?.new_upg ?? entry.upg;
+                              if (response?.barn_items) saveBarnItems(response.barn_items);
                               saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: fu } : e));
                               await loadProfile(profile.id);
+                              if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
+                              else if (fu < entry.upg) { setMessage({ type:"error", title:`⬇ Item cofa się do +${fu}!`, text:"Ulepszenie nie powiodło się." }); }
+                              else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
                             };
                             const handleSwapExtra = (entry: ExtraEqEntry) => {
                               const mainUpg = itemUpgRegistry[entry.id] ?? 0;

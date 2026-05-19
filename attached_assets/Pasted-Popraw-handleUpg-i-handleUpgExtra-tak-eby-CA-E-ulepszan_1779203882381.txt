@@ -1,0 +1,60 @@
+Popraw handleUpg i handleUpgExtra tak, żeby CAŁE ulepszanie ekwipunku +1..+10 używało RPC game_roll_equipment_upgrade.
+
+Obecnie:
+- nextU <= 3 używa RPC
+- nextU >= 4 nadal robi stare:
+  - getUpgradeMaterials(...)
+  - lokalne sprawdzanie materiałów
+  - supabase.from("profiles").update({ money: displayMoney - cost })
+  - saveBarnItems(newBarn)
+  - Math.random()
+
+Backend RPC obsługuje już:
+- koszt złota
+- materiały z profiles.barn_items
+- RNG przez random()
+- zwraca barn_items, materials, missing_materials, new_upg, success, cost, chance
+
+Zmień obie funkcje tak, żeby:
+1. Usunąć rozdział nextU <= 3 / nextU >= 4.
+2. Dla każdego nextU 1..10 wywołać:
+   supabase.rpc("game_roll_equipment_upgrade", {
+     p_item_id: itemId,
+     p_current_upg: currentUpg,
+     p_luck: effectiveStats.szczescie ?? 0
+   })
+3. Usunąć z tych funkcji:
+   - supabase.from("profiles").update({ money: ... })
+   - Math.random()
+   - lokalne odejmowanie materiałów przez saveBarnItems(newBarn) przed RPC
+4. Odpowiedź typuj jako:
+   {
+     ok?: boolean;
+     error?: string;
+     item_id?: string;
+     item_name?: string;
+     slot?: string;
+     current_upg?: number;
+     target_upg?: number;
+     new_upg?: number;
+     success?: boolean;
+     cost?: number;
+     chance?: number;
+     materials?: Array<{ mat_id: string; qty: number; have?: number }>;
+     missing_materials?: Array<{ mat_id: string; need: number; have: number }>;
+     barn_items?: BarnItems;
+   }
+5. Jeśli RPC zwróci error albo response.ok === false:
+   - jeśli response.missing_materials istnieje, pokaż komunikat typu:
+     "Brakuje materiałów: jajko 0/1, mleko 2/5"
+   - inaczej pokaż response.error
+   - return
+6. Po sukcesie:
+   - użyj response.new_upg jako finalnego poziomu ulepszenia
+   - jeśli response.barn_items istnieje, zrób saveBarnItems(response.barn_items)
+   - dla handleUpg zapisz charEquipped i itemUpgRegistry z new_upg
+   - dla handleUpgExtra zapisz extraEqItems z new_upg
+   - await loadProfile(profile.id)
+   - pokaż komunikat sukcesu/porażki na podstawie response.success
+7. Nie zmieniaj UI kosztów, getUpgradeCost, getUpgradeMaterials ani definicji itemów.
+8. Pokaż krótki diff obu funkcji oraz potwierdź, że w handleUpg/handleUpgExtra nie ma już Math.random ani profiles.update({ money }).
