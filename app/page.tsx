@@ -8309,12 +8309,10 @@ export default function Page() {
                                       if (!profile?.id || !canBuy) return;
                                       setOrchardError("");
                                       void (async () => {
-                                        const newMoney = (profile.money ?? 0) - t.buyPrice;
-                                        const { error } = await supabase.from("profiles").update({ money: Math.round(newMoney * 100) / 100 }).eq("id", profile.id);
+                                        const { data, error } = await supabase.rpc("buy_orchard_tree", { p_user_id: profile.id, p_tree_id: t.id });
                                         if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
-                                        const cur = orchardState[t.id] ?? { owned:0, prodStart:0, storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 } };
-                                        saveOrchardState({ ...orchardState, [t.id]: { ...cur, owned: cur.owned + 1, prodStart: cur.prodStart || Date.now() } });
-                                        void supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned + 1 });
+                                        const response = data as { ok?: boolean; error?: string } | null;
+                                        if (response?.ok === false) { setOrchardError(response.error ?? "Nie udało się kupić drzewa."); return; }
                                         await loadProfile(profile.id);
                                         setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
                                       })();
