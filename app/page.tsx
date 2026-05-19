@@ -8713,12 +8713,31 @@ export default function Page() {
                                           saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
                                           setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
                                         } else if (canBuy2) {
-                                          const next = { ...playerStats, [def.key]: val + actualBuyAmt2 };
                                           void (async () => {
-                                            const { error } = await supabase.from("profiles").update({ money: displayMoney - multiCost2 }).eq("id", profile.id);
-                                            if (!error) { await loadProfile(profile.id); setPlayerStats(next); saveAvatarData(profile.id, avatarSkin, next, freeSkillPoints, prevLevelRef.current); }
+                                            const { data, error } = await supabase.rpc("game_buy_stat_points", {
+                                              p_stat_key: def.key,
+                                              p_amount: actualBuyAmt2,
+                                            });
+                                            if (error) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: error.message }); return; }
+                                            const response = data as {
+                                              ok?: boolean;
+                                              error?: string;
+                                              stat_key?: string;
+                                              amount?: number;
+                                              cost?: number;
+                                              player_stats?: PlayerStatsMap;
+                                              free_skill_points?: number;
+                                            } | null;
+                                            if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return; }
+                                            const newStats = response?.player_stats ?? { ...playerStats, [def.key]: val + actualBuyAmt2 };
+                                            const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : freeSkillPoints;
+                                            setPlayerStats(newStats);
+                                            setFreeSkillPoints(newFsp);
+                                            saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
+                                            await loadProfile(profile.id);
+                                            setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
+                                            setMessage({ type: "success", title: "Statystyka ulepszona", text: `Kupiono +${response?.amount ?? actualBuyAmt2} pkt za ${(response?.cost ?? multiCost2).toLocaleString("pl-PL")} 💰.` });
                                           })();
-                                          setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
                                         }
                                       }}
                                       className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition whitespace-nowrap border ${
