@@ -6955,10 +6955,10 @@ export default function Page() {
                     {tab === "login" ? (
                       <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Login</label>
+                          <label className="mb-2 block text-sm font-semibold">Email</label>
                           <input
-                            type="text"
-                            placeholder="Twój unikalny login"
+                            type="email"
+                            placeholder="adres@email.pl"
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
