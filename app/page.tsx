@@ -8806,17 +8806,6 @@ export default function Page() {
                         missing_materials?: Array<{ mat_id: string; need: number; have: number }>;
                         barn_items?: BarnItems;
                       } | null;
-                      console.log("[upgrade-rpc]", {
-                        itemId: eqD.id,
-                        sentCurrentUpg: eqD.upg,
-                        targetUpg: response?.target_upg,
-                        newUpg: response?.new_upg,
-                        cost: response?.cost,
-                        materials: response?.materials,
-                        missing: response?.missing_materials,
-                        jajko: response?.barn_items?.["jajko"],
-                        success: response?.success,
-                      });
                       if (response?.ok === false) {
                         if (response.missing_materials && response.missing_materials.length > 0) {
                           const txt = response.missing_materials.map(m => `${m.mat_id} ${m.have}/${m.need}`).join(", ");
@@ -9109,17 +9098,6 @@ export default function Page() {
                                 missing_materials?: Array<{ mat_id: string; need: number; have: number }>;
                                 barn_items?: BarnItems;
                               } | null;
-                              console.log("[upgrade-rpc-extra]", {
-                                itemId: entry.id,
-                                sentCurrentUpg: entry.upg,
-                                targetUpg: response?.target_upg,
-                                newUpg: response?.new_upg,
-                                cost: response?.cost,
-                                materials: response?.materials,
-                                missing: response?.missing_materials,
-                                jajko: response?.barn_items?.["jajko"],
-                                success: response?.success,
-                              });
                               if (response?.ok === false) {
                                 if (response.missing_materials && response.missing_materials.length > 0) {
                                   const txt = response.missing_materials.map(m => `${m.mat_id} ${m.have}/${m.need}`).join(", ");
