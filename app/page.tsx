@@ -4339,39 +4339,49 @@ export default function Page() {
 
   async function handleAvatarSelect(idx: number) {
     if (!profile?.id) return;
-    const tier = getAvatarChangeTier(avatarChangeCount);
-    const now = Date.now();
-    if (tier.cooldownMs > 0 && lastAvatarChangeAt > 0) {
-      const elapsed = now - lastAvatarChangeAt;
-      if (elapsed < tier.cooldownMs) {
-        const remainMins = Math.ceil((tier.cooldownMs - elapsed) / 60000);
-        const hrs = Math.floor(remainMins / 60);
-        const mins = remainMins % 60;
+    const { data, error } = await supabase.rpc("game_change_avatar_skin", { p_avatar_skin: idx });
+    if (error) { setMessage({ type: "error", title: "Błąd zmiany avatara", text: error.message }); return; }
+    const response = data as {
+      ok?: boolean;
+      error?: string;
+      remaining_ms?: number;
+      spent?: number;
+      avatar_skin?: number;
+      avatar_change_count?: number;
+      last_avatar_change_at?: number;
+    } | null;
+    if (response?.ok === false) {
+      if (typeof response.remaining_ms === "number") {
+        const totalMins = Math.ceil(response.remaining_ms / 60000);
+        const hrs = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
         const timeStr = hrs > 0 ? `${hrs}h ${mins}min` : `${mins}min`;
-        setMessage({ type: "error", title: "Cooldown aktywny", text: `Nastepna zmiana avatara dostepna za ${timeStr}.` });
-        return;
+        setMessage({ type: "error", title: "Cooldown aktywny", text: `Następna zmiana avatara dostępna za ${timeStr}.` });
+      } else {
+        setMessage({ type: "error", title: "Błąd zmiany avatara", text: response.error ?? "Nieznany błąd." });
       }
+      return;
     }
-    if (tier.cost > 0) {
-      if (displayMoney < tier.cost) {
-        setMessage({ type: "error", title: "Za malo pieniedzy", text: `Zmiana avatara kosztuje ${tier.cost.toLocaleString("pl-PL")} zl.` });
-        return;
-      }
-      const { error } = await supabase.from("profiles").update({ money: displayMoney - tier.cost }).eq("id", profile.id);
-      if (error) { setMessage({ type: "error", title: "Blad platnosci", text: error.message }); return; }
-      await loadProfile(profile.id);
-    }
-    const newCount = avatarChangeCount + 1;
-    setAvatarSkin(idx);
-    setAvatarChangeCount(newCount);
-    setLastAvatarChangeAt(now);
-    saveAvatarDataLS(profile.id, idx, playerStats, freeSkillPoints, prevLevelRef.current, newCount, now);
-    void supabase.rpc("game_save_avatar_data", {
-      p_avatar_skin: idx,
-      p_player_stats: playerStats as Record<string, number>,
-      p_free_skill_points: freeSkillPoints,
-      p_prev_level: prevLevelRef.current,
-    });
+    const newSkin = response?.avatar_skin ?? idx;
+    const newChangeCount = typeof response?.avatar_change_count === "number"
+      ? response.avatar_change_count
+      : avatarChangeCount;
+    const newLastChangeAt = typeof response?.last_avatar_change_at === "number"
+      ? response.last_avatar_change_at
+      : lastAvatarChangeAt;
+    setAvatarSkin(newSkin);
+    setAvatarChangeCount(newChangeCount);
+    setLastAvatarChangeAt(newLastChangeAt);
+    saveAvatarDataLS(
+      profile.id,
+      newSkin,
+      playerStats,
+      freeSkillPoints,
+      prevLevelRef.current,
+      newChangeCount,
+      newLastChangeAt,
+    );
+    await loadProfile(profile.id);
     setShowSkinModal(false);
   }
 
