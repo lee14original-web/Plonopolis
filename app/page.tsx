@@ -4391,15 +4391,13 @@ export default function Page() {
 
   async function handleAddHoneyJars(amount: number) {
     if (!profile?.id) return;
-    const newHive: HiveData = { ...hiveData, honey_jars: hiveData.honey_jars + amount };
-    const { error } = await supabase.from("profiles").update({ hive_data: newHive }).eq("id", profile.id);
-    if (!error) {
-      setHiveData(newHive);
-      await loadProfile(profile.id);
-      setMessage({ type: "success", title: "🍯 Dodano słoiki miodu!", text: `+${amount} słoików miodu (razem: ${newHive.honey_jars}).` });
-    } else {
-      setMessage({ type: "error", title: "Błąd", text: error.message });
-    }
+    const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "honey_jars", p_amount: amount });
+    if (error) { setMessage({ type: "error", title: "Błąd dodawania słoików miodu", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; mode?: string; amount?: number; hive_data?: HiveData; honey_jars?: number } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd dodawania słoików miodu", text: response.error ?? "Nieznany błąd" }); return; }
+    if (response?.hive_data) setHiveData(response.hive_data);
+    await loadProfile(profile.id);
+    setMessage({ type: "success", title: "🍯 Dodano słoiki miodu!", text: `+${response?.amount ?? amount} słoików miodu.` });
   }
 
   async function handleResetAccount() {
