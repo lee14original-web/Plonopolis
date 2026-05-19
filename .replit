@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-3.11"]
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -33,3 +33,4 @@ VITE_SUPABASE_URL = "https://vwgfoevjiliggsgmqacg.supabase.co"
 VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z2ZvZXZqaWxpZ2dzZ21xYWNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTg5OTMsImV4cCI6MjA4OTg3NDk5M30.3_wHFLElsWc3RCmRQLgMyJmtKiP61t8efnVxWBa2duk"
 
 [nix]
+channel = "stable-25_05"
