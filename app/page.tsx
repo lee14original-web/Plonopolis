@@ -4078,22 +4078,32 @@ export default function Page() {
       return;
     }
 
-    const { data: existingLogin, error: existingLoginError } = await supabase
-      .from("profiles")
-      .select("id")
-      .ilike("login", login)
-      .limit(1);
+    const { data: availData, error: availError } = await supabase.rpc("check_registration_available", {
+      p_login: login,
+      p_email: email,
+    });
 
-    if (existingLoginError) {
+    if (availError) {
       setMessage({
         type: "error",
-        title: "Błąd sprawdzania loginu",
-        text: existingLoginError.message,
+        title: "Błąd sprawdzania danych",
+        text: availError.message,
       });
       return;
     }
 
-    if (existingLogin && existingLogin.length > 0) {
+    const availResponse = availData as { ok?: boolean; error?: string; login_available?: boolean; email_available?: boolean } | null;
+
+    if (availResponse?.ok === false) {
+      setMessage({
+        type: "error",
+        title: "Błąd sprawdzania danych",
+        text: availResponse.error ?? "Nieznany błąd",
+      });
+      return;
+    }
+
+    if (availResponse?.login_available === false) {
       setMessage({
         type: "error",
         title: "Login zajęty",
@@ -4102,22 +4112,7 @@ export default function Page() {
       return;
     }
 
-    const { data: existingEmail, error: existingEmailError } = await supabase
-      .from("profiles")
-      .select("id")
-      .ilike("email", email)
-      .limit(1);
-
-    if (existingEmailError) {
-      setMessage({
-        type: "error",
-        title: "Błąd sprawdzania emaila",
-        text: existingEmailError.message,
-      });
-      return;
-    }
-
-    if (existingEmail && existingEmail.length > 0) {
+    if (availResponse?.email_available === false) {
       setMessage({
         type: "error",
         title: "Email zajęty",
