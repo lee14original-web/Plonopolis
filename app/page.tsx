@@ -8161,14 +8161,13 @@ export default function Page() {
                                   onClick={() => {
                                     if (!profile?.id || !canAfford) return;
                                     void (async () => {
-                                      const newHive: HiveData = { ...hiveData };
-                                      if (item.type === "suit") newHive.suit_durability = hiveData.suit_durability + 100;
-                                      else newHive.empty_jars = hiveData.empty_jars + item.qty;
-                                      const { error } = await supabase.from("profiles").update({
-                                        money: Math.round((displayMoney - item.price) * 100) / 100,
-                                        hive_data: newHive,
-                                      }).eq("id", profile.id);
-                                      if (!error) { setHiveData(newHive); await loadProfile(profile.id); }
+                                      const { data, error } = await supabase.rpc("buy_hive_shop_item", { p_item_id: item.id });
+                                      if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
+                                      const response = data as { ok?: boolean; error?: string; item_id?: string; price?: number; qty?: number; item_type?: "suit" | "jar"; money?: number; hive_data?: HiveData } | null;
+                                      if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu", text: response.error ?? "Nieznany błąd" }); return; }
+                                      if (response?.hive_data) setHiveData(response.hive_data);
+                                      await loadProfile(profile.id);
+                                      setMessage({ type: "success", title: "Zakupiono!", text: `Kupiono: ${item.label}` });
                                     })();
                                   }}
                                   className={`rounded-xl px-4 py-2 text-sm font-black transition ${canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
