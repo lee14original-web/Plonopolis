@@ -4147,16 +4147,26 @@ export default function Page() {
     }
 
     // Nadpisz login w profilu — trigger tworzy go z emailem, tu ustawiamy właściwy login gracza
-    const { error: loginUpdateError } = await supabase
-      .from("profiles")
-      .update({ login })
-      .eq("id", userId);
+    const { data: loginData, error: loginRpcError } = await supabase.rpc("set_my_login_after_signup", {
+      p_login: login,
+    });
 
-    if (loginUpdateError) {
+    if (loginRpcError) {
       setMessage({
         type: "error",
         title: "Błąd ustawiania loginu",
-        text: loginUpdateError.message,
+        text: loginRpcError.message,
+      });
+      return;
+    }
+
+    const loginResponse = loginData as { ok?: boolean; error?: string; login?: string } | null;
+
+    if (loginResponse?.ok === false) {
+      setMessage({
+        type: "error",
+        title: "Błąd ustawiania loginu",
+        text: loginResponse.error ?? "Nieznany błąd",
       });
       return;
     }
