@@ -11689,18 +11689,15 @@ export default function Page() {
                     disabled={!canAfford}
                     onClick={async () => {
                       if (!profile?.id || !canAfford) return;
-                      const newInv = { ...seedInventory };
-                      Object.entries(es.cost).forEach(([k,v]) => { newInv[k] = (newInv[k] ?? 0) - v; });
-                      const newUnlocked = [...unlockedEpicAvatars, epicPurchaseTarget];
-                      const { error } = await supabase.from("profiles").update({
-                        seed_inventory: newInv,
-                        unlocked_epic_avatars: newUnlocked,
-                      }).eq("id", profile.id);
-                      if (!error) {
-                        setSeedInventory(newInv);
-                        setUnlockedEpicAvatars(newUnlocked);
-                        setEpicPurchaseTarget(null);
-                      }
+                      const { data, error } = await supabase.rpc("buy_epic_avatar", { p_avatar_id: epicPurchaseTarget });
+                      if (error) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: error.message }); return; }
+                      const response = data as { ok?: boolean; error?: string; avatar_id?: number; cost?: Record<string,number>; seed_inventory?: Record<string,number>; unlocked_epic_avatars?: number[] } | null;
+                      if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: response.error ?? "Nieznany błąd" }); return; }
+                      if (response?.seed_inventory) setSeedInventory(response.seed_inventory);
+                      if (response?.unlocked_epic_avatars) setUnlockedEpicAvatars(response.unlocked_epic_avatars);
+                      setEpicPurchaseTarget(null);
+                      await loadProfile(profile.id);
+                      setMessage({ type: "success", title: "⭐ Avatar odblokowany!", text: `Odblokowano epicki avatar: ${es.name}` });
                     }}
                     className={`w-full rounded-2xl py-3 font-black transition text-sm ${canAfford ? "border border-green-400 bg-green-700/40 text-green-200 hover:bg-green-700/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
                     {canAfford ? "✅ Odblokuj avatar" : "❌ Brak surowców"}
