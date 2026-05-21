@@ -10497,7 +10497,7 @@ export default function Page() {
 
               return (<>
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                  <div className="relative flex w-full max-w-[640px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                  <div className="relative flex w-[min(94vw,820px)] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setShowLadaInfo(v => !v)}
@@ -10636,8 +10636,18 @@ export default function Page() {
                           <p className="text-[11px] text-center text-[#8b6a3e] uppercase tracking-widest font-bold">
                             {totalOrders} {totalOrders === 1 ? 'aktywny klient' : totalOrders < 5 ? 'aktywnych klientów' : 'aktywnych klientów'}
                           </p>
-                          <div className="grid grid-cols-2 gap-3">
-                            {customerOrders.map((o, i) => {
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
+                              .sort((a, b) => {
+                                const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
+                                if (gDiff !== 0) return gDiff;
+                                const eDiff = b.o.rewards.exp - a.o.rewards.exp;
+                                if (eDiff !== 0) return eDiff;
+                                const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
+                                if (iDiff !== 0) return iDiff;
+                                return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
+                              })
+                              .map(({ o, originalIndex }) => {
                               const cd = getCustomerDisplay(o.customer_type);
                               const tl = Math.max(0, new Date(o.expires_at).getTime() - customerNow);
                               const ml = Math.floor(tl / 60000);
@@ -10648,8 +10658,8 @@ export default function Page() {
                               return (
                                 <button
                                   key={o.id}
-                                  onClick={() => setLadaDetailIdx(i)}
-                                  onMouseEnter={() => setLadaCardHoverIdx(i)}
+                                  onClick={() => setLadaDetailIdx(originalIndex)}
+                                  onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
                                   onMouseLeave={() => setLadaCardHoverIdx(null)}
                                   className={`relative text-left rounded-xl border p-3 transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
                                     expired ? 'border-red-600/50 bg-red-950/15 opacity-70' :
@@ -10664,7 +10674,7 @@ export default function Page() {
                                       <p className="text-[10px] text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
                                     </div>
                                   </div>
-                                  <div className="flex justify-between gap-1 text-[11px] font-bold mb-1">
+                                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[12px] font-bold mb-1">
                                     <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
                                     <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
                                   </div>
