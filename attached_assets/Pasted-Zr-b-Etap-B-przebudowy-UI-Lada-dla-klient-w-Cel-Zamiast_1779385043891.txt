@@ -1,0 +1,70 @@
+Zrób Etap B przebudowy UI "Lada dla klientów".
+
+Cel:
+Zamiast strzałek lewo/prawo do przełączania klienta, pokaż wszystkich aktywnych klientów naraz jako karty. Kliknięcie karty otwiera szczegóły danego klienta. Hover na karcie pokazuje tooltip z podsumowaniem.
+
+Wymagania:
+
+1. Dodaj stan:
+   ladaDetailIdx: number | null
+   - null = widok wszystkich klientów
+   - number = szczegóły wybranego klienta
+
+2. Po otwarciu lady domyślnie pokazuj widok wszystkich klientów:
+   setLadaDetailIdx(null)
+
+3. Widok wszystkich klientów:
+   - pokaż grid kart klientów
+   - sortuj klientów jak wcześniej:
+     gold malejąco,
+     potem EXP malejąco,
+     potem liczba różnych itemów malejąco,
+     potem expires_at rosnąco
+   - każda karta pokazuje:
+     - ikonę klienta
+     - nazwę klienta
+     - liczbę potrzebnych różnych itemów
+     - gold
+     - exp
+     - czas do wygaśnięcia
+   - kliknięcie karty:
+     setLadaDetailIdx(originalIndex)
+   - ważne: jeśli używasz sortedOrders, zachowaj originalIndex, żeby szczegóły otwierały właściwe zamówienie.
+
+4. Widok szczegółów:
+   - użyj obecnego widoku klienta z Etapu A
+   - usuń/ukryj strzałki lewo/prawo
+   - dodaj przycisk "← Wróć do klientów"
+   - szczegóły mają używać order = customerOrders[ladaDetailIdx]
+
+5. Esc:
+   - jeśli showLadaInfo true → zamknij info
+   - else jeśli ladaDetailIdx !== null → setLadaDetailIdx(null)
+   - else → zamknij ladę
+
+6. Tooltip na hover karty klienta:
+   - pokaż fixed tooltip przy kursorze
+   - użyj istniejącego mousePos/cardTip pattern, jeśli jest wygodny
+   - tooltip ma pokazać:
+     - nazwę klienta
+     - ile produktów potrzebuje
+     - nagroda złoto
+     - nagroda EXP
+     - bonus dodatkowy, jeśli jest
+
+7. Poszerz modal lady, jeśli trzeba:
+   - np. w-[min(94vw,860px)]
+   - zachowaj responsywność.
+
+8. Nie zmieniaj:
+   - complete_customer_order
+   - RPC
+   - logiki nagród
+   - loadProfile
+   - completeCustomerOrder
+   - ekonomii SQL
+
+9. Pokaż diff.
+10. Zrób typecheck.
+11. Commit i push z komunikatem:
+   show all customer orders with detail view
