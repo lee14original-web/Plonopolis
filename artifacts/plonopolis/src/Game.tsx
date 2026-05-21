@@ -11089,7 +11089,6 @@ export default function Page() {
                         <p className="text-[11px] text-[#bfa274]">Artykuł zwierzęcy</p>
                       </div>
                     </div>
-                    <p className="text-[12px] text-[#dfcfab]">Wartość sprzedaży: <span className="text-yellow-300 font-bold">{ai.sellPrice} zł</span></p>
                     <p className="text-[10px] text-[#8b6a3e] italic">Trafia do magazynu w stodole.</p>
                   </div>
                 );
