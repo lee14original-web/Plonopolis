@@ -1,0 +1,47 @@
+Przygotuj SQL fix ekonomii nagród "Lada dla klientów".
+
+Problem:
+Na lvl 1 klient chce np. 10× Marchew (zwykła) i daje 67 zł.
+To wychodzi około 6,70 zł/szt.
+Tymczasem 10 marchewek można kupić w sklepie miejskim za około 32 zł, czyli 3,20 zł/szt.
+Gracz może kupić marchewki i oddać klientowi z dużym zyskiem bez produkcji.
+
+Chcemy zmienić ekonomię:
+- klient za łatwo dostępne produkty nie powinien płacić więcej niż sklep/targ,
+- dla marchewki przy cenie sklepowej około 3,20 zł/szt. klient powinien płacić bliżej 1,20–2,50 zł/szt.,
+- rekompensatą mają być EXP i bonus dodatkowy.
+
+Nic nie zmieniaj jeszcze w Supabase.
+Przygotuj plik SQL:
+attached_assets/sql_fix_customer_order_economy_v1.sql
+
+Sprawdź i popraw:
+1. Skąd _npc_pick_item bierze item_value dla crop/fruit/barn_item/honey.
+2. Jak spawn_customer_order liczy:
+   v_gold := round((v_total * v_t.mult * 0.70)::numeric, 2);
+3. Zmień formułę gold tak, żeby early-game nie dawał zysku z kupowania itemów w sklepie.
+4. Proponowana bezpieczna formuła:
+   - zmniejszyć globalny mnożnik z 0.70 na około 0.25 albo 0.30
+   - albo zrobić zależnie od typu klienta, ale prościej na start globalnie.
+5. Dla przykładu:
+   carrot_good qty 10, value 96:
+   obecnie neighbor: 96 * 1.00 * 0.70 = 67.2 zł
+   po fixie przy 0.25: 96 * 1.00 * 0.25 = 24 zł
+   czyli 2,40 zł/szt. — mieści się w założeniu 1,20–2,50 zł/szt.
+6. Village guest:
+   96 * 1.15 * 0.25 = 27.60 zł
+   czyli 2,76 zł/szt. — trochę powyżej 2,50, ale jeszcze bez wielkiego exploita.
+   Jeśli chcesz ostrzej, zaproponuj 0.22.
+7. EXP zostaw bez zmian albo lekko zwiększ, jeśli uznasz, że gold będzie zbyt niski.
+8. Bonusy zostaw bez zmian.
+9. Nie zmieniaj:
+   - complete_customer_order
+   - frontend
+   - customer order UI
+   - spawn interval
+   - typów klientów/min_level
+10. Na końcu pokaż tabelkę porównawczą:
+   - 10× carrot_good neighbor przed/po
+   - 10× carrot_good village_guest przed/po
+   - przy współczynniku 0.25 i/lub 0.22
+11. Nie pushuj jeszcze. Najpierw pokaż plik i rekomendację.
