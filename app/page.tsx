@@ -1930,6 +1930,8 @@ export default function Page() {
   // Lada NPC — zamówienia klientów
   const [customerOrders, setCustomerOrders] = React.useState<CustomerOrder[]>([]);
   const [currentCustomerIdx, setCurrentCustomerIdx] = React.useState(0);
+  const [ladaDetailIdx, setLadaDetailIdx] = React.useState<number | null>(null);
+  const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
@@ -3657,13 +3659,13 @@ export default function Page() {
     if (!showLadaModal) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      // Najpierw zamknij info-panel jeśli otwarty, w przeciwnym razie zamknij cały modal
       if (showLadaInfo) setShowLadaInfo(false);
+      else if (ladaDetailIdx !== null) setLadaDetailIdx(null);
       else setShowLadaModal(false);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [showLadaModal, showLadaInfo]);
+  }, [showLadaModal, showLadaInfo, ladaDetailIdx]);
   React.useEffect(() => {
     if (!customerLootDrop) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Enter") { setCustomerLootDrop(null); setLootHoverIdx(null); } };
@@ -6063,7 +6065,7 @@ export default function Page() {
                         onMouseEnter={() => setHoveredLada(true)}
                         onMouseLeave={() => setHoveredLada(false)}
                         data-zone="lada"
-                        onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setShowLadaModal(true); }}
+                        onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setLadaDetailIdx(null); setShowLadaModal(true); }}
                         className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
                         style={{ left:`${activeHitboxPos.lada.left}%`, top:`${activeHitboxPos.lada.top}%`, width:`${activeHitboxPos.lada.width}%`, height:`${activeHitboxPos.lada.height}%`, zIndex: 20 }}
                       />
@@ -10469,10 +10471,8 @@ export default function Page() {
           })()}
 
           {showLadaModal && (() => {
-              const order = customerOrders[currentCustomerIdx] ?? null;
               const totalOrders = customerOrders.length;
-              const goNext = () => setCurrentCustomerIdx(i => totalOrders === 0 ? 0 : (i + 1) % totalOrders);
-              const goPrev = () => setCurrentCustomerIdx(i => totalOrders === 0 ? 0 : (i - 1 + totalOrders) % totalOrders);
+              const order = ladaDetailIdx !== null ? (customerOrders[ladaDetailIdx] ?? null) : null;
 
               const haveFor = (id: string): number => {
                 if (id === 'honey_jar') return hiveData.honey_jars;
@@ -10495,7 +10495,7 @@ export default function Page() {
                 return Math.round((order.rewards.exp / xtn) * 1000) / 10;
               })();
 
-              return (
+              return (<>
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
                   <div className="relative flex w-full max-w-[640px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
                     <button
@@ -10630,15 +10630,67 @@ export default function Page() {
                           <p className="text-[#dfcfab] text-sm font-bold">Brak klientów.</p>
                           <p className="text-xs text-[#8b6a3e]/80 mt-1">Nowi klienci pojawią się za kilka minut. Zajrzyj później!</p>
                         </div>
+                      ) : ladaDetailIdx === null ? (
+                        /* ── WIDOK WSZYSTKICH KLIENTÓW ── */
+                        <div className="space-y-3">
+                          <p className="text-[11px] text-center text-[#8b6a3e] uppercase tracking-widest font-bold">
+                            {totalOrders} {totalOrders === 1 ? 'aktywny klient' : totalOrders < 5 ? 'aktywnych klientów' : 'aktywnych klientów'}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {customerOrders.map((o, i) => {
+                              const cd = getCustomerDisplay(o.customer_type);
+                              const tl = Math.max(0, new Date(o.expires_at).getTime() - customerNow);
+                              const ml = Math.floor(tl / 60000);
+                              const sl = Math.floor((tl % 60000) / 1000);
+                              const expired = tl <= 0;
+                              const mi = mergeOrderItems(o.items);
+                              const canDo = mi.every(it => haveFor(it.id) >= it.qty);
+                              return (
+                                <button
+                                  key={o.id}
+                                  onClick={() => setLadaDetailIdx(i)}
+                                  onMouseEnter={() => setLadaCardHoverIdx(i)}
+                                  onMouseLeave={() => setLadaCardHoverIdx(null)}
+                                  className={`relative text-left rounded-xl border p-3 transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
+                                    expired ? 'border-red-600/50 bg-red-950/15 opacity-70' :
+                                    canDo  ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
+                                             'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-2xl leading-none">{cd.icon}</span>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
+                                      <p className="text-[10px] text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-between gap-1 text-[11px] font-bold mb-1">
+                                    <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
+                                    <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
+                                  </div>
+                                  <p className={`text-[10px] font-bold ${expired ? 'text-red-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                    ⏱ {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                  </p>
+                                  {canDo && !expired && (
+                                    <span className="absolute top-1.5 right-1.5 text-[9px] font-black text-emerald-300 bg-emerald-900/50 rounded-full px-1.5 py-0.5 border border-emerald-600/40">✓</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ) : order && customer && (
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <button onClick={goPrev} disabled={totalOrders <= 1} className="w-12 h-12 shrink-0 rounded-full border border-amber-600/50 bg-black/30 text-amber-400 text-2xl font-black hover:bg-amber-900/30 disabled:opacity-30 disabled:cursor-not-allowed">‹</button>
-                            <div className="flex-1 min-w-0 text-center">
-                              <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">Klient {currentCustomerIdx + 1} z {totalOrders}</p>
+                          {/* Nagłówek widoku szczegółów */}
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => setLadaDetailIdx(null)}
+                              className="flex items-center gap-1.5 rounded-xl border border-amber-600/50 bg-black/30 px-3 py-2 text-sm font-bold text-amber-400 hover:bg-amber-900/20 hover:border-amber-400/70 transition shrink-0"
+                            >← Wróć</button>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">Klient {ladaDetailIdx + 1} z {totalOrders}</p>
                               <p className="text-base font-black text-[#f9e7b2] truncate">{customer.icon} {customer.name}</p>
                             </div>
-                            <button onClick={goNext} disabled={totalOrders <= 1} className="w-12 h-12 shrink-0 rounded-full border border-amber-600/50 bg-black/30 text-amber-400 text-2xl font-black hover:bg-amber-900/30 disabled:opacity-30 disabled:cursor-not-allowed">›</button>
                           </div>
 
                           <div className="flex items-center justify-center gap-2 text-xs">
@@ -10730,7 +10782,40 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
-              );
+                {/* Tooltip kart klientów — fixed, śledzi kursor */}
+                {ladaCardHoverIdx !== null && ladaDetailIdx === null && (() => {
+                  const o = customerOrders[ladaCardHoverIdx];
+                  if (!o) return null;
+                  const cd = getCustomerDisplay(o.customer_type);
+                  const mi = mergeOrderItems(o.items);
+                  return (
+                    <div
+                      className="pointer-events-none fixed z-[9999] flex flex-col items-center"
+                      style={{ left: mousePos.x, top: mousePos.y - 14, transform: 'translate(-50%, -100%)' }}
+                    >
+                      <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl min-w-[190px] max-w-[240px]">
+                        <p className="font-black text-[#f9e7b2] text-sm mb-0.5">{cd.icon} {cd.name}</p>
+                        <p className="text-[11px] text-[#8b6a3e] mb-2">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
+                        <div className="flex justify-between gap-2 text-[12px] font-bold">
+                          <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
+                          <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
+                        </div>
+                        {o.rewards.bonus && o.rewards.bonus.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-[#8b6a3e]/30 space-y-0.5">
+                            {o.rewards.bonus.map((b, bi) => {
+                              const d = getOrderItemDisplay(b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : ''));
+                              return (
+                                <p key={bi} className="text-[11px] text-purple-300 font-bold">✨ +{b.qty}× {d.icon} {d.name}</p>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] -mt-1" />
+                    </div>
+                  );
+                })()}
+              </>);
             })()}
 
           {customerLootDrop && (() => {
