@@ -3705,6 +3705,95 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  // ─── Esc: wiadomości + compose ───────────────────────────────────────────
+  React.useEffect(() => {
+    if (!showMessagePanel) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!(document.activeElement as HTMLElement)?.isContentEditable) return;
+      if (showCompose) { setShowCompose(false); } else { setShowMessagePanel(false); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showMessagePanel, showCompose]);
+
+  // ─── Esc: gildia ─────────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!showGildiaPanel) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      setShowGildiaPanel(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showGildiaPanel]);
+
+  // ─── Esc: misje ──────────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!showMisjePanel) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      setShowMisjePanel(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showMisjePanel]);
+
+  // ─── Esc: wybór skina/avatara ─────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!showSkinModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      setShowSkinModal(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showSkinModal]);
+
+  // ─── Esc: potwierdzenie zakupu epic avatara ───────────────────────────────
+  React.useEffect(() => {
+    if (epicPurchaseTarget === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setEpicPurchaseTarget(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [epicPurchaseTarget]);
+
+  // ─── Esc: panel testów ────────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!showTestModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      setShowTestModal(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showTestModal]);
+
+  // ─── Esc: nawigacja map (city_shop, city_bank, city_market, city_liga) ────
+  React.useEffect(() => {
+    const citySubMaps = ["city_shop", "city_bank", "city_market", "city_liga"];
+    if (!citySubMaps.includes(currentMap)) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (currentMap === "city_market" && showMarketModal) return;
+      handleChangeMap("city");
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [currentMap, showMarketModal]); // eslint-disable-line react-hooks/exhaustive-deps
+
   React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now()), 1000);
