@@ -2800,7 +2800,7 @@ export default function Page() {
 
   const xpPercent = useMemo(() => {
     if (!displayXpToNextLevel || displayXpToNextLevel <= 0) return 0;
-    return Math.max(0, Math.min(100, Math.round((displayXp / displayXpToNextLevel) * 100)));
+    return Math.max(0, Math.min(100, (displayXp / displayXpToNextLevel) * 100));
   }, [displayXp, displayXpToNextLevel]);
 
   const moneyFormatted = useMemo(() => {
@@ -5908,7 +5908,7 @@ export default function Page() {
                             <span>
                               EXP {displayXp} / {displayXpToNextLevel}
                             </span>
-                            <span>{xpPercent}%</span>
+                            <span>{xpPercent.toFixed(2).replace('.', ',')}%</span>
                           </div>
                           <div className="h-3 overflow-hidden rounded-full bg-black/40">
                             <div
@@ -10492,7 +10492,7 @@ export default function Page() {
               const expPct = (() => {
                 const xtn = profile?.xp_to_next_level;
                 if (!order || !xtn || xtn <= 0) return 0;
-                return Math.round((order.rewards.exp / xtn) * 1000) / 10;
+                return (order.rewards.exp / xtn) * 100;
               })();
 
               return (<>
@@ -10735,7 +10735,7 @@ export default function Page() {
                               <div className="rounded-xl border border-blue-400/50 bg-gradient-to-b from-blue-900/30 to-blue-950/20 p-3 text-center">
                                 <p className="text-[10px] uppercase tracking-widest text-blue-500/80 mb-1 font-bold">Doświadczenie</p>
                                 <p className="text-xl font-black text-blue-300">⭐ +{order.rewards.exp} <span className="text-base">EXP</span></p>
-                                {expPct > 0 && <p className="text-[11px] text-blue-400/80 mt-0.5 font-bold">{expPct}% poziomu</p>}
+                                {expPct > 0 && <p className="text-[11px] text-blue-400/80 mt-0.5 font-bold">{expPct.toFixed(2).replace('.', ',')}% poziomu</p>}
                               </div>
                             </div>
                             {order.rewards.bonus && order.rewards.bonus.length > 0 && (
