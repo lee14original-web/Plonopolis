@@ -13756,9 +13756,11 @@ export default function Page() {
                               }}
                             />
                           </div>
-                          {crit && (
-                            <div className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wide">Bliski limitu</div>
-                          )}
+                          {cur === max ? (
+                            <div className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-wide">Limit osiągnięty</div>
+                          ) : crit ? (
+                            <div className="mt-1.5 text-[10px] font-bold text-orange-400 uppercase tracking-wide">Bliski limitu</div>
+                          ) : null}
                         </div>
                       );
                       return (
