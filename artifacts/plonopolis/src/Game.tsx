@@ -7608,8 +7608,9 @@ export default function Page() {
                             {recipientSuggestions.map(s => (
                               <button key={s.id} type="button"
                                 onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
-                                className="flex w-full items-center gap-2 px-5 py-3 text-left text-base text-[#dfcfab] transition hover:bg-[rgba(80,50,10,0.5)]">
-                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} /> {s.username}
+                                className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[rgba(80,50,10,0.5)]">
+                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-11 w-11 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} />
+                                <span className="text-base font-semibold text-[#f3dfb4]">{s.username}</span>
                               </button>
                             ))}
                           </div>
