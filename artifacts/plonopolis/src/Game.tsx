@@ -10767,7 +10767,7 @@ export default function Page() {
                     </div>
 
                     <div className="border-t border-amber-700/30 p-4 space-y-2">
-                      {order && customer && (
+                      {!showLadaInfo && order && customer && (
                         <button
                           onClick={() => { void completeCustomerOrder(order.id); }}
                           disabled={!canFulfill || customerSelling === order.id || !!isExpired}
