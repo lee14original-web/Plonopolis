@@ -1,0 +1,65 @@
+Powiększ jeszcze bardziej UI "Lada dla klientów" — drugi pass wizualny.
+
+Problem:
+Po poprzednim powiększeniu okno nadal wygląda za małe na desktopie:
+- karty klientów są zbyt niskie,
+- teksty gold/EXP/czas są nadal drobne,
+- nazwy klientów są czasem za szybko obcinane,
+- całe okno wygląda jak mały panel zamiast głównego systemu.
+
+Zakres:
+Tylko Game.tsx / UI showLadaModal.
+Nie zmieniaj SQL, RPC, logiki zamówień, ekonomii ani liczby klientów.
+
+Wymagania:
+
+1. Modal:
+   - zwiększ szerokość z w-[min(96vw,1040px)] do np. w-[min(97vw,1180px)] albo w-[min(97vw,1240px)]
+   - zostaw max-h około 90vh.
+   - zachowaj responsywność.
+
+2. Grid klientów:
+   - na desktopie dalej 3 kolumny.
+   - zwiększ gap między kartami.
+   - karty mają być wyższe i bardziej czytelne:
+     - padding np. p-5,
+     - min-height np. min-h-[120px] lub podobnie,
+     - większy odstęp między liniami.
+
+3. Karta klienta:
+   - ikona klienta większa, np. text-4xl.
+   - nazwa klienta większa, np. text-lg.
+   - liczba produktów większa, np. text-sm.
+   - gold i EXP większe, np. text-base albo text-[15px] font-bold.
+   - czas większy, np. text-sm.
+   - jeśli nazwa jest długa, niech ma więcej miejsca zanim się utnie.
+
+4. Widok szczegółów klienta:
+   - dopasuj do większego modala:
+     - większe itemy na liście,
+     - większy tekst "Masz: X",
+     - nagrody mogą zostać text-2xl albo zwiększ do text-3xl jeśli wygląda dobrze.
+   - przyciski na dole trochę większe.
+
+5. Tooltip kart:
+   - zwiększ do np. w-[380px] albo max-w-[420px].
+   - nazwa klienta text-lg.
+   - lista potrzeb text-sm/base.
+   - nagrody text-base.
+   - zachowaj zabezpieczenie przed wychodzeniem poza ekran, jeśli już istnieje.
+
+6. Pomoc "?" nie musi być teraz mocno zmieniana, ale jeśli używa tego samego modala, niech nadal mieści się w 90vh i scroll działa.
+
+7. Nie zmieniaj:
+   - complete_customer_order
+   - spawn_customer_order
+   - sortowania klientów
+   - wartości nagród
+   - liczby klientów
+   - SQL
+   - RPC
+
+8. Pokaż diff.
+9. Zrób typecheck.
+10. Commit i push z komunikatem:
+   further enlarge customer order UI

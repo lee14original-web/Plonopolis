@@ -10497,7 +10497,7 @@ export default function Page() {
 
               return (<>
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                  <div className="relative flex w-[min(96vw,1040px)] max-h-[90vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                  <div className="relative flex w-[min(97vw,1240px)] max-h-[90vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setShowLadaInfo(v => !v)}
@@ -10649,7 +10649,7 @@ export default function Page() {
                           <p className="text-sm text-center text-amber-400 uppercase tracking-widest font-black">
                             {totalOrders} {totalOrders === 1 ? 'aktywny klient' : totalOrders < 5 ? 'aktywnych klientów' : 'aktywnych klientów'}
                           </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
                             {[...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
                               .sort((a, b) => {
                                 const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
@@ -10674,28 +10674,30 @@ export default function Page() {
                                   onClick={() => setLadaDetailIdx(originalIndex)}
                                   onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
                                   onMouseLeave={() => setLadaCardHoverIdx(null)}
-                                  className={`relative text-left rounded-xl border p-4 transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
+                                  className={`relative text-left rounded-xl border p-5 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
                                     expired ? 'border-red-600/50 bg-red-950/15 opacity-70' :
                                     canDo  ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
                                              'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2.5 mb-2.5">
-                                    <span className="text-3xl leading-none">{cd.icon}</span>
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-base font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
-                                      <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                  <div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <span className="text-4xl leading-none">{cd.icon}</span>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-lg font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
+                                        <p className="text-sm text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-base font-bold mb-2">
+                                      <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
+                                      <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
                                     </div>
                                   </div>
-                                  <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-sm font-bold mb-1.5">
-                                    <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
-                                    <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
-                                  </div>
-                                  <p className={`text-xs font-bold ${expired ? 'text-red-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                  <p className={`text-sm font-bold ${expired ? 'text-red-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
                                     ⏱ {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                   </p>
                                   {canDo && !expired && (
-                                    <span className="absolute top-2 right-2 text-[10px] font-black text-emerald-300 bg-emerald-900/50 rounded-full px-1.5 py-0.5 border border-emerald-600/40">✓</span>
+                                    <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
                                   )}
                                 </button>
                               );
@@ -10731,16 +10733,16 @@ export default function Page() {
                                 const ok = have >= it.qty;
                                 const d = getOrderItemDisplay(it.id);
                                 return (
-                                  <div key={idx} className={`flex items-center gap-3 rounded-lg border px-3 py-3 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
-                                    <span className="text-lg shrink-0">{ok ? '✅' : '❌'}</span>
+                                  <div key={idx} className={`flex items-center gap-3 rounded-lg border px-4 py-3.5 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
+                                    <span className="text-xl shrink-0">{ok ? '✅' : '❌'}</span>
                                     {d.spritePath ? (
-                                      <img src={d.spritePath} alt={d.name} className="w-9 h-9 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                                      <img src={d.spritePath} alt={d.name} className="w-10 h-10 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
                                     ) : (
-                                      <span className="text-2xl shrink-0">{d.icon}</span>
+                                      <span className="text-3xl shrink-0">{d.icon}</span>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-base font-black text-[#f9e7b2] leading-tight">{it.qty}× {d.name}</p>
-                                      <p className={`text-xs font-bold ${ok ? 'text-emerald-400' : 'text-red-400'}`}>Masz: {have}</p>
+                                      <p className="text-lg font-black text-[#f9e7b2] leading-tight">{it.qty}× {d.name}</p>
+                                      <p className={`text-sm font-bold ${ok ? 'text-emerald-400' : 'text-red-400'}`}>Masz: {have}</p>
                                     </div>
                                   </div>
                                 );
@@ -10751,14 +10753,14 @@ export default function Page() {
                           <div className="rounded-xl border border-amber-500/60 bg-black/30 p-4">
                             <p className="text-sm uppercase tracking-widest text-amber-400 mb-3 font-black">🏆 Nagroda za zamówienie:</p>
                             <div className="grid grid-cols-2 gap-3">
-                              <div className="rounded-xl border border-yellow-400/50 bg-gradient-to-b from-yellow-900/30 to-yellow-950/20 p-3 text-center">
-                                <p className="text-xs uppercase tracking-widest text-yellow-500/80 mb-1 font-bold">Złoto</p>
-                                <p className="text-2xl font-black text-yellow-300">💰 {Number(order.rewards.gold).toFixed(0)} <span className="text-lg">zł</span></p>
+                              <div className="rounded-xl border border-yellow-400/50 bg-gradient-to-b from-yellow-900/30 to-yellow-950/20 p-4 text-center">
+                                <p className="text-xs uppercase tracking-widest text-yellow-500/80 mb-1.5 font-bold">Złoto</p>
+                                <p className="text-3xl font-black text-yellow-300">💰 {Number(order.rewards.gold).toFixed(0)} <span className="text-xl">zł</span></p>
                               </div>
-                              <div className="rounded-xl border border-blue-400/50 bg-gradient-to-b from-blue-900/30 to-blue-950/20 p-3 text-center">
-                                <p className="text-xs uppercase tracking-widest text-blue-500/80 mb-1 font-bold">Doświadczenie</p>
-                                <p className="text-2xl font-black text-blue-300">⭐ +{order.rewards.exp} <span className="text-lg">EXP</span></p>
-                                {expPct > 0 && <p className="text-xs text-blue-400/80 mt-0.5 font-bold">{expPct.toFixed(2).replace('.', ',')}% poziomu</p>}
+                              <div className="rounded-xl border border-blue-400/50 bg-gradient-to-b from-blue-900/30 to-blue-950/20 p-4 text-center">
+                                <p className="text-xs uppercase tracking-widest text-blue-500/80 mb-1.5 font-bold">Doświadczenie</p>
+                                <p className="text-3xl font-black text-blue-300">⭐ +{order.rewards.exp} <span className="text-xl">EXP</span></p>
+                                {expPct > 0 && <p className="text-sm text-blue-400/80 mt-1 font-bold">{expPct.toFixed(2).replace('.', ',')}% poziomu</p>}
                               </div>
                             </div>
                             {order.rewards.bonus && order.rewards.bonus.length > 0 && (
@@ -10789,17 +10791,17 @@ export default function Page() {
                       )}
                     </div>
 
-                    <div className="border-t border-amber-700/30 p-4 space-y-2">
+                    <div className="border-t border-amber-700/30 p-5 space-y-2.5">
                       {!showLadaInfo && order && customer && (
                         <button
                           onClick={() => { void completeCustomerOrder(order.id); }}
                           disabled={!canFulfill || customerSelling === order.id || !!isExpired}
-                          className="w-full rounded-xl py-3 text-base font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="w-full rounded-xl py-4 text-lg font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie'}
                         </button>
                       )}
-                      <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-2.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
+                      <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-base font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
                         ✕ Zamknij
                       </button>
                     </div>
@@ -10821,49 +10823,49 @@ export default function Page() {
                       className="pointer-events-none fixed z-[9999] flex flex-col items-center"
                       style={{ left: mousePos.x, top: mousePos.y - 14, transform: 'translate(-50%, -100%)' }}
                     >
-                      <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl min-w-[260px] max-w-[340px]">
-                        <p className="font-black text-[#f9e7b2] text-base mb-0.5">{cd.icon} {cd.name}</p>
-                        <p className="text-xs text-[#8b6a3e] mb-2">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
+                      <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-5 py-4 shadow-2xl min-w-[300px] max-w-[420px]">
+                        <p className="font-black text-[#f9e7b2] text-lg mb-0.5">{cd.icon} {cd.name}</p>
+                        <p className="text-sm text-[#8b6a3e] mb-2.5">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
 
                         {/* Sekcja: Potrzebuje */}
-                        <div className="mb-2">
-                          <p className="text-xs uppercase tracking-widest text-amber-500/80 font-black mb-1">Potrzebuje:</p>
-                          <div className="space-y-1">
+                        <div className="mb-2.5">
+                          <p className="text-xs uppercase tracking-widest text-amber-500/80 font-black mb-1.5">Potrzebuje:</p>
+                          <div className="space-y-1.5">
                             {visibleItems.map((it, idx) => {
                               const d = getOrderItemDisplay(it.id);
                               return (
                                 <div key={idx} className="flex items-center gap-2">
                                   {d.spritePath ? (
-                                    <img src={d.spritePath} alt={d.name} className="w-5 h-5 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+                                    <img src={d.spritePath} alt={d.name} className="w-6 h-6 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
                                   ) : (
-                                    <span className="text-base leading-none shrink-0">{d.icon}</span>
+                                    <span className="text-lg leading-none shrink-0">{d.icon}</span>
                                   )}
-                                  <span className="text-sm text-[#dfcfab]">{it.qty}× {d.name}</span>
+                                  <span className="text-base text-[#dfcfab]">{it.qty}× {d.name}</span>
                                 </div>
                               );
                             })}
                             {hiddenCount > 0 && (
-                              <p className="text-xs text-[#8b6a3e] pl-0.5">... +{hiddenCount} więcej</p>
+                              <p className="text-sm text-[#8b6a3e] pl-0.5">... +{hiddenCount} więcej</p>
                             )}
                           </div>
                         </div>
 
                         {/* Nagrody */}
-                        <div className="flex justify-between gap-2 text-sm font-bold pt-2 border-t border-[#8b6a3e]/30">
+                        <div className="flex justify-between gap-2 text-base font-bold pt-2.5 border-t border-[#8b6a3e]/30">
                           <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
                           <span className="text-blue-300">
                             ⭐ +{o.rewards.exp} EXP
-                            {expPct > 0 && <span className="text-xs text-blue-400/80 font-bold ml-0.5">({expPct.toFixed(2).replace('.', ',')}%)</span>}
+                            {expPct > 0 && <span className="text-sm text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
                           </span>
                         </div>
 
                         {/* Bonus */}
                         {o.rewards.bonus && o.rewards.bonus.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-[#8b6a3e]/30 space-y-0.5">
+                          <div className="mt-2.5 pt-2.5 border-t border-[#8b6a3e]/30 space-y-1">
                             {o.rewards.bonus.map((b, bi) => {
                               const d = getOrderItemDisplay(b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : ''));
                               return (
-                                <p key={bi} className="text-sm text-purple-300 font-bold">✨ +{b.qty}× {d.icon} {d.name}</p>
+                                <p key={bi} className="text-base text-purple-300 font-bold">✨ +{b.qty}× {d.icon} {d.name}</p>
                               );
                             })}
                           </div>
