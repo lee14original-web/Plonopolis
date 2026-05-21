@@ -1,0 +1,63 @@
+Zrób audyt ekonomii EXP w "Lada dla klientów".
+
+Problem:
+Po zmianie ekonomii gold x0.22 i EXP x0.05, na wysokim poziomie gracza część zamówień daje bardzo mało EXP.
+Przykład lvl 28:
+xp_to_next_level = 620000
+oferty dają np. 38 EXP, 44 EXP, 307 EXP, co jest praktycznie niczym.
+
+Chcemy:
+- gold zostawić ostrożny, żeby nie wrócił exploit kup → oddaj,
+- EXP ma skalować się z poziomem gracza i trudnością klienta,
+- małe oferty na wysokim lvl dalej mogą być małe, ale nie absurdalnie bezwartościowe.
+
+Nic jeszcze nie zmieniaj w Supabase.
+Przygotuj plik SQL:
+attached_assets/sql_fix_customer_order_exp_scaling_v1.sql
+
+Sprawdź:
+1. Aktualną funkcję spawn_customer_order.
+2. Obecną formułę:
+   v_exp := round((v_total * v_t.mult * 0.05)::numeric)::int;
+3. Jakie progi xp_to_next_level są dla poziomów:
+   1, 5, 10, 20, 28, 30.
+4. Policz przykłady ofert:
+   - mała oferta lvl 28, total_value około 200
+   - średnia oferta lvl 28, total_value około 2000
+   - duża oferta lvl 28, total_value około 20000
+5. Zaproponuj nową formułę EXP.
+
+Moja preferowana formuła:
+- bazowy EXP z wartości itemów zostaje:
+  base_exp = total_value * mult * 0.05
+- dodaj minimalny EXP zależny od typu klienta i xp_to_next_level:
+  min_exp_pct zależnie od typu:
+    neighbor = 0.01%
+    village_guest = 0.015%
+    small_market = 0.025%
+    village_shop = 0.04%
+    restaurant = 0.06%
+    wholesaler = 0.10%
+    market_chain = 0.14%
+    distribution_center = 0.18%
+    international_contract = 0.25%
+- final:
+  v_exp = GREATEST(base_exp, xp_to_next_level * min_exp_pct)
+
+Przykład lvl 28, xp_to_next = 620000:
+neighbor min 0.01% = 62 EXP
+village_shop min 0.04% = 248 EXP
+wholesaler min 0.10% = 620 EXP
+market_chain min 0.14% = 868 EXP
+international min 0.25% = 1550 EXP
+
+Dla dużych ofert base_exp nadal może być wyższy, np. 4726 EXP zostaje 4726.
+
+Wymagania:
+1. Nie zmieniaj gold.
+2. Nie zmieniaj complete_customer_order.
+3. Nie zmieniaj frontendu.
+4. Zmień tylko spawn_customer_order i ewentualnie aktywne customer_orders przez UPDATE, jeśli bezpieczne.
+5. Dodaj porównanie przed/po dla lvl 28.
+6. Nie pushuj jeszcze.
+7. Pokaż rekomendację.
