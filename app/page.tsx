@@ -14,6 +14,7 @@ type RankingPlayer = {
   farm_power?: number;
   ranking_score?: number;
   avatar_skin?: number | null;
+  customer_orders_completed?: number;
 };
 
 type Profile = {
@@ -1803,7 +1804,7 @@ export default function Page() {
   const [showRankingPanel, setShowRankingPanel] = useState(false);
   const [rankingData, setRankingData] = useState<RankingPlayer[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
-  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower">("farmpower");
+  const [rankingSort, setRankingSort] = useState<"level"|"money"|"farmpower"|"customers">("farmpower");
   const [rankingSearch, setRankingSearch] = useState("");
   const [rankingHighlightMe, setRankingHighlightMe] = useState(false);
   const [showGildiaPanel, setShowGildiaPanel] = useState(false);
@@ -7560,6 +7561,10 @@ export default function Page() {
                       className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
                       Pieniądze
                     </button>
+                    <button onClick={() => setRankingSort("customers")}
+                      className={rankingSort==="customers" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                      😊 Zadowoleni klienci
+                    </button>
                     <div className="ml-auto flex items-center gap-2">
                       <input
                         type="text"
@@ -7603,18 +7608,20 @@ export default function Page() {
                       <table className="w-full border-collapse text-sm">
                         <thead>
                           <tr className="border-b border-[#8b6a3e]/40 text-left text-xs uppercase tracking-widest text-[#8b6a3e]">
-                            <th className="py-3 pr-4 w-10">#</th>
-                            <th className="py-3 pr-4">Gracz</th>
-                            <th className="py-3 pr-4">Gildia</th>
-                            <th className="py-3 pr-4 text-right">Poziom</th>
-                            <th className="py-3 pr-4 text-right">Pieniądze</th>
-                            <th className="py-3 text-right">Moc farmy</th>
+                            <th className="py-3 pr-3 w-8">#</th>
+                            <th className="py-3 pr-3">Gracz</th>
+                            <th className="py-3 pr-2 w-28">Gildia</th>
+                            <th className="py-3 pr-2 text-right w-20">Poziom</th>
+                            <th className="py-3 pr-3 text-right w-24">😊 Klienci</th>
+                            <th className="py-3 pr-3 text-right w-36">Pieniądze</th>
+                            <th className="py-3 text-right w-28">Moc farmy</th>
                           </tr>
                         </thead>
                         <tbody>
                           {[...rankingData].sort((a,b) => {
                             if (rankingSort==="level") return (b.ranking_score ?? 0)-(a.ranking_score ?? 0);
                             if (rankingSort==="money") return b.money-a.money;
+                            if (rankingSort==="customers") return (b.customer_orders_completed ?? 0)-(a.customer_orders_completed ?? 0);
                             return (b.farm_power ?? 0)-(a.farm_power ?? 0);
                           }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
                             const isMe = p.user_id === profile?.id;
@@ -7636,12 +7643,17 @@ export default function Page() {
                                   {!isMe && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-sm transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}
                                 </div>
                               </td>
-                              <td className="py-3 pr-4 italic text-[#8b6a3e]">{p.guild_name}</td>
-                              <td className="py-3 pr-4 text-right font-black text-[#f2ca69]">⭐ {p.level}</td>
-                              <td className="py-3 pr-4 text-right text-[#a8e890]">
+                              <td className="py-3 pr-2 italic text-[#8b6a3e] w-28 truncate max-w-[7rem]">{p.guild_name}</td>
+                              <td className="py-3 pr-2 text-right font-black text-[#f2ca69] w-20">⭐ {p.level}</td>
+                              <td className="py-3 pr-3 text-right w-24">
+                                <span className={`font-bold tabular-nums ${(p.customer_orders_completed ?? 0) > 0 ? "text-emerald-400" : "text-[#8b6a3e]"}`}>
+                                  {(p.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
+                                </span>
+                              </td>
+                              <td className="py-3 pr-3 text-right text-[#a8e890] w-36">
                                 {new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(p.money)}
                               </td>
-                              <td className="py-3 text-right">
+                              <td className="py-3 text-right w-28">
                                 <span className={`font-bold ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
                                   {(p.farm_power ?? 0).toLocaleString("pl-PL")}
                                 </span>
