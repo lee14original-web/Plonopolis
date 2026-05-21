@@ -13124,7 +13124,7 @@ export default function Page() {
             return (
               <div
                 key={`${message.title}-${message.text}`}
-                className="fixed top-6 left-1/2 -translate-x-1/2 z-[400] w-[min(92vw,520px)] pointer-events-none"
+                className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] w-[min(92vw,520px)] pointer-events-none"
                 style={{ animation: 'plonopolisToastIn 280ms cubic-bezier(0.16,1,0.3,1)' }}
               >
                 <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border-2 backdrop-blur-md ${colorWrap}`}>
