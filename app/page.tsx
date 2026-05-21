@@ -4083,11 +4083,9 @@ export default function Page() {
       saveOwnedEqItems(owned);
       saveExtraEqItems(extras);
     }
-    if ((data.exp ?? 0) > 0) {
-      await handleAddExp(data.exp);
-    } else {
-      await loadProfile(profile.id);
-    }
+    // SQL complete_customer_order sam aktualizuje money, xp, level w DB.
+    // loadProfile odświeża cały stan UI (złoto, EXP, level-up, inventory).
+    await loadProfile(profile.id);
     // ─── Historia postępu: klient ───
     if (profile?.id) {
       const _dp = loadDP(profile.id);
