@@ -1,0 +1,215 @@
+-- =========================================================
+-- FIX: Lada klientów — ekonomia nagród
+-- Cel:
+-- - gold z lady nie ma być łatwym exploitem kup -> oddaj drożej
+-- - zmniejszamy gold z x0.70 do x0.22
+-- - zwiększamy EXP z x0.03 do x0.05
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION public.spawn_customer_order(p_user_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v_level        int;
+  v_types_id     text[];
+  v_types_w      numeric[];
+  v_ctype        text;
+  v_t            record;
+  v_n_items      int;
+  v_items        jsonb := '[]'::jsonb;
+  v_total        numeric := 0;
+  v_pick         record;
+  v_gold         numeric;
+  v_exp          int;
+  v_bonus        jsonb;
+  v_bonus_id     text;
+  v_rewards      jsonb;
+  v_order_id     uuid;
+  v_existing_ids jsonb := '[]'::jsonb;
+  v_attempts     int;
+  i              int;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'p_user_id required';
+  END IF;
+
+  IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  SELECT COALESCE(level, 1)
+  INTO v_level
+  FROM public.profiles
+  WHERE id = p_user_id;
+
+  IF v_level IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT
+    array_agg(ctype ORDER BY ctype),
+    array_agg(public._npc_lvl_weight(v_level, weight_min, weight_max) ORDER BY ctype)
+  INTO v_types_id, v_types_w
+  FROM public._npc_customer_types()
+  WHERE min_level <= v_level;
+
+  IF v_types_id IS NULL OR array_length(v_types_id, 1) IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  v_ctype := public._npc_weighted_pick_text(v_types_id, v_types_w);
+
+  IF v_ctype IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT *
+  INTO v_t
+  FROM public._npc_customer_types()
+  WHERE ctype = v_ctype
+    AND min_level <= v_level
+  LIMIT 1;
+
+  IF v_t IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  v_n_items := public._npc_rand_int(v_t.items_min, v_t.items_max);
+
+  FOR i IN 1..v_n_items LOOP
+    v_attempts := 0;
+
+    LOOP
+      v_attempts := v_attempts + 1;
+
+      SELECT *
+      INTO v_pick
+      FROM public._npc_pick_item(v_level)
+      LIMIT 1;
+
+      EXIT WHEN v_pick.item_id IS NOT NULL
+        AND NOT (v_existing_ids @> to_jsonb(v_pick.item_id));
+
+      EXIT WHEN v_attempts >= 10;
+    END LOOP;
+
+    IF v_pick.item_id IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    v_existing_ids := v_existing_ids || to_jsonb(v_pick.item_id);
+
+    v_items := v_items || jsonb_build_object(
+      'id',    v_pick.item_id,
+      'qty',   v_pick.item_qty,
+      'value', round(v_pick.item_value::numeric, 2)
+    );
+
+    v_total := v_total + v_pick.item_value;
+  END LOOP;
+
+  IF jsonb_array_length(v_items) = 0 THEN
+    RETURN NULL;
+  END IF;
+
+  v_items := public._npc_merge_items(v_items);
+
+  -- EKONOMIA:
+  -- BYŁO: gold = total * mult * 0.70, exp = total * mult * 0.03
+  -- JEST: gold = total * mult * 0.22, exp = total * mult * 0.05
+  v_gold := round((v_total * v_t.mult * 0.22)::numeric, 2);
+  v_exp  := round((v_total * v_t.mult * 0.05)::numeric)::int;
+
+  IF random() < v_t.bonus_chance THEN
+    v_bonus := jsonb_build_array(public._npc_roll_bonus(v_level, v_t.bonus_strength));
+
+    IF jsonb_array_length(v_bonus) > 0 THEN
+      v_bonus_id := v_bonus->0->>'id';
+
+      IF v_bonus_id IS NOT NULL
+         AND EXISTS (
+           SELECT 1
+           FROM jsonb_array_elements(v_items) it
+           WHERE it->>'id' = v_bonus_id
+         )
+      THEN
+        v_bonus := '[]'::jsonb;
+      END IF;
+    END IF;
+  ELSE
+    v_bonus := '[]'::jsonb;
+  END IF;
+
+  v_rewards := jsonb_build_object(
+    'gold',  v_gold,
+    'exp',   v_exp,
+    'bonus', v_bonus
+  );
+
+  INSERT INTO public.customer_orders(
+    user_id,
+    customer_type,
+    items,
+    rewards,
+    total_value,
+    reward_mult,
+    expires_at
+  )
+  VALUES (
+    p_user_id,
+    v_ctype,
+    v_items,
+    v_rewards,
+    round(v_total::numeric, 2),
+    v_t.mult,
+    now() + (v_t.expires_h || ' hours')::interval
+  )
+  RETURNING id INTO v_order_id;
+
+  RETURN v_order_id;
+END;
+$function$;
+
+
+-- =========================================================
+-- Przelicz aktywne istniejące zamówienia na nową ekonomię
+-- =========================================================
+
+UPDATE public.customer_orders
+SET rewards =
+  jsonb_set(
+    jsonb_set(
+      COALESCE(rewards, '{}'::jsonb),
+      '{gold}',
+      to_jsonb(round((COALESCE(total_value, 0) * COALESCE(reward_mult, 1) * 0.22)::numeric, 2)),
+      true
+    ),
+    '{exp}',
+    to_jsonb(round((COALESCE(total_value, 0) * COALESCE(reward_mult, 1) * 0.05)::numeric)::int),
+    true
+  )
+WHERE expires_at > now();
+
+
+-- =========================================================
+-- Kontrola: przykładowe aktywne zamówienia po przeliczeniu
+-- =========================================================
+
+select
+  p.login,
+  p.level,
+  o.customer_type,
+  o.items,
+  o.total_value,
+  o.reward_mult,
+  o.rewards,
+  o.created_at,
+  o.expires_at
+from public.customer_orders o
+join public.profiles p on p.id = o.user_id
+where p.login = 'zastrzal11'
+order by o.created_at desc
+limit 20;
