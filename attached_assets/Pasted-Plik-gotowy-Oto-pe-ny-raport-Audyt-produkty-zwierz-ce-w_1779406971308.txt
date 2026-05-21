@@ -1,0 +1,65 @@
+Plik gotowy. Oto pełny raport:
+
+Audyt — produkty zwierzęce w Ladzie NPC
+Stan aktualny
+_npc_animal_data() ma stałe qty_min/qty_max niezależnie od poziomu gracza. Nie istnieje żaden _npc_animal_qty_range. W _npc_pick_item dla kategorii animal:
+
+v_qty := _npc_rand_int(v_chosen.qty_min, v_chosen.qty_max);
+-- czyta bezpośrednio ze słownika — stałe wartości dla każdego zwierzęcia
+
+Aktualne wartości:
+
+Item	unlock_lvl	qty_min	qty_max	Problem
+jajko	3	5	20	za dużo dla lvl 3
+futro_krolika	5	3	10	10 fur na lvl 5 nierealne
+mleko	7	3	10	ok
+piora	9	4	12	ok
+welna	11	2	8	ok
+nawoz_naturalny	13	3	10	ok
+mleko_kozie	15	2	6	ok
+duze_piora	17	1	4	ok
+energia_robocza	20	1	3	ok
+rogi_byka	25	1	2	za mało jak na endgame
+Zmiany w pliku SQL
+A — nowy helper _npc_animal_qty_range(p_unlock, p_level):
+
+Dwa niezależne czynniki skalowania:
+
+Poziom gracza → band bazowy:
+  p_level < 8:   baza  1–5   (early)
+  p_level < 16:  baza  5–20  (mid)
+  p_level ≥ 16:  baza 10–40  (late)
+Unlock zwierzęcia → mnożnik rzadkości:
+  unlock ≤ 10   (jajko, futro, mleko, piora)     → ×1.00
+  unlock 11–15  (welna, nawoz, mleko_kozie)        → ×0.75
+  unlock 16–20  (duze_piora, energia_robocza)      → ×0.50
+  unlock > 20   (rogi_byka)                        → ×0.25
+
+B — _npc_pick_item — sekcja animal: jedna zmiana linii:
+
+-- PRZED:
+v_qty := _npc_rand_int(v_chosen.qty_min, v_chosen.qty_max);
+-- PO:
+SELECT qmin, qmax INTO v_qmin, v_qmax
+  FROM _npc_animal_qty_range(v_chosen.unlock_lvl, p_level);
+v_qty := _npc_rand_int(v_qmin, v_qmax);
+
+Porównanie przed/po — futro_krolika (unlock=5, factor=1.0)
+Poziom	PRZED (stałe)	PO
+lvl 5	3–10	1–5
+lvl 10	3–10	5–20
+lvl 16	3–10	10–40
+Pełna tabela po zmianie
+Item	unlock	factor	early (<8)	mid (8–15)	late (≥16)
+jajko	3	1.00	1–5	5–20	10–40
+futro_krolika	5	1.00	1–5	5–20	10–40
+mleko	7	1.00	1–5	5–20	10–40
+piora	9	1.00	—	5–20	10–40
+welna	11	0.75	—	4–15	8–30
+nawoz_naturalny	13	0.75	—	4–15	8–30
+mleko_kozie	15	0.75	—	4–15	8–30
+duze_piora	17	0.50	—	—	5–20
+energia_robocza	20	0.50	—	—	5–20
+rogi_byka	25	0.25	—	—	3–10
+Nie pushuję — czekam na wyniki testów w Supabase.
+
