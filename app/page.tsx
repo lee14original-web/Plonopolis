@@ -1820,8 +1820,8 @@ export default function Page() {
   const [composeRecipient, setComposeRecipient] = useState("");
   const [composeSubject, setComposeSubject] = useState("");
   const [composeBody, setComposeBody] = useState("");
-  const [recipientSuggestions, setRecipientSuggestions] = useState<{id:string;username:string}[]>([]);
-  const [recipientResolved, setRecipientResolved] = useState<{id:string;username:string}|null>(null);
+  const [recipientSuggestions, setRecipientSuggestions] = useState<{id:string;username:string;avatar_skin?:number|null}[]>([]);
+  const [recipientResolved, setRecipientResolved] = useState<{id:string;username:string;avatar_skin?:number|null}|null>(null);
   const [composeSending, setComposeSending] = useState(false);
   const [composeError, setComposeError] = useState("");
   const [messageCooldowns, setMessageCooldowns] = useState<Record<string,number>>({});
@@ -5390,7 +5390,7 @@ export default function Page() {
       p_limit: 8,
     });
     if (error) { setRecipientSuggestions([]); return; }
-    setRecipientSuggestions((data as {id:string;username:string}[]) ?? []);
+    setRecipientSuggestions((data as {id:string;username:string;avatar_skin?:number|null}[]) ?? []);
   }
 
   const MESSAGE_COST = 50;
@@ -7609,7 +7609,7 @@ export default function Page() {
                               <button key={s.id} type="button"
                                 onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
                                 className="flex w-full items-center gap-2 px-5 py-3 text-left text-base text-[#dfcfab] transition hover:bg-[rgba(80,50,10,0.5)]">
-                                <span className="text-lg">👤</span> {s.username}
+                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-8 w-8 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} /> {s.username}
                               </button>
                             ))}
                           </div>
