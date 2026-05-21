@@ -1938,6 +1938,10 @@ export default function Page() {
   const [customerNow, setCustomerNow] = React.useState(Date.now());
   const [nextSpawnAt, setNextSpawnAt] = React.useState<number | null>(null);
   const lastAutoTickAtRef = React.useRef(0);
+  const [newCustomerIds, setNewCustomerIds] = React.useState<Set<string>>(new Set());
+  const isSpawningCustomerRef = React.useRef(false);
+  const prevCustomerIdsRef = React.useRef<Set<string>>(new Set());
+  const newCustomerIdsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -4000,6 +4004,8 @@ export default function Page() {
 
   async function refreshCustomerOrders(opts?: { tick?: boolean }) {
     if (!profile?.id) return;
+    if (isSpawningCustomerRef.current) return;
+    isSpawningCustomerRef.current = true;
     setCustomerLoading(true);
     try {
       if (opts?.tick) {
@@ -4014,11 +4020,21 @@ export default function Page() {
         .eq("user_id", profile.id)
         .order("created_at", { ascending: true });
       if (!error && data) {
-        setCustomerOrders(data as CustomerOrder[]);
-        setCurrentCustomerIdx(idx => (data.length === 0 ? 0 : idx >= data.length ? 0 : idx));
+        const incoming = data as CustomerOrder[];
+        const freshIds = incoming.map(o => o.id);
+        const addedIds = freshIds.filter(id => !prevCustomerIdsRef.current.has(id));
+        if (addedIds.length > 0) {
+          setNewCustomerIds(new Set(addedIds));
+          if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+          newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+        }
+        prevCustomerIdsRef.current = new Set(freshIds);
+        setCustomerOrders(incoming);
+        setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
       }
     } finally {
       setCustomerLoading(false);
+      isSpawningCustomerRef.current = false;
     }
   }
 
@@ -4125,7 +4141,11 @@ export default function Page() {
     void refreshCustomerOrders({ tick: true });
     const tickT = setInterval(() => void refreshCustomerOrders({ tick: true }), 5 * 60 * 1000);
     const nowT = setInterval(() => setCustomerNow(Date.now()), 1000);
-    return () => { clearInterval(tickT); clearInterval(nowT); };
+    return () => {
+      clearInterval(tickT);
+      clearInterval(nowT);
+      if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
 
@@ -4133,6 +4153,7 @@ export default function Page() {
   React.useEffect(() => {
     if (!showLadaModal || !profile?.id || nextSpawnAt === null || customerLoading) return;
     if (customerNow < nextSpawnAt) return;
+    if (isSpawningCustomerRef.current) return;
     if (Date.now() - lastAutoTickAtRef.current < 3000) return;
     lastAutoTickAtRef.current = Date.now();
     void refreshCustomerOrders({ tick: true });
@@ -10544,10 +10565,11 @@ export default function Page() {
                       const m = Math.floor(left / 60000);
                       const s = Math.floor((left % 60000) / 1000);
                       const isReady = left <= 0;
+                      if (isReady && !customerLoading) return null;
                       return (
                         <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
                           {isReady
-                            ? '✨ Nowy klient lada chwila — odśwież listę!'
+                            ? '⏳ Szukam nowego klienta...'
                             : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
                         </div>
                       );
@@ -10696,6 +10718,13 @@ export default function Page() {
                               const expired = tl <= 0;
                               const mi = mergeOrderItems(o.items);
                               const canDo = mi.every(it => haveFor(it.id) >= it.qty);
+                              const createdMs = o.created_at ? new Date(o.created_at).getTime() : null;
+                              const expiresMs = new Date(o.expires_at).getTime();
+                              const totalDur = createdMs ? expiresMs - createdMs : null;
+                              const usedPct = (totalDur && totalDur > 0) ? (customerNow - createdMs!) / totalDur : null;
+                              const isWarning = usedPct !== null ? usedPct >= 0.75 : tl < 3_600_000;
+                              const isCritical = usedPct !== null ? usedPct >= 0.90 : tl < 600_000;
+                              const isNew = newCustomerIds.has(o.id);
                               return (
                                 <button
                                   key={o.id}
@@ -10703,9 +10732,12 @@ export default function Page() {
                                   onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
                                   onMouseLeave={() => setLadaCardHoverIdx(null)}
                                   className={`relative text-left rounded-xl border p-5 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
-                                    expired ? 'border-red-600/50 bg-red-950/15 opacity-70' :
-                                    canDo  ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
-                                             'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
+                                    isNew    ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
+                                    expired  ? 'border-red-600/50 bg-red-950/15 opacity-70' :
+                                    isCritical ? 'border-red-500/70 bg-red-950/15 hover:border-red-400/80' :
+                                    isWarning  ? 'border-orange-500/60 bg-orange-950/10 hover:border-orange-400/80' :
+                                    canDo    ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
+                                               'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
                                   }`}
                                 >
                                   <div>
@@ -10721,11 +10753,20 @@ export default function Page() {
                                       <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
                                     </div>
                                   </div>
-                                  <p className={`text-sm font-bold ${expired ? 'text-red-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                  <p className={`text-sm font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
                                     ⏱ {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                   </p>
-                                  {canDo && !expired && (
-                                    <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
+                                  {/* badge: Nowy / ostrzeżenie / gotowe */}
+                                  {!expired && (
+                                    isNew ? (
+                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2 py-0.5 border border-emerald-400/60 animate-bounce">✨ Nowy!</span>
+                                    ) : isCritical ? (
+                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>
+                                    ) : isWarning ? (
+                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-orange-200 bg-orange-800/60 rounded-full px-1.5 py-0.5 border border-orange-500/50">!</span>
+                                    ) : canDo ? (
+                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
+                                    ) : null
                                   )}
                                 </button>
                               );
@@ -10752,6 +10793,21 @@ export default function Page() {
                               {isExpired ? 'Wygasło' : `${minLeft > 0 ? minLeft + 'min ' : ''}${secLeft}s`}
                             </span>
                           </div>
+                          {/* Ostrzeżenie — klient zaraz zrezygnuje */}
+                          {!isExpired && order && (() => {
+                            const cMs = order.created_at ? new Date(order.created_at).getTime() : null;
+                            const eMs = new Date(order.expires_at).getTime();
+                            const dur = cMs ? eMs - cMs : null;
+                            const used = (dur && dur > 0) ? (customerNow - cMs!) / dur : null;
+                            const warn = used !== null ? used >= 0.75 : timeLeft < 3_600_000;
+                            const crit = used !== null ? used >= 0.90 : timeLeft < 600_000;
+                            if (!warn) return null;
+                            return (
+                              <div className={`rounded-lg border px-3 py-2 text-center text-sm font-bold ${crit ? 'border-red-500/60 bg-red-950/20 text-red-300 animate-pulse' : 'border-orange-500/50 bg-orange-950/15 text-orange-300'}`}>
+                                {crit ? '⚠️ Uwaga: klient niedługo zrezygnuje!' : '⚠ Klient powoli traci cierpliwość!'}
+                              </div>
+                            );
+                          })()}
 
                           <div className="rounded-xl border border-amber-700/50 bg-amber-950/20 p-4">
                             <p className="text-sm uppercase tracking-widest text-amber-400 mb-3 font-black">📦 Klient potrzebuje:</p>
