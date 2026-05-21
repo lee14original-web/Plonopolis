@@ -8836,12 +8836,14 @@ export default function Page() {
                             const effVal = val + _avBonus;
                             const eff = calcStatEffect(effVal, def.rate);
                             const isLocked = displayLevel < def.unlockLevel;
-                            const actualFreeAmt = Math.min(statUpgradeAmount, freeSkillPoints, Math.max(0, 100 - val));
-                            const canFree = actualFreeAmt > 0 && !isLocked;
-                            let multiCost2 = 0; let actualBuyAmt2 = 0;
-                            for (let _i = 0; _i < statUpgradeAmount; _i++) { if (val + _i >= 100) break; multiCost2 += getStatUpgradeCost(val + _i + 1); actualBuyAmt2++; }
-                            const canBuy2 = !canFree && !isLocked && displayMoney >= multiCost2 && val < 100 && actualBuyAmt2 > 0;
-                            const canUp2 = !isLocked && val < 100 && (canFree || canBuy2);
+                            const maxApplicable = Math.max(0, 100 - val);
+                            const freeToUse = !isLocked ? Math.min(statUpgradeAmount, freeSkillPoints, maxApplicable) : 0;
+                            const paidCount = !isLocked ? Math.min(statUpgradeAmount, maxApplicable) - freeToUse : 0;
+                            let paidCost = 0;
+                            for (let _i = 0; _i < paidCount; _i++) { paidCost += getStatUpgradeCost(val + freeToUse + _i + 1); }
+                            const totalApplicable = freeToUse + paidCount;
+                            const canAfford = paidCount === 0 || displayMoney >= paidCost;
+                            const canUp2 = !isLocked && totalApplicable > 0 && canAfford;
                             const rank = getStatRank(val);
                             const rankBarFill = rank.nextT > rank.prevT ? Math.round((val - rank.prevT) / (rank.nextT - rank.prevT) * 100) : 100;
                             const nextPtBonus = val < 100
@@ -8911,48 +8913,63 @@ export default function Page() {
                                   {!isLocked && (
                                     <button disabled={!canUp2}
                                       onClick={() => {
-                                        if (!profile?.id) return;
-                                        if (canFree) {
-                                          const next = { ...playerStats, [def.key]: val + actualFreeAmt };
-                                          const nextFsp = freeSkillPoints - actualFreeAmt;
-                                          setFreeSkillPoints(nextFsp); setPlayerStats(next);
-                                          saveAvatarData(profile.id, avatarSkin, next, nextFsp, prevLevelRef.current);
-                                          setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
-                                        } else if (canBuy2) {
-                                          void (async () => {
+                                        if (!profile?.id || !canUp2) return;
+                                        void (async () => {
+                                          let curStats = { ...playerStats };
+                                          let curFsp = freeSkillPoints;
+                                          // 1. Wolne punkty najpierw
+                                          if (freeToUse > 0) {
+                                            curStats = { ...curStats, [def.key]: val + freeToUse };
+                                            curFsp = freeSkillPoints - freeToUse;
+                                            setPlayerStats(curStats);
+                                            setFreeSkillPoints(curFsp);
+                                            // Await DB — żeby paid RPC widział aktualny poziom stat
+                                            await supabase.rpc("game_save_avatar_data", {
+                                              p_avatar_skin: avatarSkin,
+                                              p_player_stats: curStats as Record<string, number>,
+                                              p_free_skill_points: curFsp,
+                                              p_prev_level: prevLevelRef.current,
+                                            });
+                                            saveAvatarDataLS(profile.id, avatarSkin, curStats, curFsp, prevLevelRef.current);
+                                          }
+                                          // 2. Płatne punkty (jeśli są)
+                                          if (paidCount > 0) {
                                             const { data, error } = await supabase.rpc("game_buy_stat_points", {
                                               p_stat_key: def.key,
-                                              p_amount: actualBuyAmt2,
+                                              p_amount: paidCount,
                                             });
                                             if (error) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: error.message }); return; }
                                             const response = data as {
-                                              ok?: boolean;
-                                              error?: string;
-                                              stat_key?: string;
-                                              amount?: number;
-                                              cost?: number;
-                                              player_stats?: PlayerStatsMap;
-                                              free_skill_points?: number;
+                                              ok?: boolean; error?: string; stat_key?: string;
+                                              amount?: number; cost?: number;
+                                              player_stats?: PlayerStatsMap; free_skill_points?: number;
                                             } | null;
                                             if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return; }
-                                            const newStats = response?.player_stats ?? { ...playerStats, [def.key]: val + actualBuyAmt2 };
-                                            const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : freeSkillPoints;
+                                            const newStats = response?.player_stats ?? { ...curStats, [def.key]: val + freeToUse + paidCount };
+                                            const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : curFsp;
                                             setPlayerStats(newStats);
                                             setFreeSkillPoints(newFsp);
                                             saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
                                             await loadProfile(profile.id);
-                                            setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
-                                            setMessage({ type: "success", title: "Statystyka ulepszona", text: `Kupiono +${response?.amount ?? actualBuyAmt2} pkt za ${(response?.cost ?? multiCost2).toLocaleString("pl-PL")} 💰.` });
-                                          })();
-                                        }
+                                            const freeMsg = freeToUse > 0 ? `+${freeToUse} za darmo, ` : '';
+                                            setMessage({ type: "success", title: "Statystyka ulepszona", text: `${freeMsg}+${response?.amount ?? paidCount} pkt za ${(response?.cost ?? paidCost).toLocaleString("pl-PL")} 💰.` });
+                                          } else {
+                                            setMessage({ type: "success", title: "Statystyka ulepszona", text: `+${freeToUse} pkt za darmo.` });
+                                          }
+                                          setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
+                                        })();
                                       }}
                                       className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition whitespace-nowrap border ${
-                                        canFree  ? "border-yellow-500/50 bg-yellow-500/25 text-yellow-200 hover:bg-yellow-500/40"
-                                        : canBuy2 ? "border-green-700/50 bg-green-900/35 text-green-200 hover:bg-green-800/50"
+                                        freeToUse > 0 && paidCount === 0 ? "border-yellow-500/50 bg-yellow-500/25 text-yellow-200 hover:bg-yellow-500/40"
+                                        : freeToUse > 0 && paidCount > 0  ? "border-purple-500/50 bg-purple-900/30 text-purple-200 hover:bg-purple-800/50"
+                                        : canAfford && paidCount > 0       ? "border-green-700/50 bg-green-900/35 text-green-200 hover:bg-green-800/50"
                                         : val >= 100 ? "border-[#8b6a3e]/20 cursor-not-allowed opacity-30 bg-black/20 text-[#8b6a3e]"
                                         : "border-[#8b6a3e]/20 cursor-not-allowed opacity-40 bg-black/20 text-[#8b6a3e]"
                                       }`}>
-                                      {canFree ? `▲ +${actualFreeAmt} pkt` : val >= 100 ? "MAX" : `${multiCost2.toLocaleString("pl-PL")} 💰`}
+                                      {val >= 100 ? "MAX"
+                                        : freeToUse > 0 && paidCount === 0 ? `▲ +${totalApplicable} pkt`
+                                        : freeToUse > 0 && paidCount > 0   ? `▲ +${totalApplicable} pkt · ${paidCost.toLocaleString("pl-PL")} 💰`
+                                        : `${paidCost.toLocaleString("pl-PL")} 💰`}
                                     </button>
                                   )}
                                 </div>
