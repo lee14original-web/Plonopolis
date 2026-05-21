@@ -13093,8 +13093,7 @@ export default function Page() {
                 <button onClick={() => setShowLogoutConfirm(false)} className="absolute right-4 top-4 text-[#8b6a3e] hover:text-red-400 transition">✕</button>
                 <p className="mb-1 text-center text-3xl">🚪</p>
                 <h3 className="mb-2 text-center text-xl font-black text-[#f9e7b2]">Wylogowanie</h3>
-                <p className="mb-2 text-center text-base text-[#dfcfab]">Czy na pewno chcesz się wylogować?</p>
-                <p className="mb-7 text-center text-xs text-[#8b6a3e]">Niezapisane lokalne zmiany mogą zostać utracone.</p>
+                <p className="mb-7 text-center text-base text-[#dfcfab]">Czy na pewno chcesz się wylogować?</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowLogoutConfirm(false)}
