@@ -1,0 +1,59 @@
+Zaktualizuj tekst pomocy po kliknięciu "?" w oknie "Lada dla klientów".
+
+Zakres:
+Game.tsx, widok showLadaInfo w showLadaModal.
+
+Nie zmieniaj logiki gry, SQL ani wyglądu poza treścią/ewentualnie drobnym formatowaniem tekstu.
+
+Nowa treść pomocy ma wyjaśniać aktualne zasady:
+
+1. Czym jest Lada dla klientów:
+- Klienci NPC odwiedzają farmę i składają zamówienia na produkty.
+- Mogą chcieć upraw, owoców z sadu, produktów zwierzęcych, miodu i czasem rzadszych produktów.
+- Każde zamówienie ma limit czasu.
+- Jeśli masz wymagane produkty, możesz zrealizować zamówienie.
+
+2. Nagrody:
+- Za zamówienie dostajesz złoto i EXP.
+- Złoto jest niższe niż pełna wartość rynkowa/sklepowa produktów, żeby nie opłacało się kupować rzeczy tylko po to, by oddać je klientowi z łatwym zyskiem.
+- Największą wartością Lady jest regularny EXP oraz czasem bonus dodatkowy.
+- EXP skaluje się z Twoim poziomem i typem klienta, więc na wyższych poziomach większe zamówienia dają więcej doświadczenia.
+- Bonus dodatkowy może zawierać np. produkty, rzadkie przedmioty albo materiały.
+
+3. Typy klientów:
+Zaktualizuj tabelę typów klientów pod aktualne zasady.
+Dodaj kolumny:
+- Klient
+- Od poziomu
+- Produkty
+- Czas
+- EXP min.
+
+Dane:
+Sąsiad — od poziomu 1 — 1 produkt — 12h — 0,03% poziomu
+Gość ze wsi — od poziomu 1 — 1–2 produkty — 16h — 0,05% poziomu
+Mały targ — od poziomu 3 — 2–3 produkty — 20h — 0,08% poziomu
+Sklep wiejski — od poziomu 5 — 3–4 produkty — 24h — 0,12% poziomu
+Restauracja — od poziomu 8 — 4–5 produktów — 30h — 0,18% poziomu
+Hurtownia — od poziomu 12 — 5–6 produktów — 36h — 0,27% poziomu
+Sieć handlowa — od poziomu 16 — 6–8 produktów — 42h — 0,38% poziomu
+Centrum dystrybucji — od poziomu 20 — 7–9 produktów — 48h — 0,50% poziomu
+Kontrakt międzynarodowy — od poziomu 25 — 8–10 produktów — 48h — 0,70% poziomu
+
+4. Jakości produktów:
+- Uprawy: zwykłe, epickie, legendarne.
+- Owoce: zwykłe, soczyste, złote.
+- Im wyższy poziom gracza, tym większa szansa na trudniejsze i lepsze zamówienia.
+- Miód i część produktów pojawia się dopiero od wyższych poziomów.
+
+5. Wskazówka ekonomiczna:
+- Lada nie jest najlepszym miejscem do zarabiania złota.
+- Do zarabiania złota lepszy jest targ, sklep i handel z graczami.
+- Lada jest najlepsza jako regularne źródło EXP i okazjonalnych bonusów.
+
+6. Usuń lub zaktualizuj stare zdania sugerujące, że gold = wartość produktów × bonus klienta wprost, bo to już mylące.
+7. Upewnij się, że w widoku pomocy nie pokazuje się przycisk "Zrealizuj zamówienie".
+8. Pokaż diff.
+9. Zrób typecheck.
+10. Commit i push z komunikatem:
+   update customer order help text
