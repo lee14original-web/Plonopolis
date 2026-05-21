@@ -10489,6 +10489,11 @@ export default function Page() {
               const isExpired = order && timeLeft <= 0;
 
               const customer = order ? getCustomerDisplay(order.customer_type) : null;
+              const expPct = (() => {
+                const xtn = profile?.xp_to_next_level;
+                if (!order || !xtn || xtn <= 0) return 0;
+                return Math.round((order.rewards.exp / xtn) * 1000) / 10;
+              })();
 
               return (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -10643,26 +10648,24 @@ export default function Page() {
                             </span>
                           </div>
 
-                          <div className="rounded-xl border border-amber-600/40 bg-black/30 p-4">
+                          <div className="rounded-xl border border-amber-700/50 bg-amber-950/20 p-4">
                             <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">📦 Klient potrzebuje:</p>
-                            <div className="space-y-2">
+                            <div className="space-y-1.5">
                               {mergedItems.map((it, idx) => {
                                 const have = haveFor(it.id);
                                 const ok = have >= it.qty;
                                 const d = getOrderItemDisplay(it.id);
                                 return (
-                                  <div key={idx} className={`flex items-center justify-between rounded-lg border p-2.5 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/10'}`}>
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                      <span className="text-lg shrink-0">{ok ? '✅' : '❌'}</span>
-                                      {d.spritePath ? (
-                                        <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
-                                      ) : (
-                                        <span className="text-xl shrink-0">{d.icon}</span>
-                                      )}
-                                      <div className="min-w-0">
-                                        <p className="text-sm font-black text-[#f9e7b2] truncate">{it.qty}× {d.name}</p>
-                                        <p className="text-[10px] text-[#8b6a3e]">Masz: {have}</p>
-                                      </div>
+                                  <div key={idx} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
+                                    <span className="text-base shrink-0">{ok ? '✅' : '❌'}</span>
+                                    {d.spritePath ? (
+                                      <img src={d.spritePath} alt={d.name} className="w-8 h-8 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                                    ) : (
+                                      <span className="text-2xl shrink-0">{d.icon}</span>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-black text-[#f9e7b2] leading-tight">{it.qty}× {d.name}</p>
+                                      <p className={`text-[11px] font-bold ${ok ? 'text-emerald-400' : 'text-red-400'}`}>Masz: {have}</p>
                                     </div>
                                   </div>
                                 );
@@ -10670,34 +10673,39 @@ export default function Page() {
                             </div>
                           </div>
 
-                          <div className="rounded-xl border border-amber-600/40 bg-black/30 p-4">
-                            <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">🎁 Nagroda:</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded-lg border border-yellow-500/40 bg-yellow-950/20 p-2 text-center">
-                                <p className="text-base font-black text-yellow-300">{Number(order.rewards.gold).toFixed(0)} zł</p>
+                          <div className="rounded-xl border border-amber-500/60 bg-black/30 p-4">
+                            <p className="text-xs uppercase tracking-widest text-amber-400 mb-3 font-black">🏆 Nagroda za zamówienie:</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="rounded-xl border border-yellow-400/50 bg-gradient-to-b from-yellow-900/30 to-yellow-950/20 p-3 text-center">
+                                <p className="text-[10px] uppercase tracking-widest text-yellow-500/80 mb-1 font-bold">Złoto</p>
+                                <p className="text-xl font-black text-yellow-300">💰 {Number(order.rewards.gold).toFixed(0)} <span className="text-base">zł</span></p>
                               </div>
-                              <div className="rounded-lg border border-blue-500/40 bg-blue-950/20 p-2 text-center">
-                                <p className="text-base font-black text-blue-300">+{order.rewards.exp} EXP</p>
+                              <div className="rounded-xl border border-blue-400/50 bg-gradient-to-b from-blue-900/30 to-blue-950/20 p-3 text-center">
+                                <p className="text-[10px] uppercase tracking-widest text-blue-500/80 mb-1 font-bold">Doświadczenie</p>
+                                <p className="text-xl font-black text-blue-300">⭐ +{order.rewards.exp} <span className="text-base">EXP</span></p>
+                                {expPct > 0 && <p className="text-[11px] text-blue-400/80 mt-0.5 font-bold">{expPct}% poziomu</p>}
                               </div>
                             </div>
                             {order.rewards.bonus && order.rewards.bonus.length > 0 && (
-                              <div className="mt-2 rounded-lg border border-purple-500/40 bg-purple-950/20 p-2">
-                                <p className="text-[10px] uppercase tracking-widest text-purple-300 mb-1 font-black">🎁 Bonus dodatkowy:</p>
-                                {order.rewards.bonus.map((b, idx) => {
-                                  const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
-                                  const d = getOrderItemDisplay(lookupId);
-                                  return (
-                                    <p key={idx} className="text-xs font-bold text-purple-200 flex items-center gap-1">
-                                      <span>+{b.qty}×</span>
-                                      {d.spritePath ? (
-                                        <img src={d.spritePath} alt={d.name} className="w-4 h-4 object-contain inline-block" style={{ imageRendering: 'pixelated' }} />
-                                      ) : (
-                                        <span>{d.icon}</span>
-                                      )}
-                                      <span>{d.name}</span>
-                                    </p>
-                                  );
-                                })}
+                              <div className="mt-3 rounded-xl border border-purple-400/60 bg-gradient-to-b from-purple-900/25 to-purple-950/20 p-3">
+                                <p className="text-xs uppercase tracking-widest text-purple-200 mb-2 font-black">✨ Bonus dodatkowy:</p>
+                                <div className="space-y-2">
+                                  {order.rewards.bonus.map((b, idx) => {
+                                    const lookupId = b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : '');
+                                    const d = getOrderItemDisplay(lookupId);
+                                    return (
+                                      <div key={idx} className="flex items-center gap-2">
+                                        <span className="text-sm font-black text-purple-300">+{b.qty}×</span>
+                                        {d.spritePath ? (
+                                          <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                                        ) : (
+                                          <span className="text-xl shrink-0">{d.icon}</span>
+                                        )}
+                                        <span className="text-sm font-bold text-purple-100">{d.name}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             )}
                           </div>
