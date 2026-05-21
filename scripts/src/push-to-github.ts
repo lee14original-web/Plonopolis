@@ -5,10 +5,12 @@
  *   (brak)      — tylko app/page.tsx (Game.tsx)
  *   --images    — tylko nowe/zmienione foldery obrazkow (max ~50 plikow)
  *   --all       — wszystkie pliki (uwaga: limit GitHub ~200 blobów na tree)
+ *   --sql       — pliki attached_assets/*.sql → sql/ w repo GitHub
  *
  * Uzycie:
  *   pnpm --filter @workspace/scripts run push-to-github
  *   pnpm --filter @workspace/scripts run push-to-github -- --images
+ *   pnpm --filter @workspace/scripts run push-to-github -- --sql
  */
 import { readFile, readdir } from "fs/promises";
 import { resolve } from "path";
@@ -21,6 +23,7 @@ const BRANCH = "main";
 const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const WITH_IMAGES = process.argv.includes("--images");
 const WITH_ALL    = process.argv.includes("--all");
+const WITH_SQL    = process.argv.includes("--sql");
 
 // Foldery "nowe/rzadko zmieniane" — uzyj --images aby je wyslac
 const NEW_IMAGE_FOLDERS: { local: string; github: string }[] = [
@@ -123,6 +126,31 @@ async function main() {
       headSha = await pushCommit(chunk, headSha, `sync obrazki [${now}] cz.${chunkNum}`);
       console.log(`  commit: ${headSha.slice(0, 7)}`);
     }
+  }
+
+  // Tryb --sql: attached_assets/*.sql → sql/ w repo GitHub
+  if (WITH_SQL) {
+    const sqlDir = resolve(ROOT, "attached_assets");
+    if (existsSync(sqlDir)) {
+      const allFiles = await readdir(sqlDir);
+      const sqlFiles = allFiles.filter(f => f.endsWith(".sql"));
+      if (sqlFiles.length > 0) {
+        const sqlEntries = sqlFiles.map(f => ({
+          githubPath: `sql/${f}`,
+          localPath: resolve(sqlDir, f),
+        }));
+        console.log(`Wysylam ${sqlFiles.length} plikow SQL → sql/...`);
+        headSha = await pushCommit(sqlEntries, headSha, `sync sql [${now}]`);
+        console.log(`  commit: ${headSha.slice(0, 7)}`);
+        for (const f of sqlFiles) console.log(`  sql/${f}`);
+      } else {
+        console.log("Brak plikow .sql w attached_assets/");
+      }
+    }
+    // W trybie --sql NIE wysylamy Game.tsx (chyba ze jawnie dodane)
+    await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: headSha });
+    console.log(`\nGotowe! Ostatni commit: ${headSha.slice(0, 7)}`);
+    return;
   }
 
   // Zawsze na koncu: Game.tsx → app/page.tsx
