@@ -1,0 +1,80 @@
+Popraw UI "Lada dla klientów" — czytelność pomocy, bonus popup i lista potrzeb.
+
+Zakres:
+Tylko Game.tsx / UI showLadaModal i popup po wykonaniu zamówienia klienta.
+Nie zmieniaj SQL, RPC, ekonomii, nagród ani logiki zamówień.
+
+A) Popup po wykonaniu klienta — opis bonusu
+Problem:
+Po wykonaniu zamówienia, jeśli gracz dostanie bonus, obecnie na dole popupu jest duże puste okno / panel opisu przedmiotu. To wygląda słabo.
+
+Zmień:
+1. Usuń dolny pusty panel opisu bonusu.
+2. Zamiast tego zrób większy tooltip / kartę szczegółów po najechaniu na bonus.
+3. Bonus w popupie ma wyglądać tak:
+   - ikona bonusu duża,
+   - nazwa bonusu,
+   - ilość,
+   - krótki tekst "Najedź, aby zobaczyć szczegóły" jeśli tooltip nie jest aktywny.
+4. Po hover na bonus pokaż większy tooltip/kartę:
+   - nazwa przedmiotu,
+   - typ/tier jeśli istnieje,
+   - opis bonusu,
+   - wymagania jeśli są,
+   - efekty/statystyki jeśli istnieją.
+5. Tooltip ma być czytelny:
+   - większy font,
+   - szerokość około 340–420px,
+   - nie wychodzi poza ekran.
+6. Popup ma być niższy i bardziej zwarty, bez pustego pola na dole.
+
+B) Pomoc "?" w Ladzie
+Problem:
+Tekst w pomocy jest za mały — starsza osoba może mieć problem z czytaniem.
+
+Zmień:
+1. Zwiększ font całej pomocy:
+   - główny tekst minimum text-sm / text-base,
+   - nagłówki text-lg albo większe,
+   - tabela typów klientów większa i czytelniejsza.
+2. Zwiększ odstępy między sekcjami.
+3. Tabela klientów:
+   - większy padding w wierszach,
+   - większe nagłówki,
+   - czytelniejsze kolumny.
+4. Zachowaj scroll w 90vh.
+5. Nie pokazuj przycisku "Zrealizuj zamówienie" w widoku pomocy.
+
+C) Lista "Klient potrzebuje" w szczegółach klienta
+Problem:
+Przy szerokim modalu po prawej stronie każdego itemu zostaje dużo pustego miejsca.
+
+Zmień layout itemów na bardziej informacyjny:
+1. Każdy wiersz itemu podziel na:
+   - lewa strona: check/cross + ikona + ilość × nazwa
+   - prawa strona: status gracza
+2. Po prawej pokaż np.:
+   - "Masz: X / Y"
+   - jeśli brakuje: "Brakuje: N"
+   - jeśli wystarczy: "Gotowe"
+3. Dodaj mini pasek postępu posiadania:
+   - width zależnie od min(have / required, 1)
+   - zielony gdy wystarczy,
+   - czerwony/bursztynowy gdy brakuje.
+4. Wykorzystaj szerokość modala, ale nie przeładuj UI.
+5. Zachowaj obecne kolory zielony/czerwony dla spełnionych/niespełnionych wymagań.
+6. Na mobile układ może się zawijać pod spód.
+
+D) Nie zmieniaj:
+- complete_customer_order
+- spawn_customer_order
+- wartości rewards
+- SQL
+- RPC
+- sortowania klientów
+- liczby klientów
+
+Pokaż diff.
+Zrób typecheck.
+Commit i push z komunikatem:
+polish customer order readability
