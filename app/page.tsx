@@ -1943,6 +1943,7 @@ export default function Page() {
   const [newCustomerIds, setNewCustomerIds] = React.useState<Set<string>>(new Set());
   const isSpawningCustomerRef = React.useRef(false);
   const prevCustomerIdsRef = React.useRef<Set<string>>(new Set());
+  const hasInitializedCustomerIdsRef = React.useRef(false);
   const newCustomerIdsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [ladaStatusMsg, setLadaStatusMsg] = React.useState<'searching' | 'added' | 'failed' | null>(null);
   const ladaStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4028,27 +4029,34 @@ export default function Page() {
       if (!error && data) {
         const incoming = data as CustomerOrder[];
         const freshIds = incoming.map(o => o.id);
-        const addedIds = freshIds.filter(id => !prevCustomerIdsRef.current.has(id));
-        if (addedIds.length > 0) {
-          setNewCustomerIds(new Set(addedIds));
-          if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
-          newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
-          // Flash "dodano" przez 2s
-          if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
-          setLadaStatusMsg('added');
-          ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
-        } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
-          // Tick się odbył, a klientów brak (może backend nie zdążył) — cooldown 15s
-          spawnFailCooldownRef.current = Date.now();
-          if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
-          setLadaStatusMsg('failed');
-          ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
-        } else {
+        if (!hasInitializedCustomerIdsRef.current) {
+          // Pierwsze załadowanie — ustaw baseline, nie animuj żadnych kart
+          hasInitializedCustomerIdsRef.current = true;
+          prevCustomerIdsRef.current = new Set(freshIds);
+          setCustomerOrders(incoming);
+          setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
           setLadaStatusMsg(null);
+        } else {
+          const addedIds = freshIds.filter(id => !prevCustomerIdsRef.current.has(id));
+          if (addedIds.length > 0) {
+            setNewCustomerIds(new Set(addedIds));
+            if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+            newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+            if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+            setLadaStatusMsg('added');
+            ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
+          } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
+            spawnFailCooldownRef.current = Date.now();
+            if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+            setLadaStatusMsg('failed');
+            ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
+          } else {
+            setLadaStatusMsg(null);
+          }
+          prevCustomerIdsRef.current = new Set(freshIds);
+          setCustomerOrders(incoming);
+          setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
         }
-        prevCustomerIdsRef.current = new Set(freshIds);
-        setCustomerOrders(incoming);
-        setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
       }
     } finally {
       setCustomerLoading(false);
@@ -4164,6 +4172,10 @@ export default function Page() {
       clearInterval(nowT);
       if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
       if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+      // Reset baseline — przy kolejnym otwarciu Lady pierwsza lista znów jest baseline
+      hasInitializedCustomerIdsRef.current = false;
+      prevCustomerIdsRef.current = new Set();
+      setNewCustomerIds(new Set());
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
