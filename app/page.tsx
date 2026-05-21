@@ -10527,13 +10527,13 @@ export default function Page() {
 
                     <div className="flex-1 overflow-y-auto p-5">
                       {showLadaInfo ? (
-                        <div className="space-y-4 text-[#dfcfab]">
+                        <div className="space-y-5 text-[#dfcfab]">
 
                           {/* 1. Czym jest Lada */}
                           <div>
-                            <p className="text-base font-black text-amber-300 mb-2">Lada dla klientów</p>
-                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i składają zamówienia na produkty. Jeśli masz to, czego potrzebują — możesz zrealizować zamówienie przed upływem czasu.</p>
-                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none">
+                            <p className="text-xl font-black text-amber-300 mb-3">Lada dla klientów</p>
+                            <p className="text-sm text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i składają zamówienia na produkty. Jeśli masz to, czego potrzebują — możesz zrealizować zamówienie przed upływem czasu.</p>
+                            <ul className="text-sm text-[#dfcfab] space-y-1 list-none">
                               <li>🌱 uprawy (zwykłe, epickie, legendarne),</li>
                               <li>🍎 owoce z sadu,</li>
                               <li>🐔 produkty zwierzęce,</li>
@@ -10543,21 +10543,21 @@ export default function Page() {
 
                           {/* 2. Nagrody */}
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
-                            <ul className="text-[12.5px] space-y-1 list-none text-[#dfcfab] mb-2">
+                            <p className="text-lg font-black text-amber-300 mb-2">💰 Nagrody</p>
+                            <ul className="text-sm space-y-2 list-none text-[#dfcfab] mb-2">
                               <li>💰 <span className="font-bold">Złoto</span> — niższe niż pełna wartość rynkowa produktów. Lada nie jest miejscem do szybkiego zarabiania — nie opłaca się kupować produktów tylko po to, by oddać je klientowi.</li>
                               <li>⭐ <span className="font-bold">EXP</span> — skaluje się z Twoim poziomem i typem klienta. Na wyższych poziomach większe zamówienia dają znacznie więcej doświadczenia.</li>
                               <li>🎁 <span className="font-bold">Bonus dodatkowy</span> (losowo) — może zawierać kompost, produkty zwierząt, rzadkie owoce, materiały lub inne przedmioty. Im większy klient, tym większa szansa.</li>
                             </ul>
-                            <p className="text-[11px] text-[#8b6a3e]">Główna wartość Lady to regularny EXP i okazjonalne bonusy — nie złoto.</p>
+                            <p className="text-sm text-[#8b6a3e]">Główna wartość Lady to regularny EXP i okazjonalne bonusy — nie złoto.</p>
                           </div>
 
                           {/* 3. Typy klientów */}
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">👥 Typy klientów</p>
-                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia się pojawiają.</p>
-                            <div className="space-y-1 text-[12px]">
-                              <div className="grid grid-cols-[1fr_44px_52px_44px_60px] gap-x-2 px-2.5 py-1 text-[#8b6a3e] font-bold text-[10px] uppercase tracking-wider">
+                            <p className="text-lg font-black text-amber-300 mb-2">👥 Typy klientów</p>
+                            <p className="text-sm text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia się pojawiają.</p>
+                            <div className="space-y-1">
+                              <div className="grid grid-cols-[1fr_50px_60px_50px_68px] gap-x-2 px-3 py-1.5 text-[#8b6a3e] font-bold text-xs uppercase tracking-wider">
                                 <span>Klient</span>
                                 <span className="text-center">Od lvl</span>
                                 <span className="text-center">Produkty</span>
@@ -10575,38 +10575,38 @@ export default function Page() {
                                 { i:'🏗️',  n:'Centrum dystrybucji',     lvl:'20', it:'7–9',    t:'48h', e:'0,50%' },
                                 { i:'🌍',   n:'Kontrakt między.',        lvl:'25', it:'8–10',   t:'48h', e:'0,70%' },
                               ].map(c => (
-                                <div key={c.n} className="grid grid-cols-[1fr_44px_52px_44px_60px] gap-x-2 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
-                                  <span className="font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
-                                  <span className="text-[#8b6a3e] text-center">{c.lvl}</span>
-                                  <span className="text-[#bfa274] text-center">{c.it}</span>
-                                  <span className="text-[#8b6a3e] text-center">{c.t}</span>
-                                  <span className="text-blue-300 font-bold text-center">{c.e}</span>
+                                <div key={c.n} className="grid grid-cols-[1fr_50px_60px_50px_68px] gap-x-2 items-center rounded-lg border border-amber-700/30 bg-black/25 px-3 py-2">
+                                  <span className="text-sm font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
+                                  <span className="text-sm text-[#8b6a3e] text-center">{c.lvl}</span>
+                                  <span className="text-sm text-[#bfa274] text-center">{c.it}</span>
+                                  <span className="text-sm text-[#8b6a3e] text-center">{c.t}</span>
+                                  <span className="text-sm text-blue-300 font-bold text-center">{c.e}</span>
                                 </div>
                               ))}
                             </div>
-                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">EXP min. to gwarantowany próg jako % aktualnego poziomu.</p>
+                            <p className="text-sm text-[#8b6a3e] mt-2">EXP min. to gwarantowany próg jako % aktualnego poziomu.</p>
                           </div>
 
                           {/* 4. Jakości */}
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów</p>
-                            <div className="space-y-1.5 text-[12.5px]">
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300 mb-0.5">🌱 Uprawy</p>
-                                <p className="text-[#bfa274]">zwykła, epicka, legendarna — klient może wymagać konkretnej jakości.</p>
+                            <p className="text-lg font-black text-amber-300 mb-2">⭐ Jakości produktów</p>
+                            <div className="space-y-2">
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-3 py-2">
+                                <p className="text-sm font-bold text-emerald-300 mb-0.5">🌱 Uprawy</p>
+                                <p className="text-sm text-[#bfa274]">zwykła, epicka, legendarna — klient może wymagać konkretnej jakości.</p>
                               </div>
-                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
-                                <p className="font-bold text-emerald-300 mb-0.5">🍎 Owoce</p>
-                                <p className="text-[#bfa274]">zwykły, soczysty, złoty.</p>
+                              <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-3 py-2">
+                                <p className="text-sm font-bold text-emerald-300 mb-0.5">🍎 Owoce</p>
+                                <p className="text-sm text-[#bfa274]">zwykły, soczysty, złoty.</p>
                               </div>
                             </div>
-                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Miód i część produktów pojawia się dopiero od wyższych poziomów.</p>
+                            <p className="text-sm text-[#8b6a3e] mt-2">Miód i część produktów pojawia się dopiero od wyższych poziomów.</p>
                           </div>
 
                           {/* 5. Liga Farmerów */}
-                          <div className="rounded-lg border border-green-700/40 bg-green-950/15 px-3 py-2.5">
-                            <p className="text-sm font-black text-green-300 mb-1.5">🏆 Liga Farmerów</p>
-                            <ul className="text-[12.5px] space-y-1 list-none text-[#dfcfab]">
+                          <div className="rounded-lg border border-green-700/40 bg-green-950/15 px-4 py-3">
+                            <p className="text-lg font-black text-green-300 mb-2">🏆 Liga Farmerów</p>
+                            <ul className="text-sm space-y-1.5 list-none text-[#dfcfab]">
                               <li>Każde zrealizowane zamówienie zapisuje się w statystykach gracza.</li>
                               <li>Im więcej klientów regularnie obsługujesz, tym większe masz szanse na wyższe miejsce w Lidze.</li>
                               <li>Lada jest więc ważna nie tylko dla EXP i bonusów, ale też dla rywalizacji rankingowej.</li>
@@ -10614,21 +10614,21 @@ export default function Page() {
                           </div>
 
                           {/* 6. Wskazówka ekonomiczna */}
-                          <div className="rounded-lg border border-amber-700/30 bg-black/20 px-3 py-2.5">
-                            <p className="text-sm font-black text-amber-300 mb-1.5">💡 Wskazówka</p>
-                            <p className="text-[12.5px] text-[#bfa274]">Lada nie jest najlepszym miejscem do zarabiania złota — do tego lepszy jest Targ i handel z graczami. Traktuj ją jako regularne źródło EXP, okazjonalnych bonusów i punktów ligowych.</p>
+                          <div className="rounded-lg border border-amber-700/30 bg-black/20 px-4 py-3">
+                            <p className="text-lg font-black text-amber-300 mb-2">💡 Wskazówka</p>
+                            <p className="text-sm text-[#bfa274]">Lada nie jest najlepszym miejscem do zarabiania złota — do tego lepszy jest Targ i handel z graczami. Traktuj ją jako regularne źródło EXP, okazjonalnych bonusów i punktów ligowych.</p>
                           </div>
 
                           {/* 7. Jak wykonać */}
                           <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">📋 Jak wykonać zamówienie?</p>
-                            <ol className="text-[12.5px] space-y-1 list-decimal list-inside text-[#dfcfab]">
+                            <p className="text-lg font-black text-amber-300 mb-2">📋 Jak wykonać zamówienie?</p>
+                            <ol className="text-sm space-y-1.5 list-decimal list-inside text-[#dfcfab]">
                               <li>Zbierz wymagane produkty.</li>
                               <li>Kliknij kartę klienta, by zobaczyć szczegóły.</li>
                               <li>Kliknij 🤝 „Zrealizuj zamówienie".</li>
                               <li>Produkty znikają z magazynu, dostajesz nagrody.</li>
                             </ol>
-                            <p className="text-[12px] text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie. Nowi pojawiają się automatycznie.</p>
+                            <p className="text-sm text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie. Nowi pojawiają się automatycznie.</p>
                           </div>
 
                         </div>
@@ -10731,18 +10731,33 @@ export default function Page() {
                               {mergedItems.map((it, idx) => {
                                 const have = haveFor(it.id);
                                 const ok = have >= it.qty;
+                                const missing = Math.max(0, it.qty - have);
+                                const pct = Math.min(1, have / it.qty);
                                 const d = getOrderItemDisplay(it.id);
                                 return (
-                                  <div key={idx} className={`flex items-center gap-3 rounded-lg border px-4 py-3.5 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
+                                  <div key={idx} className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
                                     <span className="text-xl shrink-0">{ok ? '✅' : '❌'}</span>
                                     {d.spritePath ? (
                                       <img src={d.spritePath} alt={d.name} className="w-10 h-10 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
                                     ) : (
                                       <span className="text-3xl shrink-0">{d.icon}</span>
                                     )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-lg font-black text-[#f9e7b2] leading-tight">{it.qty}× {d.name}</p>
-                                      <p className={`text-sm font-bold ${ok ? 'text-emerald-400' : 'text-red-400'}`}>Masz: {have}</p>
+                                    <div className="flex-1 min-w-0 flex items-center gap-4 flex-wrap sm:flex-nowrap">
+                                      <p className="text-lg font-black text-[#f9e7b2] leading-tight shrink-0">{it.qty}× {d.name}</p>
+                                      <div className="flex-1 min-w-[120px]">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className={`text-sm font-bold ${ok ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {ok ? '✓ Gotowe' : `Brakuje: ${missing}`}
+                                          </span>
+                                          <span className="text-sm text-[#8b6a3e] font-bold">{have} / {it.qty}</span>
+                                        </div>
+                                        <div className="h-2 w-full rounded-full bg-black/40 overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full transition-all ${ok ? 'bg-emerald-500' : pct > 0.5 ? 'bg-amber-400' : 'bg-red-500'}`}
+                                            style={{ width: `${pct * 100}%` }}
+                                          />
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -11030,7 +11045,7 @@ export default function Page() {
               );
             };
 
-            return (
+            return (<>
               <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
                 <div className="relative w-full max-w-md rounded-3xl border-2 border-amber-500/70 bg-[rgba(20,12,5,0.99)] p-6 shadow-2xl">
                   <button
@@ -11086,14 +11101,6 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-amber-500/60 bg-black/50 p-3 mb-4 text-[#dfcfab] h-[160px] overflow-y-auto">
-                    {hovered ? (
-                      renderTooltip(hovered)
-                    ) : (
-                      <p className="text-[12px] text-center text-[#8b6a3e] italic h-full flex items-center justify-center">Najedź myszką na przedmiot, aby zobaczyć szczegóły</p>
-                    )}
-                  </div>
-
                   <button
                     onClick={() => { setCustomerLootDrop(null); setLootHoverIdx(null); }}
                     className="w-full rounded-xl py-3 text-base font-black border border-amber-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 transition"
@@ -11103,7 +11110,15 @@ export default function Page() {
                   <p className="text-[10px] text-center text-[#8b6a3e] mt-1.5">Esc lub Enter, aby zamknąć</p>
                 </div>
               </div>
-            );
+              {hovered && (
+                <div
+                  className="pointer-events-none fixed z-[500] w-[380px] rounded-xl border border-amber-500/80 bg-[rgba(20,12,5,0.98)] p-4 shadow-2xl backdrop-blur-sm"
+                  style={{ left: Math.min(mousePos.x + 18, BASE_W - 400), top: Math.max(8, mousePos.y - 120) }}
+                >
+                  {renderTooltip(hovered)}
+                </div>
+              )}
+            </>);
           })()}
 
           {showStodolaModal && (() => {
