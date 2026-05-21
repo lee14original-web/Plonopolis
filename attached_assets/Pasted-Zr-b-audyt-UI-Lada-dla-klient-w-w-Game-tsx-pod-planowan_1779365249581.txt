@@ -1,0 +1,59 @@
+Zrób audyt UI "Lada dla klientów" w Game.tsx pod planowaną przebudowę wizualną.
+
+Nic nie zmieniaj.
+
+Chcemy poprawić:
+1. Nagroda EXP:
+   - obok "+205 EXP" pokazać ile to daje % aktualnego poziomu gracza, np. "+205 EXP (0.9%)"
+   - procent liczony względem xp_to_next_level aktualnego profilu.
+
+2. Bonus dodatkowy:
+   - sekcja "Bonus dodatkowy" ma być większa, czytelniejsza i bardziej widoczna.
+   - większa ikona, większy tekst, lepszy kontrast.
+
+3. Pasek / sekcja nagrody:
+   - cała sekcja "Nagroda" ma być wizualnie mocniejsza i czytelniejsza.
+
+4. "Klient potrzebuje":
+   - obecna zwykła lista itemów ma wyglądać jak kartka papieru / lista zakupów klienta.
+   - zachować checkmarki i informację "Masz: X".
+
+5. Nawigacja klientów:
+   - zamiast strzałek lewo/prawo pokazujących jednego klienta, chcemy widzieć wszystkich klientów naraz jako małe karty/avatary/zakładki.
+   - kliknięcie w klienta wybiera go i pokazuje szczegóły.
+   - Esc ma cofać z widoku szczegółów do widoku wszystkich klientów, jeśli jesteśmy w takim trybie.
+
+6. Tooltip:
+   - gdy gracz najedzie myszką na kartę klienta w widoku wszystkich klientów, ma pojawić się tooltip z podsumowaniem:
+     - typ klienta / nazwa,
+     - ile itemów potrzebuje,
+     - nagroda złoto,
+     - nagroda EXP,
+     - bonus dodatkowy, jeśli jest.
+
+Sprawdź:
+1. Gdzie renderowany jest modal showLadaModal.
+2. Jak wybierany jest aktualny klient:
+   - indeks,
+   - aktywne ordery,
+   - currentCustomer,
+   - strzałki lewo/prawo.
+3. Jakie dane ma order:
+   - items,
+   - rewards.gold,
+   - rewards.exp,
+   - rewards.bonus,
+   - customer type/name,
+   - expires_at.
+4. Gdzie renderowana jest lista "Klient potrzebuje".
+5. Gdzie renderowana jest sekcja "Nagroda".
+6. Gdzie renderowany jest bonus dodatkowy.
+7. Czy istnieje już tooltip system, który można wykorzystać.
+8. Czy istnieje helper do ikon/nazw itemów.
+9. Czy istnieje helper do procentu EXP lub trzeba policzyć inline:
+   expPercent = rewardExp / profile.xp_to_next_level * 100.
+10. Zaproponuj minimalny, bezpieczny plan zmian w 2 etapach:
+   Etap A: tylko poprawa wyglądu obecnego widoku jednego klienta.
+   Etap B: widok wszystkich klientów + tooltip + kliknięcie w klienta.
+
+Na końcu daj dokładny plan implementacji i wskaż ryzyka.
