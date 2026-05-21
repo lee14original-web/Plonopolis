@@ -7524,7 +7524,7 @@ export default function Page() {
           {/* ═══ MODAL WIADOMOŚCI ═══ */}
           {showMessagePanel && (
             <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-              <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-4xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+              <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-5xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
 
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-5">
@@ -7608,9 +7608,9 @@ export default function Page() {
                             {recipientSuggestions.map(s => (
                               <button key={s.id} type="button"
                                 onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
-                                className="flex w-full items-center gap-3 px-5 py-3.5 text-left transition hover:bg-[rgba(80,50,10,0.5)]">
-                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-11 w-11 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} />
-                                <span className="text-base font-semibold text-[#f3dfb4]">{s.username}</span>
+                                className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-[rgba(80,50,10,0.5)]">
+                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-14 w-14 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} />
+                                <span className="text-lg font-bold text-[#f3dfb4]">{s.username}</span>
                               </button>
                             ))}
                           </div>
