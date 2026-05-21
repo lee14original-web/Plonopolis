@@ -10528,96 +10528,109 @@ export default function Page() {
                     <div className="flex-1 overflow-y-auto p-5">
                       {showLadaInfo ? (
                         <div className="space-y-4 text-[#dfcfab]">
+
+                          {/* 1. Czym jest Lada */}
                           <div>
                             <p className="text-base font-black text-amber-300 mb-2">Lada dla klientów</p>
-                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i chcą kupić różne produkty:</p>
-                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none mb-3">
-                              <li>🌱 uprawy,</li>
+                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-2">Klienci NPC odwiedzają Twoją farmę i składają zamówienia na produkty. Jeśli masz to, czego potrzebują — możesz zrealizować zamówienie przed upływem czasu.</p>
+                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none">
+                              <li>🌱 uprawy (zwykłe, epickie, legendarne),</li>
                               <li>🍎 owoce z sadu,</li>
                               <li>🐔 produkty zwierzęce,</li>
-                              <li>🍯 miód.</li>
-                            </ul>
-                            <p className="text-[13px] text-[#bfa274] leading-relaxed mb-1">Każde zamówienie ma limit czasu. Po jego wykonaniu dostajesz:</p>
-                            <ul className="text-[13px] text-[#dfcfab] space-y-0.5 list-none">
-                              <li>💰 złoto,</li>
-                              <li>⭐ EXP,</li>
-                              <li>🎁 czasem bonusowy przedmiot.</li>
+                              <li>🍯 miód i inne rzadsze produkty.</li>
                             </ul>
                           </div>
 
+                          {/* 2. Nagrody */}
+                          <div>
+                            <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
+                            <ul className="text-[12.5px] space-y-1 list-none text-[#dfcfab] mb-2">
+                              <li>💰 <span className="font-bold">Złoto</span> — niższe niż pełna wartość rynkowa produktów. Lada nie jest miejscem do szybkiego zarabiania — nie opłaca się kupować produktów tylko po to, by oddać je klientowi.</li>
+                              <li>⭐ <span className="font-bold">EXP</span> — skaluje się z Twoim poziomem i typem klienta. Na wyższych poziomach większe zamówienia dają znacznie więcej doświadczenia.</li>
+                              <li>🎁 <span className="font-bold">Bonus dodatkowy</span> (losowo) — może zawierać kompost, produkty zwierząt, rzadkie owoce, materiały lub inne przedmioty. Im większy klient, tym większa szansa.</li>
+                            </ul>
+                            <p className="text-[11px] text-[#8b6a3e]">Główna wartość Lady to regularny EXP i okazjonalne bonusy — nie złoto.</p>
+                          </div>
+
+                          {/* 3. Typy klientów */}
                           <div>
                             <p className="text-sm font-black text-amber-300 mb-2">👥 Typy klientów</p>
-                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia.</p>
+                            <p className="text-[12px] text-[#8b6a3e] mb-2">Im wyższy poziom gracza, tym większe i lepsze zamówienia się pojawiają.</p>
                             <div className="space-y-1 text-[12px]">
-                              <div className="grid grid-cols-[1fr_66px_112px_44px] gap-x-3 px-2.5 py-1 text-[#8b6a3e] font-bold text-[11px] uppercase tracking-wider">
-                                <span>Klient</span><span className="text-center">Produkty</span><span className="text-center">Bonus nagród</span><span className="text-center">Czas</span>
+                              <div className="grid grid-cols-[1fr_44px_52px_44px_60px] gap-x-2 px-2.5 py-1 text-[#8b6a3e] font-bold text-[10px] uppercase tracking-wider">
+                                <span>Klient</span>
+                                <span className="text-center">Od lvl</span>
+                                <span className="text-center">Produkty</span>
+                                <span className="text-center">Czas</span>
+                                <span className="text-center">EXP min.</span>
                               </div>
                               {[
-                                { i:'🧑‍🌾', n:'Sąsiad',                   it:'1',      m:'×1.00', t:'12h' },
-                                { i:'🧓',   n:'Gość ze wsi',             it:'1–2',    m:'×1.15', t:'16h' },
-                                { i:'🏪',   n:'Mały targ',               it:'2–3',    m:'×1.35', t:'20h' },
-                                { i:'🏬',   n:'Sklep wiejski',           it:'3–4',    m:'×1.60', t:'24h' },
-                                { i:'🍽️',  n:'Restauracja',             it:'4–5',    m:'×2.00', t:'30h' },
-                                { i:'🏢',   n:'Hurtownia',               it:'5–6',    m:'×2.50', t:'36h' },
-                                { i:'🏛️',  n:'Sieć handlowa',           it:'6–8',    m:'×3.20', t:'42h' },
-                                { i:'🏗️',  n:'Centrum dystrybucji',     it:'7–9',    m:'×4.00', t:'48h' },
-                                { i:'🌍',   n:'Kontrakt międzynarodowy', it:'8–10',   m:'×5.00', t:'48h' },
+                                { i:'🧑‍🌾', n:'Sąsiad',                   lvl:'1',  it:'1',      t:'12h', e:'0,03%' },
+                                { i:'🧓',   n:'Gość ze wsi',             lvl:'1',  it:'1–2',    t:'16h', e:'0,05%' },
+                                { i:'🏪',   n:'Mały targ',               lvl:'3',  it:'2–3',    t:'20h', e:'0,08%' },
+                                { i:'🏬',   n:'Sklep wiejski',           lvl:'5',  it:'3–4',    t:'24h', e:'0,12%' },
+                                { i:'🍽️',  n:'Restauracja',             lvl:'8',  it:'4–5',    t:'30h', e:'0,18%' },
+                                { i:'🏢',   n:'Hurtownia',               lvl:'12', it:'5–6',    t:'36h', e:'0,27%' },
+                                { i:'🏛️',  n:'Sieć handlowa',           lvl:'16', it:'6–8',    t:'42h', e:'0,38%' },
+                                { i:'🏗️',  n:'Centrum dystrybucji',     lvl:'20', it:'7–9',    t:'48h', e:'0,50%' },
+                                { i:'🌍',   n:'Kontrakt między.',        lvl:'25', it:'8–10',   t:'48h', e:'0,70%' },
                               ].map(c => (
-                                <div key={c.n} className="grid grid-cols-[1fr_66px_112px_44px] gap-x-3 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
+                                <div key={c.n} className="grid grid-cols-[1fr_44px_52px_44px_60px] gap-x-2 items-center rounded-lg border border-amber-700/30 bg-black/25 px-2.5 py-1.5">
                                   <span className="font-bold text-[#f9e7b2] truncate">{c.i} {c.n}</span>
+                                  <span className="text-[#8b6a3e] text-center">{c.lvl}</span>
                                   <span className="text-[#bfa274] text-center">{c.it}</span>
-                                  <span className="text-amber-300 font-bold text-center">{c.m}</span>
                                   <span className="text-[#8b6a3e] text-center">{c.t}</span>
+                                  <span className="text-blue-300 font-bold text-center">{c.e}</span>
                                 </div>
                               ))}
                             </div>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">EXP min. to gwarantowany próg jako % aktualnego poziomu.</p>
                           </div>
 
-                          <div>
-                            <p className="text-sm font-black text-amber-300 mb-2">💰 Nagrody</p>
-                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Podstawowe</p>
-                            <ul className="text-[12.5px] space-y-1 list-disc list-inside text-[#dfcfab] mb-2">
-                              <li>💰 Gold = wartość produktów × bonus klienta</li>
-                              <li>⭐ EXP = dodatkowa nagroda za wykonanie zamówienia</li>
-                            </ul>
-                            <p className="text-[12px] text-[#bfa274] font-bold mb-1">Bonusy (losowo)</p>
-                            <p className="text-[12px] text-[#8b6a3e] mb-1">Niektórzy klienci mogą dać dodatkowo:</p>
-                            <ul className="text-[12.5px] space-y-0.5 list-none text-[#dfcfab]">
-                              <li>🌿 kompost,</li>
-                              <li>🐔 produkty zwierząt,</li>
-                              <li>🍎 rzadkie owoce,</li>
-                              <li>🎒 materiały do ulepszania,</li>
-                              <li>✨ rzadkie przedmioty.</li>
-                            </ul>
-                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Im większy klient, tym większa szansa na bonus.</p>
-                          </div>
-
+                          {/* 4. Jakości */}
                           <div>
                             <p className="text-sm font-black text-amber-300 mb-2">⭐ Jakości produktów</p>
                             <div className="space-y-1.5 text-[12.5px]">
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
                                 <p className="font-bold text-emerald-300 mb-0.5">🌱 Uprawy</p>
-                                <p className="text-[#bfa274]">zwykła, epicka, legendarna.</p>
+                                <p className="text-[#bfa274]">zwykła, epicka, legendarna — klient może wymagać konkretnej jakości.</p>
                               </div>
                               <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/15 px-2.5 py-1.5">
                                 <p className="font-bold text-emerald-300 mb-0.5">🍎 Owoce</p>
                                 <p className="text-[#bfa274]">zwykły, soczysty, złoty.</p>
                               </div>
                             </div>
-                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Klient może wymagać konkretnej jakości produktu.</p>
+                            <p className="text-[11px] text-[#8b6a3e] mt-1.5">Miód i część produktów pojawia się dopiero od wyższych poziomów.</p>
                           </div>
 
+                          {/* 5. Liga Farmerów */}
+                          <div className="rounded-lg border border-green-700/40 bg-green-950/15 px-3 py-2.5">
+                            <p className="text-sm font-black text-green-300 mb-1.5">🏆 Liga Farmerów</p>
+                            <ul className="text-[12.5px] space-y-1 list-none text-[#dfcfab]">
+                              <li>Każde zrealizowane zamówienie zapisuje się w statystykach gracza.</li>
+                              <li>Im więcej klientów regularnie obsługujesz, tym większe masz szanse na wyższe miejsce w Lidze.</li>
+                              <li>Lada jest więc ważna nie tylko dla EXP i bonusów, ale też dla rywalizacji rankingowej.</li>
+                            </ul>
+                          </div>
+
+                          {/* 6. Wskazówka ekonomiczna */}
+                          <div className="rounded-lg border border-amber-700/30 bg-black/20 px-3 py-2.5">
+                            <p className="text-sm font-black text-amber-300 mb-1.5">💡 Wskazówka</p>
+                            <p className="text-[12.5px] text-[#bfa274]">Lada nie jest najlepszym miejscem do zarabiania złota — do tego lepszy jest Targ i handel z graczami. Traktuj ją jako regularne źródło EXP, okazjonalnych bonusów i punktów ligowych.</p>
+                          </div>
+
+                          {/* 7. Jak wykonać */}
                           <div>
                             <p className="text-sm font-black text-amber-300 mb-2">📋 Jak wykonać zamówienie?</p>
                             <ol className="text-[12.5px] space-y-1 list-decimal list-inside text-[#dfcfab]">
                               <li>Zbierz wymagane produkty.</li>
-                              <li>Kliknij 🤝 „Zrealizuj".</li>
-                              <li>Produkty znikają z magazynu.</li>
-                              <li>Otrzymujesz nagrody.</li>
+                              <li>Kliknij kartę klienta, by zobaczyć szczegóły.</li>
+                              <li>Kliknij 🤝 „Zrealizuj zamówienie".</li>
+                              <li>Produkty znikają z magazynu, dostajesz nagrody.</li>
                             </ol>
-                            <p className="text-[12px] text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie.</p>
-                            <p className="text-[12px] text-[#bfa274] mt-1">Nowi klienci pojawiają się automatycznie po pewnym czasie.</p>
+                            <p className="text-[12px] text-[#bfa274] mt-2">⏰ Jeśli czas minie — klient odejdzie. Nowi pojawiają się automatycznie.</p>
                           </div>
+
                         </div>
                       ) : customerLoading && customerOrders.length === 0 ? (
                         <div className="text-center py-12">
