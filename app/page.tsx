@@ -5807,7 +5807,7 @@ export default function Page() {
             <>
               <div className="fixed right-4 top-4 z-[90] flex flex-col items-end gap-1.5">
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="rounded-2xl border border-red-400/40 bg-red-950/40 px-5 py-2.5 text-base font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
                 >
                   Wyloguj
@@ -13093,7 +13093,8 @@ export default function Page() {
                 <button onClick={() => setShowLogoutConfirm(false)} className="absolute right-4 top-4 text-[#8b6a3e] hover:text-red-400 transition">✕</button>
                 <p className="mb-1 text-center text-3xl">🚪</p>
                 <h3 className="mb-2 text-center text-xl font-black text-[#f9e7b2]">Wylogowanie</h3>
-                <p className="mb-7 text-center text-base text-[#dfcfab]">Czy na pewno chcesz się wylogować?</p>
+                <p className="mb-2 text-center text-base text-[#dfcfab]">Czy na pewno chcesz się wylogować?</p>
+                <p className="mb-7 text-center text-xs text-[#8b6a3e]">Niezapisane lokalne zmiany mogą zostać utracone.</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowLogoutConfirm(false)}
