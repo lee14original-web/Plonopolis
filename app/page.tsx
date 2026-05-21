@@ -7557,7 +7557,8 @@ export default function Page() {
                   </div>
                 </div>
 
-                {/* Zakładki */}
+                {/* Zakładki — ukryte podczas pisania nowej wiadomości */}
+                {!showCompose && (
                 <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/30 bg-black/20 px-4 pt-3 pb-0">
                   {([
                     { key: "systemowe", label: "Systemowe", icon: "🔔" },
@@ -7577,6 +7578,7 @@ export default function Page() {
                     </button>
                   ))}
                 </div>
+                )}
 
                 {/* Treść */}
                 <div className="flex-1 overflow-y-auto p-5">
