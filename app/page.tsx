@@ -13131,19 +13131,19 @@ export default function Page() {
                   <button
                     onClick={() => setMessage(null)}
                     aria-label="Zamknij powiadomienie"
-                    className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 text-base font-black transition hover:bg-black/60 hover:text-white"
+                    className="absolute right-2 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-black/30 text-white/80 text-sm font-black transition hover:bg-black/60 hover:text-white"
                   >
                     ✕
                   </button>
-                  <div className="flex items-start gap-3 px-5 py-4 pr-12">
-                    <span className="text-3xl shrink-0 leading-none mt-0.5">{icon}</span>
+                  <div className="flex items-center gap-3 px-4 py-3 pr-10">
+                    <span className="text-2xl shrink-0 leading-none">{icon}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-base font-black leading-tight">{message.title}</p>
-                      {message.text && <p className="mt-1.5 text-sm opacity-90 leading-snug">{message.text}</p>}
+                      <p className="text-base font-extrabold leading-tight">{message.title}</p>
+                      {message.text && <p className="mt-1 text-sm opacity-90 leading-snug">{message.text}</p>}
                     </div>
                   </div>
                   {/* Pasek postępu zanikania */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/25">
                     <div
                       className={`h-full ${barColor}`}
                       style={{ animation: `plonopolisToastBar ${durMs}ms linear forwards` }}
