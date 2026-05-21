@@ -1,0 +1,61 @@
+Popraw live zachowanie "Lada dla klientów".
+
+Problem:
+Obecnie po wykonaniu części klientów lista pokazuje tekst typu:
+"Nowy klient lada chwilą — odśwież listę!"
+ale w UI nie ma przycisku odświeżania. Chcę, żeby działało to na żywo.
+
+Zakres:
+Game.tsx / UI i frontendowa logika Lada dla klientów.
+Nie zmieniaj ekonomii, nagród, limitu klientów ani SQL, chyba że frontend potrzebuje istniejącego RPC.
+
+Wymagania A — live timer nowego klienta:
+1. W oknie Lady pokazuj realne odliczanie:
+   "Nowy klient za: 3s", "2s", "1s".
+2. Gdy licznik dojdzie do 0 i aktywnych klientów jest mniej niż limit:
+   - automatycznie spróbuj pobrać/spawnować nowego klienta,
+   - odśwież customerOrders,
+   - nie wymagaj zamykania/otwierania okna.
+3. Usuń tekst "odśwież listę", bo nie ma takiego przycisku.
+4. Jeśli lista klientów jest pełna:
+   - pokaż "Limit klientów osiągnięty" albo ukryj timer.
+5. Zabezpiecz przed spamowaniem RPC:
+   - użyj ref/flag typu isSpawningCustomerRef,
+   - przy nextIn <= 0 wywołuj spawn/refresh tylko raz,
+   - potem resetuj po zakończeniu loadCustomerOrders.
+6. Jeśli istnieje już funkcja typu loadCustomerOrders / ensureCustomerOrders / spawnCustomerOrder, użyj jej zamiast tworzyć nową logikę.
+
+Wymagania B — animacja nowego klienta:
+1. Po automatycznym pojawieniu się nowego klienta wyróżnij jego kartę przez 2–3 sekundy:
+   - zielona/złota poświata,
+   - delikatna animacja fade/scale,
+   - mały label "Nowy!".
+2. Do identyfikacji nowego klienta porównaj poprzednie IDs zamówień z nową listą.
+3. Nie animuj wszystkich kart przy zwykłym renderze — tylko faktycznie nowe ID.
+
+Wymagania C — ostrzeżenie, że klient zaraz zrezygnuje:
+1. Dla każdego klienta policz procent wykorzystanego czasu:
+   elapsed / totalDuration.
+2. Jeśli wykorzystano >= 75% czasu albo zostało <= 25% czasu:
+   - karta dostaje ostrzegawczy styl,
+   - czerwona/pomarańczowa migająca obwódka,
+   - pokaż czerwone "!" lub "⚠" w rogu karty,
+   - czas do końca pokaż w ostrzegawczym kolorze.
+3. Jeśli klient ma >= 90% wykorzystanego czasu, ostrzeżenie może być mocniejsze.
+4. W widoku szczegółów klienta też pokaż komunikat:
+   "Uwaga: klient niedługo zrezygnuje!"
+   jeśli spełnia warunek ostrzeżenia.
+5. Zachowaj czytelność — nie przesadzaj z animacją.
+
+Wymagania D — techniczne:
+1. Jeśli customer_order ma created_at i expires_at, użyj ich do wyliczenia totalDuration.
+2. Jeśli brakuje created_at, fallback: ostrzegaj tylko po czasie pozostałym, np. < 25% nie wyliczaj.
+3. Wszystkie interwały czyść w useEffect cleanup.
+4. Nie psuj Esc / zamykania modala.
+5. Nie zmieniaj backendu, jeśli nie jest konieczne.
+
+Wymagania E — test:
+1. Zrób typecheck.
+2. Pokaż diff.
+3. Commit i push z komunikatem:
+   add live customer order timer and warnings
