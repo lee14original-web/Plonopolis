@@ -10798,18 +10798,53 @@ export default function Page() {
                   if (!o) return null;
                   const cd = getCustomerDisplay(o.customer_type);
                   const mi = mergeOrderItems(o.items);
+                  const MAX_ITEMS = 4;
+                  const visibleItems = mi.slice(0, MAX_ITEMS);
+                  const hiddenCount = mi.length - MAX_ITEMS;
+                  const xtn = profile?.xp_to_next_level;
+                  const expPct = xtn && xtn > 0 ? (o.rewards.exp / xtn) * 100 : 0;
                   return (
                     <div
                       className="pointer-events-none fixed z-[9999] flex flex-col items-center"
                       style={{ left: mousePos.x, top: mousePos.y - 14, transform: 'translate(-50%, -100%)' }}
                     >
-                      <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl min-w-[190px] max-w-[240px]">
+                      <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl min-w-[210px] max-w-[260px]">
                         <p className="font-black text-[#f9e7b2] text-sm mb-0.5">{cd.icon} {cd.name}</p>
-                        <p className="text-[11px] text-[#8b6a3e] mb-2">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
-                        <div className="flex justify-between gap-2 text-[12px] font-bold">
-                          <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
-                          <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
+                        <p className="text-[10px] text-[#8b6a3e] mb-2">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
+
+                        {/* Sekcja: Potrzebuje */}
+                        <div className="mb-2">
+                          <p className="text-[10px] uppercase tracking-widest text-amber-500/80 font-black mb-1">Potrzebuje:</p>
+                          <div className="space-y-0.5">
+                            {visibleItems.map((it, idx) => {
+                              const d = getOrderItemDisplay(it.id);
+                              return (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                  {d.spritePath ? (
+                                    <img src={d.spritePath} alt={d.name} className="w-4 h-4 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+                                  ) : (
+                                    <span className="text-[13px] leading-none shrink-0">{d.icon}</span>
+                                  )}
+                                  <span className="text-[11px] text-[#dfcfab]">{it.qty}× {d.name}</span>
+                                </div>
+                              );
+                            })}
+                            {hiddenCount > 0 && (
+                              <p className="text-[10px] text-[#8b6a3e] pl-0.5">... +{hiddenCount} więcej</p>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Nagrody */}
+                        <div className="flex justify-between gap-2 text-[12px] font-bold pt-2 border-t border-[#8b6a3e]/30">
+                          <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
+                          <span className="text-blue-300">
+                            ⭐ +{o.rewards.exp} EXP
+                            {expPct > 0 && <span className="text-[10px] text-blue-400/80 font-bold ml-0.5">({expPct.toFixed(2).replace('.', ',')}%)</span>}
+                          </span>
+                        </div>
+
+                        {/* Bonus */}
                         {o.rewards.bonus && o.rewards.bonus.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-[#8b6a3e]/30 space-y-0.5">
                             {o.rewards.bonus.map((b, bi) => {
