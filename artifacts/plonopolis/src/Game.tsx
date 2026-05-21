@@ -420,7 +420,7 @@ interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
 interface THHitbox { id:string; label:string; x:number; y:number; width:number; height:number; action:string; }
 // ─── Lada NPC — max aktywnych klientów (musi zgadzać się z _npc_max_active() w SQL) ───
-const LADA_MAX_CUSTOMERS = 5;
+const LADA_MAX_CUSTOMERS = 12;
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
 const UPGRADE_COST   = [0,50,100,250,500,1200,2500,5000,10000,20000,40000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
@@ -10611,6 +10611,7 @@ export default function Page() {
                     {/* Pasek statusu klientów — zawsze widoczny */}
                     {(() => {
                       const active = customerOrders.length;
+                      const isOverLimit = active > LADA_MAX_CUSTOMERS;
                       const isAtMax = active >= LADA_MAX_CUSTOMERS;
                       const left = nextSpawnAt !== null ? Math.max(0, nextSpawnAt - customerNow) : null;
                       const m = left !== null ? Math.floor(left / 60000) : 0;
@@ -10619,7 +10620,10 @@ export default function Page() {
                       let barCls: string;
                       let statusNode: React.ReactNode;
 
-                      if (ladaStatusMsg === 'added') {
+                      if (isOverLimit) {
+                        barCls = 'border-orange-700/40 bg-orange-950/20 text-orange-300';
+                        statusNode = '⚠️ Ponad limitem — wykonaj zamówienia lub poczekaj aż część wygaśnie';
+                      } else if (ladaStatusMsg === 'added') {
                         barCls = 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300';
                         statusNode = '✨ Dodano nowego klienta!';
                       } else if (isAtMax) {
