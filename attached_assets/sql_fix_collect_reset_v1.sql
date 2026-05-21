@@ -419,29 +419,33 @@ CREATE OR REPLACE FUNCTION collect_honey(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path TO 'public'
 AS $$
 DECLARE
-  v_hive            jsonb;
-  v_level           int;
-  v_honey_start     bigint;
-  v_suit            int;
-  v_empty_jars      int;
-  v_honey_jars      int;
-  v_bees_progress   int;
-  v_now_ms          bigint;
-  v_elapsed_ms      bigint;
-  v_honey_avail     int;
-  v_honey_avail_raw int;
-  v_max_honey       int;
-  v_ms_per_pt       bigint := 3600000;
-  v_collected       int;
-  v_suit_loss       int;
-  v_success         boolean;
-  v_max_arr         int[]   := ARRAY[0, 8, 10, 12, 14, 16];
-  v_chance_arr      float[] := ARRAY[0, 0.90, 0.80, 0.70, 0.60, 0.50];
-  v_new_hive        jsonb;
-  v_honey_mult      numeric;
-  v_suit_save       numeric;
+  v_hive              jsonb;
+  v_level             int;
+  v_honey_start       bigint;
+  v_suit              int;
+  v_empty_jars        int;
+  v_honey_jars        int;
+  v_bees_progress     int;
+  v_now_ms            bigint;
+  v_elapsed_ms        bigint;
+  v_honey_avail       int;
+  v_honey_avail_raw   int;
+  v_max_honey         int;
+  v_ms_per_pt         bigint := 3600000;
+  v_collected         int;
+  v_raw_consumed      int;
+  v_raw_leftover      int;
+  v_new_honey_start   bigint;
+  v_suit_loss         int;
+  v_success           boolean;
+  v_max_arr           int[]   := ARRAY[8, 10, 12, 14, 16];
+  v_chance_arr        float[] := ARRAY[0.90, 0.80, 0.70, 0.60, 0.50];
+  v_new_hive          jsonb;
+  v_honey_mult        numeric;
+  v_suit_save         numeric;
 BEGIN
   IF auth.uid() IS DISTINCT FROM p_user_id THEN
     RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
@@ -482,11 +486,19 @@ BEGIN
     ROUND(v_collected * (1 - v_suit_save))::int
   );
 
-  -- FIX: honey_start zawsze = v_now_ms po odbiorze (bez leftover)
+  -- Zachowaj leftover: niezebrane surowe jednostki miodu wracają do timera
+  v_raw_consumed    := LEAST(v_collected, v_honey_avail_raw);
+  v_raw_leftover    := GREATEST(0, v_honey_avail_raw - v_raw_consumed);
+  v_new_honey_start := CASE
+    WHEN v_raw_leftover > 0
+    THEN v_now_ms - (v_raw_leftover::bigint * v_ms_per_pt)
+    ELSE v_now_ms
+  END;
+
   v_new_hive := jsonb_build_object(
     'level',           v_level,
     'bees_progress',   v_bees_progress,
-    'honey_start',     v_now_ms,
+    'honey_start',     v_new_honey_start,
     'suit_durability', GREATEST(0, v_suit - v_suit_loss),
     'empty_jars',      v_empty_jars - v_collected,
     'honey_jars',      CASE WHEN v_success THEN v_honey_jars + v_collected ELSE v_honey_jars END
