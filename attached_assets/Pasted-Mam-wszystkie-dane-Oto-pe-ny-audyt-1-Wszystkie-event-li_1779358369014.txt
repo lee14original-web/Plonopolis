@@ -1,0 +1,136 @@
+Mam wszystkie dane. Oto pełny audyt:
+
+1. Wszystkie event listenery dla Esc/keydown
+Znalezione window.addEventListener("keydown", ...) z obsługą Escape — 13 osobnych useEffect:
+
+Linia	Stan/warunek aktywacji	Co robi Esc
+2148	showKompostModal	Multi-level: najpierw zamyka kompostRewards, potem showKompostModal
+2228	zawsze aktywny	Multi-level: najpierw marketPickerOpen, potem showMarketModal
+3600	isFieldViewOpen	plotToBuy → setPlotToBuy(null); else → setIsFieldViewOpen(false)
+3630	showRankingPanel	setShowRankingPanel(false)
+3637	showDomModal	setShowDomModal(false)
+3644	showSadModal	setShowSadModal(false)
+3650	showStodolaModal	setShowStodolaModal(false)
+3657	showLadaModal	Multi-level: najpierw showLadaInfo(false), potem setShowLadaModal(false)
+3667	customerLootDrop	setCustomerLootDrop(null) + setLootHoverIdx(null)
+3673	showShopModal	setShowShopModal(false) + czyści koszyk/error
+3683	showUlModal	setShowUlModal(false)
+3688	currentMap === "city_townhall"	Multi-level: najpierw showRankingPanel, potem handleChangeMap("city")
+3699	zawsze aktywny	setHoveredSickle(false) + setHoveredWateringCan(false)
+2. Gdzie Esc już działa ✅
+Kompostownik (z sub-poziomem nagród)
+Targ (showMarketModal + marketPickerOpen)
+Widok pola (isFieldViewOpen + plotToBuy)
+Ranking (panel)
+Dom / Stodoła / Sad / Ul
+Lada (z sub-poziomem info)
+Loot drop
+Sklep
+Ratusz → powrót do miasta
+3. Modale/panele BEZ obsługi Esc ❌
+Stan	Opis	Priorytet
+showMessagePanel	Okno wiadomości	Wysoki
+showCompose	Formularz pisania (wewnątrz wiadomości)	Wysoki
+showGildiaPanel	Panel gildii	Wysoki
+showMisjePanel	Panel misji	Wysoki
+showSkinModal	Wybieranie avatara/skina	Wysoki
+epicPurchaseTarget !== null	Popup potwierdzenia zakupu epic avatara	Średni
+showTestModal	Panel testów (tylko admin/tester)	Niski
+showWelcome	Modal powitalny (onboarding)	Niski — może celowo nie mieć Esc
+currentMap === "city_shop"	Sklep jako mapa → wróć do "city"	Średni
+currentMap === "city_bank"	Bank jako mapa → wróć do "city"	Średni
+currentMap === "city_market"	Targ jako mapa → wróć do "city"	Średni
+currentMap === "city_liga"	Liga jako mapa → wróć do "city"	Średni
+showKompostHistory	Sub-panel historii kompostu	Niski — zamykany przez showKompostModal handler
+showKompostHelp	Tooltip kompostu (hover-based)	Pomiń — nie modal
+4. Stany odpowiadające za poszczególne widoki
+// Linia 1803–2196 (wybrane):
+showRankingPanel    // ratusz/ranking
+showGildiaPanel     // gildia
+showMisjePanel      // misje
+showMessagePanel    // wiadomości
+showCompose         // formularz nowej wiadomości (pod showMessagePanel)
+showSkinModal       // wybór avatara
+showDomModal        // dom / ekwipunek
+showStodolaModal    // stodoła
+showSadModal        // sad
+showUlModal         // ul
+showLadaModal       // lada dla klientów
+showLadaInfo        // info w ladzie (sub-poziom)
+showShopModal       // sklep
+showTestModal       // panel testów
+showWelcome         // modal powitalny
+showKompostModal    // kompostownik
+showKompostHistory  // historia kompostu
+showMarketModal     // modal targu
+epicPurchaseTarget  // potwierdzenie zakupu epickiego avatara
+isFieldViewOpen     // widok pola uprawnego
+currentMap          // aktywna mapa: "farm1/5/10…", "city", "city_shop", "city_bank", "city_market", "city_townhall", "city_liga"
+
+5. Czy jest centralny handler zamykania — NIE
+Każdy modal ma własny useEffect z osobnym addEventListener. Brak centralnej funkcji closeTopModal() ani systemu stosu modalów. Konsekwencja: przy wielu otwartych handlerich jednocześnie, Esc może triggerować kilka z nich naraz (choć jest to ograniczone przez if (!showX) return).
+
+6. Proponowana kolejność priorytetów Esc (od najwyższego)
+1. Najwyższy modal z danymi (confirm, loot drop, nagrody kompostu)
+   epicPurchaseTarget → null
+   customerLootDrop → null
+   kompostRewards → null
+2. Sub-panele / info w modalach
+   showLadaInfo → false
+   showCompose → false (wróć do listy wiadomości)
+   marketPickerOpen → false
+3. Główne modale (pełnoekranowe okna)
+   showShopModal, showMessagePanel, showGildiaPanel, showMisjePanel,
+   showSkinModal, showTestModal, showDomModal, showStodolaModal,
+   showSadModal, showUlModal, showLadaModal, showKompostModal, showMarketModal
+4. Panele (nakładki, nie pełnoekranowe)
+   showRankingPanel, isFieldViewOpen
+5. Nawigacja map (wróć do poprzedniej)
+   city_townhall → city ✅ (już działa)
+   city_shop → city (brak)
+   city_bank → city (brak)
+   city_market → city (brak)
+   city_liga → city (brak)
+6. Narzędzia / hover (najniższy priorytet)
+   hoveredSickle, hoveredWateringCan → false
+
+7. Gdzie Esc NIE powinien działać
+Żaden z istniejących 13 handlerów nie sprawdza aktywnego focusu. Ryzyko: gracz pisze w <input> lub <textarea> i naciska Esc — zamknie modal zamiast wyczyścić pole.
+
+Zalecany guard (do dodania na początku każdego handlera):
+
+const tag = (document.activeElement as HTMLElement)?.tagName;
+if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+Wyjątki od guarda (Esc zawsze powinien działać nawet w inpucie):
+
+customerLootDrop — odbiór nagrody, nie ma inputów
+Narzędzia hover — nieszkodliwe
+8. Plan zmian (bez implementacji)
+A. Nowe handlery useEffect — do dodania
+showMessagePanel — gdy showCompose:
+
+Esc → setShowCompose(false) (wróć do listy)
+Else → setShowMessagePanel(false)
+showGildiaPanel → setShowGildiaPanel(false)
+
+showMisjePanel → setShowMisjePanel(false)
+
+showSkinModal → setShowSkinModal(false)
+
+epicPurchaseTarget !== null → setEpicPurchaseTarget(null)
+
+showTestModal → setShowTestModal(false) (opcjonalne)
+
+B. Nowe handlery map — gdy currentMap:
+city_shop → handleChangeMap("city")
+city_bank → handleChangeMap("city")
+city_market → jeśli showMarketModal otwarty → już obsługiwane; else → handleChangeMap("city")
+city_liga → handleChangeMap("city")
+C. Refaktor — dodać input guard do istniejących handlerów
+Priorytet: handlery przy showMessagePanel, showGildiaPanel, showMisjePanel, showSkinModal, showShopModal, showDomModal — czyli wszędzie tam gdzie w modalu są <input>/<textarea>.
+
+D. Opcjonalne — centralny handler
+Zastąpić 13+ osobnych useEffect jednym centralnym handlerem useEffect(() => { window.addEventListener... }, [wszystkie_stany]) z kaskadą if/else if. Uprości logikę priorytetów, ale wymaga dużego refaktoru.
+
+Podsumowanie: 6 modalów bez Esc (wiadomości, gildia, misje, skin, epic confirm, test), 4 mapy bez nawigacji Esc do miasta, brak input guard na całości. Zmiany są izolowane — każdy handler to osobny useEffect, bez ryzyka efektów ubocznych.
