@@ -1,0 +1,62 @@
+Przygotuj SQL fix bezpieczeństwa inventory — etap bezpieczny, bez blokowania gameplayu.
+
+Kontekst:
+Na koncie Yeti9 wystąpił skok carrot_good 47 → 1000:
+- changed_by = null
+- changed_columns = ["seed_inventory"]
+- money/xp/plot_crops bez zmian
+
+Audyt wykazał:
+1. seed_inventory nie jest chronione przez protect_inventory_columns.
+2. test_add_barn_items ma GRANT EXECUTE dla authenticated i brak sprawdzenia auth.uid() = p_user_id.
+3. Na start chcemy logować podejrzane skoki, ale jeszcze nie blokować legalnych akcji.
+
+Przygotuj plik:
+attached_assets/sql_fix_inventory_security_audit_v1.sql
+
+Wymagania:
+
+A) Audit dużych zmian seed_inventory
+1. Utwórz tabelę public.audit_inventory_log, jeśli nie istnieje:
+   - id bigserial primary key
+   - user_id uuid
+   - changed_by uuid
+   - action text
+   - column_name text
+   - delta_json jsonb
+   - changed_at timestamptz default now()
+
+2. Utwórz funkcję audit_seed_inventory_changes()
+   - AFTER UPDATE ON profiles
+   - jeśli seed_inventory się zmieniło
+   - porównuje OLD.seed_inventory i NEW.seed_inventory
+   - loguje każdy klucz, gdzie ABS(delta) >= 50
+   - changed_by = auth.uid()
+   - action = current_setting('app.action', true), fallback "unknown"
+
+3. Trigger:
+   - DROP TRIGGER IF EXISTS audit_seed_inventory_trg ON public.profiles
+   - CREATE TRIGGER audit_seed_inventory_trg AFTER UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION ...
+
+B) Zamknięcie test_add_barn_items
+1. Sprawdź, czy funkcja test_add_barn_items(uuid, int) istnieje.
+2. Jeśli istnieje:
+   - REVOKE EXECUTE ON FUNCTION public.test_add_barn_items(uuid, int) FROM authenticated;
+   - REVOKE EXECUTE ON FUNCTION public.test_add_barn_items(uuid, int) FROM anon;
+3. Jeśli poprawiasz definicję funkcji, dodaj:
+   IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
+     RAISE EXCEPTION 'unauthorized';
+   END IF;
+4. Najlepiej zostaw dostęp tylko dla service_role/postgres albo w ogóle bez grantów publicznych.
+
+C) Nie blokuj jeszcze seed_inventory
+Na tym etapie NIE dodawaj triggera blokującego duże skoki.
+Tylko logowanie + zamknięcie test_add_barn_items.
+
+D) Dodaj zapytania kontrolne na końcu pliku:
+- sprawdzenie triggera audit_seed_inventory_trg
+- sprawdzenie grants test_add_barn_items
+- select z audit_inventory_log limit 20
+
+Nie pushuj jeszcze.
+Pokaż plik/diff i rekomendację.
