@@ -1,0 +1,57 @@
+Zrób audyt i przygotuj implementację rankingu "Zadowoleni klienci".
+
+Cel:
+W rankingu graczy dodać informację, ile dany gracz pomyślnie zrealizował zamówień w "Lada dla klientów".
+
+UI:
+W rankingu graczy dodaj kolumnę:
+"Klienci" albo "Zadowoleni klienci"
+
+Proponowany układ tabeli:
+Gracz | Gildia | Poziom | Klienci | Pieniądze | Moc farmy
+
+Obecnie kolumny są mniej więcej:
+Gracz | Gildia | Poziom | Pieniądze | Moc farmy
+
+Przesuń Gildia/Poziom trochę w lewo albo zmniejsz ich szerokość, żeby zmieścić nową kolumnę "Klienci" między Poziom a Pieniądze.
+
+Filtry/sortowanie:
+Dodaj nowy filtr/sort:
+"Zadowoleni klienci"
+czyli sortowanie po liczbie pomyślnie wykonanych klientów.
+
+Zostają istniejące:
+- Moc farmy
+- Poziom
+- Pieniądze
+
+Audyt:
+1. Sprawdź, gdzie renderowany jest Ranking graczy w Game.tsx.
+2. Sprawdź typ danych rankingu.
+3. Sprawdź RPC / SQL pobierające ranking:
+   - jakie funkcje zwracają rankingi,
+   - czy mają pola level, money, farm_power itd.
+4. Sprawdź, czy w profiles istnieje już statystyka:
+   - completed_customer_orders
+   - customer_orders_completed
+   - happy_customers
+   - satisfied_customers
+   - albo podobne.
+5. Sprawdź complete_customer_order:
+   - czy po wykonaniu zamówienia zwiększa jakąś statystykę.
+6. Jeśli nie ma takiego pola, przygotuj SQL:
+   - dodać kolumnę do profiles, np.
+     customer_orders_completed integer not null default 0
+   - w complete_customer_order po sukcesie:
+     customer_orders_completed = customer_orders_completed + 1
+   - ranking RPC ma zwracać customer_orders_completed.
+7. Jeśli taka statystyka już istnieje, użyj istniejącej.
+8. UI ma pokazywać liczbę jako integer, np. 128.
+9. Dla graczy bez danych pokazuj 0.
+10. Nie zmieniaj ekonomii Lady ani complete_customer_order poza ewentualnym inkrementowaniem statystyki.
+11. Przygotuj plan:
+   A) SQL fix, jeśli potrzebny,
+   B) frontend ranking,
+   C) test SQL,
+   D) typecheck.
+12. Nie pushuj jeszcze, najpierw pokaż audyt i rekomendację.
