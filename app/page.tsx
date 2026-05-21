@@ -419,6 +419,8 @@ interface AnimalItemDef { id:string; name:string; icon:string; sellPrice:number;
 interface AnimalFeedDef { cropId:string; name:string; icon:string; points:number; }
 interface AnimalDef { id:string; name:string; icon:string; unlockLevel:number; prodMs:number; itemId:string; storageMax:number; startSlots:number; maxSlots:number; buyPrice:number; slotUpgCosts:number[]; feed:AnimalFeedDef[]; }
 interface THHitbox { id:string; label:string; x:number; y:number; width:number; height:number; action:string; }
+// ─── Lada NPC — max aktywnych klientów (musi zgadzać się z _npc_max_active() w SQL) ───
+const LADA_MAX_CUSTOMERS = 5;
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
 const UPGRADE_COST   = [0,50,100,250,500,1200,2500,5000,10000,20000,40000];
 const UPGRADE_CHANCE = [1,0.95,0.90,0.90,0.85,0.80,0.70,0.60,0.45,0.35,0.20];
@@ -1942,6 +1944,9 @@ export default function Page() {
   const isSpawningCustomerRef = React.useRef(false);
   const prevCustomerIdsRef = React.useRef<Set<string>>(new Set());
   const newCustomerIdsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [ladaStatusMsg, setLadaStatusMsg] = React.useState<'searching' | 'added' | 'failed' | null>(null);
+  const ladaStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spawnFailCooldownRef = React.useRef(0);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -4007,6 +4012,7 @@ export default function Page() {
     if (isSpawningCustomerRef.current) return;
     isSpawningCustomerRef.current = true;
     setCustomerLoading(true);
+    if (opts?.tick) setLadaStatusMsg('searching');
     try {
       if (opts?.tick) {
         const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
@@ -4027,6 +4033,18 @@ export default function Page() {
           setNewCustomerIds(new Set(addedIds));
           if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
           newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+          // Flash "dodano" przez 2s
+          if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+          setLadaStatusMsg('added');
+          ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
+        } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
+          // Tick się odbył, a klientów brak (może backend nie zdążył) — cooldown 15s
+          spawnFailCooldownRef.current = Date.now();
+          if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+          setLadaStatusMsg('failed');
+          ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
+        } else {
+          setLadaStatusMsg(null);
         }
         prevCustomerIdsRef.current = new Set(freshIds);
         setCustomerOrders(incoming);
@@ -4145,15 +4163,17 @@ export default function Page() {
       clearInterval(tickT);
       clearInterval(nowT);
       if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+      if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
 
-  // Auto-tick natychmiast po zerowaniu countdownu spawnu (z throttle 3s)
+  // Auto-tick natychmiast po zerowaniu countdownu spawnu (z throttle 3s + cooldown po failu 15s)
   React.useEffect(() => {
     if (!showLadaModal || !profile?.id || nextSpawnAt === null || customerLoading) return;
     if (customerNow < nextSpawnAt) return;
     if (isSpawningCustomerRef.current) return;
+    if (Date.now() - spawnFailCooldownRef.current < 15000) return;
     if (Date.now() - lastAutoTickAtRef.current < 3000) return;
     lastAutoTickAtRef.current = Date.now();
     void refreshCustomerOrders({ tick: true });
@@ -10559,18 +10579,41 @@ export default function Page() {
                       <h2 className="text-4xl font-black text-[#f9e7b2] text-center">Lada dla klientów</h2>
                     </div>
 
-                    {/* Pasek: czas do następnego klienta */}
-                    {nextSpawnAt !== null && (() => {
-                      const left = Math.max(0, nextSpawnAt - customerNow);
-                      const m = Math.floor(left / 60000);
-                      const s = Math.floor((left % 60000) / 1000);
-                      const isReady = left <= 0;
-                      if (isReady && !customerLoading) return null;
+                    {/* Pasek statusu klientów — zawsze widoczny */}
+                    {(() => {
+                      const active = customerOrders.length;
+                      const isAtMax = active >= LADA_MAX_CUSTOMERS;
+                      const left = nextSpawnAt !== null ? Math.max(0, nextSpawnAt - customerNow) : null;
+                      const m = left !== null ? Math.floor(left / 60000) : 0;
+                      const s = left !== null ? Math.floor((left % 60000) / 1000) : 0;
+
+                      let barCls: string;
+                      let statusNode: React.ReactNode;
+
+                      if (ladaStatusMsg === 'added') {
+                        barCls = 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300';
+                        statusNode = '✨ Dodano nowego klienta!';
+                      } else if (isAtMax) {
+                        barCls = 'border-red-900/30 bg-black/20 text-red-400';
+                        statusNode = '🚫 Limit klientów osiągnięty';
+                      } else if (customerLoading || ladaStatusMsg === 'searching') {
+                        barCls = 'border-amber-700/20 bg-black/20 text-emerald-400';
+                        statusNode = '⏳ Szukam nowego klienta...';
+                      } else if (ladaStatusMsg === 'failed') {
+                        barCls = 'border-amber-700/20 bg-black/20 text-[#8b6a3e]';
+                        statusNode = 'Brak nowych klientów — spróbuję za chwilę';
+                      } else if (left !== null && left > 0) {
+                        barCls = 'border-amber-700/20 bg-black/20 text-[#dfcfab]';
+                        statusNode = <>Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>;
+                      } else {
+                        barCls = 'border-amber-700/20 bg-black/20 text-[#dfcfab]';
+                        statusNode = null;
+                      }
+
                       return (
-                        <div className={`px-5 py-2 text-center text-xs font-bold border-b ${isReady ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300' : 'border-amber-700/20 bg-black/20 text-[#dfcfab]'}`}>
-                          {isReady
-                            ? '⏳ Szukam nowego klienta...'
-                            : <>👥 Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>}
+                        <div className={`px-5 py-2 flex items-center justify-center gap-2 text-xs font-bold border-b ${barCls}`}>
+                          <span className="text-[#8b6a3e]">👥 {active}/{LADA_MAX_CUSTOMERS} klientów</span>
+                          {statusNode && <><span className="text-[#8b6a3e]">·</span><span>{statusNode}</span></>}
                         </div>
                       );
                     })()}
