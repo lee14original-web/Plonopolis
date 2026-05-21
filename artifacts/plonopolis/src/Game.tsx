@@ -2180,6 +2180,7 @@ export default function Page() {
   const panDragRef = React.useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false });
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
   const barnStateRef = React.useRef<BarnState>(barnState);
+  const lastFarmMapRef = React.useRef<string>("farm1");
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
   const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
@@ -3793,6 +3794,28 @@ export default function Page() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [currentMap, showMarketModal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Zapamiętaj ostatnią mapę farmy ──────────────────────────────────────
+  React.useEffect(() => {
+    if (currentMap.startsWith("farm")) lastFarmMapRef.current = currentMap;
+  }, [currentMap]);
+
+  // ─── Esc: city → farma ───────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (currentMap !== "city") return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (
+        showMessagePanel || showGildiaPanel || showMisjePanel || showSkinModal ||
+        showTestModal || showShopModal || showRankingPanel || showDomModal ||
+        showStodolaModal || showSadModal || showUlModal || showLadaModal ||
+        showKompostModal || showMarketModal || epicPurchaseTarget !== null
+      ) return;
+      handleChangeMap(lastFarmMapRef.current);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [currentMap, showMessagePanel, showGildiaPanel, showMisjePanel, showSkinModal, showTestModal, showShopModal, showRankingPanel, showDomModal, showStodolaModal, showSadModal, showUlModal, showLadaModal, showKompostModal, showMarketModal, epicPurchaseTarget]); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     if (!showUlModal) return;
