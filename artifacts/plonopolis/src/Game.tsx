@@ -2661,6 +2661,7 @@ export default function Page() {
   const displayMoney = profile?.money ?? DEFAULT_MONEY;
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const canUseTestTools = ["tester", "admin", "owner"].includes(profile?.role ?? "");
+  const canEditHitboxes = ["tester", "admin", "owner"].includes(profile?.role ?? "");
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const isOnCityMap = !!profile && currentMap === "city";
   const isOnPanMap = isOnFarmMap || isOnCityMap;
@@ -6343,7 +6344,7 @@ export default function Page() {
                     );
                   })}
                   {/* ══ PANEL KOORDYNATÓW ETYKIET ══ */}
-                  {cityNavEditMode && (
+                  {cityNavEditMode && canEditHitboxes && (
                     <div className="absolute inset-0 pointer-events-none" style={{zIndex:56}}>
                       <div className="absolute bottom-2 right-2 rounded-xl border border-sky-600 bg-black/90 p-2 text-[10px] text-sky-200 max-w-[230px] pointer-events-auto" style={{zIndex:60}}>
                         <div className="font-black text-sky-400 mb-1">📋 Pozycje etykiet (miasto):</div>
@@ -6352,7 +6353,7 @@ export default function Page() {
                     </div>
                   )}
                   {/* ══ EDYTOR HITBOXÓW MIASTA ══ */}
-                  {cityHitboxEditMode && (
+                  {cityHitboxEditMode && canEditHitboxes && (
                     <div className="absolute inset-0 pointer-events-none" style={{zIndex:57}}>
                       {([
                         {id:"naFarme", name:"Na farmę"},
@@ -6394,7 +6395,7 @@ export default function Page() {
               <div className="absolute inset-0 z-20 pointer-events-none">
 
                   {/* ── DEV: panel edytora farmy ── */}
-                  {isOnFarmMap && profile && (
+                  {isOnFarmMap && profile && canEditHitboxes && (
                     <div className="pointer-events-auto absolute top-2 left-1/2 -translate-x-1/2 flex gap-2 z-[200]" style={{zIndex:200}}>
                       <button
                         type="button"
@@ -6448,6 +6449,7 @@ export default function Page() {
                   {currentMap === "city" && (
                     <>
                       {/* ── DEV: przyciski toggle edytora miasta ── */}
+                      {canEditHitboxes && (
                       <div className="pointer-events-auto absolute top-2 left-1/2 -translate-x-1/2 flex gap-2" style={{zIndex:200}}>
                         <button
                           type="button"
@@ -6464,6 +6466,7 @@ export default function Page() {
                           {cityHitboxEditMode ? "✅ Hitboxy ON" : "🎯 Edytuj hitboxy"}
                         </button>
                       </div>
+                      )}
                       {/* ─── Strzałki nawigacji miasta ─── */}
                       {panX < 0 && (
                         <button
@@ -6742,6 +6745,7 @@ export default function Page() {
                             ← Wróć do miasta
                           </button>
 
+                          {canEditHitboxes && (
                           <button
                             type="button"
                             onClick={() => { setThHitboxEditMode(prev => !prev); setThTextEditMode(false); }}
@@ -6749,6 +6753,7 @@ export default function Page() {
                           >
                             {thHitboxEditMode ? "✅ Zakończ edycję" : "🛠️ Edytuj hitboxy"}
                           </button>
+                          )}
 
                           {thHitboxEditMode && (
                             <button
@@ -8977,11 +8982,13 @@ export default function Page() {
                         {/* Tytuł + przycisk edycji hitboxów */}
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xl font-black text-[#f9e7b2]">⚔️ Ekwipunek gracza</p>
+                          {canEditHitboxes && (
                           <button
                             onClick={() => setEditSlotBox(v => !v)}
                             className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${editSlotBox ? "border-orange-400 bg-orange-900/50 text-orange-300" : "border-[#8b6a3e]/60 bg-black/30 text-[#dfcfab] hover:border-orange-400/60 hover:text-orange-200"}`}>
                             🎯 {editSlotBox ? "Zakończ edycję" : "Edytuj hitboxy"}
                           </button>
+                          )}
                         </div>
 
                         {/* Panel edycji hitboxów */}
