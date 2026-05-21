@@ -1,0 +1,59 @@
+Sprawdź system ofert targu pod kątem dwóch zmian:
+
+A) Wizualny tekst limitu ofert:
+Na screenie przy 3/3 ofertach pokazuje "Bliski limit", a powinno pokazywać "Limit osiągnięty".
+
+B) Scalanie identycznych ofert:
+Jeśli gracz wystawia ten sam przedmiot z tym samym item_type, item_key, ceną jednostkową i innymi cechami identyczności, nowa ilość powinna zostać dodana do istniejącej aktywnej oferty, zamiast tworzyć nowy wpis i zużywać kolejny slot limitu.
+
+Nic nie zmieniaj.
+
+Sprawdź:
+1. Gdzie w Game.tsx renderowany jest licznik ofert "3/3" i tekst "Bliski limit".
+2. Jakie są warunki dla tekstów:
+   - bezpiecznie
+   - bliski limit
+   - limit osiągnięty
+3. Gdzie jest wywoływane market_create_offer.
+4. Jakie parametry frontend przekazuje do market_create_offer:
+   - item_type
+   - item_key
+   - item_name
+   - item_icon
+   - quantity
+   - price_per_unit
+   - duration_hours
+   - unlock_level
+5. Definicję SQL/RPC market_create_offer w repo/migracjach, jeśli jest.
+6. Strukturę tabeli market_offers, jeśli jest w repo/migracjach:
+   - owner_id / seller_id
+   - item_type
+   - item_key
+   - item_name
+   - item_icon
+   - quantity
+   - remaining_quantity
+   - price_per_unit
+   - status
+   - expires_at
+   - created_at
+   - unlock_level
+   - czy są metadata dla itemów ulepszonych, np. upgrade_level, item_instance, stats, equipment data
+7. Czy itemy typu ekwipunek/ulepszone +0/+2 mają różne item_key albo inne pole, które pozwala je odróżnić.
+8. Czy scalanie identycznych ofert powinno być w backendzie market_create_offer, nie w frontendzie.
+9. Czy limit ofert liczy liczbę aktywnych wierszy, czy sumę ilości.
+10. Czy po scaleniu istniejącej oferty limit powinien nie wzrastać.
+11. Jaki jest minimalny bezpieczny warunek scalania:
+    - owner_id = auth.uid()
+    - status aktywna
+    - item_type takie samo
+    - item_key taki sam
+    - price_per_unit taki sam
+    - unlock_level taki sam lub oba null
+    - expires_at jeszcze w przyszłości
+    - oraz ewentualne metadata/upgrade takie same, jeśli istnieją
+12. Na końcu daj werdykt:
+    - czy można bezpiecznie scalać po item_type + item_key + price_per_unit
+    - czy trzeba uwzględnić dodatkowe pola
+    - jaki SQL/RPC trzeba zmienić
+    - jaki frontend trzeba zmienić dla tekstu limitu.
