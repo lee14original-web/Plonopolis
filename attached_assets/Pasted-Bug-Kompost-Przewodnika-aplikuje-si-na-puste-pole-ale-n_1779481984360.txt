@@ -1,0 +1,67 @@
+Bug: Kompost Przewodnika aplikuje się na puste pole, ale nie skraca czasu wzrostu po posadzeniu.
+
+Objaw:
+1. guide_compost jest widoczny w oknie Kompost.
+2. Można go wybrać.
+3. Można kliknąć puste pole i kompost się aplikuje.
+4. Potem sadzę marchewkę.
+5. Marchewka ma normalny czas wzrostu, nie 25%.
+6. Po odświeżeniu strony nadal ma normalny czas.
+
+Wniosek:
+UI zapisuje compostBonus, ale logika sadzenia albo parser po reloadzie nie używa compostBonus.type="guide" do obliczenia czasu wzrostu.
+
+Sprawdź i napraw:
+
+1. Znajdź miejsce sadzenia rośliny na polu:
+   - handlePlant
+   - plantCrop
+   - plot click when selectedSeedId is crop
+   - zapis plot_crops do profiles
+   - miejsce gdzie ustawiane jest plantedAt / readyAt / growthTime / cropStartedAt.
+
+2. Sprawdź, czy sadzenie liczy czas przez getEffectiveGrowthTimeMs(crop, plot.compostBonus, ...).
+   Jeśli nie — podłącz guide compost tam, gdzie faktycznie wylicza się timer.
+
+3. Dla pola z:
+   compostBonus: { type: "guide", value: 75 }
+   sadzenie marchewki ma dać czas:
+   effectiveGrowthMs = baseGrowthMs * 0.25
+
+4. Jeśli system nie zapisuje readyAt, tylko liczy z plantedAt + growthTime dynamicznie:
+   - upewnij się, że po posadzeniu compostBonus zostaje zapisany razem z polem,
+   - getEffectiveGrowthTimeMs po reloadzie dalej widzi type="guide".
+
+5. Jeśli po posadzeniu compostBonus jest kasowany:
+   - nie kasuj go przed zapisaniem informacji potrzebnej do timera,
+   - albo zapisz wynikowy growthMultiplier/growthTimeMs na polu.
+   Najbezpieczniej:
+   - przy sadzeniu zapisz na polu compostBonusUsed albo growthTimeMs/effectiveGrowthMs,
+   - żeby po refreshu czas był taki sam.
+
+6. Sprawdź parser pól po loadProfile:
+   - czy compostBonus.type może być "guide",
+   - czy nie filtruje tylko "growth", "water", itd.
+   - jeśli filtruje, dodaj "guide".
+
+7. Sprawdź warunek gotowości uprawy:
+   - czy używa getEffectiveGrowthTimeMs,
+   - czy guide ma specjalny case 0.25.
+   Jeśli są dwa miejsca liczenia czasu, popraw oba.
+
+8. Test:
+   - guide_compost x3.
+   - użyj na puste pole.
+   - posadź marchewkę.
+   - timer ma pokazać 25% normalnego czasu.
+   - odśwież stronę.
+   - timer nadal ma być skrócony.
+   - guide_compost spada 3 → 2.
+   - zwykłe komposty działają bez zmian.
+
+9. Nie zmieniaj game_start_tutorial.
+10. Nie zmieniaj market guard.
+11. Nie zmieniaj zwykłych czasów roślin.
+12. Typecheck.
+13. Pokaż diff.
+14. Nie pushuj jeszcze.

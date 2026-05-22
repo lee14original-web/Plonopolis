@@ -1,0 +1,57 @@
+Uprość naprawę guide_compost: ma działać dokładnie jak inne komposty na polach.
+
+Problem:
+Kompost Przewodnika aplikuje się na puste pole, ale po posadzeniu marchewki czas wzrostu nie jest skrócony. Po odświeżeniu też jest normalny czas.
+
+Podejście:
+Nie twórz osobnej mechaniki timera dla guide_compost.
+Podepnij guide_compost pod ten sam system, który już działa dla zwykłych kompostów.
+
+Wymagania:
+1. Znajdź, jak zwykłe komposty są zapisywane na polu, np. compostBonus:
+   - type
+   - value
+   - bonus
+   - growth reduction
+   - cokolwiek obecny system używa.
+
+2. guide_compost ma zapisywać się na polu tak samo jak zwykły kompost.
+   Różnica:
+   - zwykły kompost ma np. 5%, 10%, 15%
+   - guide_compost ma 75%
+
+3. Jeśli istniejący system liczy czas tak:
+   effectiveTime = baseTime * (1 - compostPercent / 100)
+   to guide_compost ma wejść jako compostPercent = 75.
+   Czyli:
+   baseTime * 0.25
+
+4. Nie dodawaj osobnego typu "guide", jeśli przez to nie działa istniejący flow.
+   Jeśli zwykłe komposty używają type: "growth", to guide_compost też może używać:
+   compostBonus: { type: "growth", value: 75, source: "guide_compost" }
+   albo podobnego kompatybilnego zapisu.
+
+5. Najważniejsze:
+   Po użyciu guide_compost na puste pole i posadzeniu marchewki obecna funkcja, która już obsługuje zwykłe komposty, ma automatycznie policzyć czas z bonusem 75%.
+
+6. Sprawdź, czy gdzieś jest limit/cap dla zwykłych kompostów.
+   Jeśli cap blokuje bonus 75%, to dla guide_compost można dodać wyjątek albo zapisać go jako zwykły growth compost z wartością 75, jeśli system to pozwala.
+   Nie zmieniaj działania zwykłych kompostów.
+
+7. Sprawdź, czy po posadzeniu i po refreshu pole nadal ma dane kompostu potrzebne do obliczenia timera.
+   Jeśli parser dopuszcza tylko zwykłe typy, niech guide_compost zapisuje się w zgodnym formacie zwykłego kompostu.
+
+8. Test:
+   - użyj zwykłego kompostu na puste pole → posadź → działa jak wcześniej
+   - użyj guide_compost na puste pole → posadź marchewkę
+   - timer ma być 25% normalnego czasu
+   - odśwież stronę
+   - timer nadal ma być skrócony
+   - guide_compost spada 3 → 2
+
+9. Nie zmieniaj game_start_tutorial.
+10. Nie zmieniaj market_create_offer.
+11. Nie zmieniaj UI poza koniecznym minimum.
+12. Typecheck.
+13. Pokaż diff.
+14. Nie pushuj jeszcze.
