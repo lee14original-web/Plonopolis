@@ -1,8 +1,14 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- RPC: game_start_tutorial
--- Atomicznie ustawia tutorial_started=true i przyznaje x3 guide_compost.
--- Idempotentne: jeśli tutorial był już started/completed/skipped
--- → zwraca { ok: false, error: "already_started" } i NIE dodaje kompostu.
+-- KROK 1: RPC game_start_tutorial()
+-- Wgraj do Supabase SQL Editor → Run
+-- ═══════════════════════════════════════════════════════════════════════
+-- Atomicznie:
+--   1. Blokuje wiersz gracza (FOR UPDATE).
+--   2. Sprawdza, czy tutorial nie był jeszcze rozpoczęty/pominięty/ukończony.
+--   3. Jeśli nie → dodaje x3 guide_compost do seed_inventory.
+--   4. Ustawia tutorial_started=TRUE, tutorial_completed=FALSE, tutorial_skipped=FALSE.
+-- Idempotentne: ponowne wywołanie zwraca { ok: false, error: "already_started" }
+-- i NIE dodaje kompostu po raz drugi.
 -- ═══════════════════════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION public.game_start_tutorial()
@@ -54,15 +60,19 @@ GRANT EXECUTE ON FUNCTION public.game_start_tutorial() TO authenticated;
 
 
 -- ═══════════════════════════════════════════════════════════════════════
--- MARKET GUARD: zablokuj sprzedaż guide_compost w market_create_offer
+-- KROK 2: Market guard — zablokuj sprzedaż guide_compost po stronie backendu
 -- ═══════════════════════════════════════════════════════════════════════
--- Wstaw poniższy blok NA POCZĄTKU funkcji market_create_offer,
--- zaraz po sprawdzeniu p_item_type (po linii "IF p_item_type NOT IN (...)"):
+-- Wstaw poniższy blok NA POCZĄTKU ciała funkcji market_create_offer,
+-- ZARAZ po sprawdzeniu p_item_type (po fragmencie "IF p_item_type NOT IN (...)"):
 --
 --   IF p_item_key = 'guide_compost' THEN
 --     RETURN jsonb_build_object('error', 'Ten przedmiot nie może być wystawiony na sprzedaż.');
 --   END IF;
 --
--- Docelowo: przebuduj całą funkcję market_create_offer przez CREATE OR REPLACE
--- z tym guardem wewnątrz — patrz market_setup.sql linia ~224.
+-- Docelowo: wykonaj CREATE OR REPLACE całej funkcji market_create_offer
+-- z tym guardem wewnątrz — plik źródłowy: market_setup.sql, ok. linia 190–350.
 -- ═══════════════════════════════════════════════════════════════════════
+
+-- WERYFIKACJA po wgraniu (opcjonalne):
+-- SELECT public.game_start_tutorial();  -- powinno zwrócić { ok: true, guide_compost_granted: 3 } dla kont z tutorial_started=false
+-- SELECT public.game_start_tutorial();  -- ponowne wywołanie → { ok: false, error: "already_started" }

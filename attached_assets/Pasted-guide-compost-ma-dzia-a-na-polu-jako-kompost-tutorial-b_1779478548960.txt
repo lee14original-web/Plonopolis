@@ -1,0 +1,44 @@
+guide_compost ma działać na polu jako kompost/tutorial booster, nie jako item kolekcjonerski.
+
+Finalna decyzja:
+1. ID: guide_compost
+2. Nazwa: Kompost Przewodnika
+3. Efekt:
+   - skraca POZOSTAŁY czas wzrostu aktualnej uprawy o 75%,
+   - czyli po użyciu zostaje 25% remaining time.
+   Przykład:
+   jeśli do końca wzrostu zostało 180 sekund, po użyciu zostaje 45 sekund.
+4. Działa na pojedyncze pole, tak jak zwykłe komposty/boostery pola.
+5. Zużywa 1 sztukę po użyciu.
+6. Nowe konto NIE dostaje go automatycznie.
+7. Gracz dostaje x3 guide_compost dopiero po kliknięciu "Rozpocznij przewodnik" przez RPC game_start_tutorial().
+8. Jeśli gracz wybierze "Tak, rezygnuję" z przewodnika:
+   - nie dostaje guide_compost.
+9. guide_compost nie może być:
+   - sprzedany na targu,
+   - kupiony w sklepie,
+   - zdobyty z klientów,
+   - zdobyty z dropu,
+   - wygenerowany poza RPC game_start_tutorial.
+10. Backend/RPC targu musi blokować wystawienie guide_compost, nie tylko UI.
+11. Frontend:
+   - parseSeedInventory ma nie kasować guide_compost.
+   - item ma być widoczny w miejscu używania kompostu na polu.
+   - nazwa: "Kompost Przewodnika"
+   - opis: "Specjalny kompost dla początkujących. Skraca pozostały czas wzrostu rośliny o 75%. Nie można go sprzedać na targu."
+12. Jeśli obecna logika kompostu rozpoznaje tylko klucze compost_*, rozszerz ją tak, żeby guide_compost był traktowany jako osobny typ kompostu/boostera.
+13. Nie zmieniaj zwykłych kompostów.
+14. Nie zmieniaj globalnego czasu wzrostu roślin.
+15. Nie zmieniaj nagród klientów, EXP ani ekonomii.
+16. Przygotuj pełny SQL:
+    - game_start_tutorial()
+    - guard market_create_offer / RPC targu blokujący guide_compost
+    - ewentualne definicje itemu, jeśli gra ma tabelę itemów
+17. Przygotuj diff frontendowy:
+    - użycie guide_compost na polu,
+    - opis i UI,
+    - non-tradeable w liście targu,
+    - aktualizacja po kliknięciu "Rozpocznij przewodnik".
+18. Typecheck.
+19. Nie pushuj jeszcze.
+20. Najpierw pokaż SQL, diff i test plan.

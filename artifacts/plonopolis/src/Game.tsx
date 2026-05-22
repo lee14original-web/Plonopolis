@@ -579,7 +579,18 @@ const COMPOST_DEFS: Record<CompostType, { id:string; name:string; icon:string; d
 };
 // Wagi losowania tieru: 50% słaby, 35% śrni, 15% mocny
 const COMPOST_TIER_WEIGHTS = [50, 35, 15];
+
+// ─── KOMPOST PRZEWODNIKA ───
+const GUIDE_COMPOST_DEF = {
+  id:          "guide_compost",
+  name:        "Kompost Przewodnika",
+  icon:        "🌟",
+  desc:        "Specjalny kompost dla początkujących. Skraca pozostały czas wzrostu rośliny o 75%. Nie można go sprzedać na targu.",
+  effectLabel: "🌟 −75% pozostałego czasu",
+} as const;
+
 function isCompostKey(key: string) { return key.startsWith("compost_"); }
+function isGuideCompostKey(key: string) { return key === "guide_compost"; }
 function compostTypeFromKey(key: string): CompostType | null {
   if (key.startsWith("compost_growth")) return "growth";
   if (key.startsWith("compost_yield"))  return "yield";
@@ -2203,6 +2214,7 @@ export default function Page() {
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
+  const [guideCompostNoticePlotId, setGuideCompostNoticePlotId] = React.useState<number | null>(null);
   const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>({ ...DEFAULT_SLOT_BOX });
   const [editSlotBox, setEditSlotBox] = React.useState(false);
   const saveSlotBox = (v: Record<string,{top:number,left:number,width:number,height:number}>) => {
@@ -5163,6 +5175,50 @@ export default function Page() {
     setTimeout(() => setCompostNotice(null), 5000);
   }
 
+  // ─── KOMPOST PRZEWODNIKA: skraca pozostały czas wzrostu o 75% ───
+  async function applyGuideCompostToPlot(plotId: number) {
+    if (!profile?.id) return;
+    if ((seedInventory["guide_compost"] ?? 0) <= 0) {
+      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz Kompostu Przewodnika w plecaku." });
+      return;
+    }
+    const plot = getPlotCrop(plotId);
+    if (!plot.cropId || !plot.plantedAt) {
+      setMessage({ type:"info", title:"Puste pole", text:"Kompost Przewodnika działa tylko na rosnące uprawy." });
+      return;
+    }
+    if (isCropReady(plotId)) {
+      setMessage({ type:"info", title:"Gotowe do zbioru", text:"Ta uprawa jest już gotowa do zbioru!" });
+      return;
+    }
+    const effectiveGrowthMs = getEffectiveGrowthTimeMs(plotId);
+    const now = Date.now();
+    const remaining = Math.max(0, effectiveGrowthMs - (now - plot.plantedAt));
+    if (remaining <= 0) return;
+    // Przesuń plantedAt do przodu o 75% remaining — zostaje 25% czasu
+    const shift = Math.floor(remaining * 0.75);
+    const newPlantedAt = plot.plantedAt + shift;
+    const nextPlot: PlotCropState = { ...plot, plantedAt: newPlantedAt };
+    const nextPlots = { ...plotCrops, [plotId]: nextPlot };
+    setPlotCrops(nextPlots);
+    // Odejmij 1 z inwentarza
+    const nextInv = { ...seedInventory };
+    nextInv["guide_compost"] = (nextInv["guide_compost"] ?? 0) - 1;
+    const ranOut = nextInv["guide_compost"] <= 0;
+    if (ranOut) delete nextInv["guide_compost"];
+    setSeedInventory(nextInv);
+    seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
+    if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
+    // Persist
+    await supabase.from("profiles").update({
+      plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+      seed_inventory: nextInv,
+    }).eq("id", profile.id);
+    // Powiadomienie
+    setGuideCompostNoticePlotId(plotId);
+    setTimeout(() => setGuideCompostNoticePlotId(null), 5000);
+  }
+
   // ─── KOMPOSTOWNIK: wrzuć plon → +1 do bieżącej partii + dolicz wartość (base × rzadkość) do scoreSum ───
   async function depositCropToCompost(seedKey: string, count: number = 1) {
     if (kompostBusyRef.current) return; // chroni przed double-click race
@@ -7904,7 +7960,8 @@ export default function Page() {
                                 const hasHoneyJars = hiveData.honey_jars > 0;
                                 const hasSuit = hiveData.suit_durability > 0;
                                 const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
-                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                                const hasGuideCompost = (seedInventory["guide_compost"] ?? 0) > 0;
+                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0 || hasGuideCompost;
                                 if (!hasAny) return (
                                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                                     Plecak jest pusty.
@@ -7988,6 +8045,27 @@ export default function Page() {
                                           </div>
                                         );
                                       })}
+                                    {hasGuideCompost && (() => {
+                                      const gc_cnt = seedInventory["guide_compost"] ?? 0;
+                                      const gc_isSel = selectedSeedId === "guide_compost";
+                                      return (
+                                        <div
+                                          key="guide_compost"
+                                          draggable
+                                          onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }}
+                                          onDragEnd={() => setDraggedSeedId(null)}
+                                          onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
+                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz rosnące pole</p></>)}
+                                          onMouseLeave={() => setCardTip(null)}
+                                          className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
+                                          style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
+                                          <span className="text-4xl leading-none">{GUIDE_COMPOST_DEF.icon}</span>
+                                          <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1 text-yellow-300">Przewodnik</p>
+                                          {gc_isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{gc_cnt}</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })()}
@@ -10132,7 +10210,8 @@ export default function Page() {
                             const hasHoneyJars = hiveData.honey_jars > 0;
                             const hasSuit = hiveData.suit_durability > 0;
                             const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
-                            const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
+                            const hasGuideCompost = (seedInventory["guide_compost"] ?? 0) > 0;
+                            const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0 || hasGuideCompost;
                             if (!hasAny) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
                             return (
                               <div className="grid grid-cols-5 gap-2">
@@ -10170,6 +10249,23 @@ export default function Page() {
                                     </div>
                                   );
                                 })}
+                                {hasGuideCompost && (() => {
+                                  const gc_cnt = seedInventory["guide_compost"] ?? 0;
+                                  const gc_isSel = selectedSeedId === "guide_compost";
+                                  return (
+                                    <div key="guide_compost" draggable onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
+                                      onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz rosnące pole</p></>)}
+                                      onMouseLeave={() => setCardTip(null)}
+                                      className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
+                                      style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
+                                      <span className="text-4xl leading-none">{GUIDE_COMPOST_DEF.icon}</span>
+                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1 text-yellow-300">Przewodnik</p>
+                                      {gc_isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
+                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{gc_cnt}</span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })()}
@@ -10869,6 +10965,21 @@ export default function Page() {
               </div>
             );
           })()}
+
+          {/* ═══ POWIADOMIENIE KOMPOSTU PRZEWODNIKA ═══ */}
+          {guideCompostNoticePlotId !== null && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[400] animate-fade-in">
+              <div className="rounded-2xl border border-yellow-500/60 bg-[rgba(30,22,0,0.97)] px-5 py-3 shadow-2xl shadow-yellow-500/30 flex items-center gap-3">
+                <span className="text-3xl">{GUIDE_COMPOST_DEF.icon}</span>
+                <div>
+                  <p className="text-sm font-black text-yellow-200">Kompost Przewodnika użyty!</p>
+                  <p className="text-xs text-yellow-300/90">
+                    {GUIDE_COMPOST_DEF.name} · −75% pozostałego czasu · Pole #{guideCompostNoticePlotId}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showUlModal && (() => {
             const hlvl = hiveData.level;
@@ -12953,10 +13064,20 @@ export default function Page() {
                       const pos = fvKompostPos;
                       fvToolDragRef.current = { btn: "kompost", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isGuideCompostKey(selectedSeedId)) ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(250,204,21,0.5)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvKompostPos.l, top: fvKompostPos.t, width: fvKompostPos.w, height: fvKompostPos.h }}
                   >
                     {(() => {
+                      if (!fvToolEditMode && selectedSeedId && isGuideCompostKey(selectedSeedId)) {
+                        const cnt = seedInventory["guide_compost"] ?? 0;
+                        return (
+                          <>
+                            <span className="text-3xl pointer-events-none select-none">{GUIDE_COMPOST_DEF.icon}</span>
+                            <p className="text-[9px] font-black text-yellow-200 pointer-events-none leading-none mt-0.5 text-center px-1 max-w-full truncate">Przewodnik</p>
+                            <p className="text-[9px] text-yellow-300 pointer-events-none leading-none">×{cnt}</p>
+                          </>
+                        );
+                      }
                       if (!fvToolEditMode && selectedSeedId && isCompostKey(selectedSeedId)) {
                         const cType = compostTypeFromKey(selectedSeedId);
                         const cVal = compostValueFromKey(selectedSeedId);
@@ -13281,7 +13402,7 @@ export default function Page() {
                             key={plotId}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
-                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onDragStart={(e) => e.preventDefault()}
                             onMouseEnter={() => { tryApplyFieldAction(plotId); }}
                             onMouseDown={(e) => {
@@ -13304,6 +13425,8 @@ export default function Page() {
                                 if (_plot.cropId && !_plot.watered && !isCropReady(plotId)) _started = true;
                               } else if (selectedTool === "sickle") {
                                 if (_plot.cropId && isCropReady(plotId)) _started = true;
+                              } else if (selectedSeedId && isGuideCompostKey(selectedSeedId)) {
+                                if (_plot.cropId && !isCropReady(plotId) && (seedInventoryRef.current["guide_compost"] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId && isCompostKey(selectedSeedId)) {
                                 if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId) {
@@ -13317,6 +13440,7 @@ export default function Page() {
                                 // Wykonaj akcję na pierwszym polu
                                 if (selectedTool === "watering_can") void handleWaterPlot(plotId);
                                 else if (selectedTool === "sickle") void handleHarvestPlot(plotId);
+                                else if (selectedSeedId && isGuideCompostKey(selectedSeedId)) void applyGuideCompostToPlot(plotId);
                                 else if (selectedSeedId && isCompostKey(selectedSeedId)) void applyCompostToPlot(plotId, selectedSeedId);
                                 else if (selectedSeedId) void handlePlantFromSelectedSeed(plotId);
                                 else void handleHarvestPlot(plotId);
@@ -13330,6 +13454,7 @@ export default function Page() {
                               if (dragEndedRef.current) { dragEndedRef.current = false; return; }
                               if (selectedTool === "watering_can") { handleWaterPlot(plotId); return; }
                               if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
+                              if (selectedSeedId && isGuideCompostKey(selectedSeedId)) { void applyGuideCompostToPlot(plotId); return; }
                               if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
                               if (selectedSeedId) { handlePlantFromSelectedSeed(plotId); return; }
                               if (getPlotCrop(plotId).cropId && isCropReady(plotId)) void handleHarvestPlot(plotId);
