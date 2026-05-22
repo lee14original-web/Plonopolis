@@ -12949,11 +12949,11 @@ export default function Page() {
                       const pos = fvNasonaPos;
                       fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
                   >
                     {(() => {
-                      if (!fvToolEditMode && selectedSeedId && !isCompostKey(selectedSeedId)) {
+                      if (!fvToolEditMode && selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) {
                         const { baseCropId, quality } = parseQualityKey(selectedSeedId);
                         const crop = CROPS.find(c => c.id === baseCropId);
                         if (crop) {
@@ -13060,7 +13060,7 @@ export default function Page() {
                         <h3 className="text-xl font-black text-[#f9e7b2] mb-4">🌱 Nasiona w plecaku</h3>
                         {(["legendary","epic","good",null] as (string|null)[]).map(quality => {
                           const entries = Object.entries(seedInventory)
-                            .filter(([k, cnt]) => !isCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality)
+                            .filter(([k, cnt]) => !isCompostKey(k) && !isGuideCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality)
                             .sort(([aId], [bId]) => {
                               const aC = parseQualityKey(aId).baseCropId;
                               const bC = parseQualityKey(bId).baseCropId;
@@ -13207,7 +13207,7 @@ export default function Page() {
                             </div>
                           );
                         })}
-                        {Object.entries(seedInventory).filter(([k, v]) => !isCompostKey(k) && v > 0).length === 0 && (
+                        {Object.entries(seedInventory).filter(([k, v]) => !isCompostKey(k) && !isGuideCompostKey(k) && v > 0).length === 0 && (
                           <p className="text-sm text-[#dfcfab] text-center py-6">Brak nasion w plecaku</p>
                         )}
                         <button
@@ -13642,6 +13642,8 @@ export default function Page() {
                                 ? "Kliknij pole, aby podlać"
                                 : selectedTool === "sickle"
                                 ? "Kliknij gotową uprawę, aby zebrać"
+                                : (selectedSeedId && (isCompostKey(selectedSeedId) || isGuideCompostKey(selectedSeedId)))
+                                ? "Kliknij puste pole, aby zastosować kompost"
                                 : selectedSeedId
                                 ? `Kliknij pole, aby posadzić ${CROPS.find((c) => c.id === parseQualityKey(selectedSeedId).baseCropId)?.name ?? "roślinę"}`
                                 : _plotReady
