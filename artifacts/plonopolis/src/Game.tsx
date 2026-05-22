@@ -4160,52 +4160,70 @@ export default function Page() {
           setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
         }
         const orderCount = (tickData?.order_count as number) ?? rpcOrders?.length ?? -1;
+
+        // Czytaj ref ŚWIEŻO po await — nie używaj stale baselineIds z początku funkcji
+        const freshCurrentLen = prevCustomerIdsRef.current.size;
+
         if (process.env.NODE_ENV !== 'production') {
-          const addedIdsPreview = rpcOrders?.map(o => o.id).filter(id => !baselineIds.has(id)) ?? [];
           console.debug("[lada tick result]", {
             spawned: spawnedCount,
             order_count: orderCount,
             rpcOrdersLen: rpcOrders?.length ?? -1,
+            freshCurrentLen,
             baselineLen: baselineIds.size,
-            addedIds: addedIdsPreview,
             next_spawn_at: tickData?.next_spawn_at,
           });
         }
-        // Jeśli spawn potwierdzony — natychmiast przełącz status na 'adding'
+
+        // Jeśli spawn potwierdzony — natychmiast status 'adding'
         if (spawnedCount > 0) setLadaStatusMsg('adding');
 
-        // Próba natychmiastowa: orders z odpowiedzi RPC
         if (rpcOrders !== null) {
+          // ─── DEFENSYWNY SUKCES: RPC zwróciło więcej zamówień niż mamy aktualnie ───
+          // Używamy freshCurrentLen (ref po await) i orderCount zamiast stale baselineIds.
+          const rpcHasMore = rpcOrders.length > freshCurrentLen || orderCount > freshCurrentLen;
+
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug("[lada set from rpc]", {
+              currentLen: freshCurrentLen,
+              rpcLen: rpcOrders.length,
+              orderCount,
+              rpcHasMore,
+              spawned: spawnedCount,
+            });
+          }
+
+          if (rpcHasMore) {
+            // Natychmiast zastosuj listę z RPC — nie czekaj na SELECT, nie rób hydratacji
+            const knownIds = new Set(prevCustomerIdsRef.current);
+            const newIds = rpcOrders.map(o => o.id).filter(id => !knownIds.has(id));
+            const toMark = newIds.length > 0
+              ? newIds
+              : rpcOrders.slice(freshCurrentLen).map(o => o.id).filter((id): id is string => Boolean(id));
+            if (!hasInitializedCustomerIdsRef.current) {
+              hasInitializedCustomerIdsRef.current = true;
+            }
+            applyNewCustomers(rpcOrders, toMark);
+            return;
+          }
+
+          // Pierwsze załadowanie bez nowych zamówień — ustaw baseline
           if (!hasInitializedCustomerIdsRef.current) {
-            // Pierwsze załadowanie — ustaw baseline, nie animuj żadnych kart
             hasInitializedCustomerIdsRef.current = true;
             prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
             setCustomerOrders(rpcOrders);
             setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
-            if (spawnedCount > 0) {
-              delegatedToRetry = true;
-              hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, true);
-            } else {
-              setLadaStatusMsg(null);
-            }
+            setLadaStatusMsg(null);
             return;
           }
-          const addedIds = rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id));
-          // Sukces natychmiastowy: nowe IDs w liście LUB (spawned>0 i lista dłuższa niż baseline)
-          if (addedIds.length > 0 || (spawnedCount > 0 && rpcOrders.length > baselineIds.size)) {
-            const idsToMark = addedIds.length > 0
-              ? addedIds
-              : Array.from({ length: rpcOrders.length - baselineIds.size }, (_, i) => rpcOrders[baselineIds.size + i]?.id).filter(Boolean) as string[];
-            applyNewCustomers(rpcOrders, idsToMark);
-            return;
-          }
-          // RPC dał orders, ale liczba nie wzrosła — zaktualizuj listę i hydruj jeśli spawned>0
+
+          // RPC nie wykazało wzrostu — zaktualizuj listę i jeśli spawned>0 uruchom hydratację
           prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
           setCustomerOrders(rpcOrders);
           setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
-          if (rpcOrders.length < LADA_MAX_CUSTOMERS) {
+          if (spawnedCount > 0 && rpcOrders.length < LADA_MAX_CUSTOMERS) {
             delegatedToRetry = true;
-            hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, spawnedCount > 0);
+            hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, true);
           } else {
             setLadaStatusMsg(null);
           }
