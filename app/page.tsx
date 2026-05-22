@@ -4055,11 +4055,55 @@ export default function Page() {
     return { name: type, icon: '👤' };
   }
 
+  // ─── Badge "Nowy!" — persystencja w localStorage przez 5 minut ───
+  const LADA_NEW_BADGE_KEY = 'plonopolis_lada_new_customer_until';
+  const LADA_NEW_BADGE_DURATION = 300_000;
+
+  function loadBadgeMap(): Record<string, number> {
+    try { return JSON.parse(localStorage.getItem(LADA_NEW_BADGE_KEY) ?? '{}') as Record<string, number>; }
+    catch { return {}; }
+  }
+  function saveBadgeMap(m: Record<string, number>): void {
+    try { localStorage.setItem(LADA_NEW_BADGE_KEY, JSON.stringify(m)); } catch {}
+  }
+  function pruneBadgeMap(m: Record<string, number>): Record<string, number> {
+    const now = Date.now();
+    return Object.fromEntries(Object.entries(m).filter(([, exp]) => exp > now));
+  }
+  function activeBadgeIds(m: Record<string, number>): Set<string> {
+    const now = Date.now();
+    return new Set(Object.entries(m).filter(([, exp]) => exp > now).map(([id]) => id));
+  }
+  // Planuje timeout aby React state zaktualizował się dokładnie gdy wygasa najwcześniejszy badge
+  function scheduleBadgeExpiry() {
+    if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+    const badgeMap = loadBadgeMap();
+    const expiries = Object.values(badgeMap);
+    if (expiries.length === 0) return;
+    const soonest = Math.min(...expiries);
+    const delay = Math.max(500, soonest - Date.now());
+    newCustomerIdsTimerRef.current = setTimeout(() => {
+      const pruned = pruneBadgeMap(loadBadgeMap());
+      saveBadgeMap(pruned);
+      setNewCustomerIds(activeBadgeIds(pruned));
+      if (Object.keys(pruned).length > 0) scheduleBadgeExpiry();
+    }, delay);
+  }
+
   // Pomocnicza: oznacza nowych klientów, aktualizuje listę, ustawia status 'added'
   function applyNewCustomers(ri: CustomerOrder[], rAdded: string[]) {
-    setNewCustomerIds(new Set(rAdded));
-    if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
-    newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+    // Załaduj istniejącą mapę, usuń wygasłe, dodaj nowe z expiry = teraz + 5 min
+    const badgeMap = pruneBadgeMap(loadBadgeMap());
+    // Usuń ID klientów, których już nie ma na liście (wykonani/wygaśnięci)
+    const currentIds = new Set(ri.map(o => o.id));
+    for (const id of Object.keys(badgeMap)) {
+      if (!currentIds.has(id)) delete badgeMap[id];
+    }
+    const expiry = Date.now() + LADA_NEW_BADGE_DURATION;
+    for (const id of rAdded) badgeMap[id] = expiry;
+    saveBadgeMap(badgeMap);
+    setNewCustomerIds(activeBadgeIds(badgeMap));
+    scheduleBadgeExpiry();
     if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
     setLadaStatusMsg('added');
     ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
@@ -4372,6 +4416,13 @@ export default function Page() {
 
   React.useEffect(() => {
     if (!showLadaModal || !profile?.id) return;
+    // Przywróć badge "Nowy!" z localStorage — tylko niewygasłe wpisy
+    const restoredMap = pruneBadgeMap(loadBadgeMap());
+    saveBadgeMap(restoredMap);
+    if (Object.keys(restoredMap).length > 0) {
+      setNewCustomerIds(activeBadgeIds(restoredMap));
+      scheduleBadgeExpiry();
+    }
     void refreshCustomerOrders({ tick: true });
     const tickT = setInterval(() => void refreshCustomerOrders({ tick: true }), 5 * 60 * 1000);
     const nowT = setInterval(() => setCustomerNow(Date.now()), 1000);
@@ -4387,6 +4438,7 @@ export default function Page() {
       // Reset baseline — przy kolejnym otwarciu Lady pierwsza lista znów jest baseline
       hasInitializedCustomerIdsRef.current = false;
       prevCustomerIdsRef.current = new Set();
+      // NIE czyść localStorage — badge "Nowy!" ma przeżyć zamknięcie modala (5 min)
       setNewCustomerIds(new Set());
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
