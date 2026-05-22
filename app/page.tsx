@@ -2465,7 +2465,16 @@ export default function Page() {
       xp_to_next_level: source.xp_to_next_level ?? DEFAULT_XP_TO_NEXT_LEVEL,
       money: source.money ?? DEFAULT_MONEY,
       location: source.location ?? DEFAULT_LOCATION,
-      current_map: source.current_map ?? getMapForLevel(source.level),
+      current_map: (() => {
+        const _lm = getMapForLevel(source.level);
+        const _sm = source.current_map;
+        if (!_sm) return _lm;
+        if (_sm.startsWith("farm")) {
+          const _fo = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
+          return _fo.indexOf(_sm) >= _fo.indexOf(_lm) ? _sm : _lm;
+        }
+        return _sm;
+      })(),
     };
 
     setProfile(nextProfile);
