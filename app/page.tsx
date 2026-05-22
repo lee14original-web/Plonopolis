@@ -11003,8 +11003,8 @@ export default function Page() {
                       }
 
                       return (
-                        <div className={`px-5 py-2 flex items-center justify-center gap-2 text-xs font-bold border-b ${barCls}`}>
-                          <span className="text-[#8b6a3e]">👥 {active}/{LADA_MAX_CUSTOMERS} klientów</span>
+                        <div className={`px-5 py-2 flex items-center justify-center gap-2 text-[13px] font-bold border-b ${barCls}`}>
+                          <span className="text-[#8b6a3e]">{active}/{LADA_MAX_CUSTOMERS} klientów</span>
                           {statusNode && <><span className="text-[#8b6a3e]">·</span><span>{statusNode}</span></>}
                         </div>
                       );
