@@ -2102,6 +2102,8 @@ export default function Page() {
 
   const [showWelcome, setShowWelcome] = React.useState(false);
   const [guideExitStep, setGuideExitStep] = React.useState<0 | 1 | 2>(0);
+  const [guideSaving, setGuideSaving] = React.useState(false);
+  const [guideError, setGuideError] = React.useState<string | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -3541,11 +3543,19 @@ export default function Page() {
         if (guideExitStep === 1) { setGuideExitStep(2); return; }
         if (guideExitStep === 2) {
           if (!profile?.id) return;
-          localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
-          void supabase.from("profiles").update({ tutorial_started: true, tutorial_skipped: true }).eq("id", profile.id);
-          setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
-          setShowWelcome(false);
-          setGuideExitStep(0);
+          void (async () => {
+            setGuideSaving(true);
+            setGuideError(null);
+            const { error } = await supabase
+              .from("profiles")
+              .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
+              .eq("id", profile.id);
+            setGuideSaving(false);
+            if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
+            setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
+            setShowWelcome(false);
+            setGuideExitStep(0);
+          })();
         }
       }
     }
@@ -8579,11 +8589,17 @@ export default function Page() {
                               {/* Stopka */}
                               <div className="mt-8 flex flex-col items-center gap-3">
                                 <button
-                                  onClick={() => {
+                                  onClick={async () => {
                                     if (!profile?.id) return;
-                                    localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
-                                    void supabase.from("profiles").update({ tutorial_started: true }).eq("id", profile.id);
-                                    setProfile(p => p ? { ...p, tutorial_started: true } : p);
+                                    setGuideSaving(true);
+                                    setGuideError(null);
+                                    const { error } = await supabase
+                                      .from("profiles")
+                                      .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: false })
+                                      .eq("id", profile.id);
+                                    setGuideSaving(false);
+                                    if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
+                                    setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: false } : p);
                                     setShowWelcome(false);
                                     setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
                                   }}
@@ -8625,25 +8641,36 @@ export default function Page() {
                                 <h3 className="mb-3 text-[26px] font-black text-red-400">Na pewno zrezygnować?</h3>
                                 <p className="mb-2 text-[20px] leading-relaxed">Rezygnujesz z Przewodnika i konta Premium na 7 dni.</p>
                                 <p className="mb-6 text-[20px] text-red-400/80">Tej decyzji nie będzie można cofnąć.</p>
+                                {guideError && (
+                                  <p className="mb-3 rounded-lg border border-red-700/50 bg-[rgba(80,10,10,0.5)] px-4 py-2 text-[18px] text-red-300">{guideError}</p>
+                                )}
                                 <div className="flex flex-col gap-3">
                                   <button
-                                    onClick={() => setGuideExitStep(1)}
-                                    className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,30,5,0.6)] px-5 py-3 text-[20px] font-black text-[#f9e7b2] transition hover:bg-[rgba(80,60,10,0.6)]"
+                                    onClick={() => { setGuideExitStep(1); setGuideError(null); }}
+                                    disabled={guideSaving}
+                                    className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,30,5,0.6)] px-5 py-3 text-[20px] font-black text-[#f9e7b2] transition hover:bg-[rgba(80,60,10,0.6)] disabled:opacity-50"
                                   >
                                     Nie, wróć
                                   </button>
                                   <button
-                                    onClick={() => {
+                                    disabled={guideSaving}
+                                    onClick={async () => {
                                       if (!profile?.id) return;
-                                      localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
-                                      void supabase.from("profiles").update({ tutorial_started: true, tutorial_skipped: true }).eq("id", profile.id);
-                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
+                                      setGuideSaving(true);
+                                      setGuideError(null);
+                                      const { error } = await supabase
+                                        .from("profiles")
+                                        .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
+                                        .eq("id", profile.id);
+                                      setGuideSaving(false);
+                                      if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
+                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
                                       setShowWelcome(false);
                                       setGuideExitStep(0);
                                     }}
-                                    className="w-full rounded-xl border border-red-700/50 bg-[rgba(80,10,10,0.6)] px-5 py-3 text-[20px] font-black text-red-300 transition hover:bg-[rgba(110,15,15,0.7)]"
+                                    className="w-full rounded-xl border border-red-700/50 bg-[rgba(80,10,10,0.6)] px-5 py-3 text-[20px] font-black text-red-300 transition hover:bg-[rgba(110,15,15,0.7)] disabled:opacity-50"
                                   >
-                                    Tak, rezygnuję
+                                    {guideSaving ? "Zapisywanie..." : "Tak, rezygnuję"}
                                   </button>
                                 </div>
                               </div>
