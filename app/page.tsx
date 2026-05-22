@@ -11166,35 +11166,40 @@ export default function Page() {
                                   onClick={() => setLadaDetailIdx(originalIndex)}
                                   onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
                                   onMouseLeave={() => setLadaCardHoverIdx(null)}
-                                  className={`relative text-left rounded-xl border p-5 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
-                                    isNew    ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
-                                    expired  ? 'border-red-600/50 bg-red-950/15 opacity-70' :
+                                  className={`relative text-left rounded-xl border p-4 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
+                                    isNew      ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
+                                    expired    ? 'border-red-600/50 bg-red-950/15 opacity-70' :
                                     isCritical ? 'border-red-500/70 bg-red-950/15 hover:border-red-400/80' :
                                     isWarning  ? 'border-orange-500/60 bg-orange-950/10 hover:border-orange-400/80' :
-                                    canDo    ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
-                                               'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
+                                    canDo      ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
+                                                 'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
                                   }`}
                                 >
-                                  <div>
-                                    <div className="flex items-center gap-3 mb-3">
-                                      <span className="text-4xl leading-none">{cd.icon}</span>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-lg font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
-                                        <p className="text-sm text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                                      </div>
+                                  {/* Portret + nazwa */}
+                                  <div className="flex items-start gap-2.5 mb-2">
+                                    {/* Kafelek z portretem — podmień na <img> gdy będą assety */}
+                                    <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-black/30 border border-amber-800/30 text-3xl leading-none">
+                                      {cd.icon}
                                     </div>
-                                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-base font-bold mb-2">
-                                      <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
-                                      <span className="text-blue-300">⭐ {o.rewards.exp} EXP</span>
+                                    <div className="min-w-0 flex-1 pt-0.5">
+                                      <p className="text-base font-black text-[#f9e7b2] leading-tight truncate">{cd.name}</p>
+                                      <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
                                     </div>
                                   </div>
-                                  <p className={`text-sm font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                    ⏱ {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                  {/* Nagrody — wyśrodkowane, bez ikon */}
+                                  <div className="flex items-center justify-center gap-3 text-sm font-bold mb-1">
+                                    <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                    <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                    {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
+                                  </div>
+                                  {/* Czas — wyśrodkowany na dole, bez ikony */}
+                                  <p className={`text-xs font-bold text-center ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                    {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                   </p>
                                   {/* badge: Nowy / ostrzeżenie / gotowe */}
                                   {!expired && (
                                     isNew ? (
-                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2 py-0.5 border border-emerald-400/60 animate-bounce">✨ Nowy!</span>
+                                      <span className="absolute top-2.5 right-2.5 text-sm font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2.5 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>
                                     ) : isCritical ? (
                                       <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>
                                     ) : isWarning ? (
@@ -11214,8 +11219,11 @@ export default function Page() {
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setLadaDetailIdx(null)}
-                              className="flex items-center gap-1.5 rounded-xl border border-amber-600/50 bg-black/30 px-3 py-2 text-sm font-bold text-amber-400 hover:bg-amber-900/20 hover:border-amber-400/70 transition shrink-0"
-                            >← Wróć</button>
+                              className="flex flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-black/30 px-5 py-4 font-bold text-amber-400 hover:bg-amber-900/20 hover:border-amber-400/70 transition shrink-0 leading-snug"
+                            >
+                              <span className="text-base">← Wróć</span>
+                              <span className="text-xs text-amber-500/80 font-medium">lub Esc</span>
+                            </button>
                             <div className="flex-1 min-w-0">
                               <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">Klient {ladaDetailIdx + 1} z {totalOrders}</p>
                               <p className="text-base font-black text-[#f9e7b2] truncate">{customer.icon} {customer.name}</p>
