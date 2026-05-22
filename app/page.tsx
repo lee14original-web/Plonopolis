@@ -5913,12 +5913,12 @@ export default function Page() {
               animation: "plono-map-banner 12s ease-in-out forwards" }}
           >
             <div style={{
-              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.62) 20%, rgba(0,0,0,0.62) 80%, transparent)",
-              padding: "10px 48px", borderRadius: 12,
-              fontSize: 28, fontWeight: 700, color: "#f9e7b2",
-              letterSpacing: "0.04em", textShadow: "0 2px 8px #000a",
+              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.65) 15%, rgba(0,0,0,0.65) 85%, transparent)",
+              padding: "14px 72px", borderRadius: 16,
+              fontSize: 36, fontWeight: 700, color: "#f9e7b2",
+              letterSpacing: "0.05em", textShadow: "0 2px 10px #000c",
             }}>
-              🌾 Ranczo się rozwija...
+              Ranczo się rozwija...
             </div>
           </div>
         )}
