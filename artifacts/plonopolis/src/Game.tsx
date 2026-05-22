@@ -6468,7 +6468,7 @@ export default function Page() {
                             data-no-map-drag="true"
                             onClick={() => {
                               if (!_cityUnlocked) {
-                                setMessage({ type: "error", title: "🔒 Miasto zablokowane", text: `Miasto odblokuje się od poziomu ${CITY_UNLOCK_LVL}.` });
+                                setMessage({ type: "info", title: "Miasto zablokowane", text: `Miasto odblokuje się od poziomu ${CITY_UNLOCK_LVL}.` });
                                 return;
                               }
                               handleChangeMap("city");
@@ -6523,7 +6523,7 @@ export default function Page() {
                             onClick={() => {
                               if (!_ladaUnlocked) {
                                 setHoveredLada(false);
-                                setMessage({ type: "error", title: "🔒 Lada zablokowana", text: `Lada dla klientów odblokuje się od poziomu ${LADA_UNLOCK_LVL}.` });
+                                setMessage({ type: "info", title: "Lada zablokowana", text: `Lada dla klientów odblokuje się od poziomu ${LADA_UNLOCK_LVL}.` });
                                 return;
                               }
                               setHoveredLada(false);
@@ -6551,7 +6551,7 @@ export default function Page() {
                             onClick={() => {
                               if (!_kompostUnlocked) {
                                 setHoveredKompostownik(false);
-                                setMessage({ type: "error", title: "🔒 Kompostownik zablokowany", text: `Kompostownik odblokuje się od poziomu ${KOMPOST_UNLOCK_LVL}.` });
+                                setMessage({ type: "info", title: "Kompostownik zablokowany", text: `Kompostownik odblokuje się od poziomu ${KOMPOST_UNLOCK_LVL}.` });
                                 return;
                               }
                               setHoveredKompostownik(false);
