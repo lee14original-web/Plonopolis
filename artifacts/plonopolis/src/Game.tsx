@@ -4091,10 +4091,38 @@ export default function Page() {
             setLadaStatusMsg('added');
             ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
           } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
-            spawnFailCooldownRef.current = Date.now();
+            // Backend może zapisywać asynchronicznie — retry po 700ms przed pokazaniem błędu
             if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
-            setLadaStatusMsg('failed');
-            ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
+            const retryUserId = profile.id;
+            const baselineIds = new Set(freshIds);
+            setTimeout(async () => {
+              const { data: rd, error: re } = await supabase
+                .from("customer_orders")
+                .select("*")
+                .eq("user_id", retryUserId)
+                .order("created_at", { ascending: true });
+              if (!re && rd) {
+                const ri = rd as CustomerOrder[];
+                const rIds = ri.map(o => o.id);
+                const rAdded = rIds.filter(id => !baselineIds.has(id));
+                if (rAdded.length > 0) {
+                  setNewCustomerIds(new Set(rAdded));
+                  if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+                  newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+                  if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+                  setLadaStatusMsg('added');
+                  ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
+                  prevCustomerIdsRef.current = new Set(rIds);
+                  setCustomerOrders(ri);
+                  setCurrentCustomerIdx(idx => (ri.length === 0 ? 0 : idx >= ri.length ? 0 : idx));
+                  return;
+                }
+              }
+              spawnFailCooldownRef.current = Date.now();
+              if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+              setLadaStatusMsg('failed');
+              ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
+            }, 700);
           } else {
             setLadaStatusMsg(null);
           }

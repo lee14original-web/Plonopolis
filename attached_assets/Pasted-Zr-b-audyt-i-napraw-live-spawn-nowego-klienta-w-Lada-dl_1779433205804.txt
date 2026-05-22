@@ -1,0 +1,78 @@
+Zrób audyt i napraw live-spawn nowego klienta w "Lada dla klientów".
+
+Bug:
+W Ladzie timer pokazuje 3, 2, 1 sekundy do nowego klienta.
+Po dojściu do 0 pojawia się komunikat:
+"Brak nowych klientów — spróbuję za chwilę"
+Klient nie pojawia się na żywo.
+Po wyjściu z Lady i wejściu ponownie klient już jest widoczny.
+
+To oznacza, że backend prawdopodobnie tworzy klienta albo stan jest gotowy, ale frontend nie odświeża listy w odpowiednim momencie.
+
+Zakres:
+Game.tsx / frontend logika Lady.
+SQL tylko jeśli audyt pokaże, że RPC nie zwraca informacji potrzebnych do odświeżenia.
+
+Sprawdź:
+1. Jak działa timer nowego klienta:
+   - jakie zmienne liczą nextIn / left / nextCustomerAt.
+   - jaki useEffect odpala się przy left <= 0.
+2. Jakie funkcje są wywoływane:
+   - tick_customer_orders?
+   - spawn_customer_order?
+   - loadCustomerOrders?
+   - ensureCustomerOrders?
+3. Czy po tick/spawn zawsze jest await loadCustomerOrders().
+4. Czy loadCustomerOrders nie jest blokowane przez:
+   - customerLoading,
+   - isSpawningCustomerRef,
+   - cooldown,
+   - stale closure,
+   - warunek showLadaModal,
+   - active >= max.
+5. Czy komunikat "Brak nowych klientów — spróbuję za chwilę" pojawia się zanim backend zdąży zapisać nowego klienta.
+6. Czy po nieudanej próbie cooldown blokuje kolejną próbę mimo że klient już istnieje.
+7. Dlaczego zamknięcie i ponowne otwarcie Lady pokazuje klienta.
+
+Wymagane zachowanie:
+1. Gdy timer dojdzie do 0 i active < max:
+   - ustaw status "Szukam nowego klienta..."
+   - wywołaj tick/spawn RPC.
+   - po zakończeniu RPC zawsze wykonaj loadCustomerOrders().
+2. Jeśli po pierwszym loadzie liczba klientów nie wzrosła:
+   - wykonaj jeszcze jeden krótki retry po 500–1000 ms.
+   - potem ponownie loadCustomerOrders().
+3. Dopiero po retry, jeśli nadal nie ma nowego klienta:
+   - pokaż "Brak nowych klientów — spróbuję za chwilę".
+4. Jeśli po reloadzie pojawił się nowy ID:
+   - pokaż "Dodano nowego klienta!"
+   - oznacz nową kartę badge "Nowy!".
+5. Nie wymagaj zamykania i otwierania Lady.
+6. Nie spamuj RPC:
+   - isSpawningCustomerRef ma blokować równoległe ticki,
+   - ale nie może blokować finalnego loadCustomerOrders.
+7. Jeśli active >= max, nie spawnuj.
+8. Jeśli active > max, pokaż "Ponad limitem" i nie spawnuj.
+9. Jeśli timer po dojściu do 0 ma robić tick, nie ustawiaj od razu długiego cooldownu przed reloadem.
+10. Usuń lub popraw ścieżkę, która pokazuje "Brak nowych klientów" bez wcześniejszego retry.
+
+Diagnostyka:
+Dodaj tymczasowe console.debug tylko jeśli przydatne:
+- przed tick/spawn,
+- po tick/spawn,
+- przed/po loadCustomerOrders,
+- liczba klientów przed/po,
+- nowe IDs.
+Jeśli dodasz logi, zostaw je tylko gdy import.meta.env.DEV albo usuń przed finalnym commitem.
+
+Test:
+1. Ustaw konto z active < 12 i timerem blisko 0.
+2. Otwórz Ladę.
+3. Poczekaj 3,2,1.
+4. Nowy klient ma pojawić się na liście bez zamykania modala.
+5. Jeśli backend chwilę opóźnia zapis, retry ma go złapać.
+6. Badge "Nowy!" tylko dla faktycznie nowego klienta.
+7. Typecheck.
+
+Pokaż audyt, diff i rekomendację.
+Nie pushuj jeszcze, najpierw przetestujemy.
