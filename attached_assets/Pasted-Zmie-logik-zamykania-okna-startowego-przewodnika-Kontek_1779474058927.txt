@@ -1,0 +1,75 @@
+Zmień logikę zamykania okna startowego przewodnika.
+
+Kontekst:
+Okno "Witaj w Plonopolis!" ma X. Nie chcę usuwać X, ale wyjście z przewodnika ma wymagać mocnego potwierdzenia, bo gracz rezygnuje z nagrody: Konto Premium na 7 dni.
+
+Wymagania:
+
+1. Kliknięcie X w oknie startowym NIE zamyka okna od razu.
+   Ma otworzyć pierwsze potwierdzenie.
+
+2. Pierwsze potwierdzenie:
+   Tytuł:
+   "Opuścić przewodnik?"
+
+   Tekst:
+   "Próbujesz opuścić przewodnik. Jeśli teraz zrezygnujesz, nie otrzymasz nagrody za ukończenie przewodnika: Konto Premium na 7 dni."
+
+   Drugi tekst:
+   "Czy na pewno chcesz wyjść?"
+
+   Przyciski:
+   - "Wróć do przewodnika (Esc)"
+   - "Opuść przewodnik (Enter)"
+
+3. Klawisze w pierwszym potwierdzeniu:
+   - Esc = Wróć do przewodnika
+   - Enter = próba opuszczenia przewodnika, ale NIE opuszcza jeszcze finalnie.
+     Enter otwiera drugie, ostateczne potwierdzenie.
+
+4. Drugie potwierdzenie:
+   Tytuł:
+   "Na pewno zrezygnować?"
+
+   Tekst:
+   "Rezygnujesz z Przewodnika i konta Premium na 7 dni."
+
+   Drugi tekst:
+   "Tej decyzji nie będzie można cofnąć."
+
+   Przyciski:
+   - "Nie, wróć"
+   - "Tak, rezygnuję"
+
+5. Klawisze w drugim potwierdzeniu:
+   - Esc = Nie, wróć
+   - Enter = Tak, rezygnuję
+
+6. Po kliknięciu "Tak, rezygnuję":
+   - zamknij okno startowe,
+   - zapisz, że tutorial został pominięty.
+   - jeśli istnieje tutorial_skipped, ustaw tutorial_skipped=true.
+   - jeśli jeszcze nie istnieje, przygotuj SQL:
+     attached_assets/sql_add_tutorial_skipped_v1.sql
+     ALTER TABLE profiles ADD COLUMN IF NOT EXISTS tutorial_skipped BOOLEAN NOT NULL DEFAULT FALSE;
+   - Nie ustawiaj tutorial_completed=true dla pominięcia, bo ukończenie i pominięcie to różne rzeczy.
+   - Ustaw tutorial_started=true, tutorial_completed=false, tutorial_skipped=true.
+
+7. Po kliknięciu "Rozpocznij przewodnik":
+   - tutorial_started=true,
+   - tutorial_completed=false,
+   - tutorial_skipped=false.
+
+8. Okno startowe ma się pokazywać tylko gdy:
+   tutorial_started=false
+   tutorial_completed=false
+   tutorial_skipped=false
+
+9. Stare konta z migracji mają tutorial_completed=true, więc nie widzą okna.
+
+10. Nie implementuj jeszcze pełnych kroków tutoriala.
+11. Nie dawaj jeszcze nagrody.
+12. Nie implementuj jeszcze systemu Premium.
+13. Typecheck.
+14. Pokaż SQL i diff.
+15. Nie pushuj jeszcze — najpierw wgramy SQL i przetestujemy.

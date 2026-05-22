@@ -49,6 +49,9 @@ type Profile = {
   orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
   barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
   role?: "player" | "tester" | "moderator" | "admin" | "owner" | string | null;
+  tutorial_started?: boolean | null;
+  tutorial_completed?: boolean | null;
+  tutorial_skipped?: boolean | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -2098,6 +2101,7 @@ export default function Page() {
   }, []);
 
   const [showWelcome, setShowWelcome] = React.useState(false);
+  const [guideExitStep, setGuideExitStep] = React.useState<0 | 1 | 2>(0);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -3517,11 +3521,38 @@ export default function Page() {
   // ─── Powitanie nowego gracza ───
   useEffect(() => {
     if (!profile?.id) return;
-    const key = `plonopolis_welcome_${profile.id}`;
-    if (!localStorage.getItem(key)) {
+    if (!profile.tutorial_started && !profile.tutorial_completed && !profile.tutorial_skipped) {
       setShowWelcome(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
+
+  // ─── Klawiatura dla potwierdzeń wyjścia z przewodnika ───
+  useEffect(() => {
+    if (!showWelcome || guideExitStep === 0) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (guideExitStep === 2) setGuideExitStep(1);
+        else setGuideExitStep(0);
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (guideExitStep === 1) { setGuideExitStep(2); return; }
+        if (guideExitStep === 2) {
+          if (!profile?.id) return;
+          localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
+          void supabase.from("profiles").update({ tutorial_started: true, tutorial_skipped: true }).eq("id", profile.id);
+          setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
+          setShowWelcome(false);
+          setGuideExitStep(0);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showWelcome, guideExitStep, profile?.id]);
 
   // ─── Sync skina do DB raz na sesję (żeby ranking widział avatara) ───
   useEffect(() => {
@@ -8525,42 +8556,100 @@ export default function Page() {
 
                       {/* ─── Modal startowy przewodnika dla nowego gracza ─── */}
                       {showWelcome && (
-                        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" style={{ zIndex: 9999 }}>
-                          <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
-                            {/* Zamknij (drugorzędny) */}
-                            <button
-                              onClick={() => {
-                                localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
-                                setShowWelcome(false);
-                              }}
-                              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#8b6a3e] hover:text-red-300 transition"
-                              title="Zamknij"
-                            >✕</button>
-                            {/* Nagłówek */}
-                            <div className="mb-5 flex flex-col items-center gap-3">
-                              <img src="/ui/systemikona.png" alt="Plonopolis" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
-                              <h2 className="text-center text-[38px] font-black text-[#f9e7b2]">Witaj w Plonopolis!</h2>
-                            </div>
-                            {/* Treść */}
-                            <div className="space-y-4 text-[22px] leading-relaxed text-[#dfcfab]/90">
-                              <p>Twoje ranczo dopiero zaczyna działać. Przewodnik pokaże Ci krok po kroku, jak siać, zbierać plony, korzystać z mapy i rozwijać farmę.</p>
-                              <p className="text-[20px] text-[#b89a60]">Po ukończeniu przewodnika otrzymasz nagrodę startową.</p>
-                            </div>
-                            {/* Stopka */}
-                            <div className="mt-8 flex flex-col items-center gap-3">
+                        <>
+                          {/* Główne okno przewodnika */}
+                          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4">
+                            <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
+                              {/* X — otwiera pierwsze potwierdzenie zamiast zamykać */}
                               <button
-                                onClick={() => {
-                                  localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
-                                  setShowWelcome(false);
-                                  setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
-                                }}
-                                className="w-full rounded-2xl border-2 border-[#d8ba7a]/70 bg-[rgba(80,55,10,0.6)] px-6 py-3 text-[24px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.7)] hover:border-[#d8ba7a]"
-                              >
-                                Rozpocznij przewodnik
-                              </button>
+                                onClick={() => setGuideExitStep(1)}
+                                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#8b6a3e] hover:text-red-300 transition"
+                                title="Wyjdź z przewodnika"
+                              >✕</button>
+                              {/* Nagłówek */}
+                              <div className="mb-5 flex flex-col items-center gap-3">
+                                <img src="/ui/systemikona.png" alt="Plonopolis" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                                <h2 className="text-center text-[38px] font-black text-[#f9e7b2]">Witaj w Plonopolis!</h2>
+                              </div>
+                              {/* Treść */}
+                              <div className="space-y-4 text-[22px] leading-relaxed text-[#dfcfab]/90">
+                                <p>Twoje ranczo dopiero zaczyna działać. Przewodnik pokaże Ci krok po kroku, jak siać, zbierać plony, korzystać z mapy i rozwijać farmę.</p>
+                                <p className="text-[20px] text-[#b89a60]">Po ukończeniu przewodnika otrzymasz nagrodę startową: Konto Premium na 7 dni.</p>
+                              </div>
+                              {/* Stopka */}
+                              <div className="mt-8 flex flex-col items-center gap-3">
+                                <button
+                                  onClick={() => {
+                                    if (!profile?.id) return;
+                                    localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
+                                    void supabase.from("profiles").update({ tutorial_started: true }).eq("id", profile.id);
+                                    setProfile(p => p ? { ...p, tutorial_started: true } : p);
+                                    setShowWelcome(false);
+                                    setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
+                                  }}
+                                  className="w-full rounded-2xl border-2 border-[#d8ba7a]/70 bg-[rgba(80,55,10,0.6)] px-6 py-3 text-[24px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.7)] hover:border-[#d8ba7a]"
+                                >
+                                  Rozpocznij przewodnik
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                          {/* Pierwsze potwierdzenie wyjścia */}
+                          {guideExitStep >= 1 && (
+                            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4">
+                              <div className="w-full max-w-[520px] rounded-[24px] border-2 border-red-900/60 bg-[rgba(14,4,4,0.98)] p-7 shadow-2xl text-[#dfcfab]">
+                                <h3 className="mb-3 text-[26px] font-black text-red-300">Opuścić przewodnik?</h3>
+                                <p className="mb-2 text-[20px] leading-relaxed">Próbujesz opuścić przewodnik. Jeśli teraz zrezygnujesz, nie otrzymasz nagrody za ukończenie przewodnika: Konto Premium na 7 dni.</p>
+                                <p className="mb-6 text-[20px] text-[#dfcfab]/60">Czy na pewno chcesz wyjść?</p>
+                                <div className="flex flex-col gap-3">
+                                  <button
+                                    onClick={() => setGuideExitStep(0)}
+                                    className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,30,5,0.6)] px-5 py-3 text-[20px] font-black text-[#f9e7b2] transition hover:bg-[rgba(80,60,10,0.6)]"
+                                  >
+                                    Wróć do przewodnika (Esc)
+                                  </button>
+                                  <button
+                                    onClick={() => setGuideExitStep(2)}
+                                    className="w-full rounded-xl border border-red-800/50 bg-[rgba(60,10,10,0.5)] px-5 py-3 text-[20px] font-black text-red-300 transition hover:bg-[rgba(90,15,15,0.6)]"
+                                  >
+                                    Opuść przewodnik (Enter)
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {/* Drugie potwierdzenie — ostateczne */}
+                          {guideExitStep >= 2 && (
+                            <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/60 p-4">
+                              <div className="w-full max-w-[520px] rounded-[24px] border-2 border-red-700/70 bg-[rgba(20,4,4,0.99)] p-7 shadow-2xl text-[#dfcfab]">
+                                <h3 className="mb-3 text-[26px] font-black text-red-400">Na pewno zrezygnować?</h3>
+                                <p className="mb-2 text-[20px] leading-relaxed">Rezygnujesz z Przewodnika i konta Premium na 7 dni.</p>
+                                <p className="mb-6 text-[20px] text-red-400/80">Tej decyzji nie będzie można cofnąć.</p>
+                                <div className="flex flex-col gap-3">
+                                  <button
+                                    onClick={() => setGuideExitStep(1)}
+                                    className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,30,5,0.6)] px-5 py-3 text-[20px] font-black text-[#f9e7b2] transition hover:bg-[rgba(80,60,10,0.6)]"
+                                  >
+                                    Nie, wróć
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (!profile?.id) return;
+                                      localStorage.setItem(`plonopolis_welcome_${profile.id}`, "1");
+                                      void supabase.from("profiles").update({ tutorial_started: true, tutorial_skipped: true }).eq("id", profile.id);
+                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
+                                      setShowWelcome(false);
+                                      setGuideExitStep(0);
+                                    }}
+                                    className="w-full rounded-xl border border-red-700/50 bg-[rgba(80,10,10,0.6)] px-5 py-3 text-[20px] font-black text-red-300 transition hover:bg-[rgba(110,15,15,0.7)]"
+                                  >
+                                    Tak, rezygnuję
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
 
                       {showTestModal && canUseTestTools && (
