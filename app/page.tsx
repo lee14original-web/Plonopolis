@@ -369,6 +369,9 @@ const HONEY_JAR_PRICE    = [0, 12, 12, 12, 12, 12];
 const HIVE_UNLOCK_LVL    = 10;     // od którego poziomu gracza odblokowany jest ul
 const BARN_UNLOCK_LVL    = 3;      // od którego poziomu gracza odblokowana jest stodoła (lvl pierwszego zwierzęcia — Kura)
 const SAD_UNLOCK_LVL     = 10;     // od którego poziomu gracza odblokowany jest sad
+const LADA_UNLOCK_LVL    = 2;      // od którego poziomu gracza odblokowana jest lada dla klientów
+const KOMPOST_UNLOCK_LVL = 2;      // od którego poziomu gracza odblokowany jest kompostownik
+const CITY_UNLOCK_LVL    = 2;      // od którego poziomu gracza odblokowane jest miasto
 const HIVE_BUY_COST      = 250;    // koszt zakupu ula (lvl 0 → 1)
 const BEE_COST           = 75;     // koszt 1 pszczoły
 const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął produkować miód
@@ -6456,17 +6459,29 @@ export default function Page() {
                           );
                         })()}
                       {/* Do miasta */}
-                      <button
-                        type="button"
-                        data-no-map-drag="true"
-                        onClick={() => handleChangeMap("city")}
-                        title=""
-                        onMouseEnter={() => setHoveredDoMiasta(true)}
-                        onMouseLeave={() => setHoveredDoMiasta(false)}
-                        data-zone="doMiasta"
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${activeHitboxPos.doMiasta.left}%`, top:`${activeHitboxPos.doMiasta.top}%`, width:`${activeHitboxPos.doMiasta.width}%`, height:`${activeHitboxPos.doMiasta.height}%`, zIndex: 20 }}
-                      />
+                      {(() => {
+                        const _playerLvl = profile?.level ?? 1;
+                        const _cityUnlocked = _playerLvl >= CITY_UNLOCK_LVL;
+                        return (
+                          <button
+                            type="button"
+                            data-no-map-drag="true"
+                            onClick={() => {
+                              if (!_cityUnlocked) {
+                                setMessage({ type: "info", title: "Miasto zablokowane", text: `Miasto odblokuje się od poziomu ${CITY_UNLOCK_LVL}.` });
+                                return;
+                              }
+                              handleChangeMap("city");
+                            }}
+                            title=""
+                            onMouseEnter={() => setHoveredDoMiasta(true)}
+                            onMouseLeave={() => setHoveredDoMiasta(false)}
+                            data-zone="doMiasta"
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_cityUnlocked ? "hover:scale-105" : "cursor-not-allowed opacity-70"}`}
+                            style={{ left:`${activeHitboxPos.doMiasta.left}%`, top:`${activeHitboxPos.doMiasta.top}%`, width:`${activeHitboxPos.doMiasta.width}%`, height:`${activeHitboxPos.doMiasta.height}%`, zIndex: 20 }}
+                          />
+                        );
+                      })()}
                       {/* Ul */}
                       {(() => {
                         const _playerLvl = profile?.level ?? 1;
@@ -6494,29 +6509,59 @@ export default function Page() {
                         );
                       })()}
                       {/* Lada dla klientów — sprzedaż słoików miodu */}
-                      <button
-                        type="button"
-                        data-no-map-drag="true"
-                        title=""
-                        onMouseEnter={() => setHoveredLada(true)}
-                        onMouseLeave={() => setHoveredLada(false)}
-                        data-zone="lada"
-                        onClick={() => { setHoveredLada(false); setCurrentCustomerIdx(0); setLadaDetailIdx(null); setShowLadaModal(true); }}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${activeHitboxPos.lada.left}%`, top:`${activeHitboxPos.lada.top}%`, width:`${activeHitboxPos.lada.width}%`, height:`${activeHitboxPos.lada.height}%`, zIndex: 20 }}
-                      />
+                      {(() => {
+                        const _playerLvl = profile?.level ?? 1;
+                        const _ladaUnlocked = _playerLvl >= LADA_UNLOCK_LVL;
+                        return (
+                          <button
+                            type="button"
+                            data-no-map-drag="true"
+                            title=""
+                            onMouseEnter={() => { if (_ladaUnlocked) setHoveredLada(true); }}
+                            onMouseLeave={() => setHoveredLada(false)}
+                            data-zone="lada"
+                            onClick={() => {
+                              if (!_ladaUnlocked) {
+                                setHoveredLada(false);
+                                setMessage({ type: "info", title: "Lada zablokowana", text: `Lada dla klientów odblokuje się od poziomu ${LADA_UNLOCK_LVL}.` });
+                                return;
+                              }
+                              setHoveredLada(false);
+                              setCurrentCustomerIdx(0);
+                              setLadaDetailIdx(null);
+                              setShowLadaModal(true);
+                            }}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_ladaUnlocked ? "hover:scale-105" : "cursor-not-allowed opacity-70"}`}
+                            style={{ left:`${activeHitboxPos.lada.left}%`, top:`${activeHitboxPos.lada.top}%`, width:`${activeHitboxPos.lada.width}%`, height:`${activeHitboxPos.lada.height}%`, zIndex: 20 }}
+                          />
+                        );
+                      })()}
                       {/* Kompostownik */}
-                      <button
-                        type="button"
-                        data-no-map-drag="true"
-                        title=""
-                        onMouseEnter={() => setHoveredKompostownik(true)}
-                        onMouseLeave={() => setHoveredKompostownik(false)}
-                        data-zone="kompostownik"
-                        onClick={() => { setHoveredKompostownik(false); setShowKompostModal(true); }}
-                        className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
-                        style={{ left:`${activeHitboxPos.kompostownik.left}%`, top:`${activeHitboxPos.kompostownik.top}%`, width:`${activeHitboxPos.kompostownik.width}%`, height:`${activeHitboxPos.kompostownik.height}%`, zIndex: 20 }}
-                      />
+                      {(() => {
+                        const _playerLvl = profile?.level ?? 1;
+                        const _kompostUnlocked = _playerLvl >= KOMPOST_UNLOCK_LVL;
+                        return (
+                          <button
+                            type="button"
+                            data-no-map-drag="true"
+                            title=""
+                            onMouseEnter={() => { if (_kompostUnlocked) setHoveredKompostownik(true); }}
+                            onMouseLeave={() => setHoveredKompostownik(false)}
+                            data-zone="kompostownik"
+                            onClick={() => {
+                              if (!_kompostUnlocked) {
+                                setHoveredKompostownik(false);
+                                setMessage({ type: "info", title: "Kompostownik zablokowany", text: `Kompostownik odblokuje się od poziomu ${KOMPOST_UNLOCK_LVL}.` });
+                                return;
+                              }
+                              setHoveredKompostownik(false);
+                              setShowKompostModal(true);
+                            }}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_kompostUnlocked ? "hover:scale-105" : "cursor-not-allowed opacity-70"}`}
+                            style={{ left:`${activeHitboxPos.kompostownik.left}%`, top:`${activeHitboxPos.kompostownik.top}%`, width:`${activeHitboxPos.kompostownik.width}%`, height:`${activeHitboxPos.kompostownik.height}%`, zIndex: 20 }}
+                          />
+                        );
+                      })()}
                       {/* Sad */}
                       {(() => {
                         const _playerLvl = profile?.level ?? 1;
