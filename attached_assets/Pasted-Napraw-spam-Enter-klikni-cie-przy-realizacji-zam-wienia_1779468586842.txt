@@ -1,0 +1,61 @@
+Napraw spam Enter/kliknięcie przy realizacji zamówienia klienta w Ladzie.
+
+Problem:
+W widoku szczegółów klienta, jeśli szybko kilka razy nacisnę Enter przy "Zrealizuj zamówienie (Enter)", zamówienie czasem wykona się poprawnie, ale potem pojawia się puste okno albo komunikat, że klienta już nie ma.
+
+Chcę zablokować spam Enter i szybkie wielokrotne kliknięcie.
+
+Zakres:
+Tylko frontend Game.tsx / Lada dla klientów / completeCustomerOrder trigger.
+Nie zmieniaj SQL, ekonomii, nagród ani RPC.
+
+Wymagania:
+1. Dodaj ref anty-spamowy, np.
+   const completingCustomerOrderRef = React.useRef(false);
+
+2. Wszystkie wejścia realizacji zamówienia mają używać jednej funkcji wrappera, np. handleCompleteSelectedCustomerOrder():
+   - kliknięcie przycisku,
+   - Enter.
+
+3. Na początku wrappera:
+   - jeśli completingCustomerOrderRef.current === true → return;
+   - jeśli loading/customerLoading/complete loading trwa → return;
+   - jeśli brak order → return;
+   - jeśli nie można zrealizować zamówienia → return.
+
+4. Przed await completeCustomerOrder ustaw:
+   completingCustomerOrderRef.current = true;
+
+5. Po zakończeniu, w finally:
+   completingCustomerOrderRef.current = false;
+   Ale jeśli modal/detail zostanie zamknięty, też nie może zostać na true na zawsze.
+
+6. Po pierwszym Enter/kliknięciu przycisk ma natychmiast przejść w disabled/loading stan, żeby użytkownik widział, że akcja trwa.
+
+7. Enter keydown:
+   - użyj event.preventDefault() gdy obsługujesz Enter,
+   - ignoruj event.repeat, żeby przytrzymanie Enter nie wysyłało wielu akcji,
+   - ignoruj Enter jeśli focus jest w input/textarea/select/contenteditable.
+
+8. Kliknięcie:
+   - też przechodzi przez ten sam wrapper,
+   - nie może wywołać completeCustomerOrder bezpośrednio.
+
+9. Po sukcesie:
+   - jeśli klient został usunięty z listy, widok szczegółów ma bezpiecznie wrócić do listy albo wybrać poprawny indeks.
+   - nie może zostać puste okno detail z nieistniejącym order.
+
+10. Jeśli RPC zwróci błąd typu "zamówienie nie istnieje" po drugim przypadkowym wywołaniu:
+   - nie pokazuj agresywnego błędu, jeśli completingCustomerOrderRef już blokował albo order zniknął.
+   - najlepiej drugi call w ogóle nie powinien dojść.
+
+11. Dodaj opcjonalny minimalny cooldown 800–1200ms po rozpoczęciu realizacji, jeśli samo loading/ref nie wystarczy.
+
+12. Nie psuj Esc:
+   - Esc nadal wraca do listy albo zamyka modal.
+   - Jeśli realization trwa, Esc może być ignorowany albo tylko zamknąć UI, ale nie może odpalić drugiej akcji.
+
+13. Zrób typecheck.
+14. Pokaż diff.
+15. Commit i push z komunikatem:
+    prevent customer order enter spam
