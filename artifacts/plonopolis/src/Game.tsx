@@ -13956,131 +13956,113 @@ export default function Page() {
           <p className="text-[16px] text-[#8b6a3e]">ze Szczęścia ({effectiveStats.szczescie}/100{effectiveStats.szczescie !== playerStats.szczescie ? `, w tym +${effectiveStats.szczescie - playerStats.szczescie} z avatara` : ""})</p>
         </div>
       )}
-    {/* Tooltip ula (zablokowany do lvl 10) podążający za kursorem */}
+    {/* Tooltip Ul — zablokowany */}
       {hoveredHiveLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Ul — zablokowany</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-yellow-300">Ul — zablokowany</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-yellow-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
         </div>
       )}
-    {/* Tooltip stodoły (zablokowanej do lvl 3) podążający za kursorem */}
+    {/* Tooltip Stodoła — zablokowana */}
       {hoveredBarnLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Stodoła — zablokowana</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{BARN_UNLOCK_LVL} poziom gracza</span></p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-400">Stodoła — zablokowana</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-amber-400">{BARN_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
         </div>
       )}
-    {/* Tooltip sadu (zablokowanego do lvl 10) podążający za kursorem */}
+    {/* Tooltip Sad — zablokowany */}
       {hoveredSadLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Sad — zablokowany</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{SAD_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie → Drzewa.</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-green-400">Sad — zablokowany</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-green-400">{SAD_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mt-2 text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie po odblokowaniu.</p>
         </div>
       )}
     {/* Tooltip Stodoła (odblokowana) */}
       {hoveredStodola && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 font-black text-amber-300">Stodoła</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-amber-400">Stodoła</p>
           <p className="mb-1 text-[18px]">Hoduj zwierzęta i zbieraj ich produkty.</p>
           <p className="text-[16px] text-[#8b6a3e]">Kury, świnie, krowy i inne — każde zwierzę daje inne surowce.</p>
         </div>
       )}
     {/* Tooltip Ul (odblokowany) */}
       {hoveredUl && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 font-black text-amber-300">Ul</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-yellow-300">Ul</p>
           <p className="mb-1 text-[18px]">Hoduj pszczoły i produkuj miód.</p>
           <p className="text-[16px] text-[#8b6a3e]">Miód sprzedasz klientom przy Ladzie lub w Targu w mieście.</p>
         </div>
       )}
     {/* Tooltip Sad (odblokowany) */}
       {hoveredSad && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 font-black text-amber-300">Sad</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-green-400">Sad</p>
           <p className="mb-1 text-[18px]">Uprawiaj drzewa owocowe i zbieraj owoce.</p>
           <p className="text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
         </div>
       )}
     {/* Tooltip Lada — zablokowana */}
       {hoveredLadaLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Lada dla klientów — zablokowana</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{LADA_UNLOCK_LVL} poziom gracza</span></p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-orange-300">Lada dla klientów — zablokowana</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-orange-300">{LADA_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: obsługuj klientów i zdobywaj złoto, EXP oraz bonusy.</p>
         </div>
       )}
     {/* Tooltip Lada dla klientów */}
       {hoveredLada && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 text-xl font-black text-amber-300">Lada dla klientów</p>
+        <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 text-xl font-black text-orange-300">Lada dla klientów</p>
           <p className="mb-1 text-[19px]">Obsługuj klientów i sprzedawaj miód.</p>
           <p className="text-[17px] text-[#8b6a3e]">Klienci przychodzą regularnie — odpowiadaj na zamówienia i sprzedawaj im swoje produkty.</p>
         </div>
       )}
     {/* Tooltip Dom */}
       {hoveredDom && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 font-black text-amber-300">Dom gracza</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-rose-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-rose-300">Dom gracza</p>
           <p className="mb-1 text-[18px]">Twój profil, statystyki i ekwipunek.</p>
           <p className="text-[16px] text-[#8b6a3e]">Znajdziesz tu poziom, EXP, PLN oraz zarządzanie postacią.</p>
         </div>
       )}
     {/* Tooltip Kompostownik — zablokowany */}
       {hoveredKompostLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Kompostownik — zablokowany</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{KOMPOST_UNLOCK_LVL} poziom gracza</span></p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-teal-300">Kompostownik — zablokowany</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-teal-300">{KOMPOST_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: przerabiaj resztki i zgniłe plony na kompost.</p>
         </div>
       )}
     {/* Tooltip Kompostownik */}
       {hoveredKompostownik && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
-          <p className="mb-2 font-black text-green-400">Kompostownik</p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-teal-300">Kompostownik</p>
           <p className="mb-1 text-[18px]">Przetwarzaj odpadki w kompost.</p>
           <p className="mb-1 text-[16px] text-[#8b6a3e]">Kompost przyspiesza wzrost upraw i zwiększa plony na polu.</p>
-          <p className="text-[16px] text-green-600">Każde użycie daje % szansę na losowy przedmiot specjalny.</p>
+          <p className="text-[16px] text-teal-600">Każde użycie daje % szansę na losowy przedmiot specjalny.</p>
         </div>
       )}
     {/* Tooltip Pola uprawne */}
       {hoveredPolaUprawne && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-lime-400">Pola uprawne</p>
           <p className="text-[18px]">Sadź, podlewaj i zbieraj plony.</p>
         </div>
       )}
     {/* Tooltip Do miasta — zablokowane */}
       {hoveredCityLock && isOnFarmMap && !!profile && (
-        <div
-          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
-        >
-          <p className="mb-2 font-black text-amber-300">Miasto — zablokowane</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{CITY_UNLOCK_LVL} poziom gracza</span></p>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+          <p className="mb-2 font-black text-sky-300">Miasto — zablokowane</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-sky-300">{CITY_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: odwiedzisz sklep, targ, bank i ranking.</p>
         </div>
       )}
     {/* Tooltip Do miasta */}
       {hoveredDoMiasta && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-sky-300">Do miasta</p>
           <p className="mb-1 text-[18px]">Przejdź do centrum Plonopolis.</p>
           <p className="text-[16px] text-[#8b6a3e]">W mieście znajdziesz Sklep, Targ, Bank i Ratusz.</p>
