@@ -2738,7 +2738,9 @@ export default function Page() {
   const _rawXp    = profile?.xp    ?? DEFAULT_XP;
   let _simLevel   = _rawLevel;
   let _simXp      = _rawXp;
-  let _simToNext  = _simLevel > 0 ? getXpForLevel(_simLevel) : DEFAULT_XP_TO_NEXT_LEVEL;
+  // Użyj xp_to_next_level z DB jako progu dla bieżącego poziomu — DB jest źródłem prawdy.
+  // getXpForLevel używamy tylko dla poziomów powyżej bieżącego (po ewentualnym awansie).
+  let _simToNext  = profile?.xp_to_next_level ?? (_simLevel > 0 ? getXpForLevel(_simLevel) : DEFAULT_XP_TO_NEXT_LEVEL);
   while (_simLevel < MAX_LEVEL && _simToNext > 0 && _simXp >= _simToNext) {
     _simXp    -= _simToNext;
     _simLevel += 1;
