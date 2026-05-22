@@ -1532,7 +1532,7 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
       const cb = (item as { compostBonus: { type?: unknown; value?: unknown } }).compostBonus;
       const ct = cb.type;
       const cv = cb.value;
-      if ((ct === "growth" || ct === "yield" || ct === "exp") && typeof cv === "number" && cv > 0) {
+      if ((ct === "growth" || ct === "yield" || ct === "exp" || ct === "guide") && typeof cv === "number" && cv > 0) {
         _compostBonus = { type: ct as CompostType, value: cv };
       }
     }
