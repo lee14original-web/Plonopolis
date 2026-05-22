@@ -1,0 +1,56 @@
+Mała poprawka do szkieletu Etapu 1 przewodnika.
+
+Aktualnie:
+- na tutorial_step=4 wystarczy użyć 1 Kompostu Przewodnika na jednym pustym polu,
+- wtedy przewodnik przechodzi dalej na krok 5.
+
+Chcę zmienić:
+Gracz ma wykorzystać wszystkie 3 Komposty Przewodnika, czyli użyć go na 3 pustych darmowych polach.
+
+Wymagania:
+
+1. Krok 4 nie kończy się po pierwszym użyciu guide_compost.
+2. Podczas kroku 4 gracz ma użyć guide_compost na 3 różnych pustych polach.
+3. Po każdym użyciu pokaż/prowadź licznik, np.:
+   "Użyj Kompostu Przewodnika na 3 polach. Wzmocnione pola: 1/3"
+   potem 2/3, potem 3/3.
+4. Dopiero gdy 3 pola mają aktywny Kompost Przewodnika:
+   advanceTutorialStep(5)
+5. Guide compost ma zejść z 3 do 0.
+6. Zapamiętaj listę/tutorialowe pola z Kompostem Przewodnika, nie tylko jeden tutorialPlotId.
+   Można użyć np. tutorialPlotIds: string[] albo wyliczać pola z plot.compostBonus.type === "guide".
+7. Krok 7, czyli sadzenie marchewki, też trzeba dostosować:
+   - gracz ma posadzić marchewki na tych 3 polach z Kompostem Przewodnika,
+   - nie tylko na jednym polu.
+8. Krok 7 ma mieć licznik, np.:
+   "Posadź marchewki na wzmocnionych polach. Posadzone: 1/3"
+9. Dopiero gdy na 3 polach z guide compost są posadzone carrot_good:
+   advanceTutorialStep(8)
+10. Krok 9 podlewanie:
+   - gracz ma podlać wszystkie 3 tutorialowe marchewki,
+   - licznik 1/3, 2/3, 3/3,
+   - dopiero potem advanceTutorialStep(10)
+11. Krok 11 zbiór:
+   - gracz ma zebrać te 3 tutorialowe uprawy,
+   - licznik 1/3, 2/3, 3/3,
+   - po zebraniu 3 przejście do kroku 12 / Ostatnie zbiory.
+12. Jeśli technicznie trudno zapisywać osobny tutorialPlotIds w DB, w szkielecie możesz wyliczać je z aktualnych pól:
+   - pola z compostBonus.type === "guide",
+   - potem pola z cropId === "carrot_good" i były guide,
+   ale po refreshu musi działać.
+13. Jeśli potrzebna jest kolumna w DB, zaproponuj ją, ale najpierw spróbuj bez dodatkowej kolumny.
+14. Zaktualizuj teksty kroków:
+   Krok 4:
+   "Użyj Kompostu Przewodnika na 3 pustych polach. Dzięki temu pierwsze marchewki urosną dużo szybciej."
+   Krok 7:
+   "Posadź marchewki na 3 wzmocnionych polach."
+   Krok 9:
+   "Podlej wszystkie 3 marchewki."
+   Krok 11:
+   "Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy."
+15. Nie zmieniaj game_start_tutorial — nadal daje x3 guide_compost.
+16. Nie zmieniaj guide_compost.
+17. Nie zmieniaj nagród ani ekonomii.
+18. Typecheck.
+19. Pokaż diff i plan testów.
+20. Nie pushuj jeszcze.
