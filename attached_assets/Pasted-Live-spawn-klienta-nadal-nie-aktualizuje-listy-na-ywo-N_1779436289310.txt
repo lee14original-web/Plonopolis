@@ -1,0 +1,72 @@
+Live-spawn klienta nadal nie aktualizuje listy na żywo.
+
+Nowy test po ostatniej poprawce:
+1. Lada pokazuje 3/12 klientów i "Nowy klient za: 4s".
+2. Po timerze czas resetuje się na około 119min.
+3. Nadal w oknie jest 3/12 klientów — nowa karta nie pojawia się.
+4. Po zamknięciu Lady i wejściu ponownie jest już 4/12.
+
+Wniosek:
+tick_customer_orders backendowo działa, bo next_spawn_at się resetuje.
+Nowy klient istnieje w DB, ale frontend nie aktualizuje customerOrders state na żywo.
+
+Naprawa ma być bardziej defensywna:
+
+1. W refreshCustomerOrders({ tick: true }) po RPC tick_customer_orders:
+   - jeśli tickData.spawned > 0:
+     A) najpierw spróbuj użyć tickData.orders jako source of truth,
+     B) jeśli tickData.orders jest puste/stare/nie zwiększyło liczby klientów,
+        to wymuś dodatkowy SELECT z customer_orders po krótkim delay.
+
+2. Dodaj funkcję np. hydrateCustomerOrdersAfterSpawn(expectedMinCount, baselineIds):
+   - retry co 500ms albo 700ms,
+   - max 5–8 prób,
+   - każda próba robi SELECT z customer_orders,
+   - jeśli liczba klientów > poprzednia albo pojawiło się nowe ID:
+      setCustomerOrders(freshOrders)
+      setLadaStatusMsg('added')
+      ustaw badge "Nowy!" dla nowych ID
+      STOP.
+   - jeśli po kilku próbach nadal brak:
+      dopiero wtedy failed/cooldown.
+
+3. Jeśli tickData.spawned > 0, NIE wolno pokazywać "Brak nowych klientów".
+   Nawet jeśli pierwszy SELECT nie widzi nowego klienta.
+   Komunikat ma być:
+   "Dodaję klienta..."
+   albo "Szukam nowego klienta..."
+   aż hydracja złapie nowy rekord.
+
+4. Jeśli tickData.next_spawn_at się zmieniło na nowy cykl, a lista się nie zwiększyła:
+   to jest sygnał, że spawn prawdopodobnie się udał i trzeba wymusić hydrację listy, nie failed.
+
+5. Upewnij się, że setCustomerOrders nie jest nadpisywane później starym incoming.
+   Sprawdź:
+   - delegatedToRetry,
+   - finally,
+   - isSpawningCustomerRef,
+   - processIncomingOrders,
+   - scheduleSpawnRetry,
+   - czy po setCustomerOrders z retry nie odpala się stary SELECT, który ustawia stare 3 ordery.
+
+6. W tym flow użyj functional update albo jednoznacznie ustaw stan:
+   setCustomerOrders(freshOrdersSorted)
+   setCustomerOrdersCount/fresh count jeśli istnieje osobny state.
+
+7. Dodaj tymczasowe DEV logi, ale tylko pod import.meta.env.DEV:
+   console.debug("[lada spawn]", {
+     spawned: tickData?.spawned,
+     rpcOrdersLen: tickData?.orders?.length,
+     beforeLen: baselineIds.size,
+     selectedLen: freshOrders.length,
+     addedIds
+   });
+
+8. Najważniejsze:
+   Po backendowym spawned > 0 UI musi przejść z 3/12 na 4/12 bez zamykania modala.
+
+9. Nie zmieniaj SQL, ekonomii, limitów ani nagród.
+
+10. Typecheck.
+11. Pokaż diff.
+12. Push dopiero po mojej zgodzie.

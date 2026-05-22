@@ -4083,109 +4083,57 @@ export default function Page() {
     return raw as CustomerOrder[];
   }
 
-  // Przetwarza incoming orders (z RPC lub SELECT) i aktualizuje stan
-  // Zwraca 'added' | 'retry' | 'ok'
-  function processIncomingOrders(
-    incoming: CustomerOrder[],
-    opts?: { tick?: boolean; spawnedCount?: number },
-  ): 'added' | 'retry' | 'ok' {
-    const freshIds = incoming.map(o => o.id);
-    if (!hasInitializedCustomerIdsRef.current) {
-      hasInitializedCustomerIdsRef.current = true;
-      prevCustomerIdsRef.current = new Set(freshIds);
-      setCustomerOrders(incoming);
-      setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
-      setLadaStatusMsg(null);
-      return 'ok';
-    }
-    const addedIds = freshIds.filter(id => !prevCustomerIdsRef.current.has(id));
-    prevCustomerIdsRef.current = new Set(freshIds);
-    setCustomerOrders(incoming);
-    setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
-    if (addedIds.length > 0) {
-      applyNewCustomers(incoming, addedIds);
-      return 'added';
-    }
-    if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS && !(opts.spawnedCount && opts.spawnedCount > 0)) {
-      return 'retry';
-    }
-    setLadaStatusMsg(null);
-    return 'ok';
-  }
-
-  // Rekurencyjny retry: tick (→ orders z RPC) co 1s, maks. MAX_SPAWN_RETRIES prób
-  function scheduleSpawnRetry(attempt: number, userId: string, baselineIds: Set<string>) {
-    const MAX_SPAWN_RETRIES = 5;
+  // Hydratacja po spawnie: czysty SELECT co 700ms, maks. MAX_HYDRATE prób.
+  // Nie wywołuje tick — unika pułapki next_spawn_at w przyszłości blokującej retry.
+  // spawnConfirmed=true gdy backend zwrócił spawned>0 — wtedy "failed" NIE jest wyświetlany.
+  function hydrateCustomerOrdersAfterSpawn(
+    userId: string,
+    baselineIds: Set<string>,
+    attempt: number,
+    spawnConfirmed: boolean,
+  ) {
+    const MAX_HYDRATE = 8;
     if (customerRetryTimerRef.current) clearTimeout(customerRetryTimerRef.current);
     customerRetryTimerRef.current = setTimeout(async () => {
-      if (spawnRetryAbortedRef.current) {
-        isSpawningCustomerRef.current = false;
-        return;
-      }
+      if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
       try {
-        const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: userId });
-        const spawnedCount: number = (tickData?.spawned as number) ?? 0;
-        if (tickData?.next_spawn_at) {
-          const nextAt = new Date(tickData.next_spawn_at).getTime();
-          setNextSpawnAt(nextAt);
-          // Backend wyraźnie w przyszłości (>3s) — nie spawnował bo za wcześnie, czekamy na timer
-          if (nextAt > Date.now() + 3000) {
-            setLadaStatusMsg(null);
-            isSpawningCustomerRef.current = false;
-            return;
-          }
-        }
+        const { data, error } = await supabase
+          .from("customer_orders")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true });
         if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
-
-        // Próba 1: użyj orders z odpowiedzi RPC
-        const rpcOrders = normalizeRpcOrders(tickData?.orders);
-        if (rpcOrders !== null) {
-          const rAdded = rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id));
-          if (rAdded.length > 0) {
-            applyNewCustomers(rpcOrders, rAdded);
+        if (!error && data) {
+          const orders = data as CustomerOrder[];
+          const addedIds = orders.map(o => o.id).filter(id => !baselineIds.has(id));
+          if (import.meta.env.DEV) console.debug("[lada hydrate]", {
+            attempt, spawnConfirmed, beforeLen: baselineIds.size,
+            selectedLen: orders.length, addedIds,
+          });
+          if (addedIds.length > 0) {
+            applyNewCustomers(orders, addedIds);
             isSpawningCustomerRef.current = false;
             return;
           }
-          // spawned > 0 ale ten sam zestaw IDs — zaktualizuj listę i zakończ (nie pokazuj failed)
-          if (spawnedCount > 0) {
-            prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
-            setCustomerOrders(rpcOrders);
-            setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
+        }
+        if (attempt >= MAX_HYDRATE) {
+          if (spawnConfirmed) {
+            // Backend potwierdził spawn — nie pokazuj "Brak nowych klientów", wyczyść status
+            if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
             setLadaStatusMsg(null);
             isSpawningCustomerRef.current = false;
-            return;
+          } else {
+            finishSpawnRetryFailed();
           }
-        }
-
-        // Próba 2 (fallback): SELECT jeśli RPC nie dał orders
-        if (rpcOrders === null) {
-          const { data: rd, error: re } = await supabase
-            .from("customer_orders")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: true });
-          if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
-          if (!re && rd) {
-            const ri = rd as CustomerOrder[];
-            const rAdded = ri.map(o => o.id).filter(id => !baselineIds.has(id));
-            if (rAdded.length > 0) {
-              applyNewCustomers(ri, rAdded);
-              isSpawningCustomerRef.current = false;
-              return;
-            }
-          }
-        }
-
-        if (attempt >= MAX_SPAWN_RETRIES) {
-          finishSpawnRetryFailed();
         } else {
-          scheduleSpawnRetry(attempt + 1, userId, baselineIds);
+          hydrateCustomerOrdersAfterSpawn(userId, baselineIds, attempt + 1, spawnConfirmed);
         }
       } catch {
-        if (!spawnRetryAbortedRef.current) finishSpawnRetryFailed();
-        else isSpawningCustomerRef.current = false;
+        if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
+        if (spawnConfirmed) { setLadaStatusMsg(null); isSpawningCustomerRef.current = false; }
+        else finishSpawnRetryFailed();
       }
-    }, 1000);
+    }, 700);
   }
 
   async function refreshCustomerOrders(opts?: { tick?: boolean }) {
@@ -4197,7 +4145,8 @@ export default function Page() {
     if (opts?.tick) setLadaStatusMsg('searching');
     let delegatedToRetry = false;
     try {
-      let incoming: CustomerOrder[] | null = null;
+      // Capture baseline PRZED jakimkolwiek setCustomerOrders/setNextSpawnAt
+      const baselineIds = new Set(prevCustomerIdsRef.current);
       let spawnedCount = 0;
 
       if (opts?.tick) {
@@ -4206,34 +4155,88 @@ export default function Page() {
         if (tickData?.next_spawn_at) {
           setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
         }
-        // Source of truth: orders z odpowiedzi RPC
-        incoming = normalizeRpcOrders(tickData?.orders);
-      }
 
-      // Fallback do SELECT gdy tick nie zwrócił orders (lub to nie był tick)
-      if (incoming === null) {
-        const { data, error } = await supabase
-          .from("customer_orders")
-          .select("*")
-          .eq("user_id", profile.id)
-          .order("created_at", { ascending: true });
-        if (!error && data) {
-          incoming = data as CustomerOrder[];
+        // Próba natychmiastowa: orders z odpowiedzi RPC
+        const rpcOrders = normalizeRpcOrders(tickData?.orders);
+        if (import.meta.env.DEV) console.debug("[lada spawn]", {
+          spawned: spawnedCount,
+          rpcOrdersLen: rpcOrders?.length ?? -1,
+          beforeLen: baselineIds.size,
+          addedIds: rpcOrders ? rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id)) : [],
+        });
+
+        if (rpcOrders !== null) {
+          if (!hasInitializedCustomerIdsRef.current) {
+            // Pierwsze załadowanie — ustaw baseline, nie animuj żadnych kart
+            hasInitializedCustomerIdsRef.current = true;
+            prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
+            setCustomerOrders(rpcOrders);
+            setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
+            setLadaStatusMsg(null);
+            // Jeśli spawn się odbył, hydruj żeby złapać nowy rekord
+            if (spawnedCount > 0) {
+              delegatedToRetry = true;
+              hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, true);
+            }
+            return;
+          }
+          const addedIds = rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id));
+          if (addedIds.length > 0) {
+            // Sukces natychmiastowy z RPC
+            applyNewCustomers(rpcOrders, addedIds);
+            return;
+          }
+          // RPC dał orders, ale brak nowych IDs — zaktualizuj listę i hydruj
+          prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
+          setCustomerOrders(rpcOrders);
+          setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
+          if (rpcOrders.length < LADA_MAX_CUSTOMERS) {
+            delegatedToRetry = true;
+            // spawnConfirmed=true gdy spawned>0 LUB next_spawn_at przesunął się (reset cyklu)
+            hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, spawnedCount > 0);
+          } else {
+            setLadaStatusMsg(null);
+          }
+          return;
         }
       }
 
-      if (incoming !== null) {
-        const result = processIncomingOrders(incoming, { tick: opts?.tick, spawnedCount });
-        if (result === 'retry') {
+      // Fallback: SELECT (brak tick lub RPC nie zwróciło pola orders)
+      const { data, error } = await supabase
+        .from("customer_orders")
+        .select("*")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: true });
+      if (!error && data) {
+        const incoming = data as CustomerOrder[];
+        if (!hasInitializedCustomerIdsRef.current) {
+          hasInitializedCustomerIdsRef.current = true;
+          prevCustomerIdsRef.current = new Set(incoming.map(o => o.id));
+          setCustomerOrders(incoming);
+          setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
+          setLadaStatusMsg(null);
+          if (opts?.tick && spawnedCount > 0) {
+            delegatedToRetry = true;
+            hydrateCustomerOrdersAfterSpawn(profile.id, new Set(incoming.map(o => o.id)), 1, true);
+          }
+          return;
+        }
+        const addedIds = incoming.map(o => o.id).filter(id => !baselineIds.has(id));
+        prevCustomerIdsRef.current = new Set(incoming.map(o => o.id));
+        setCustomerOrders(incoming);
+        setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
+        if (addedIds.length > 0) {
+          applyNewCustomers(incoming, addedIds);
+        } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
           delegatedToRetry = true;
-          scheduleSpawnRetry(1, profile.id, new Set(incoming.map(o => o.id)));
+          hydrateCustomerOrdersAfterSpawn(profile.id, new Set(incoming.map(o => o.id)), 1, spawnedCount > 0);
+        } else {
+          setLadaStatusMsg(null);
         }
       }
     } finally {
       setCustomerLoading(false);
-      if (!delegatedToRetry) {
-        isSpawningCustomerRef.current = false;
-      }
+      if (!delegatedToRetry) isSpawningCustomerRef.current = false;
     }
   }
 
