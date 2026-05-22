@@ -4107,11 +4107,11 @@ export default function Page() {
         if (!error && data) {
           const orders = data as CustomerOrder[];
           const addedIds = orders.map(o => o.id).filter(id => !baselineIds.has(id));
-          if (process.env.NODE_ENV !== 'production') {
+          if (import.meta.env.DEV) {
             console.debug("[lada hydrate]", { attempt, spawnConfirmed, beforeLen: baselineIds.size, selectedLen: orders.length, addedIds });
           }
           if (addedIds.length > 0) {
-            if (process.env.NODE_ENV !== 'production') {
+            if (import.meta.env.DEV) {
               console.debug("[lada hydrate success]", { selectedLen: orders.length, addedIds });
             }
             applyNewCustomers(orders, addedIds);
@@ -4148,8 +4148,6 @@ export default function Page() {
     if (opts?.tick) setLadaStatusMsg('searching');
     let delegatedToRetry = false;
     try {
-      // Capture baseline PRZED jakimkolwiek setCustomerOrders/setNextSpawnAt
-      const baselineIds = new Set(prevCustomerIdsRef.current);
       let spawnedCount = 0;
 
       if (opts?.tick) {
@@ -4161,53 +4159,27 @@ export default function Page() {
         }
         const orderCount = (tickData?.order_count as number) ?? rpcOrders?.length ?? -1;
 
-        // Czytaj ref ŚWIEŻO po await — nie używaj stale baselineIds z początku funkcji
-        const freshCurrentLen = prevCustomerIdsRef.current.size;
-
-        if (process.env.NODE_ENV !== 'production') {
+        if (import.meta.env.DEV) {
           console.debug("[lada tick result]", {
             spawned: spawnedCount,
             order_count: orderCount,
             rpcOrdersLen: rpcOrders?.length ?? -1,
-            freshCurrentLen,
-            baselineLen: baselineIds.size,
-            next_spawn_at: tickData?.next_spawn_at,
+            initialized: hasInitializedCustomerIdsRef.current,
+            prevLen: prevCustomerIdsRef.current.size,
           });
         }
 
-        // Jeśli spawn potwierdzony — natychmiast status 'adding'
-        if (spawnedCount > 0) setLadaStatusMsg('adding');
-
         if (rpcOrders !== null) {
-          // ─── DEFENSYWNY SUKCES: RPC zwróciło więcej zamówień niż mamy aktualnie ───
-          // Używamy freshCurrentLen (ref po await) i orderCount zamiast stale baselineIds.
-          const rpcHasMore = rpcOrders.length > freshCurrentLen || orderCount > freshCurrentLen;
-
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug("[lada set from rpc]", {
-              currentLen: freshCurrentLen,
+          if (import.meta.env.DEV) {
+            console.debug("[lada set rpc orders]", {
               rpcLen: rpcOrders.length,
-              orderCount,
-              rpcHasMore,
-              spawned: spawnedCount,
+              orderCount: tickData?.order_count,
             });
           }
 
-          if (rpcHasMore) {
-            // Natychmiast zastosuj listę z RPC — nie czekaj na SELECT, nie rób hydratacji
-            const knownIds = new Set(prevCustomerIdsRef.current);
-            const newIds = rpcOrders.map(o => o.id).filter(id => !knownIds.has(id));
-            const toMark = newIds.length > 0
-              ? newIds
-              : rpcOrders.slice(freshCurrentLen).map(o => o.id).filter((id): id is string => Boolean(id));
-            if (!hasInitializedCustomerIdsRef.current) {
-              hasInitializedCustomerIdsRef.current = true;
-            }
-            applyNewCustomers(rpcOrders, toMark);
-            return;
-          }
-
-          // Pierwsze załadowanie bez nowych zamówień — ustaw baseline
+          // ─── BASELINE: pierwsze otwarcie / reopen Lady ───
+          // hasInitializedCustomerIdsRef=false zawsze po zamknięciu Lady.
+          // Ustaw baseline z RPC, ZERO badge, nie animuj starych klientów.
           if (!hasInitializedCustomerIdsRef.current) {
             hasInitializedCustomerIdsRef.current = true;
             prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
@@ -4217,11 +4189,40 @@ export default function Page() {
             return;
           }
 
-          // RPC nie wykazało wzrostu — zaktualizuj listę i jeśli spawned>0 uruchom hydratację
+          // ─── LIVE TICK: modal już otwarty, initialized=true ───
+          // Zawsze aktualizuj listę z RPC natychmiast — nie czekaj na SELECT.
+          const knownIds = new Set(prevCustomerIdsRef.current);
+          const freshCurrentLen = prevCustomerIdsRef.current.size;
+          const newIds = rpcOrders.map(o => o.id).filter(id => !knownIds.has(id));
+          const rpcHasMore = rpcOrders.length > freshCurrentLen || orderCount > freshCurrentLen;
+
+          if (import.meta.env.DEV) {
+            console.debug("[lada set from rpc]", {
+              currentLen: freshCurrentLen,
+              rpcLen: rpcOrders.length,
+              orderCount,
+              rpcHasMore,
+              newIds,
+              spawned: spawnedCount,
+            });
+          }
+
+          if (rpcHasMore) {
+            // Nowi klienci — badge tylko dla faktycznie nowych ID
+            if (spawnedCount > 0) setLadaStatusMsg('adding');
+            const toMark = newIds.length > 0
+              ? newIds
+              : rpcOrders.slice(freshCurrentLen).map(o => o.id).filter((id): id is string => Boolean(id));
+            applyNewCustomers(rpcOrders, toMark);
+            return;
+          }
+
+          // Brak wzrostu — zaktualizuj listę bez badge
           prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
           setCustomerOrders(rpcOrders);
           setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
           if (spawnedCount > 0 && rpcOrders.length < LADA_MAX_CUSTOMERS) {
+            setLadaStatusMsg('adding');
             delegatedToRetry = true;
             hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, true);
           } else {
@@ -4252,7 +4253,7 @@ export default function Page() {
           }
           return;
         }
-        const addedIds = incoming.map(o => o.id).filter(id => !baselineIds.has(id));
+        const addedIds = incoming.map(o => o.id).filter(id => !prevCustomerIdsRef.current.has(id));
         prevCustomerIdsRef.current = new Set(incoming.map(o => o.id));
         setCustomerOrders(incoming);
         setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
@@ -4390,6 +4391,16 @@ export default function Page() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLadaModal, profile?.id]);
+
+  // DEV: log gdy zmienia się lista klientów lub status
+  React.useEffect(() => {
+    if (!import.meta.env.DEV || !showLadaModal) return;
+    console.debug("[lada render orders]", {
+      stateLen: customerOrders.length,
+      status: ladaStatusMsg,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerOrders, ladaStatusMsg, showLadaModal]);
 
   // Auto-tick natychmiast po zerowaniu countdownu spawnu (z throttle 3s + cooldown po failu 15s)
   React.useEffect(() => {

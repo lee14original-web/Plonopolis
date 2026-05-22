@@ -1,0 +1,84 @@
+Napraw dwa błędy w Ladzie dla klientów.
+
+Bug A — live klient nadal nie pojawia się natychmiast:
+Użytkownik nagrał, że po timerze nowego klienta:
+- timer dochodzi do 0,
+- backend tworzy klienta,
+- po wyjściu z Lady i wejściu ponownie klient jest widoczny,
+- ale w otwartym oknie Lady lista nie przechodzi od razu z 3/12 na 4/12.
+
+Backend został sprawdzony SQL-em:
+tick_customer_orders zwraca od razu:
+spawned: 1
+active: 4
+order_count: 4
+orders: 4 rekordy
+
+Czyli problem jest frontendowy: UI nie renderuje natychmiast customerOrders z tickData.orders.
+
+Wymagania dla Bug A:
+1. Po tick_customer_orders, jeśli tickData.orders jest tablicą:
+   - natychmiast znormalizuj orders,
+   - natychmiast setCustomerOrders(rpcOrders),
+   - nie czekaj na SELECT,
+   - nie czekaj na hydrate,
+   - nie używaj baseline jako warunku do samego setCustomerOrders.
+2. Jeśli tickData.order_count albo rpcOrders.length jest większe niż liczba aktualnie wyświetlanych klientów:
+   - ustaw status "Dodano nowego klienta!",
+   - ustaw badge "Nowy!" tylko dla faktycznie nowych ID,
+   - zaktualizuj licznik 4/12 od razu.
+3. Jeśli setCustomerOrders(rpcOrders) wykonuje się, a UI dalej pokazuje 3/12:
+   sprawdź, czy render listy korzysta z innego źródła:
+   - sortedOrders,
+   - activeOrders,
+   - useMemo,
+   - customerOrdersRef,
+   - customerOrdersFiltered,
+   - ladaDetailIdx/order.
+4. Jeśli istnieje useMemo dla sortedOrders, upewnij się, że dependency zawiera customerOrders.
+5. Jeśli po setCustomerOrders coś później nadpisuje stan starymi 3 klientami, usuń/zmień to.
+6. Dodaj tymczasowe DEV logi:
+   console.debug("[lada render orders]", {
+     stateLen: customerOrders.length,
+     sortedLen: sortedOrders?.length,
+     status: ladaStatusMsg
+   });
+   oraz po setCustomerOrders z RPC:
+   console.debug("[lada set rpc orders]", {
+     rpcLen: rpcOrders.length,
+     orderCount: tickData.order_count
+   });
+   Logi tylko pod import.meta.env.DEV.
+
+Bug B — wszyscy klienci oznaczają się jako "Nowy!" po ponownym otwarciu Lady:
+Po wyjściu z Lady i wejściu ponownie wszystkie aktualne karty klientów są podświetlane jako "Nowy!".
+
+Oczekiwane:
+1. Przy pierwszym załadowaniu listy po otwarciu Lady:
+   - aktualne ID klientów ustaw jako baseline,
+   - NIE pokazuj badge "Nowy!".
+2. Badge "Nowy!" pokazuj tylko dla klientów, którzy pojawili się podczas już otwartego okna Lady.
+3. Po zamknięciu Lady:
+   - wyczyść newCustomerIds,
+   - wyczyść timer badge,
+   - ustaw hasInitializedCustomerIdsRef = false.
+4. Po ponownym otwarciu Lady:
+   - pierwsze pobranie listy ma tylko ustawić baseline,
+   - nie animować starych klientów.
+5. Jeśli tick w trakcie otwarcia doda klienta:
+   - tylko ten jeden nowy ID dostaje "Nowy!".
+
+Najważniejsza zasada:
+- Initial load / reopen modal = baseline, zero badge.
+- Live spawn podczas otwartego modala = badge tylko dla nowych ID.
+
+Dodatkowo:
+1. Nie zmieniaj SQL.
+2. Nie zmieniaj ekonomii, limitów ani nagród.
+3. Nie zmieniaj wyglądu kart poza badge bugiem.
+4. Zrób typecheck.
+5. Pokaż diff.
+6. Push po poprawce, bo testujemy na Railway.
+
+Commit message:
+fix customer live render and new badges
