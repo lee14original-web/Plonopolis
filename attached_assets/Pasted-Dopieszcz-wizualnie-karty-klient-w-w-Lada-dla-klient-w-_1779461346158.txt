@@ -1,0 +1,79 @@
+Dopieszcz wizualnie karty klientów w "Lada dla klientów".
+
+Kontekst:
+Mechanika live klientów już działa. Teraz chcę poprawić wygląd kart klientów na liście.
+
+Zakres:
+Tylko UI kart klientów i przycisku powrotu w szczegółach Lady.
+Nie zmieniaj SQL, ekonomii, live-spawnu, limitów, sortowania ani logiki realizacji zamówień.
+
+Wymagania A — grafika klienta na karcie:
+1. Każdy typ klienta ma mieć większą grafikę/portret/ilustrację w prostokącie karty.
+2. Grafika ma być bardziej widoczna niż obecna mała ikonka.
+3. Niech będzie po lewej stronie karty albo jako delikatny portret/tło po lewej stronie.
+4. Jeśli nie ma osobnych assetów, użyj obecnych ikon/emoji jako większej grafiki tymczasowej, ale przygotuj strukturę tak, żeby później łatwo podmienić na obrazki.
+5. Nie zasłaniaj nazwy klienta, nagród ani czasu.
+
+Wymagania B — badge "Nowy!":
+1. Usuń ikonę z napisu "Nowy!".
+2. Zostaw sam tekst:
+   "Nowy!"
+3. Powiększ tekst/badge o około 20%.
+4. Badge ma nadal być czytelny i pasować do zielonego podświetlenia nowej karty.
+5. Czas działania badge zostaje bez zmian: 5 minut.
+
+Wymagania C — złoto, EXP i prezent:
+1. Na karcie klienta usuń ikonę pieniądza przy złocie.
+2. Usuń ikonę gwiazdki/EXP przy doświadczeniu.
+3. Złoto i EXP wycentruj poziomo w środkowej części karty.
+4. Wysokość karty zostaje podobna jak teraz.
+5. Jeśli klient ma dodatkowy bonus/prezent:
+   - pokaż tekst "+ prezent" za EXP,
+   - z takim samym odstępem jak między złotem i EXP.
+   Przykład:
+   "412 zł     94 EXP     + prezent"
+6. Jeśli bonusu nie ma, pokazuj tylko:
+   "412 zł     94 EXP"
+7. Zachowaj czytelne kolory:
+   - złoto nadal złote/żółte,
+   - EXP nadal niebieskie,
+   - prezent może być fioletowy albo jasny.
+
+Wymagania D — czas klienta:
+1. Czas do zniknięcia klienta przenieś na sam dół karty.
+2. Czas ma być wycentrowany pod złotem/EXP/prezentem.
+3. Usuń ikonę zegara przy czasie.
+4. Ostrzegawcze kolory czasu zostają:
+   - normalny,
+   - pomarańczowy gdy klient długo czeka,
+   - czerwony gdy zaraz zniknie.
+5. Badge ostrzegawczy "!" / "⚠" może zostać, jeśli dobrze wygląda, ale nie przesadzaj z ikonami.
+
+Wymagania E — układ karty:
+1. Karta ma wyglądać bardziej jak mini-panel klienta:
+   - większa grafika klienta,
+   - nazwa i liczba produktów czytelne,
+   - nagrody wyśrodkowane,
+   - czas na dole.
+2. Unikaj pustych przestrzeni.
+3. Karty mają nadal dobrze wyglądać w gridzie 3 kolumn.
+4. Tooltip hover ma dalej działać.
+
+Wymagania F — przycisk powrotu w szczegółach:
+1. W widoku szczegółów klienta przycisk:
+   "<- Wróć"
+   zmień na:
+   "<- Wróć (lub kliknij Esc)"
+2. Przycisk ma być większy o około 50%.
+3. Obecnie wygląda jak prostokąt — zmień go bardziej na kwadratowy/przycisk kafelkowy.
+4. Niech będzie czytelny, ale nie za szeroki.
+5. Esc ma dalej działać jak dotychczas.
+
+Wymagania techniczne:
+1. Nie ruszaj backendu.
+2. Nie zmieniaj struktur danych.
+3. Nie zmieniaj logiki "Nowy!" 5 minut.
+4. Nie zmieniaj ostrzeżeń o kończącym się czasie.
+5. Zrób typecheck.
+6. Pokaż diff.
+7. Nie pushuj jeszcze — najpierw pokaż podgląd/opis zmian.
