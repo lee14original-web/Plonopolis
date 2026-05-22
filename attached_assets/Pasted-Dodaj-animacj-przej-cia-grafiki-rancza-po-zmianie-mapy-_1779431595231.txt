@@ -1,0 +1,76 @@
+Dodaj animację przejścia grafiki rancza po zmianie mapy farmy/rancza wynikającej z level-upu.
+
+Kontekst:
+Naprawiliśmy już błąd, że po level-upie np. z farm1 do farm5 mapa odświeża się od razu.
+Teraz chcę efekt wizualny: stara mapa ma stopniowo znikać, a nowa mapa w tym samym czasie pojawiać się na jej miejscu.
+
+Cel:
+Gdy gracz awansuje i zmienia się wariant mapy farmy, np.:
+farm1 → farm5
+farm5 → farm10
+farm10 → farm15
+itd.
+to zamiast natychmiastowej podmiany grafiki ma być płynna animacja crossfade.
+
+Wymagania:
+
+1. Animacja:
+   - czas trwania około 15–20 sekund, najlepiej 18s.
+   - stara mapa: opacity 1 → 0
+   - nowa mapa: opacity 0 → 1
+   - obie grafiki są renderowane jedna na drugiej w tym samym miejscu.
+   - po zakończeniu animacji zostaje tylko nowa mapa.
+
+2. Kiedy animować:
+   - tylko gdy zmienia się wariant farmy/rancza na wyższy po level-upie, np. farm1 → farm5.
+   - nie animuj zwykłego wejścia do miasta i powrotu.
+   - nie animuj przy pierwszym załadowaniu strony.
+   - nie animuj przy Ctrl+F5, jeśli gracz już powinien mieć nową mapę.
+   - nie animuj cofnięcia mapy, jeśli kiedyś wystąpiłby stary stan.
+
+3. Wykrywanie:
+   - zapamiętaj poprzedni farm map id w ref/state.
+   - gdy currentMap albo profile.level powoduje przejście z jednej farmy na wyższą farmę:
+     uruchom transition.
+   - kolejność map:
+     farm1, farm5, farm10, farm15, farm20, farm25, farm30
+
+4. UI podczas animacji:
+   - hitboxy/klikane elementy powinny działać jak na nowej mapie albo być bezpiecznie zablokowane tylko podczas krótkiej fazy, jeśli inaczej się nie da.
+   - najlepiej: grafika animuje się, ale logika currentMap jest już nowa.
+   - nie duplikuj klikanych budynków/stref — tylko grafika ma być podwójna, nie całe UI.
+
+5. Efekt:
+   - dodaj delikatny napis/baner opcjonalnie:
+     "Ranczo się rozwija..."
+     widoczny przez czas animacji.
+   - ma być subtelny, nie zasłaniać całej gry.
+   - jeśli to ryzykowne, pomiń napis i zrób sam crossfade.
+
+6. Technicznie:
+   - nie zmieniaj leveli odblokowań.
+   - nie zmieniaj map assets.
+   - nie zmieniaj logiki currentMap poza animacją.
+   - nie psuj działania miasta, targu, banku, ratusza itd.
+   - po unmount/zmianie mapy wyczyść timeouty.
+   - nie doprowadzaj do memory leak.
+
+7. Jeśli render mapy jest w jednym <img> / backgroundImage:
+   - dodaj warstwę poprzedniej grafiki absolutnie nad/pod nową.
+   - użyj CSS animation albo transition.
+   - animacja ma trwać 18s.
+
+8. Jeśli mapy są renderowane jako komponent zależny od currentMap:
+   - nie renderuj dwóch pełnych komponentów z hitboxami.
+   - wydziel samą grafikę tła do warstw crossfade.
+
+9. Test:
+   - wymuś konto na farm1 przed lvl 5.
+   - zrób level-up do 5.
+   - sprawdź, czy farm1 płynnie znika, farm5 się pojawia.
+   - sprawdź, że po odświeżeniu strony animacja nie startuje ponownie.
+   - sprawdź, że przejście miasto → ranczo nie odpala animacji bez level-upu.
+
+10. Pokaż diff.
+11. Zrób typecheck.
+12. Nie pushuj jeszcze — najpierw pokaż audyt i rekomendację.

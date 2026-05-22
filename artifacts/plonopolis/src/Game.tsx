@@ -188,6 +188,7 @@ const MAX_LEVEL = 50;
 const MAX_FIELDS = 100;
 const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25, 30] as const;
 const FARM_MUSIC_MAPS = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
+const FARM_MAP_ORDER  = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
 const CITY_MUSIC_MAPS = ["city","city_shop","city_market","city_bank","city_townhall","city_liga"];
 
 
@@ -2195,6 +2196,10 @@ export default function Page() {
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
   const barnStateRef = React.useRef<BarnState>(barnState);
   const lastFarmMapRef = React.useRef<string>("farm1");
+  const prevFarmMapForTransitionRef = React.useRef<string | null>(null);
+  const isProfileLoadedRef = React.useRef(false);
+  const mapCrossfadeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mapCrossfade, setMapCrossfade] = React.useState<{ from: string; to: string } | null>(null);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
   const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
@@ -3823,6 +3828,37 @@ export default function Page() {
   React.useEffect(() => {
     if (currentMap.startsWith("farm")) lastFarmMapRef.current = currentMap;
   }, [currentMap]);
+
+  // ─── Crossfade mapy po level-upie farmy ──────────────────────────────────
+  React.useEffect(() => {
+    // Ignoruj dopóki profil nie załadowany
+    if (!profile) { isProfileLoadedRef.current = false; return; }
+    if (!currentMap.startsWith("farm")) return;
+
+    const prev = prevFarmMapForTransitionRef.current;
+    prevFarmMapForTransitionRef.current = currentMap;
+
+    // Pierwsze załadowanie profilu — tylko zapamiętaj, nie animuj
+    if (!isProfileLoadedRef.current) {
+      isProfileLoadedRef.current = true;
+      return;
+    }
+
+    // Animuj tylko gdy poprzednia mapa to niższa farma (nie miasto)
+    if (!prev || !prev.startsWith("farm")) return;
+    const prevIdx = FARM_MAP_ORDER.indexOf(prev);
+    const nextIdx = FARM_MAP_ORDER.indexOf(currentMap);
+    if (nextIdx <= prevIdx) return;
+
+    // Uruchom crossfade
+    if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
+    setMapCrossfade({ from: prev, to: currentMap });
+    mapCrossfadeTimerRef.current = setTimeout(() => setMapCrossfade(null), 19000);
+
+    return () => {
+      if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
+    };
+  }, [currentMap, profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Esc: city → farma ───────────────────────────────────────────────────
   React.useEffect(() => {
@@ -5769,6 +5805,19 @@ export default function Page() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
+      <style>{`
+        @keyframes plono-map-fade-out {
+          0%   { opacity: 1; }
+          85%  { opacity: 0.08; }
+          100% { opacity: 0; }
+        }
+        @keyframes plono-map-banner {
+          0%   { opacity: 0; }
+          6%   { opacity: 1; }
+          80%  { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
       {/* Ambient backdrop — rozmyte tło farmy/miasta zasłania czarne paski po bokach */}
       {(isOnFarmMap || isOnCityMap) && (
         <div style={{
@@ -5838,7 +5887,41 @@ export default function Page() {
             draggable={false}
             style={isOnPanMap ? {imageRendering:"pixelated", width: FARM_IMG_W, height: FARM_IMG_H} : {}}
           />
+          {/* Crossfade: stara mapa zanika po level-upie */}
+          {mapCrossfade && mapCrossfade.to === backgroundMap && (
+            <img
+              key={mapCrossfade.from}
+              src={`/mapy/${mapCrossfade.from}.png`}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 select-none"
+              draggable={false}
+              style={{
+                imageRendering: "pixelated",
+                width: FARM_IMG_W, height: FARM_IMG_H,
+                zIndex: 2,
+                animation: "plono-map-fade-out 18s ease-in-out forwards",
+              }}
+            />
+          )}
         </div>
+        {/* Banner "Ranczo się rozwija..." */}
+        {mapCrossfade && mapCrossfade.to === backgroundMap && (
+          <div
+            className="pointer-events-none absolute"
+            style={{ bottom: "7%", left: "50%", transform: "translateX(-50%)", zIndex: 10,
+              animation: "plono-map-banner 18s ease-in-out forwards" }}
+          >
+            <div style={{
+              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.62) 20%, rgba(0,0,0,0.62) 80%, transparent)",
+              padding: "10px 48px", borderRadius: 12,
+              fontSize: 28, fontWeight: 700, color: "#f9e7b2",
+              letterSpacing: "0.04em", textShadow: "0 2px 8px #000a",
+            }}>
+              🌾 Ranczo się rozwija...
+            </div>
+          </div>
+        )}
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
