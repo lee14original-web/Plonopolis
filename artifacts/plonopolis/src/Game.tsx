@@ -605,6 +605,7 @@ function compostValueFromKey(key: string): number {
   return COMPOST_DEFS[t].bonusValues[0];
 }
 function compostKeyFor(type: CompostType, value: number): string {
+  if (type === "guide") return "guide_compost"; // klucz bez sufixu numerycznego
   return `${COMPOST_DEFS[type].id}_${value}`;
 }
 function rollCompostTierIdx(): number {
@@ -7857,7 +7858,7 @@ export default function Page() {
                               <div className="mt-3">
                                 {(() => {
                                   const allCrops = (Object.entries(seedInventory).filter(
-                                    ([k, amount]) => Number(amount) > 0 && !isCompostKey(k)
+                                    ([k, amount]) => Number(amount) > 0 && !isCompostKey(k) && !isGuideCompostKey(k)
                                   ) as Array<[string, number]>);
                                   const filtered = backpackSort === "all"
                                     ? allCrops
@@ -7952,8 +7953,7 @@ export default function Page() {
                                 const hasHoneyJars = hiveData.honey_jars > 0;
                                 const hasSuit = hiveData.suit_durability > 0;
                                 const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
-                                const hasGuideCompost = (seedInventory["guide_compost"] ?? 0) > 0;
-                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0 || hasGuideCompost;
+                                const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
                                 if (!hasAny) return (
                                   <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">
                                     Plecak jest pusty.
@@ -8037,27 +8037,6 @@ export default function Page() {
                                           </div>
                                         );
                                       })}
-                                    {hasGuideCompost && (() => {
-                                      const gc_cnt = seedInventory["guide_compost"] ?? 0;
-                                      const gc_isSel = selectedSeedId === "guide_compost";
-                                      return (
-                                        <div
-                                          key="guide_compost"
-                                          draggable
-                                          onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }}
-                                          onDragEnd={() => setDraggedSeedId(null)}
-                                          onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
-                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
-                                          onMouseLeave={() => setCardTip(null)}
-                                          className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
-                                          style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
-                                          <span className="text-4xl leading-none">{GUIDE_COMPOST_DEF.icon}</span>
-                                          <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1 text-yellow-300">Przewodnik</p>
-                                          {gc_isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
-                                          <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{gc_cnt}</span>
-                                        </div>
-                                      );
-                                    })()}
                                   </div>
                                 );
                               })()}
@@ -10140,7 +10119,7 @@ export default function Page() {
                             </div>
                           </div>
                           {(() => {
-                            const allCrops = (Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !isCompostKey(k)) as Array<[string, number]>);
+                            const allCrops = (Object.entries(seedInventory).filter(([k, amount]) => Number(amount) > 0 && !isCompostKey(k) && !isGuideCompostKey(k)) as Array<[string, number]>);
                             const filtered = backpackSort === "all" ? allCrops : allCrops.filter(([k]) => { const q = parseQualityKey(k).quality ?? "good"; return q === backpackSort; });
                             if (allCrops.length === 0) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
                             if (filtered.length === 0) { const fLabel = BACKPACK_FILTER_OPTS.find(o => o.id === backpackSort)?.label ?? ""; return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Brak upraw o jakości „{fLabel}". Zmień filtr.</div>; }
@@ -10202,8 +10181,7 @@ export default function Page() {
                             const hasHoneyJars = hiveData.honey_jars > 0;
                             const hasSuit = hiveData.suit_durability > 0;
                             const compostKeys = Object.keys(seedInventory).filter(k => isCompostKey(k) && (seedInventory[k] ?? 0) > 0);
-                            const hasGuideCompost = (seedInventory["guide_compost"] ?? 0) > 0;
-                            const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0 || hasGuideCompost;
+                            const hasAny = ownedAnimals.length > 0 || hasEmptyJars || hasHoneyJars || hasSuit || compostKeys.length > 0;
                             if (!hasAny) return <div className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-3 text-sm text-[#dfcfab]">Plecak jest pusty.</div>;
                             return (
                               <div className="grid grid-cols-5 gap-2">
@@ -10241,23 +10219,6 @@ export default function Page() {
                                     </div>
                                   );
                                 })}
-                                {hasGuideCompost && (() => {
-                                  const gc_cnt = seedInventory["guide_compost"] ?? 0;
-                                  const gc_isSel = selectedSeedId === "guide_compost";
-                                  return (
-                                    <div key="guide_compost" draggable onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
-                                      onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
-                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
-                                      onMouseLeave={() => setCardTip(null)}
-                                      className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
-                                      style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
-                                      <span className="text-4xl leading-none">{GUIDE_COMPOST_DEF.icon}</span>
-                                      <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1 text-yellow-300">Przewodnik</p>
-                                      {gc_isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
-                                      <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{gc_cnt}</span>
-                                    </div>
-                                  );
-                                })()}
                               </div>
                             );
                           })()}
