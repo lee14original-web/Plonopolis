@@ -1,0 +1,144 @@
+Zrób najpierw SZKIELET Etapu 1 przewodnika, bez dokładnych strzałek/highlightów.
+
+Nie implementuj jeszcze pełnego wizualnego prowadzenia, dużych strzałek i idealnych masek blur.
+Na tym etapie chcę mieć stabilną logikę kroków, zapis do DB i podstawowy panel instrukcji.
+
+Kontekst:
+Mamy:
+- tutorial_started
+- tutorial_completed
+- tutorial_skipped
+- guide_compost działa
+- game_start_tutorial daje x3 guide_compost
+- Kompost Przewodnika działa na puste pole
+- po posadzeniu skraca czas wzrostu
+
+Cel szkieletu:
+Po kliknięciu "Rozpocznij przewodnik" gracz przechodzi przez Etap 1:
+1. Kliknij Pola uprawne
+2. Kliknij Kompost
+3. Wybierz Kompost Przewodnika
+4. Użyj kompostu na pustym darmowym polu
+5. Kliknij Nasiona
+6. Wybierz marchewkę
+7. Posadź marchewkę na polu z Kompostem Przewodnika
+8. Kliknij Konewkę
+9. Podlej marchewkę
+10. Kliknij Zbierz
+11. Zbierz marchewkę, gdy urośnie
+12. Etap 1 ukończony
+
+DB:
+1. Dodaj SQL, jeśli nie ma:
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS tutorial_step integer NOT NULL DEFAULT 0;
+
+2. Zaktualizuj game_start_tutorial(), żeby po starcie ustawiał:
+tutorial_started = true
+tutorial_completed = false
+tutorial_skipped = false
+tutorial_step = 1
+
+3. Przy rezygnacji z tutoriala ustaw:
+tutorial_started = true
+tutorial_completed = false
+tutorial_skipped = true
+tutorial_step = 0
+
+4. Dodaj helper frontendowy:
+advanceTutorialStep(nextStep)
+- działa tylko gdy tutorial_started=true, tutorial_completed=false, tutorial_skipped=false
+- nie cofa kroku
+- zapisuje tutorial_step do Supabase
+- aktualizuje lokalny profile state
+
+UI szkieletu:
+1. Jeśli tutorial aktywny i tutorial_step 1–12:
+pokaż panel przewodnika, np. na dole/po boku ekranu.
+2. Panel pokazuje:
+- "Etap 1 przewodnika"
+- aktualny tekst kroku
+- mały pasek postępu np. "Krok 3/12"
+3. Bez dużych strzałek na razie.
+4. Bez idealnego blur na razie.
+5. Możesz dodać proste podświetlenie aktywnego przycisku klasą CSS, ale nie rób jeszcze skomplikowanej maski.
+
+Teksty kroków:
+1. "Kliknij Pola uprawne, aby rozpocząć pracę na swoim ranczu."
+2. "Kliknij Kompost. Użyjemy go, żeby przyspieszyć pierwsze marchewki."
+3. "Wybierz Kompost Przewodnika."
+4. "Użyj kompostu na pustym polu, żeby jednorazowo je wzmocnić."
+5. "Teraz kliknij Nasiona."
+6. "Wybierz zwykłą marchewkę."
+7. "Posadź marchewkę na polu z Kompostem Przewodnika."
+8. "Kliknij Konewkę."
+9. "Podlej swoją marchewkę."
+10. "Kliknij Zbierz."
+11. "Poczekaj, aż marchewka urośnie, a potem ją zbierz."
+12. "Świetnie! Etap 1 przewodnika ukończony."
+
+Logika przechodzenia:
+1. Kliknięcie Pola uprawne przy step=1:
+- otwórz okno pól
+- advanceTutorialStep(2)
+
+2. Kliknięcie Kompost przy step=2:
+- otwórz picker kompostu
+- advanceTutorialStep(3)
+
+3. Wybranie guide_compost przy step=3:
+- advanceTutorialStep(4)
+
+4. Użycie guide_compost na pustym darmowym polu przy step=4:
+- zapamiętaj tutorialPlotIndex albo znajdź pole z compostBonus type="guide"
+- advanceTutorialStep(5)
+
+5. Kliknięcie Nasiona przy step=5:
+- otwórz picker nasion
+- advanceTutorialStep(6)
+
+6. Wybranie carrot_good przy step=6:
+- advanceTutorialStep(7)
+
+7. Posadzenie carrot_good na polu z guide_compost przy step=7:
+- jeśli posadzone na właściwym polu, advanceTutorialStep(8)
+- jeśli na innym polu, pokaż komunikat "Posadź marchewkę na polu z Kompostem Przewodnika."
+
+8. Kliknięcie Konewki przy step=8:
+- advanceTutorialStep(9)
+
+9. Podlanie marchewki z tutorialowego pola przy step=9:
+- advanceTutorialStep(10)
+
+10. Kliknięcie Zbierz przy step=10:
+- advanceTutorialStep(11)
+
+11. Zebranie marchewki z tutorialowego pola przy step=11:
+- advanceTutorialStep(12)
+
+12. Step 12:
+- pokaż komunikat ukończenia Etapu 1
+- nie ustawiaj jeszcze tutorial_completed=true
+- nie dawaj jeszcze finalnej nagrody
+- tutorial pozostaje started=true, completed=false, skipped=false, step=12
+
+Blokady w szkielecie:
+1. Na razie dodaj podstawowe guardy, bez perfekcyjnej maski:
+- jeśli tutorial aktywny i gracz klika inną główną funkcję niż wymagana w kroku, pokaż komunikat:
+"Najpierw wykonaj krok przewodnika."
+2. Esc podczas aktywnego tutorial_step 1–12 nie powinien zamykać okna pól.
+3. X w oknie pól podczas tutoriala też nie powinien zamykać, jeśli krok wymaga pracy w polach.
+4. Nie blokuj wszystkiego idealnie na tym etapie — zrobimy to później.
+
+Ważne:
+1. Nie implementuj jeszcze dużych strzałek.
+2. Nie implementuj jeszcze pełnego blur/maski.
+3. Nie implementuj jeszcze Premium.
+4. Nie dawaj jeszcze finalnej nagrody.
+5. Nie zmieniaj ekonomii.
+6. Nie zmieniaj zwykłych kompostów.
+7. Nie zmieniaj zwykłych upraw.
+8. Nie zmieniaj działania guide_compost poza użyciem w tutorialu.
+9. Zrób typecheck.
+10. Pokaż SQL, audyt, diff i plan testów.
+11. Nie pushuj jeszcze.
