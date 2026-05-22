@@ -3548,11 +3548,11 @@ export default function Page() {
             setGuideError(null);
             const { error } = await supabase
               .from("profiles")
-              .update({ tutorial_started: true, tutorial_skipped: true })
+              .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
               .eq("id", profile.id);
             setGuideSaving(false);
             if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
-            setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
+            setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
             setShowWelcome(false);
             setGuideExitStep(0);
           })();
@@ -8595,11 +8595,11 @@ export default function Page() {
                                     setGuideError(null);
                                     const { error } = await supabase
                                       .from("profiles")
-                                      .update({ tutorial_started: true })
+                                      .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: false })
                                       .eq("id", profile.id);
                                     setGuideSaving(false);
                                     if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
-                                    setProfile(p => p ? { ...p, tutorial_started: true } : p);
+                                    setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: false } : p);
                                     setShowWelcome(false);
                                     setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
                                   }}
@@ -8660,11 +8660,11 @@ export default function Page() {
                                       setGuideError(null);
                                       const { error } = await supabase
                                         .from("profiles")
-                                        .update({ tutorial_started: true, tutorial_skipped: true })
+                                        .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
                                         .eq("id", profile.id);
                                       setGuideSaving(false);
                                       if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
-                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_skipped: true } : p);
+                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
                                       setShowWelcome(false);
                                       setGuideExitStep(0);
                                     }}
