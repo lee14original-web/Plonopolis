@@ -10972,25 +10972,29 @@ export default function Page() {
 
                       if (isOverLimit) {
                         barCls = 'border-orange-700/40 bg-orange-950/20 text-orange-300';
-                        statusNode = '⚠️ Ponad limitem — wykonaj zamówienia lub poczekaj aż część wygaśnie';
+                        statusNode = 'Ponad limitem — wykonaj zamówienia lub poczekaj aż część wygaśnie';
                       } else if (ladaStatusMsg === 'added') {
                         barCls = 'border-emerald-700/40 bg-emerald-950/20 text-emerald-300';
-                        statusNode = '✨ Dodano nowego klienta!';
+                        statusNode = 'Nowy klient przy ladzie!';
                       } else if (isAtMax) {
                         barCls = 'border-red-900/30 bg-black/20 text-red-400';
-                        statusNode = '🚫 Limit klientów osiągnięty';
+                        statusNode = 'Limit klientów osiągnięty';
                       } else if (ladaStatusMsg === 'adding') {
                         barCls = 'border-sky-700/30 bg-black/20 text-sky-300';
-                        statusNode = '🔄 Dodaję klienta...';
-                      } else if (customerLoading || ladaStatusMsg === 'searching') {
-                        barCls = 'border-amber-700/20 bg-black/20 text-emerald-400';
-                        statusNode = '⏳ Szukam nowego klienta...';
+                        statusNode = 'Klient podchodzi do lady…';
+                      } else if (left !== null && left > 0) {
+                        // Odliczanie ma pierwszeństwo przed searching — ładowanie baseline nie zakrywa timera
+                        barCls = 'border-amber-700/20 bg-black/20 text-[#dfcfab]';
+                        statusNode = m > 0
+                          ? <>Klient się zbliża… za: <span className="font-black text-amber-400">{m}m {s}s</span></>
+                          : <>Klient się zbliża… <span className="font-black text-amber-400">{s}s</span></>;
+                      } else if (ladaStatusMsg === 'searching' || customerLoading) {
+                        // Timer = 0, tick w toku
+                        barCls = 'border-amber-700/20 bg-black/20 text-amber-300';
+                        statusNode = 'Wypatruję klienta…';
                       } else if (ladaStatusMsg === 'failed') {
                         barCls = 'border-amber-700/20 bg-black/20 text-[#8b6a3e]';
                         statusNode = 'Brak nowych klientów — spróbuję za chwilę';
-                      } else if (left !== null && left > 0) {
-                        barCls = 'border-amber-700/20 bg-black/20 text-[#dfcfab]';
-                        statusNode = <>Nowy klient za: <span className="font-black text-amber-400">{m > 0 ? `${m}min ` : ''}{s}s</span></>;
                       } else {
                         barCls = 'border-amber-700/20 bg-black/20 text-[#dfcfab]';
                         statusNode = null;
