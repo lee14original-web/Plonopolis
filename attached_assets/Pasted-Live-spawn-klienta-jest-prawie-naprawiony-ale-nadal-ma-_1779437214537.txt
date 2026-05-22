@@ -1,0 +1,55 @@
+Live-spawn klienta jest prawie naprawiony, ale nadal ma opóźnienie.
+
+Aktualny test:
+1. Lada pokazuje 3/12 klientów.
+2. Timer dochodzi do 0.
+3. Pojawia się "Brak nowych klientów — spróbuję za chwilę".
+4. Po około 10–20 sekundach klient pojawia się na żywo i jest 4/12.
+5. Po wyjściu/wejściu klient jest od razu widoczny.
+
+Wniosek:
+Backend tworzy klienta, ale hydratacja/select łapie go dopiero po 10–20 sekundach.
+Największy błąd UX: komunikat "Brak nowych klientów" pojawia się mimo że klient faktycznie jest tworzony.
+
+Naprawa:
+1. Jeśli tick_customer_orders zwróci spawned > 0:
+   - NIGDY nie pokazuj "Brak nowych klientów".
+   - ustaw status:
+     "Dodaję klienta..."
+     albo "Klient w drodze..."
+   - trzymaj ten status aż lista faktycznie pokaże nowy rekord.
+2. Jeśli spawned > 0 i tickData.orders ma więcej elementów niż baseline:
+   - natychmiast setCustomerOrders(tickData.orders)
+   - status "Dodano nowego klienta!"
+   - badge "Nowy!"
+3. Jeśli spawned > 0, ale tickData.orders nadal ma tyle samo elementów:
+   - rozpocznij hydrateCustomerOrdersAfterSpawn(spawnConfirmed=true)
+   - retry SELECT co 1000ms przez maksymalnie 30 sekund, nie tylko 5–8 prób.
+   - przez ten czas pokazuj "Dodaję klienta..."
+   - nie ustawiaj cooldownu failed.
+4. Jeśli spawnConfirmed=true i po 30 sekundach nadal SELECT nie widzi klienta:
+   - zrób pełne refreshCustomerOrders({ tick:false, force:true }) albo zwykły SELECT ostatni raz.
+   - jeśli dalej nic, wyczyść status, ale NIE pokazuj "Brak nowych klientów".
+5. Komunikat "Brak nowych klientów — spróbuję za chwilę" może być tylko dla spawned=0, czyli gdy backend naprawdę nic nie dodał.
+6. Jeśli spawned=0:
+   - możesz zostawić retry 1s x 5,
+   - dopiero potem failed/cooldown.
+7. Sprawdź, czy refreshCustomerOrders nie ustawia statusu failed w innej ścieżce po spawned > 0.
+8. Sprawdź, czy applyNewCustomers aktualizuje:
+   - customerOrders,
+   - newCustomerIds,
+   - ladaStatusMsg,
+   - nextSpawnAt.
+9. Dodaj DEV logi:
+   [lada tick result] spawned, rpcOrdersLen, baselineLen, next_spawn_at
+   [lada hydrate] attempt, selectedLen, addedIds
+   [lada hydrate success] selectedLen, addedIds
+10. Nie zmieniaj SQL.
+11. Typecheck.
+12. Push po audycie, bo trzeba testować na Railway.
+
+Cel UX:
+Po 0s:
+- zamiast "Brak nowych klientów" ma być "Dodaję klienta..."
+- jeśli DB/Supabase potrzebuje 10–20s, to przez te 10–20s gracz widzi, że klient jest dodawany
+- gdy SELECT go złapie, karta pojawia się z badge "Nowy!"

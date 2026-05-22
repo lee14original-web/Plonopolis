@@ -1948,7 +1948,7 @@ export default function Page() {
   const prevCustomerIdsRef = React.useRef<Set<string>>(new Set());
   const hasInitializedCustomerIdsRef = React.useRef(false);
   const newCustomerIdsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [ladaStatusMsg, setLadaStatusMsg] = React.useState<'searching' | 'added' | 'failed' | null>(null);
+  const [ladaStatusMsg, setLadaStatusMsg] = React.useState<'searching' | 'adding' | 'added' | 'failed' | null>(null);
   const ladaStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const spawnFailCooldownRef = React.useRef(0);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
@@ -4083,16 +4083,17 @@ export default function Page() {
     return raw as CustomerOrder[];
   }
 
-  // Hydratacja po spawnie: czysty SELECT co 700ms, maks. MAX_HYDRATE prób.
+  // Hydratacja po spawnie: czysty SELECT co 1000ms, maks. 30 prób (~30s).
   // Nie wywołuje tick — unika pułapki next_spawn_at w przyszłości blokującej retry.
-  // spawnConfirmed=true gdy backend zwrócił spawned>0 — wtedy "failed" NIE jest wyświetlany.
+  // spawnConfirmed=true gdy backend zwrócił spawned>0 — wtedy "failed" NIE jest wyświetlany
+  // i przez cały czas trwa komunikat "Dodaję klienta...".
   function hydrateCustomerOrdersAfterSpawn(
     userId: string,
     baselineIds: Set<string>,
     attempt: number,
     spawnConfirmed: boolean,
   ) {
-    const MAX_HYDRATE = 8;
+    const MAX_HYDRATE = 30;
     if (customerRetryTimerRef.current) clearTimeout(customerRetryTimerRef.current);
     customerRetryTimerRef.current = setTimeout(async () => {
       if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
@@ -4106,7 +4107,13 @@ export default function Page() {
         if (!error && data) {
           const orders = data as CustomerOrder[];
           const addedIds = orders.map(o => o.id).filter(id => !baselineIds.has(id));
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug("[lada hydrate]", { attempt, spawnConfirmed, beforeLen: baselineIds.size, selectedLen: orders.length, addedIds });
+          }
           if (addedIds.length > 0) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.debug("[lada hydrate success]", { selectedLen: orders.length, addedIds });
+            }
             applyNewCustomers(orders, addedIds);
             isSpawningCustomerRef.current = false;
             return;
@@ -4129,7 +4136,7 @@ export default function Page() {
         if (spawnConfirmed) { setLadaStatusMsg(null); isSpawningCustomerRef.current = false; }
         else finishSpawnRetryFailed();
       }
-    }, 700);
+    }, 1000);
   }
 
   async function refreshCustomerOrders(opts?: { tick?: boolean }) {
@@ -4148,12 +4155,22 @@ export default function Page() {
       if (opts?.tick) {
         const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
         spawnedCount = (tickData?.spawned as number) ?? 0;
+        const rpcOrders = normalizeRpcOrders(tickData?.orders);
         if (tickData?.next_spawn_at) {
           setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
         }
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug("[lada tick result]", {
+            spawned: spawnedCount,
+            rpcOrdersLen: rpcOrders?.length ?? -1,
+            baselineLen: baselineIds.size,
+            next_spawn_at: tickData?.next_spawn_at,
+          });
+        }
+        // Jeśli spawn potwierdzony — natychmiast przełącz status na 'adding'
+        if (spawnedCount > 0) setLadaStatusMsg('adding');
 
         // Próba natychmiastowa: orders z odpowiedzi RPC
-        const rpcOrders = normalizeRpcOrders(tickData?.orders);
         if (rpcOrders !== null) {
           if (!hasInitializedCustomerIdsRef.current) {
             // Pierwsze załadowanie — ustaw baseline, nie animuj żadnych kart
@@ -4161,11 +4178,11 @@ export default function Page() {
             prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
             setCustomerOrders(rpcOrders);
             setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
-            setLadaStatusMsg(null);
-            // Jeśli spawn się odbył, hydruj żeby złapać nowy rekord
             if (spawnedCount > 0) {
               delegatedToRetry = true;
               hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, true);
+            } else {
+              setLadaStatusMsg(null);
             }
             return;
           }
@@ -4181,7 +4198,6 @@ export default function Page() {
           setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
           if (rpcOrders.length < LADA_MAX_CUSTOMERS) {
             delegatedToRetry = true;
-            // spawnConfirmed=true gdy spawned>0 LUB next_spawn_at przesunął się (reset cyklu)
             hydrateCustomerOrdersAfterSpawn(profile.id, new Set(rpcOrders.map(o => o.id)), 1, spawnedCount > 0);
           } else {
             setLadaStatusMsg(null);
@@ -4203,10 +4219,11 @@ export default function Page() {
           prevCustomerIdsRef.current = new Set(incoming.map(o => o.id));
           setCustomerOrders(incoming);
           setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
-          setLadaStatusMsg(null);
           if (opts?.tick && spawnedCount > 0) {
             delegatedToRetry = true;
             hydrateCustomerOrdersAfterSpawn(profile.id, new Set(incoming.map(o => o.id)), 1, true);
+          } else {
+            setLadaStatusMsg(null);
           }
           return;
         }
@@ -10845,6 +10862,9 @@ export default function Page() {
                       } else if (isAtMax) {
                         barCls = 'border-red-900/30 bg-black/20 text-red-400';
                         statusNode = '🚫 Limit klientów osiągnięty';
+                      } else if (ladaStatusMsg === 'adding') {
+                        barCls = 'border-sky-700/30 bg-black/20 text-sky-300';
+                        statusNode = '🔄 Dodaję klienta...';
                       } else if (customerLoading || ladaStatusMsg === 'searching') {
                         barCls = 'border-amber-700/20 bg-black/20 text-emerald-400';
                         statusNode = '⏳ Szukam nowego klienta...';
