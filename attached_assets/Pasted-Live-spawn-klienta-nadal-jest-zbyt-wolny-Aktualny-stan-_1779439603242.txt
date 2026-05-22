@@ -1,0 +1,54 @@
+Live-spawn klienta nadal jest zbyt wolny.
+
+Aktualny stan:
+- Timer dochodzi do 0.
+- Backend tworzy klienta, bo po czasie licznik resetuje się.
+- UI pokazuje "Dodaję klienta..." / brak nowych klientów.
+- Nowa karta pojawia się dopiero po 10–40 sekundach albo natychmiast po zamknięciu i ponownym otwarciu Lady.
+
+Wniosek:
+Hydratacja SELECT z frontendu łapie nowy rekord zbyt późno.
+Trzeba zrobić mocniejszy fix: tick_customer_orders musi zwracać świeżą listę klientów po spawnie i frontend musi bezwarunkowo ustawić customerOrders z tej odpowiedzi.
+
+Zrób audyt i naprawę w dwóch miejscach.
+
+A) SQL tick_customer_orders:
+1. Sprawdź, czy po spawn_customer_order lista v_orders jest budowana PO wykonaniu spawnów.
+2. Jeśli tak, sprawdź czy SELECT do v_orders filtruje poprawnie aktywne/nieaktywne zamówienia.
+3. Zmień SELECT v_orders tak, żeby zwracał tylko aktywne zamówienia:
+   WHERE user_id = p_user_id AND expires_at > v_now
+4. Upewnij się, że SELECT v_orders jest po pętli spawn_customer_order i po UPDATE last_customer_spawn_at.
+5. Dodaj w zwracanym JSON:
+   - spawned
+   - active
+   - max
+   - next_spawn_at
+   - orders
+   - order_count = jsonb_array_length(v_orders)
+6. Przygotuj SQL:
+   attached_assets/sql_fix_tick_customer_orders_return_fresh_orders_v1.sql
+
+B) Frontend Game.tsx:
+1. W refreshCustomerOrders({ tick: true }) po RPC tick_customer_orders:
+   jeśli tickData.orders jest tablicą:
+   - natychmiast zrób setCustomerOrders(normalizeRpcOrders(tickData.orders))
+   - nie czekaj na SELECT
+   - nie uruchamiaj hydratacji, jeśli tickData.orders.length > baselineIds.size
+2. Jeśli tickData.spawned > 0 i tickData.orders.length > baselineIds.size:
+   - od razu status "Dodano nowego klienta!"
+   - badge "Nowy!" na nowych ID
+   - update licznika 4/12 natychmiast
+3. Jeśli tickData.spawned > 0, ale tickData.orders.length nadal nie wzrosło:
+   - to znaczy, że SQL nie zwrócił świeżej listy; wtedy dopiero fallback hydrate.
+4. Dodaj DEV log:
+   [lada tick result] spawned, order_count, rpcOrdersLen, baselineLen, addedIds
+5. Usuń ścieżki, które przy spawned > 0 mogą ustawić "Brak nowych klientów".
+6. Nie zmieniaj ekonomii, nagród ani limitu klientów.
+
+C) Test:
+1. Wgraj SQL do Supabase.
+2. Ustaw zastrzal11 na 3/12 i timer 8 sekund.
+3. Po timerze UI powinno przejść 3/12 → 4/12 od razu po odpowiedzi tick_customer_orders, bez 10–40 sekund czekania.
+4. Typecheck.
+5. Pokaż diff.
+6. Nie pushuj, dopóki nie wgramy SQL i nie przetestujemy.

@@ -4159,11 +4159,15 @@ export default function Page() {
         if (tickData?.next_spawn_at) {
           setNextSpawnAt(new Date(tickData.next_spawn_at).getTime());
         }
+        const orderCount = (tickData?.order_count as number) ?? rpcOrders?.length ?? -1;
         if (process.env.NODE_ENV !== 'production') {
+          const addedIdsPreview = rpcOrders?.map(o => o.id).filter(id => !baselineIds.has(id)) ?? [];
           console.debug("[lada tick result]", {
             spawned: spawnedCount,
+            order_count: orderCount,
             rpcOrdersLen: rpcOrders?.length ?? -1,
             baselineLen: baselineIds.size,
+            addedIds: addedIdsPreview,
             next_spawn_at: tickData?.next_spawn_at,
           });
         }
@@ -4187,12 +4191,15 @@ export default function Page() {
             return;
           }
           const addedIds = rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id));
-          if (addedIds.length > 0) {
-            // Sukces natychmiastowy z RPC
-            applyNewCustomers(rpcOrders, addedIds);
+          // Sukces natychmiastowy: nowe IDs w liście LUB (spawned>0 i lista dłuższa niż baseline)
+          if (addedIds.length > 0 || (spawnedCount > 0 && rpcOrders.length > baselineIds.size)) {
+            const idsToMark = addedIds.length > 0
+              ? addedIds
+              : Array.from({ length: rpcOrders.length - baselineIds.size }, (_, i) => rpcOrders[baselineIds.size + i]?.id).filter(Boolean) as string[];
+            applyNewCustomers(rpcOrders, idsToMark);
             return;
           }
-          // RPC dał orders, ale brak nowych IDs — zaktualizuj listę i hydruj
+          // RPC dał orders, ale liczba nie wzrosła — zaktualizuj listę i hydruj jeśli spawned>0
           prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
           setCustomerOrders(rpcOrders);
           setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
