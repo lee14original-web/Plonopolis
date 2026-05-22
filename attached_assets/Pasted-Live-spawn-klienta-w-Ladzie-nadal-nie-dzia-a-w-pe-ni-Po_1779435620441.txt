@@ -1,0 +1,69 @@
+Live-spawn klienta w Ladzie nadal nie działa w pełni.
+
+Po ostatniej poprawce wszystko trwa szybciej, ale nadal:
+- timer dochodzi do 0,
+- frontend szuka/retry,
+- klient NIE pojawia się na żywo w oknie Lady,
+- dopiero po zamknięciu Lady i otwarciu ponownie klient jest widoczny.
+
+Wniosek:
+Backend tworzy klienta poprawnie, ale frontend nie aktualizuje customerOrders na żywo.
+Problem prawdopodobnie jest w tym, że frontend po tick_customer_orders robi osobny SELECT albo bazuje na złym incoming, zamiast użyć orders zwróconych bezpośrednio przez RPC.
+
+Ważne:
+Funkcja SQL tick_customer_orders zwraca JSON:
+{
+  orders: [...],
+  spawned: v_real_spawned,
+  active: ...,
+  max: ...,
+  next_spawn_at: ...
+}
+
+Czyli po ticku frontend powinien używać data.orders jako source of truth.
+
+Naprawa:
+1. W refreshCustomerOrders({ tick: true }) po wywołaniu RPC tick_customer_orders:
+   - odczytaj data.orders,
+   - jeśli data.orders jest tablicą, znormalizuj ją do typu CustomerOrder,
+   - użyj jej jako incoming zamiast polegać wyłącznie na osobnym SELECT.
+2. Dopiero jeśli RPC nie zwróci orders albo orders jest niepoprawne:
+   - fallback do obecnego SELECT.
+3. Detekcja nowych klientów:
+   - porównaj baselineIds sprzed ticka z IDs z data.orders.
+   - jeśli pojawiło się nowe ID:
+     - setCustomerOrders(ordersFromRpc)
+     - setLadaStatusMsg('added')
+     - ustaw newCustomerIds badge "Nowy!"
+     - zakończ retry.
+4. Jeśli data.spawned > 0, ale addedIds.length === 0:
+   - i tak zrób setCustomerOrders(data.orders), jeśli orders ma więcej elementów niż baseline.
+   - nie pokazuj "Brak nowych klientów".
+5. Jeśli data.orders pokazuje więcej klientów niż obecny stan:
+   - aktualizuj UI natychmiast.
+6. Retry 1s × 5 zostaw jako fallback, ale w każdej próbie:
+   - najpierw użyj orders z odpowiedzi tick_customer_orders,
+   - dopiero potem SELECT.
+7. Komunikat "Brak nowych klientów — spróbuję za chwilę" pokazuj tylko gdy:
+   - po 5 retry,
+   - RPC nie zwróciło nowych orders,
+   - SELECT też nie widzi nowego klienta,
+   - active nadal się nie zmieniło.
+8. Sprawdź, czy loadCustomerOrders albo refreshCustomerOrders nie nadpisuje świeżych orders starym stanem.
+9. Sprawdź, czy sortowanie/lista nie filtruje nowego klienta przez expires_at/created_at.
+10. Dodaj krótkie DEV logi, jeśli trzeba:
+   - rpc.spawned
+   - rpc.orders.length
+   - current customerOrders.length
+   - addedIds
+   - czy setCustomerOrders poszło z RPC czy SELECT
+   Logi tylko pod import.meta.env.DEV albo usuń przed finalnym commitem.
+
+Test:
+1. Ustaw zastrzal11 na 3/12 i next_spawn_at za kilka sekund.
+2. Otwórz Ladę.
+3. Po 0s klient ma pojawić się bez zamykania modala.
+4. Jeśli tick_customer_orders zwraca spawned > 0, UI musi natychmiast pokazać nową kartę.
+5. Badge "Nowy!" tylko dla nowego ID.
+6. Typecheck.
+7. Nie pushuj jeszcze — pokaż audyt i diff.
