@@ -2546,7 +2546,10 @@ export default function Page() {
     setTutorialWateredIds(_loadedTStep === 9
       ? _finalTutorialIds.filter(id => _loadedPlots[id]?.watered)
       : []);
-    setTutorialHarvestedIds([]);
+    // Krok 11: derive z pustych tutorialowych pól (po zbiorze cropId = null)
+    setTutorialHarvestedIds(_loadedTStep === 11
+      ? _finalTutorialIds.filter(id => !_loadedPlots[id]?.cropId)
+      : []);
     // Przeszkody pól — zawsze z DB (losowane na serwerze przy rejestracji)
     if (source.plot_obstacles && typeof source.plot_obstacles === "object" && !Array.isArray(source.plot_obstacles)) {
       setPlotObstacles(source.plot_obstacles as Record<string, { type: string; cost: number }>);
@@ -4091,6 +4094,19 @@ export default function Page() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(BACKPACK_POSITION_STORAGE_KEY, JSON.stringify(backpackPosition));
   }, [backpackPosition]);
+
+  // ─── Tutorial krok 11: recovery — wykryj już zebrane pola (niezależnie od jakości) ───
+  useEffect(() => {
+    if (tutorialStep !== 11 || tutorialPlotIds.length === 0 || !profile?.id) return;
+    const _harvested = tutorialPlotIds.filter(id => !plotCrops[id]?.cropId);
+    if (_harvested.length >= 3) {
+      setTutorialHarvestedIds(tutorialPlotIds);
+      void advanceTutorialStep(12);
+    } else if (_harvested.length > tutorialHarvestedIds.length) {
+      setTutorialHarvestedIds(_harvested);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, tutorialPlotIds, plotCrops]);
 
   // ─── Tutorial krok 7: recovery — wykryj już posadzone marchewki (np. po refreshie) ───
   useEffect(() => {
@@ -5670,9 +5686,11 @@ export default function Page() {
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = await applyProfileState(harvestRpcProfile);
     if (tutorialStep === 11 && tutorialPlotIds.includes(plotId)) {
-      const _newHarvested = tutorialHarvestedIds.includes(plotId) ? tutorialHarvestedIds : [...tutorialHarvestedIds, plotId];
-      setTutorialHarvestedIds(_newHarvested);
-      if (_newHarvested.length >= 3) void advanceTutorialStep(12);
+      setTutorialHarvestedIds(prev => {
+        const _newHarvested = prev.includes(plotId) ? prev : [...prev, plotId];
+        if (_newHarvested.length >= 3) void advanceTutorialStep(12);
+        return _newHarvested;
+      });
     }
     // Synchronizacja stanu klienta z DB.
     // Używamy Math.max per klucz (nie absolutnego przypisania), żeby równoległe żniwa
@@ -15346,7 +15364,7 @@ export default function Page() {
                 : "Marchewki zdążyły już urosnąć. Przejdźmy do zbioru.";
             })(),
             "Kliknij Zbierz.",
-            `Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy. Zebrane: ${_t11}/3`,
+            `Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy. Zebrane pola: ${_t11}/3`,
             "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
             "Świetnie! Etap 1 przewodnika ukończony. Za chwilę przejdziemy dalej.",
           ];
