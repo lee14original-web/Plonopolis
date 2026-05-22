@@ -14085,6 +14085,24 @@ export default function Page() {
 
                   </div>
                 </div>
+
+                {/* ─── Blok przewodnika krok 12 ─── */}
+                {tutorialStep === 12 && (
+                  <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-4 py-3">
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#d8ba7a]">📖 Etap 1 przewodnika — Krok 12/13</p>
+                    <p className="mb-3 text-[13px] text-[#f9e7b2] leading-snug">
+                      Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw. W tym przypadku możliwe były: <span className="text-gray-400">🤢 popsuta marchew</span>, <span className="text-green-300">🌿 zwykła marchew</span>, <span className="text-purple-300">✨ epicka marchew</span> i <span className="text-yellow-300">🌟 legendarna marchew</span>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void advanceTutorialStep(13)}
+                      className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-5 py-2 text-[13px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
+                    >
+                      Dalej →
+                    </button>
+                  </div>
+                )}
+
               </div>
             );
           })()}
@@ -15211,17 +15229,17 @@ export default function Page() {
 
 
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
-        {tutorialStep >= 1 && tutorialStep <= 12 && !showWelcome && (
+        {tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (
           <div className="fixed bottom-5 left-1/2 z-[87] w-full max-w-[480px] -translate-x-1/2 px-4 pointer-events-none">
             <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] p-4 shadow-2xl backdrop-blur-sm pointer-events-auto">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8ba7a] font-black">📖 Etap 1 przewodnika</p>
-                <p className="text-[10px] text-[#8b6a3e]">Krok {tutorialStep}/12</p>
+                <p className="text-[10px] text-[#8b6a3e]">Krok {tutorialStep}/13</p>
               </div>
               <div className="mb-3 h-1 rounded-full bg-[#3a2510]/60 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-[#d8ba7a] transition-all duration-500"
-                  style={{ width: `${(tutorialStep / 12) * 100}%` }}
+                  style={{ width: `${(tutorialStep / 13) * 100}%` }}
                 />
               </div>
               <p className="text-sm font-bold text-[#f9e7b2] leading-snug">
@@ -15238,10 +15256,11 @@ export default function Page() {
                   "Podlej swoją marchewkę.",
                   "Kliknij Zbierz.",
                   "Poczekaj, aż marchewka urośnie, a potem ją zbierz.",
-                  "Świetnie! Etap 1 przewodnika ukończony.",
+                  "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
+                  "Świetnie! Etap 1 przewodnika ukończony. Za chwilę przejdziemy dalej.",
                 ] as string[])[tutorialStep]}
               </p>
-              {tutorialStep < 12 && (
+              {tutorialStep < 13 && (
                 <button
                   type="button"
                   onClick={() => setGuideExitStep(1)}
