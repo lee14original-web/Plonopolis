@@ -4106,10 +4106,6 @@ export default function Page() {
         if (!error && data) {
           const orders = data as CustomerOrder[];
           const addedIds = orders.map(o => o.id).filter(id => !baselineIds.has(id));
-          if (import.meta.env.DEV) console.debug("[lada hydrate]", {
-            attempt, spawnConfirmed, beforeLen: baselineIds.size,
-            selectedLen: orders.length, addedIds,
-          });
           if (addedIds.length > 0) {
             applyNewCustomers(orders, addedIds);
             isSpawningCustomerRef.current = false;
@@ -4158,13 +4154,6 @@ export default function Page() {
 
         // Próba natychmiastowa: orders z odpowiedzi RPC
         const rpcOrders = normalizeRpcOrders(tickData?.orders);
-        if (import.meta.env.DEV) console.debug("[lada spawn]", {
-          spawned: spawnedCount,
-          rpcOrdersLen: rpcOrders?.length ?? -1,
-          beforeLen: baselineIds.size,
-          addedIds: rpcOrders ? rpcOrders.map(o => o.id).filter(id => !baselineIds.has(id)) : [],
-        });
-
         if (rpcOrders !== null) {
           if (!hasInitializedCustomerIdsRef.current) {
             // Pierwsze załadowanie — ustaw baseline, nie animuj żadnych kart
