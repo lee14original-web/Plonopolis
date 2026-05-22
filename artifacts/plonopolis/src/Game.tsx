@@ -155,7 +155,7 @@ type Crop = {
   legendarySpritePath?: string;
 };
 
-type CompostType = "growth"|"yield"|"exp";
+type CompostType = "growth"|"yield"|"exp"|"guide";
 type CompostBonus = { type: CompostType; value: number };
 type PlotCropState = {
   cropId: string | null;
@@ -576,22 +576,19 @@ const COMPOST_DEFS: Record<CompostType, { id:string; name:string; icon:string; d
   growth: { id:"compost_growth", name:"Kompost Wzrostu",  icon:"⚡", desc:"Przyspiesza wzrost upraw",   effectLabel:"⚡ Szybszy wzrost",   bonusValues:[5,10,15],  bonusLabel:(v)=>`-${v}% czasu wzrostu`, tierName:(v)=>v<=5?"Słaby":v<=10?"Średni":"Mocny" },
   yield:  { id:"compost_yield",  name:"Kompost Urodzaju", icon:"🌾", desc:"Zwiększa plon przy zbiorze", effectLabel:"🌾 Większy plon",     bonusValues:[1,2,3],    bonusLabel:(v)=>`+${v} sztuk plonu`,     tierName:(v)=>v<=1?"Słaby":v<=2?"Średni":"Mocny" },
   exp:    { id:"compost_exp",    name:"Kompost Nauki",    icon:"⭐", desc:"Daje więcej EXP przy zbiorze", effectLabel:"⭐ Więcej EXP",     bonusValues:[10,20,30], bonusLabel:(v)=>`+${v}% EXP`,            tierName:(v)=>v<=10?"Słaby":v<=20?"Średni":"Mocny" },
+  guide:  { id:"guide_compost",  name:"Kompost Przewodnika", icon:"🌟", desc:"Specjalny kompost dla początkujących. Skraca czas wzrostu uprawy o 75%. Nie można go sprzedać na targu.", effectLabel:"🌟 −75% czasu wzrostu", bonusValues:[75], bonusLabel:()=>`−75% czasu wzrostu`, tierName:()=>"Starter" },
 };
 // Wagi losowania tieru: 50% słaby, 35% śrni, 15% mocny
 const COMPOST_TIER_WEIGHTS = [50, 35, 15];
 
 // ─── KOMPOST PRZEWODNIKA ───
-const GUIDE_COMPOST_DEF = {
-  id:          "guide_compost",
-  name:        "Kompost Przewodnika",
-  icon:        "🌟",
-  desc:        "Specjalny kompost dla początkujących. Skraca pozostały czas wzrostu rośliny o 75%. Nie można go sprzedać na targu.",
-  effectLabel: "🌟 −75% pozostałego czasu",
-} as const;
+// (definicja w COMPOST_DEFS["guide"] — tutaj alias dla wygody)
+const GUIDE_COMPOST_DEF = COMPOST_DEFS.guide;
 
 function isCompostKey(key: string) { return key.startsWith("compost_"); }
 function isGuideCompostKey(key: string) { return key === "guide_compost"; }
 function compostTypeFromKey(key: string): CompostType | null {
+  if (key === "guide_compost")          return "guide";
   if (key.startsWith("compost_growth")) return "growth";
   if (key.startsWith("compost_yield"))  return "yield";
   if (key.startsWith("compost_exp"))    return "exp";
@@ -2214,7 +2211,6 @@ export default function Page() {
   const [kompostQty, setKompostQty] = React.useState<1|5|10|100|"max">(1);
   const [kompostFilter, setKompostFilter] = React.useState<"rotten"|"good"|"epic"|"legendary"|"all">("rotten");
   const [compostNotice, setCompostNotice] = React.useState<{ type: CompostType; value: number; plotId: number } | null>(null);
-  const [guideCompostNoticePlotId, setGuideCompostNoticePlotId] = React.useState<number | null>(null);
   const [slotBoxCustom, setSlotBoxCustom] = React.useState<Record<string,{top:number,left:number,width:number,height:number}>>({ ...DEFAULT_SLOT_BOX });
   const [editSlotBox, setEditSlotBox] = React.useState(false);
   const saveSlotBox = (v: Record<string,{top:number,left:number,width:number,height:number}>) => {
@@ -2954,7 +2950,9 @@ export default function Page() {
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
     const compostBoost = 1 + getEquipBonusPct("% efekt kompostu", charEquipped) / 100;
-    const compostMult = (plot.compostBonus?.type === "growth")
+    const compostMult = plot.compostBonus?.type === "guide"
+      ? 0.25  // Kompost Przewodnika: flat −75% czasu wzrostu, bez cap i bez eq boost
+      : (plot.compostBonus?.type === "growth")
       ? Math.max(COMPOST_MULT_MIN, 1 - (plot.compostBonus.value * compostBoost / 100))
       : 1;
     // Bonus z eq: % speed upraw (sumarycznie ze wszystkich slotów)
@@ -5175,7 +5173,7 @@ export default function Page() {
     setTimeout(() => setCompostNotice(null), 5000);
   }
 
-  // ─── KOMPOST PRZEWODNIKA: skraca pozostały czas wzrostu o 75% ───
+  // ─── KOMPOST PRZEWODNIKA: stosuj na puste pole (przed sadzeniem) — multiplier 0.25 ───
   async function applyGuideCompostToPlot(plotId: number) {
     if (!profile?.id) return;
     if ((seedInventory["guide_compost"] ?? 0) <= 0) {
@@ -5183,22 +5181,16 @@ export default function Page() {
       return;
     }
     const plot = getPlotCrop(plotId);
-    if (!plot.cropId || !plot.plantedAt) {
-      setMessage({ type:"info", title:"Puste pole", text:"Kompost Przewodnika działa tylko na rosnące uprawy." });
+    if (plot.cropId) {
+      setMessage({ type:"info", title:"Pole zajęte", text:"Kompost Przewodnika stosuje się na puste pole — przed posadzeniem uprawy." });
       return;
     }
-    if (isCropReady(plotId)) {
-      setMessage({ type:"info", title:"Gotowe do zbioru", text:"Ta uprawa jest już gotowa do zbioru!" });
+    if (plot.compostBonus) {
+      setMessage({ type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
       return;
     }
-    const effectiveGrowthMs = getEffectiveGrowthTimeMs(plotId);
-    const now = Date.now();
-    const remaining = Math.max(0, effectiveGrowthMs - (now - plot.plantedAt));
-    if (remaining <= 0) return;
-    // Przesuń plantedAt do przodu o 75% remaining — zostaje 25% czasu
-    const shift = Math.floor(remaining * 0.75);
-    const newPlantedAt = plot.plantedAt + shift;
-    const nextPlot: PlotCropState = { ...plot, plantedAt: newPlantedAt };
+    // Ustaw compostBonus typu "guide" — getEffectiveGrowthTimeMs zastosuje mnożnik 0.25
+    const nextPlot: PlotCropState = { ...plot, compostBonus: { type: "guide", value: 75 } };
     const nextPlots = { ...plotCrops, [plotId]: nextPlot };
     setPlotCrops(nextPlots);
     // Odejmij 1 z inwentarza
@@ -5214,9 +5206,9 @@ export default function Page() {
       plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
       seed_inventory: nextInv,
     }).eq("id", profile.id);
-    // Powiadomienie
-    setGuideCompostNoticePlotId(plotId);
-    setTimeout(() => setGuideCompostNoticePlotId(null), 5000);
+    // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
+    setCompostNotice({ type: "guide", value: 75, plotId });
+    setTimeout(() => setCompostNotice(null), 5000);
   }
 
   // ─── KOMPOSTOWNIK: wrzuć plon → +1 do bieżącej partii + dolicz wartość (base × rzadkość) do scoreSum ───
@@ -8014,7 +8006,7 @@ export default function Page() {
                                       .sort((a,b) => {
                                         const ta = compostTypeFromKey(a) ?? "growth";
                                         const tb = compostTypeFromKey(b) ?? "growth";
-                                        const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 };
+                                        const order: Record<CompostType, number> = { growth:0, yield:1, exp:2, guide:3 };
                                         if (order[ta] !== order[tb]) return order[ta] - order[tb];
                                         return compostValueFromKey(a) - compostValueFromKey(b);
                                       })
@@ -8055,7 +8047,7 @@ export default function Page() {
                                           onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }}
                                           onDragEnd={() => setDraggedSeedId(null)}
                                           onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
-                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz rosnące pole</p></>)}
+                                          onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
                                           onMouseLeave={() => setCardTip(null)}
                                           className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
                                           style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
@@ -10232,7 +10224,7 @@ export default function Page() {
                                 {hasEmptyJars && (<div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default"><img src="/przedmioty/jar_empty.png" alt="Słoik" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-1 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Puste słoiki</p><span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.empty_jars}</span></div>)}
                                 {hasHoneyJars && (<div className="group relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-[rgba(30,18,5,0.65)] cursor-default"><img src="/przedmioty/jar_honey.png" alt="Miód" className="h-12 w-12 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-1 text-center text-[9px] font-bold text-amber-300 leading-tight px-1">Miód</p><span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">{hiveData.honey_jars}</span></div>)}
                                 {hasSuit && (<div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default" onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p></>)} onMouseLeave={() => setCardTip(null)}><img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p><div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden"><div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} /></div></div>)}
-                                {compostKeys.sort((a,b) => { const ta = compostTypeFromKey(a) ?? "growth"; const tb = compostTypeFromKey(b) ?? "growth"; const order: Record<CompostType, number> = { growth:0, yield:1, exp:2 }; if (order[ta] !== order[tb]) return order[ta] - order[tb]; return compostValueFromKey(a) - compostValueFromKey(b); }).map(cid => {
+                                {compostKeys.sort((a,b) => { const ta = compostTypeFromKey(a) ?? "growth"; const tb = compostTypeFromKey(b) ?? "growth"; const order: Record<CompostType, number> = { growth:0, yield:1, exp:2, guide:3 }; if (order[ta] !== order[tb]) return order[ta] - order[tb]; return compostValueFromKey(a) - compostValueFromKey(b); }).map(cid => {
                                   const cnt = seedInventory[cid]; const t = compostTypeFromKey(cid)!; const def = COMPOST_DEFS[t]; const value = compostValueFromKey(cid);
                                   const tierIdx = def.bonusValues.indexOf(value); const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa"; const isSel = selectedSeedId === cid;
                                   return (
@@ -10255,7 +10247,7 @@ export default function Page() {
                                   return (
                                     <div key="guide_compost" draggable onDragStart={() => { setDraggedSeedId("guide_compost"); setSelectedSeedId("guide_compost"); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
                                       onClick={() => { setSelectedSeedId(prev => prev === "guide_compost" ? null : "guide_compost"); setSelectedTool(null); }}
-                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz rosnące pole</p></>)}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-yellow-200">{GUIDE_COMPOST_DEF.icon} {GUIDE_COMPOST_DEF.name}</p><p className="text-[10px] text-yellow-300/80 mt-0.5">{GUIDE_COMPOST_DEF.desc}</p><p className="text-[11px] font-black text-yellow-400 mt-1">{GUIDE_COMPOST_DEF.effectLabel}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
                                       onMouseLeave={() => setCardTip(null)}
                                       className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
                                       style={gc_isSel ? { borderColor: "#facc15", background: "rgba(80,60,0,0.4)", boxShadow: "0 0 12px #facc1566" } : { borderColor: "rgba(234,179,8,0.5)", background: "rgba(60,45,0,0.3)" }}>
@@ -10965,21 +10957,6 @@ export default function Page() {
               </div>
             );
           })()}
-
-          {/* ═══ POWIADOMIENIE KOMPOSTU PRZEWODNIKA ═══ */}
-          {guideCompostNoticePlotId !== null && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[400] animate-fade-in">
-              <div className="rounded-2xl border border-yellow-500/60 bg-[rgba(30,22,0,0.97)] px-5 py-3 shadow-2xl shadow-yellow-500/30 flex items-center gap-3">
-                <span className="text-3xl">{GUIDE_COMPOST_DEF.icon}</span>
-                <div>
-                  <p className="text-sm font-black text-yellow-200">Kompost Przewodnika użyty!</p>
-                  <p className="text-xs text-yellow-300/90">
-                    {GUIDE_COMPOST_DEF.name} · −75% pozostałego czasu · Pole #{guideCompostNoticePlotId}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {showUlModal && (() => {
             const hlvl = hiveData.level;
@@ -13426,7 +13403,7 @@ export default function Page() {
                               } else if (selectedTool === "sickle") {
                                 if (_plot.cropId && isCropReady(plotId)) _started = true;
                               } else if (selectedSeedId && isGuideCompostKey(selectedSeedId)) {
-                                if (_plot.cropId && !isCropReady(plotId) && (seedInventoryRef.current["guide_compost"] ?? 0) > 0) _started = true;
+                                if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current["guide_compost"] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId && isCompostKey(selectedSeedId)) {
                                 if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId) {
