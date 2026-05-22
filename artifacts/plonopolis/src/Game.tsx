@@ -8523,45 +8523,40 @@ export default function Page() {
             </div>
           )}
 
-                      {/* ─── Modal powitalny dla nowego gracza ─── */}
+                      {/* ─── Modal startowy przewodnika dla nowego gracza ─── */}
                       {showWelcome && (
                         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" style={{ zIndex: 9999 }}>
                           <div className="relative w-full max-w-[680px] rounded-[28px] border-2 border-[#d8ba7a]/60 bg-[rgba(10,6,2,0.97)] p-8 shadow-2xl text-[#dfcfab]">
-                            {/* Zamknij */}
+                            {/* Zamknij (drugorzędny) */}
                             <button
                               onClick={() => {
                                 localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
                                 setShowWelcome(false);
                               }}
-                              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300 transition"
+                              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#8b6a3e] hover:text-red-300 transition"
+                              title="Zamknij"
                             >✕</button>
                             {/* Nagłówek */}
                             <div className="mb-5 flex flex-col items-center gap-3">
-                              <img src="/ui/systemikona.png" alt="Plonopolis" className="h-32 w-32 object-contain" style={{imageRendering:"pixelated"}} />
-                              <p className="text-[19px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">[ WIADOMOŚĆ SYSTEMOWA ]</p>
-                              <h2 className="text-center text-[41px] font-black text-[#f9e7b2]">Witaj w Plonopolis.</h2>
+                              <img src="/ui/systemikona.png" alt="Plonopolis" className="h-28 w-28 object-contain" style={{imageRendering:"pixelated"}} />
+                              <h2 className="text-center text-[38px] font-black text-[#f9e7b2]">Witaj w Plonopolis!</h2>
                             </div>
                             {/* Treść */}
-                            <div className="space-y-3 text-[22px] leading-relaxed text-[#dfcfab]/90">
-                              <p>Rozpoczynasz na niewielkiej farmie, którą stopniowo rozbudujesz. Siej, podlewaj i zbieraj plony, zdobywając doświadczenie oraz środki na rozwój.</p>
-                              <p>Wraz z poziomem odblokujesz nowe pola, ulepszenia oraz kolejne możliwości rozwoju. Twoja farma i postać będą się rozwijać, dając dostęp do coraz lepszych efektów i bonusów.</p>
-                              <p>Poza farmą czekają także dodatkowe systemy, takie jak ranking i rywalizacja z innymi.</p>
-                              <p>Rozwijaj się we własnym tempie i buduj swoje gospodarstwo.</p>
+                            <div className="space-y-4 text-[22px] leading-relaxed text-[#dfcfab]/90">
+                              <p>Twoje ranczo dopiero zaczyna działać. Przewodnik pokaże Ci krok po kroku, jak siać, zbierać plony, korzystać z mapy i rozwijać farmę.</p>
+                              <p className="text-[20px] text-[#b89a60]">Po ukończeniu przewodnika otrzymasz nagrodę startową.</p>
                             </div>
                             {/* Stopka */}
-                            <div className="mt-6 flex items-center justify-between border-t border-[#8b6a3e]/30 pt-4">
-                              <div className="flex items-center gap-2 text-[19px] text-[#8b6a3e]">
-                                <img src="/ui/systemikona.png" alt="" className="h-8 w-8 object-contain" style={{imageRendering:"pixelated"}} />
-                                <span>System Plonopolis</span>
-                              </div>
+                            <div className="mt-8 flex flex-col items-center gap-3">
                               <button
                                 onClick={() => {
                                   localStorage.setItem(`plonopolis_welcome_${profile?.id}`, "1");
                                   setShowWelcome(false);
+                                  setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
                                 }}
-                                className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(80,55,10,0.5)] px-5 py-2 text-[22px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.6)] hover:border-[#d8ba7a]"
+                                className="w-full rounded-2xl border-2 border-[#d8ba7a]/70 bg-[rgba(80,55,10,0.6)] px-6 py-3 text-[24px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.7)] hover:border-[#d8ba7a]"
                               >
-                                Rozumiem →
+                                Rozpocznij przewodnik
                               </button>
                             </div>
                           </div>

@@ -1,0 +1,71 @@
+Zrób audyt obecnego okna powitalnego / pierwszej wiadomości dla nowego gracza.
+
+Cel:
+Chcę przerobić to okno na start przewodnika dla nowego gracza.
+
+Założenie:
+Po pierwszym zalogowaniu nowego konta ma pojawić się okno startowe z tekstem wprowadzającym.
+Zamiast zwykłego przycisku zamknięcia ma być przycisk:
+"Rozpocznij przewodnik"
+
+To będzie później start tutoriala krok po kroku.
+
+Na razie NIE implementuj całego tutoriala.
+Najpierw przygotuj okno startowe i stan, że pojawia się tylko raz.
+
+Wymagania audytu:
+1. Znajdź obecne okno/wiadomość, która pokazuje się nowemu graczowi po zalogowaniu.
+2. Sprawdź, czy obecnie jest zapisywane w DB/localStorage, że gracz już widział to okno.
+3. Sprawdź, czy istnieje kolumna w profiles typu:
+   - tutorial_completed
+   - tutorial_started
+   - welcome_seen
+   - first_login_done
+   - onboarding_step
+   albo podobna.
+4. Jeśli nie istnieje, zaproponuj SQL:
+   - tutorial_started boolean default false
+   - tutorial_completed boolean default false
+   - tutorial_step integer default 0
+   albo prostsze rozwiązanie, jeśli lepsze.
+5. Sprawdź, czy nowe konto ma sensownie wykrywalny stan:
+   - level = 1
+   - xp = 0
+   - tutorial_completed = false
+   - created_at niedawno
+   ale nie opieraj się tylko na levelu, bo stary gracz też może mieć lvl 1.
+
+Wymagania UI:
+1. Obecne okno powitalne zmień na okno startowe przewodnika.
+2. Treść robocza:
+   Tytuł:
+   "Witaj w Plonopolis!"
+
+   Tekst:
+   "Twoje ranczo dopiero zaczyna działać. Przewodnik pokaże Ci krok po kroku, jak siać, zbierać plony, korzystać z mapy i rozwijać farmę."
+
+   Drugi akapit:
+   "Po ukończeniu przewodnika otrzymasz nagrodę startową."
+
+   Przycisk główny:
+   "Rozpocznij przewodnik"
+
+3. Na razie kliknięcie "Rozpocznij przewodnik" może:
+   - zamknąć okno,
+   - ustawić tutorial_started = true albo lokalny stan,
+   - pokazać toast "Przewodnik zostanie uruchomiony wkrótce." jeśli pełny tutorial nie jest jeszcze gotowy.
+4. Nie dodawaj jeszcze nagrody.
+5. Nie dodawaj jeszcze premium.
+6. Nie implementuj wszystkich kroków tutoriala.
+7. Okno ma pojawić się tylko dla kont, które nie zaczęły i nie ukończyły tutoriala.
+8. Starym graczom nie pokazuj tego okna, jeśli mają już zapisane, że powitanie było widziane — jeśli nie ma takiego zapisu, zaproponuj bezpieczną migrację.
+
+Wymagania techniczne:
+1. Jeśli potrzebny SQL, przygotuj plik:
+   attached_assets/sql_add_tutorial_state_v1.sql
+2. Jeśli da się zrobić bez SQL na razie, pokaż plusy/minusy.
+3. Nie psuj normalnego logowania.
+4. Nie psuj blokad lvl 2.
+5. Nie zmieniaj ekonomii.
+6. Nie pushuj jeszcze.
+7. Pokaż audyt i rekomendację.
