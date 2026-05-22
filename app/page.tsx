@@ -1851,6 +1851,7 @@ export default function Page() {
   const [hoveredKompostownik, setHoveredKompostownik] = React.useState(false);
   const [hoveredPolaUprawne, setHoveredPolaUprawne] = React.useState(false);
   const [hoveredDoMiasta, setHoveredDoMiasta] = React.useState(false);
+  const [hoveredCityLock, setHoveredCityLock] = React.useState(false);
   const [hoveredNaFarme, setHoveredNaFarme] = React.useState(false);
   const [hoveredSklep, setHoveredSklep] = React.useState(false);
   const [hoveredTarg, setHoveredTarg] = React.useState(false);
@@ -6476,8 +6477,8 @@ export default function Page() {
                               handleChangeMap("city");
                             }}
                             title=""
-                            onMouseEnter={() => setHoveredDoMiasta(true)}
-                            onMouseLeave={() => setHoveredDoMiasta(false)}
+                            onMouseEnter={() => { if (_cityUnlocked) setHoveredDoMiasta(true); else setHoveredCityLock(true); }}
+                            onMouseLeave={() => { setHoveredDoMiasta(false); setHoveredCityLock(false); }}
                             data-zone="doMiasta"
                             className={`pointer-events-auto absolute transition-all duration-300 ${_cityUnlocked ? "hover:scale-105" : "cursor-not-allowed opacity-70"}`}
                             style={{ left:`${activeHitboxPos.doMiasta.left}%`, top:`${activeHitboxPos.doMiasta.top}%`, width:`${activeHitboxPos.doMiasta.width}%`, height:`${activeHitboxPos.doMiasta.height}%`, zIndex: 20 }}
@@ -14064,6 +14065,17 @@ export default function Page() {
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
           <p className="mb-2 font-black text-lime-400">Pola uprawne</p>
           <p className="text-[18px]">Sadź, podlewaj i zbieraj plony.</p>
+        </div>
+      )}
+    {/* Tooltip Do miasta — zablokowane */}
+      {hoveredCityLock && isOnFarmMap && !!profile && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">Miasto — zablokowane</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{CITY_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: odwiedzisz sklep, targ, bank i ranking.</p>
         </div>
       )}
     {/* Tooltip Do miasta */}
