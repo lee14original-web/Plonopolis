@@ -3686,14 +3686,34 @@ export default function Page() {
   React.useEffect(() => {
     if (!showLadaModal) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (showLadaInfo) setShowLadaInfo(false);
-      else if (ladaDetailIdx !== null) setLadaDetailIdx(null);
-      else setShowLadaModal(false);
+      if (e.key === "Escape") {
+        if (showLadaInfo) setShowLadaInfo(false);
+        else if (ladaDetailIdx !== null) setLadaDetailIdx(null);
+        else setShowLadaModal(false);
+        return;
+      }
+      if (e.key === "Enter" && ladaDetailIdx !== null && !showLadaInfo) {
+        const tag = (e.target as HTMLElement).tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        const o = customerOrders[ladaDetailIdx];
+        if (!o) return;
+        const timeLeft = Math.max(0, new Date(o.expires_at).getTime() - Date.now());
+        if (timeLeft <= 0) return;
+        if (customerSelling === o.id) return;
+        const mi = mergeOrderItems(o.items);
+        const canDo = mi.every(it => {
+          if (it.id === 'honey_jar') return hiveData.honey_jars >= it.qty;
+          if (/_(good|epic|legendary)$/.test(it.id)) return (seedInventory[it.id] ?? 0) >= it.qty;
+          if (/_(zwykly|soczysty|zloty|zgnile)$/.test(it.id)) return (fruitInventory[it.id] ?? 0) >= it.qty;
+          return (barnItems[it.id] ?? 0) >= it.qty;
+        });
+        if (!canDo) return;
+        void completeCustomerOrder(o.id);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [showLadaModal, showLadaInfo, ladaDetailIdx]);
+  }, [showLadaModal, showLadaInfo, ladaDetailIdx, customerOrders, customerSelling, barnItems, seedInventory, fruitInventory, hiveData, completeCustomerOrder, mergeOrderItems]);
   React.useEffect(() => {
     if (!customerLootDrop) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Enter") { setCustomerLootDrop(null); setLootHoverIdx(null); } };
@@ -11340,7 +11360,7 @@ export default function Page() {
                           disabled={!canFulfill || customerSelling === order.id || !!isExpired}
                           className="w-full rounded-xl py-4 text-lg font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie'}
+                          {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie (Enter)'}
                         </button>
                       )}
                       <button onClick={() => setShowLadaModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-base font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
