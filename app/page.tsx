@@ -1951,6 +1951,7 @@ export default function Page() {
   const [ladaStatusMsg, setLadaStatusMsg] = React.useState<'searching' | 'adding' | 'added' | 'failed' | null>(null);
   const ladaStatusTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const spawnFailCooldownRef = React.useRef(0);
+  const completingCustomerOrderRef = React.useRef(false);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
   const [showTestModal, setShowTestModal] = React.useState(false);
@@ -3693,13 +3694,17 @@ export default function Page() {
         return;
       }
       if (e.key === "Enter" && ladaDetailIdx !== null && !showLadaInfo) {
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (e.repeat) return;
+        const target = e.target as HTMLElement;
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) return;
+        e.preventDefault();
+        if (completingCustomerOrderRef.current) return;
+        if (customerSelling) return;
         const o = customerOrders[ladaDetailIdx];
         if (!o) return;
         const timeLeft = Math.max(0, new Date(o.expires_at).getTime() - Date.now());
         if (timeLeft <= 0) return;
-        if (customerSelling === o.id) return;
         const mi = mergeOrderItems(o.items);
         const canDo = mi.every(it => {
           if (it.id === 'honey_jar') return hiveData.honey_jars >= it.qty;
@@ -3708,12 +3713,18 @@ export default function Page() {
           return (barnItems[it.id] ?? 0) >= it.qty;
         });
         if (!canDo) return;
-        void completeCustomerOrder(o.id);
+        completingCustomerOrderRef.current = true;
+        completeCustomerOrder(o.id).finally(() => { completingCustomerOrderRef.current = false; });
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showLadaModal, showLadaInfo, ladaDetailIdx, customerOrders, customerSelling, barnItems, seedInventory, fruitInventory, hiveData, completeCustomerOrder, mergeOrderItems]);
+  /* Reset szczegółów gdy zamówienie zniknęło z listy (np. po realizacji lub wygaśnięciu) */
+  React.useEffect(() => {
+    if (ladaDetailIdx === null) return;
+    if (!customerOrders[ladaDetailIdx]) setLadaDetailIdx(null);
+  }, [customerOrders, ladaDetailIdx]);
   React.useEffect(() => {
     if (!customerLootDrop) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "Enter") { setCustomerLootDrop(null); setLootHoverIdx(null); } };
@@ -11356,8 +11367,13 @@ export default function Page() {
                     <div className="border-t border-amber-700/30 p-5 space-y-2.5">
                       {!showLadaInfo && order && customer && (
                         <button
-                          onClick={() => { void completeCustomerOrder(order.id); }}
-                          disabled={!canFulfill || customerSelling === order.id || !!isExpired}
+                          onClick={() => {
+                            if (completingCustomerOrderRef.current) return;
+                            if (customerSelling) return;
+                            completingCustomerOrderRef.current = true;
+                            completeCustomerOrder(order.id).finally(() => { completingCustomerOrderRef.current = false; });
+                          }}
+                          disabled={!canFulfill || !!customerSelling || !!isExpired}
                           className="w-full rounded-xl py-4 text-lg font-black transition border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           {customerSelling === order.id ? '⏳ Realizuję...' : isExpired ? '⏱ Zamówienie wygasło' : !canFulfill ? '❌ Brak wymaganych produktów' : '🤝 Zrealizuj zamówienie (Enter)'}
