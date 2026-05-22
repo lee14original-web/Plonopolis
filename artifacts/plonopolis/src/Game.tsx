@@ -4074,6 +4074,32 @@ export default function Page() {
     const now = Date.now();
     return new Set(Object.entries(m).filter(([, exp]) => exp > now).map(([id]) => id));
   }
+  // Sprawdza created_at każdego zamówienia — jeśli < 5 min temu, dodaje badge do mapy.
+  // Wywoływana przy baseline load (pierwsze otwarcie/reopen Lady).
+  function applyRecentBadges(orders: CustomerOrder[]) {
+    const now = Date.now();
+    const currentIds = new Set(orders.map(o => o.id));
+    // Załaduj mapę, usuń wygasłe i ID nieobecnych klientów
+    const badgeMap = pruneBadgeMap(loadBadgeMap());
+    for (const id of Object.keys(badgeMap)) {
+      if (!currentIds.has(id)) delete badgeMap[id];
+    }
+    // Dodaj klientów stworzonych w ostatnich 5 minutach, jeśli jeszcze nie ma w mapie
+    for (const order of orders) {
+      const createdMs = new Date(order.created_at).getTime();
+      const expiry = createdMs + LADA_NEW_BADGE_DURATION;
+      if (expiry > now && !badgeMap[order.id]) {
+        badgeMap[order.id] = expiry;
+      }
+    }
+    saveBadgeMap(badgeMap);
+    const active = activeBadgeIds(badgeMap);
+    if (active.size > 0) {
+      setNewCustomerIds(active);
+      scheduleBadgeExpiry();
+    }
+  }
+
   // Planuje timeout aby React state zaktualizował się dokładnie gdy wygasa najwcześniejszy badge
   function scheduleBadgeExpiry() {
     if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
@@ -4223,12 +4249,14 @@ export default function Page() {
 
           // ─── BASELINE: pierwsze otwarcie / reopen Lady ───
           // hasInitializedCustomerIdsRef=false zawsze po zamknięciu Lady.
-          // Ustaw baseline z RPC, ZERO badge, nie animuj starych klientów.
+          // Ustaw baseline, zero badge dla starych — ale oznacz jako "Nowy!" klientów
+          // których created_at jest w ostatnich 5 minutach.
           if (!hasInitializedCustomerIdsRef.current) {
             hasInitializedCustomerIdsRef.current = true;
             prevCustomerIdsRef.current = new Set(rpcOrders.map(o => o.id));
             setCustomerOrders(rpcOrders);
             setCurrentCustomerIdx(idx => (rpcOrders.length === 0 ? 0 : idx >= rpcOrders.length ? 0 : idx));
+            applyRecentBadges(rpcOrders);
             setLadaStatusMsg(null);
             return;
           }
@@ -4289,6 +4317,7 @@ export default function Page() {
           prevCustomerIdsRef.current = new Set(incoming.map(o => o.id));
           setCustomerOrders(incoming);
           setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
+          applyRecentBadges(incoming);
           if (opts?.tick && spawnedCount > 0) {
             delegatedToRetry = true;
             hydrateCustomerOrdersAfterSpawn(profile.id, new Set(incoming.map(o => o.id)), 1, true);
