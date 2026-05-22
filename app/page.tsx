@@ -1943,6 +1943,8 @@ export default function Page() {
   const lastAutoTickAtRef = React.useRef(0);
   const [newCustomerIds, setNewCustomerIds] = React.useState<Set<string>>(new Set());
   const isSpawningCustomerRef = React.useRef(false);
+  const spawnRetryAbortedRef = React.useRef(false);
+  const customerRetryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCustomerIdsRef = React.useRef<Set<string>>(new Set());
   const hasInitializedCustomerIdsRef = React.useRef(false);
   const newCustomerIdsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4053,12 +4055,85 @@ export default function Page() {
     return { name: type, icon: '👤' };
   }
 
+  // Pomocnicza: oznacza nowych klientów, aktualizuje listę, ustawia status 'added'
+  function applyNewCustomers(ri: CustomerOrder[], rAdded: string[]) {
+    setNewCustomerIds(new Set(rAdded));
+    if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
+    newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
+    if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+    setLadaStatusMsg('added');
+    ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
+    prevCustomerIdsRef.current = new Set(ri.map(o => o.id));
+    setCustomerOrders(ri);
+    setCurrentCustomerIdx(idx => (ri.length === 0 ? 0 : idx >= ri.length ? 0 : idx));
+  }
+
+  // Pomocnicza: kończy retry — ustawia cooldown i komunikat 'failed'
+  function finishSpawnRetryFailed() {
+    spawnFailCooldownRef.current = Date.now();
+    if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+    setLadaStatusMsg('failed');
+    ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
+    isSpawningCustomerRef.current = false;
+  }
+
+  // Rekurencyjny retry: tick + load co 1s, maks. MAX_SPAWN_RETRIES prób
+  function scheduleSpawnRetry(attempt: number, userId: string, baselineIds: Set<string>) {
+    const MAX_SPAWN_RETRIES = 5;
+    if (customerRetryTimerRef.current) clearTimeout(customerRetryTimerRef.current);
+    customerRetryTimerRef.current = setTimeout(async () => {
+      if (spawnRetryAbortedRef.current) {
+        isSpawningCustomerRef.current = false;
+        return;
+      }
+      try {
+        const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: userId });
+        if (tickData?.next_spawn_at) {
+          const nextAt = new Date(tickData.next_spawn_at).getTime();
+          setNextSpawnAt(nextAt);
+          // Jeśli backend podaje next_spawn_at wyraźnie w przyszłości (>3s) — nie spawnował bo za wcześnie
+          // Przerywamy retry, timer się zaktualizował
+          if (nextAt > Date.now() + 3000) {
+            setLadaStatusMsg(null);
+            isSpawningCustomerRef.current = false;
+            return;
+          }
+        }
+        const { data: rd, error: re } = await supabase
+          .from("customer_orders")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true });
+        if (spawnRetryAbortedRef.current) { isSpawningCustomerRef.current = false; return; }
+        if (!re && rd) {
+          const ri = rd as CustomerOrder[];
+          const rAdded = ri.map(o => o.id).filter(id => !baselineIds.has(id));
+          if (rAdded.length > 0) {
+            applyNewCustomers(ri, rAdded);
+            isSpawningCustomerRef.current = false;
+            return;
+          }
+        }
+        if (attempt >= MAX_SPAWN_RETRIES) {
+          finishSpawnRetryFailed();
+        } else {
+          scheduleSpawnRetry(attempt + 1, userId, baselineIds);
+        }
+      } catch {
+        if (!spawnRetryAbortedRef.current) finishSpawnRetryFailed();
+        else isSpawningCustomerRef.current = false;
+      }
+    }, 1000);
+  }
+
   async function refreshCustomerOrders(opts?: { tick?: boolean }) {
     if (!profile?.id) return;
     if (isSpawningCustomerRef.current) return;
     isSpawningCustomerRef.current = true;
+    spawnRetryAbortedRef.current = false;
     setCustomerLoading(true);
     if (opts?.tick) setLadaStatusMsg('searching');
+    let delegatedToRetry = false;
     try {
       if (opts?.tick) {
         const { data: tickData } = await supabase.rpc("tick_customer_orders", { p_user_id: profile.id });
@@ -4083,29 +4158,25 @@ export default function Page() {
           setLadaStatusMsg(null);
         } else {
           const addedIds = freshIds.filter(id => !prevCustomerIdsRef.current.has(id));
-          if (addedIds.length > 0) {
-            setNewCustomerIds(new Set(addedIds));
-            if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
-            newCustomerIdsTimerRef.current = setTimeout(() => setNewCustomerIds(new Set()), 3000);
-            if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
-            setLadaStatusMsg('added');
-            ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 2000);
-          } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
-            spawnFailCooldownRef.current = Date.now();
-            if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
-            setLadaStatusMsg('failed');
-            ladaStatusTimerRef.current = setTimeout(() => setLadaStatusMsg(null), 5000);
-          } else {
-            setLadaStatusMsg(null);
-          }
           prevCustomerIdsRef.current = new Set(freshIds);
           setCustomerOrders(incoming);
           setCurrentCustomerIdx(idx => (incoming.length === 0 ? 0 : idx >= incoming.length ? 0 : idx));
+          if (addedIds.length > 0) {
+            applyNewCustomers(incoming, addedIds);
+          } else if (opts?.tick && incoming.length < LADA_MAX_CUSTOMERS) {
+            // Brak nowego klienta od razu — start pętli retry (isSpawningCustomerRef zostaje true)
+            delegatedToRetry = true;
+            scheduleSpawnRetry(1, profile.id, new Set(freshIds));
+          } else {
+            setLadaStatusMsg(null);
+          }
         }
       }
     } finally {
       setCustomerLoading(false);
-      isSpawningCustomerRef.current = false;
+      if (!delegatedToRetry) {
+        isSpawningCustomerRef.current = false;
+      }
     }
   }
 
@@ -4217,6 +4288,10 @@ export default function Page() {
       clearInterval(nowT);
       if (newCustomerIdsTimerRef.current) clearTimeout(newCustomerIdsTimerRef.current);
       if (ladaStatusTimerRef.current) clearTimeout(ladaStatusTimerRef.current);
+      // Przerwij ewentualne trwające retry spawnu
+      spawnRetryAbortedRef.current = true;
+      if (customerRetryTimerRef.current) clearTimeout(customerRetryTimerRef.current);
+      isSpawningCustomerRef.current = false;
       // Reset baseline — przy kolejnym otwarciu Lady pierwsza lista znów jest baseline
       hasInitializedCustomerIdsRef.current = false;
       prevCustomerIdsRef.current = new Set();
