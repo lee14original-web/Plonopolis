@@ -1574,6 +1574,11 @@ function parseSeedInventory(value: unknown): SeedInventory {
   for (const [seedId, amount] of Object.entries(value as Record<string, unknown>)) {
     const safeAmount = Math.floor(Number(amount));
     if (!Number.isFinite(safeAmount) || safeAmount <= 0) continue;
+    // Kompost Przewodnika — specjalny klucz niesprzedawalny, zachowuj bez zmian
+    if (seedId === "guide_compost") {
+      merged["guide_compost"] = (merged["guide_compost"] ?? 0) + safeAmount;
+      continue;
+    }
     // Kompost — zachowujemy klucze; migracja starych ("compost_growth") → tier 1 ("compost_growth_5")
     if (isCompostKey(seedId)) {
       const ct = compostTypeFromKey(seedId);
@@ -5659,6 +5664,7 @@ export default function Page() {
     const items: { type: MarketItemType; key: string; name: string; icon: string; imgPath: string | null; qty: number; minPrice: number }[] = [];
     Object.entries(seedInventory).forEach(([key, qty]) => {
       if ((qty as number) <= 0) return;
+      if (key === "guide_compost") return; // Kompost Przewodnika — niesprzedawalny
       const iType: MarketItemType = isCompostKey(key) ? "compost" : "crop";
       const { name, icon } = marketItemLabel(iType, key);
       items.push({ type: iType, key, name, icon, imgPath: getMarketItemImg(iType, key), qty: qty as number, minPrice: marketMinPrice(iType, key) });
@@ -8593,15 +8599,24 @@ export default function Page() {
                                     if (!profile?.id) return;
                                     setGuideSaving(true);
                                     setGuideError(null);
-                                    const { error } = await supabase
-                                      .from("profiles")
-                                      .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: false })
-                                      .eq("id", profile.id);
+                                    const { data: rpcData, error: rpcError } = await supabase
+                                      .rpc("game_start_tutorial");
                                     setGuideSaving(false);
-                                    if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
+                                    if (rpcError || !rpcData?.ok) {
+                                      if (rpcData?.error === "already_started") {
+                                        // RPC odmówił — ktoś już zaczął/pominął; zamknij modal
+                                        setProfile(p => p ? { ...p, tutorial_started: true } : p);
+                                        setShowWelcome(false);
+                                        return;
+                                      }
+                                      setGuideError("Błąd zapisu. Spróbuj ponownie.");
+                                      return;
+                                    }
+                                    // Sukces: zaktualizuj lokalny stan profilu i inwentarza
                                     setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: false } : p);
+                                    setSeedInventory(prev => ({ ...prev, guide_compost: (prev["guide_compost"] ?? 0) + (rpcData.guide_compost_granted as number ?? 3) }));
                                     setShowWelcome(false);
-                                    setMessage({ type: "info", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce." });
+                                    setMessage({ type: "success", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce. Otrzymałeś 3× Kompost Przewodnika!" });
                                   }}
                                   className="w-full rounded-2xl border-2 border-[#d8ba7a]/70 bg-[rgba(80,55,10,0.6)] px-6 py-3 text-[24px] font-black text-[#f9e7b2] transition hover:bg-[rgba(120,85,15,0.7)] hover:border-[#d8ba7a]"
                                 >
