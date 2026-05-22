@@ -3426,6 +3426,8 @@ export default function Page() {
 
   useEffect(() => {
     if (harvestLog.length === 0) { setHarvestCountdown(25); return; }
+    // Na kroku 12 tutoriala — brak auto-zamknięcia, brak odliczania
+    if (tutorialStep === 12) { setHarvestCountdown(0); return; }
     // Reset countdown to 25 whenever new harvest comes in
     setHarvestCountdown(25);
     // Interval: tick every second
@@ -3436,7 +3438,8 @@ export default function Page() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [harvestLog]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [harvestLog, tutorialStep]);
 
   // ─── Farm music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
@@ -13986,8 +13989,17 @@ export default function Page() {
               <div className="fixed bottom-4 right-4 z-[88] w-[min(95vw,600px)] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden">
                 {/* Nagłówek */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/30">
-                  <p className="text-[12px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🎒 Ostatnie zbiory ({harvestCountdown}s)</p>
-                  <button onClick={() => setHarvestLog([])} className="rounded-lg bg-[rgba(255,255,255,0.06)] px-3 py-1 text-[10px] text-[#8b6a3e] hover:text-[#d8ba7a] transition-colors">✕ Zamknij</button>
+                  <p className="text-[12px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">
+                    🎒 Ostatnie zbiory{tutorialStep !== 12 && harvestCountdown > 0 ? ` (${harvestCountdown}s)` : ""}
+                  </p>
+                  {tutorialStep === 12 ? (
+                    <button
+                      onClick={() => setMessage({ type: "info", title: "Przewodnik", text: "Najpierw kliknij Dalej w przewodniku poniżej." })}
+                      className="rounded-lg bg-[rgba(255,255,255,0.06)] px-3 py-1 text-[10px] text-[#8b6a3e] opacity-50 cursor-not-allowed"
+                    >✕ Zamknij</button>
+                  ) : (
+                    <button onClick={() => setHarvestLog([])} className="rounded-lg bg-[rgba(255,255,255,0.06)] px-3 py-1 text-[10px] text-[#8b6a3e] hover:text-[#d8ba7a] transition-colors">✕ Zamknij</button>
+                  )}
                 </div>
 
                 {/* Treść — dwie kolumny */}
@@ -14178,7 +14190,7 @@ export default function Page() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => void advanceTutorialStep(13)}
+                      onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); }}
                       className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-5 py-2 text-[13px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
                     >
                       Dalej →
@@ -15354,6 +15366,15 @@ export default function Page() {
                 <p className="text-sm font-bold text-[#f9e7b2] leading-snug">
                   {_texts[tutorialStep]}
                 </p>
+                {tutorialStep === 12 && (
+                  <button
+                    type="button"
+                    onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); }}
+                    className="mt-3 rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-5 py-2 text-[13px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
+                  >
+                    Dalej →
+                  </button>
+                )}
                 {tutorialStep < 13 && (
                   <button
                     type="button"
