@@ -4107,11 +4107,11 @@ export default function Page() {
         if (!error && data) {
           const orders = data as CustomerOrder[];
           const addedIds = orders.map(o => o.id).filter(id => !baselineIds.has(id));
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== 'production') {
             console.debug("[lada hydrate]", { attempt, spawnConfirmed, beforeLen: baselineIds.size, selectedLen: orders.length, addedIds });
           }
           if (addedIds.length > 0) {
-            if (import.meta.env.DEV) {
+            if (process.env.NODE_ENV !== 'production') {
               console.debug("[lada hydrate success]", { selectedLen: orders.length, addedIds });
             }
             applyNewCustomers(orders, addedIds);
@@ -4159,7 +4159,7 @@ export default function Page() {
         }
         const orderCount = (tickData?.order_count as number) ?? rpcOrders?.length ?? -1;
 
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV !== 'production') {
           console.debug("[lada tick result]", {
             spawned: spawnedCount,
             order_count: orderCount,
@@ -4170,7 +4170,7 @@ export default function Page() {
         }
 
         if (rpcOrders !== null) {
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== 'production') {
             console.debug("[lada set rpc orders]", {
               rpcLen: rpcOrders.length,
               orderCount: tickData?.order_count,
@@ -4196,7 +4196,7 @@ export default function Page() {
           const newIds = rpcOrders.map(o => o.id).filter(id => !knownIds.has(id));
           const rpcHasMore = rpcOrders.length > freshCurrentLen || orderCount > freshCurrentLen;
 
-          if (import.meta.env.DEV) {
+          if (process.env.NODE_ENV !== 'production') {
             console.debug("[lada set from rpc]", {
               currentLen: freshCurrentLen,
               rpcLen: rpcOrders.length,
@@ -4394,7 +4394,7 @@ export default function Page() {
 
   // DEV: log gdy zmienia się lista klientów lub status
   React.useEffect(() => {
-    if (!import.meta.env.DEV || !showLadaModal) return;
+    if (process.env.NODE_ENV === 'production' || !showLadaModal) return;
     console.debug("[lada render orders]", {
       stateLen: customerOrders.length,
       status: ladaStatusMsg,
