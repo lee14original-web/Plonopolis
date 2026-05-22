@@ -11219,10 +11219,10 @@ export default function Page() {
                           <div className="flex items-center gap-3">
                             <button
                               onClick={() => setLadaDetailIdx(null)}
-                              className="flex flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-black/30 px-5 py-4 font-bold text-amber-400 hover:bg-amber-900/20 hover:border-amber-400/70 transition shrink-0 leading-tight"
+                              className="flex flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-black/30 px-5 py-4 font-bold text-amber-400 hover:bg-amber-900/20 hover:border-amber-400/70 transition shrink-0 leading-snug"
                             >
-                              <span className="text-lg">←</span>
-                              <span className="text-[11px]">Wróć (lub Esc)</span>
+                              <span className="text-base">← Wróć</span>
+                              <span className="text-xs text-amber-500/80 font-medium">lub Esc</span>
                             </button>
                             <div className="flex-1 min-w-0">
                               <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">Klient {ladaDetailIdx + 1} z {totalOrders}</p>
