@@ -1841,6 +1841,8 @@ export default function Page() {
   const [hoveredHiveLock, setHoveredHiveLock] = React.useState(false);
   const [hoveredBarnLock, setHoveredBarnLock] = React.useState(false);
   const [hoveredSadLock, setHoveredSadLock] = React.useState(false);
+  const [hoveredLadaLock, setHoveredLadaLock] = React.useState(false);
+  const [hoveredKompostLock, setHoveredKompostLock] = React.useState(false);
   const [hoveredStodola, setHoveredStodola] = React.useState(false);
   const [hoveredUl, setHoveredUl] = React.useState(false);
   const [hoveredSad, setHoveredSad] = React.useState(false);
@@ -6517,8 +6519,8 @@ export default function Page() {
                             type="button"
                             data-no-map-drag="true"
                             title=""
-                            onMouseEnter={() => { if (_ladaUnlocked) setHoveredLada(true); }}
-                            onMouseLeave={() => setHoveredLada(false)}
+                            onMouseEnter={() => { if (_ladaUnlocked) setHoveredLada(true); else setHoveredLadaLock(true); }}
+                            onMouseLeave={() => { setHoveredLada(false); setHoveredLadaLock(false); }}
                             data-zone="lada"
                             onClick={() => {
                               if (!_ladaUnlocked) {
@@ -6545,8 +6547,8 @@ export default function Page() {
                             type="button"
                             data-no-map-drag="true"
                             title=""
-                            onMouseEnter={() => { if (_kompostUnlocked) setHoveredKompostownik(true); }}
-                            onMouseLeave={() => setHoveredKompostownik(false)}
+                            onMouseEnter={() => { if (_kompostUnlocked) setHoveredKompostownik(true); else setHoveredKompostLock(true); }}
+                            onMouseLeave={() => { setHoveredKompostownik(false); setHoveredKompostLock(false); }}
                             data-zone="kompostownik"
                             onClick={() => {
                               if (!_kompostUnlocked) {
@@ -14010,6 +14012,17 @@ export default function Page() {
           <p className="text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
         </div>
       )}
+    {/* Tooltip Lada — zablokowana */}
+      {hoveredLadaLock && isOnFarmMap && !!profile && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">Lada dla klientów — zablokowana</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{LADA_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: obsługuj klientów i zdobywaj złoto, EXP oraz bonusy.</p>
+        </div>
+      )}
     {/* Tooltip Lada dla klientów */}
       {hoveredLada && isOnFarmMap && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}>
@@ -14024,6 +14037,17 @@ export default function Page() {
           <p className="mb-2 font-black text-amber-300">Dom gracza</p>
           <p className="mb-1 text-[18px]">Twój profil, statystyki i ekwipunek.</p>
           <p className="text-[16px] text-[#8b6a3e]">Znajdziesz tu poziom, EXP, PLN oraz zarządzanie postacią.</p>
+        </div>
+      )}
+    {/* Tooltip Kompostownik — zablokowany */}
+      {hoveredKompostLock && isOnFarmMap && !!profile && (
+        <div
+          className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
+          style={{ left: mousePos.x + 18, top: Math.max(8, mousePos.y - 100) }}
+        >
+          <p className="mb-2 font-black text-amber-300">Kompostownik — zablokowany</p>
+          <p className="mb-1">Wymaga: <span className="font-bold text-amber-300">{KOMPOST_UNLOCK_LVL} poziom gracza</span></p>
+          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: przerabiaj resztki i zgniłe plony na kompost.</p>
         </div>
       )}
     {/* Tooltip Kompostownik */}
