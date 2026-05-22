@@ -3079,6 +3079,13 @@ export default function Page() {
         title: "Uprawa gotowa",
         text: "Ta uprawa jest już gotowa do zbioru.",
       });
+      if (tutorialStep === 9 && tutorialPlotIds.includes(plotId)) {
+        const _canWaterAny = tutorialPlotIds.some(id => {
+          const _p = getPlotCrop(id);
+          return _p.cropId && !isCropReady(id) && !_p.watered;
+        });
+        if (!_canWaterAny) void advanceTutorialStep(10);
+      }
       return;
     }
 
@@ -3117,7 +3124,8 @@ export default function Page() {
     if (tutorialStep === 9 && tutorialPlotIds.includes(plotId)) {
       const _newWatered = tutorialWateredIds.includes(plotId) ? tutorialWateredIds : [...tutorialWateredIds, plotId];
       setTutorialWateredIds(_newWatered);
-      if (_newWatered.length >= 3) void advanceTutorialStep(10);
+      const _remaining = tutorialPlotIds.filter(id => !_newWatered.includes(id) && !isCropReady(id));
+      if (_remaining.length === 0) void advanceTutorialStep(10);
     }
     const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
@@ -4062,6 +4070,22 @@ export default function Page() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(BACKPACK_POSITION_STORAGE_KEY, JSON.stringify(backpackPosition));
   }, [backpackPosition]);
+
+  // ─── Tutorial krok 9: auto-skip jeśli wszystkie marchewki już urosły ───
+  useEffect(() => {
+    if (tutorialStep !== 9 || tutorialPlotIds.length === 0 || !profile?.id) return;
+    const _check = () => {
+      const _canWaterAny = tutorialPlotIds.some(id => {
+        const _p = getPlotCrop(id);
+        return _p.cropId && !isCropReady(id) && !_p.watered;
+      });
+      if (!_canWaterAny) void advanceTutorialStep(10);
+    };
+    _check();
+    const _iv = setInterval(_check, 3000);
+    return () => clearInterval(_iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, tutorialPlotIds.join(","), profile?.id]);
 
   useEffect(() => {
     if (!isDraggingBackpack) return;
@@ -12947,7 +12971,7 @@ export default function Page() {
                   {/* Konewka */}
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) void advanceTutorialStep(9); } }}
+                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
                     onMouseDown={fvToolEditMode ? (e) => {
@@ -15269,7 +15293,12 @@ export default function Page() {
             "Wybierz zwykłą marchewkę.",
             `Posadź marchewki na 3 wzmocnionych polach. Posadzone: ${_t7}/3`,
             "Kliknij Konewkę.",
-            `Podlej wszystkie 3 marchewki. Podlane: ${_t9}/3`,
+            (() => {
+              const _canWaterAny = tutorialPlotIds.some(id => { const _p = plotCrops[id]; return _p?.cropId && !isCropReady(id) && !_p.watered; });
+              return _canWaterAny
+                ? `Podlej swoje marchewki, jeśli jeszcze rosną. Podlane: ${_t9}/3`
+                : "Marchewki zdążyły już urosnąć. Przejdźmy do zbioru.";
+            })(),
             "Kliknij Zbierz.",
             `Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy. Zebrane: ${_t11}/3`,
             "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
