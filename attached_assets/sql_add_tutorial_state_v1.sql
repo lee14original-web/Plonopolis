@@ -6,9 +6,10 @@ ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS tutorial_completed BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- ─── Migracja starych kont ───
--- Gracze, którzy mają już postęp (level > 1 LUB doświadczenie > 0 LUB pieniądze powyżej startowych)
--- traktowani jako "ukończyli onboarding" — okno NIE pojawi się dla nich ponownie.
--- Gracze z level=1, xp=0, money<=500 są traktowani jako nowi i zobaczą okno przewodnika.
+-- Gracze z postępem (level > 1 LUB xp > 0) traktowani jako "ukończyli onboarding"
+-- — okno NIE pojawi się dla nich ponownie.
+-- Nowe konta (level=1, xp=0) zostaną z tutorial_completed=FALSE i zobaczą okno przewodnika.
+-- Uwaga: money celowo pominięte — może być nagrodą startową lub testowo dodane.
 
 UPDATE profiles
 SET
@@ -16,8 +17,7 @@ SET
   tutorial_completed = TRUE
 WHERE
   level > 1
-  OR xp   > 0
-  OR money > 500;
+  OR xp > 0;
 
 -- ─── Indeks pomocniczy (opcjonalny, przydatny przy rankingach/filtrach) ───
 -- CREATE INDEX IF NOT EXISTS idx_profiles_tutorial_completed ON profiles (tutorial_completed);
