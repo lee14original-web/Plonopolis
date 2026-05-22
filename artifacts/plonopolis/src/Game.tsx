@@ -1509,6 +1509,16 @@ function parseUnlockedPlots(value: unknown) {
   return normalizeUnlockedPlots(value.map((item) => Number(item)));
 }
 
+function saveTutorialPlotIdsToStorage(userId: string, ids: number[]) {
+  try { if (typeof window !== "undefined") window.localStorage.setItem(`plonopolis_tutorial_plots_${userId}`, JSON.stringify(ids)); } catch {}
+}
+function loadTutorialPlotIdsFromStorage(userId: string): number[] {
+  try {
+    if (typeof window === "undefined") return [];
+    return JSON.parse(window.localStorage.getItem(`plonopolis_tutorial_plots_${userId}`) ?? "[]") as number[];
+  } catch { return []; }
+}
+
 function buildEmptyPlotCrop(): PlotCropState {
   return {
     cropId: null,
@@ -2123,6 +2133,7 @@ export default function Page() {
   const [tutorialPlotIds, setTutorialPlotIds] = React.useState<number[]>([]);
   const [tutorialWateredIds, setTutorialWateredIds] = React.useState<number[]>([]);
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
+  const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -2525,9 +2536,15 @@ export default function Page() {
     const _guidePlotIds = Object.entries(_loadedPlots)
       .filter(([, p]) => p.compostBonus?.type === "guide")
       .map(([id]) => Number(id));
-    setTutorialPlotIds(_guidePlotIds);
+    // Merge localStorage cache — compostBonus może tymczasowo znikać po sadzeniu z RPC
+    const _cachedIds = _loadedTStep >= 5 && _loadedTStep <= 13
+      ? loadTutorialPlotIdsFromStorage(nextProfile.id)
+      : [] as number[];
+    const _finalTutorialIds = Array.from(new Set([..._cachedIds, ..._guidePlotIds]));
+    setTutorialPlotIds(_finalTutorialIds);
+    setTutorialPlantedIds(_finalTutorialIds.filter(id => _loadedPlots[id]?.cropId != null));
     setTutorialWateredIds(_loadedTStep === 9
-      ? _guidePlotIds.filter(id => _loadedPlots[id]?.watered)
+      ? _finalTutorialIds.filter(id => _loadedPlots[id]?.watered)
       : []);
     setTutorialHarvestedIds([]);
     // Przeszkody pól — zawsze z DB (losowane na serwerze przy rejestracji)
@@ -3366,8 +3383,9 @@ export default function Page() {
 
       if (tutorialStep === 7) {
         if (tutorialPlotIds.includes(plotId)) {
-          const _alreadyPlanted = tutorialPlotIds.filter(id => id !== plotId && plotCrops[id]?.cropId === "carrot_good").length;
-          if (_alreadyPlanted + 1 >= 3) void advanceTutorialStep(8);
+          const _newPlanted = tutorialPlantedIds.includes(plotId) ? tutorialPlantedIds : [...tutorialPlantedIds, plotId];
+          setTutorialPlantedIds(_newPlanted);
+          if (_newPlanted.length >= 3) void advanceTutorialStep(8);
         } else if (tutorialPlotIds.length > 0) {
           setMessage({ type: "info", title: "Przewodnik", text: "Posadź marchewki na polach z Kompostem Przewodnika." });
           return;
@@ -4070,6 +4088,19 @@ export default function Page() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(BACKPACK_POSITION_STORAGE_KEY, JSON.stringify(backpackPosition));
   }, [backpackPosition]);
+
+  // ─── Tutorial krok 7: recovery — wykryj już posadzone marchewki (np. po refreshie) ───
+  useEffect(() => {
+    if (tutorialStep !== 7 || tutorialPlotIds.length === 0 || !profile?.id) return;
+    const _planted = tutorialPlotIds.filter(id => plotCrops[id]?.cropId != null);
+    if (_planted.length >= 3) {
+      setTutorialPlantedIds(tutorialPlotIds);
+      void advanceTutorialStep(8);
+    } else if (_planted.length > tutorialPlantedIds.length) {
+      setTutorialPlantedIds(_planted);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, tutorialPlotIds, plotCrops]);
 
   // ─── Tutorial krok 9: auto-skip jeśli wszystkie marchewki już urosły ───
   useEffect(() => {
@@ -5268,7 +5299,10 @@ export default function Page() {
     if (tutorialStep === 4) {
       const _nextIds = tutorialPlotIds.includes(plotId) ? tutorialPlotIds : [...tutorialPlotIds, plotId];
       setTutorialPlotIds(_nextIds);
-      if (_nextIds.length >= 3) void advanceTutorialStep(5);
+      if (_nextIds.length >= 3) {
+        saveTutorialPlotIdsToStorage(profile.id, _nextIds);
+        void advanceTutorialStep(5);
+      }
     }
   }
 
@@ -15280,7 +15314,7 @@ export default function Page() {
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
         {tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (() => {
           const _t4 = tutorialPlotIds.length;
-          const _t7 = tutorialPlotIds.filter(id => plotCrops[id]?.cropId === "carrot_good").length;
+          const _t7 = tutorialPlantedIds.length;
           const _t9 = tutorialWateredIds.length;
           const _t11 = tutorialHarvestedIds.length;
           const _texts: string[] = [

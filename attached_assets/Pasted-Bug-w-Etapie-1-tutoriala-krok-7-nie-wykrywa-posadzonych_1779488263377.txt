@@ -1,0 +1,45 @@
+Bug w Etapie 1 tutoriala — krok 7 nie wykrywa posadzonych marchewek.
+
+Objaw:
+- Gracz użył 3× Kompost Przewodnika.
+- tutorial_step przeszedł na 5.
+- Potem kliknął Nasiona, wybrał carrot_good.
+- Posadził marchewki na 3 polach z Kompostem Przewodnika.
+- Na polach widać marchewki i ikonę guide compost.
+- Panel nadal pokazuje:
+  "Posadź marchewki na 3 wzmocnionych polach. Posadzone: 0/3"
+- DB nadal:
+  tutorial_step = 7
+
+Wniosek:
+executePlantRpc / licznik kroku 7 nie wykrywa poprawnie posadzonych marchewek na tutorialowych polach.
+
+Naprawa:
+1. Nie licz kroku 7 wyłącznie po aktualnym `tutorialPlotIds` w state, jeśli może być nieaktualne.
+2. Po każdym udanym sadzeniu w kroku 7 przelicz z aktualnych pól:
+   - tutorialowe pola = pola, które mają lub miały Kompost Przewodnika.
+   - najlepiej użyj `tutorialPlotIds`, ale jeśli jest puste/niepełne, odbuduj z pól:
+     `compostBonus?.type === "guide"` albo innego znacznika guide.
+3. Licznik `Posadzone X/3` powinien liczyć:
+   pola z `id/index` w tutorialPlotIds
+   oraz `cropId === "carrot_good"` albo odpowiedni klucz marchewki w kodzie.
+4. Po posadzeniu 3 marchewek na tych polach:
+   `advanceTutorialStep(8)`
+5. Jeśli problemem jest to, że `compostBonus` znika po posadzeniu, dodaj bezpieczny znacznik tutorialowy dla pól:
+   - np. zapisz tutorialPlotIds do local state i/lub do DB/profile jeśli potrzeba,
+   - albo przy kroku 4 po użyciu kompostu zapamiętaj pola w localStorage per user:
+     `plonopolis_tutorial_plots_${profile.id}`
+   - po refreshu odbuduj z pól, jeśli się da.
+6. Najlepiej bez nowej kolumny DB, ale po refreshu musi działać.
+7. Panel kroku 7 musi pokazywać poprawnie:
+   1/3, 2/3, 3/3.
+8. Jeśli marchewki już są posadzone, a gracz utknął na kroku 7, po odświeżeniu albo kolejnym loadzie tutorial powinien sam wykryć 3/3 i przejść na krok 8.
+9. Dodaj useEffect dla tutorialStep === 7:
+   - przelicz plantedCount z aktualnych plotCrops,
+   - jeśli plantedCount >= 3 → advanceTutorialStep(8)
+   - dzięki temu naprawi też już zablokowane konto testowe.
+10. Nie zmieniaj guide_compost, SQL targu ani ekonomii.
+11. Nie zmieniaj zwykłego sadzenia.
+12. Typecheck.
+13. Pokaż diff.
+14. Nie pushuj jeszcze.
