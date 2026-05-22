@@ -3853,7 +3853,7 @@ export default function Page() {
     // Uruchom crossfade
     if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
     setMapCrossfade({ from: prev, to: currentMap });
-    mapCrossfadeTimerRef.current = setTimeout(() => setMapCrossfade(null), 19000);
+    mapCrossfadeTimerRef.current = setTimeout(() => setMapCrossfade(null), 13000);
 
     return () => {
       if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
@@ -5813,8 +5813,8 @@ export default function Page() {
         }
         @keyframes plono-map-banner {
           0%   { opacity: 0; }
-          6%   { opacity: 1; }
-          80%  { opacity: 1; }
+          8%   { opacity: 1; }
+          78%  { opacity: 1; }
           100% { opacity: 0; }
         }
       `}</style>
@@ -5900,7 +5900,7 @@ export default function Page() {
                 imageRendering: "pixelated",
                 width: FARM_IMG_W, height: FARM_IMG_H,
                 zIndex: 2,
-                animation: "plono-map-fade-out 18s ease-in-out forwards",
+                animation: "plono-map-fade-out 12s ease-in-out forwards",
               }}
             />
           )}
@@ -5910,7 +5910,7 @@ export default function Page() {
           <div
             className="pointer-events-none absolute"
             style={{ bottom: "7%", left: "50%", transform: "translateX(-50%)", zIndex: 10,
-              animation: "plono-map-banner 18s ease-in-out forwards" }}
+              animation: "plono-map-banner 12s ease-in-out forwards" }}
           >
             <div style={{
               background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.62) 20%, rgba(0,0,0,0.62) 80%, transparent)",
