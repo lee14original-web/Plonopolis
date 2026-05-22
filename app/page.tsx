@@ -52,6 +52,7 @@ type Profile = {
   tutorial_started?: boolean | null;
   tutorial_completed?: boolean | null;
   tutorial_skipped?: boolean | null;
+  tutorial_step?: number | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -2118,6 +2119,8 @@ export default function Page() {
   const [guideExitStep, setGuideExitStep] = React.useState<0 | 1 | 2>(0);
   const [guideSaving, setGuideSaving] = React.useState(false);
   const [guideError, setGuideError] = React.useState<string | null>(null);
+  const [tutorialStep, setTutorialStep] = React.useState<number>(0);
+  const [tutorialPlotId, setTutorialPlotId] = React.useState<number | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -2512,6 +2515,7 @@ export default function Page() {
     };
 
     setProfile(nextProfile);
+    setTutorialStep(typeof source.tutorial_step === "number" ? source.tutorial_step : 0);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     setPlotCrops(parsePlotCrops(source.plot_crops));
     // Przeszkody pól — zawsze z DB (losowane na serwerze przy rejestracji)
@@ -3098,6 +3102,7 @@ export default function Page() {
       });
     }
 
+    if (tutorialStep === 9 && plotId === tutorialPlotId) void advanceTutorialStep(10);
     const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
     const _zaradPct = (WATER_BASE + _zaradBonus + _waterEqPct) * 100;
@@ -3335,6 +3340,14 @@ export default function Page() {
         });
       }
 
+      if (tutorialStep === 7) {
+        if (plotId === tutorialPlotId) {
+          void advanceTutorialStep(8);
+        } else if (tutorialPlotId !== null) {
+          setMessage({ type: "info", title: "Przewodnik", text: "Posadź marchewkę na polu z Kompostem Przewodnika." });
+          return;
+        }
+      }
       setMessage({
         type: "success",
         title: "Posadzono uprawę",
@@ -3564,11 +3577,12 @@ export default function Page() {
             setGuideError(null);
             const { error } = await supabase
               .from("profiles")
-              .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
+              .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true, tutorial_step: 0 })
               .eq("id", profile.id);
             setGuideSaving(false);
             if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
-            setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
+            setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true, tutorial_step: 0 } : p);
+            setTutorialStep(0);
             setShowWelcome(false);
             setGuideExitStep(0);
           })();
@@ -5210,6 +5224,16 @@ export default function Page() {
     // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
     setCompostNotice({ type: "guide", value: 75, plotId });
     setTimeout(() => setCompostNotice(null), 5000);
+    if (tutorialStep === 4) { setTutorialPlotId(plotId); void advanceTutorialStep(5); }
+  }
+
+  // ─── TUTORIAL: zaawansuj krok (nie cofa, zapis do DB) ───
+  async function advanceTutorialStep(nextStep: number) {
+    if (!profile?.id) return;
+    if (!profile.tutorial_started || profile.tutorial_completed || profile.tutorial_skipped) return;
+    if (nextStep <= tutorialStep) return;
+    setTutorialStep(nextStep);
+    await supabase.from("profiles").update({ tutorial_step: nextStep }).eq("id", profile.id);
   }
 
   // ─── KOMPOSTOWNIK: wrzuć plon → +1 do bieżącej partii + dolicz wartość (base × rzadkość) do scoreSum ───
@@ -5563,6 +5587,7 @@ export default function Page() {
 
     // Zastosuj wynik RPC (XP, poziom, pola) — profil z poprawnym parserem wrappera
     const nextProfile = await applyProfileState(harvestRpcProfile);
+    if (tutorialStep === 11 && plotId === tutorialPlotId) void advanceTutorialStep(12);
     // Synchronizacja stanu klienta z DB.
     // Używamy Math.max per klucz (nie absolutnego przypisania), żeby równoległe żniwa
     // nie nadpisywały się wzajemnie mniejszą wartością (race condition przy masowym zbiorze).
@@ -6501,6 +6526,7 @@ export default function Page() {
       setHoveredPolaUprawne(false);
       setIsFieldViewOpen(true);
       setSelectedPlotId((prev) => prev ?? 1);
+      if (tutorialStep === 1) void advanceTutorialStep(2);
     }}
     onMouseEnter={() => setHoveredPolaUprawne(true)}
     onMouseLeave={() => setHoveredPolaUprawne(false)}
@@ -8663,6 +8689,7 @@ export default function Page() {
                                     }
                                     // Sukces: zaktualizuj lokalny stan profilu i inwentarza
                                     setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: false } : p);
+                                    setTutorialStep(1);
                                     setSeedInventory(prev => ({ ...prev, guide_compost: (prev["guide_compost"] ?? 0) + (rpcData.guide_compost_granted as number ?? 3) }));
                                     setShowWelcome(false);
                                     setMessage({ type: "success", title: "Przewodnik", text: "Przewodnik zostanie uruchomiony wkrótce. Otrzymałeś 3× Kompost Przewodnika!" });
@@ -8724,11 +8751,12 @@ export default function Page() {
                                       setGuideError(null);
                                       const { error } = await supabase
                                         .from("profiles")
-                                        .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true })
+                                        .update({ tutorial_started: true, tutorial_completed: false, tutorial_skipped: true, tutorial_step: 0 })
                                         .eq("id", profile.id);
                                       setGuideSaving(false);
                                       if (error) { setGuideError("Błąd zapisu. Spróbuj ponownie."); return; }
-                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true } : p);
+                                      setProfile(p => p ? { ...p, tutorial_started: true, tutorial_completed: false, tutorial_skipped: true, tutorial_step: 0 } : p);
+                                      setTutorialStep(0);
                                       setShowWelcome(false);
                                       setGuideExitStep(0);
                                     }}
@@ -12842,6 +12870,10 @@ export default function Page() {
                 >
                   <button
                     onClick={() => {
+                      if (tutorialStep >= 1 && tutorialStep <= 11) {
+                        setMessage({ type: "info", title: "Przewodnik aktywny", text: "Najpierw wykonaj krok przewodnika." });
+                        return;
+                      }
                       setIsFieldViewOpen(false);
                       setSelectedPlotId(null);
                       setIsFieldViewCollapsed(false);
@@ -12890,7 +12922,7 @@ export default function Page() {
                   {/* Konewka */}
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); } }}
+                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) void advanceTutorialStep(9); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
                     onMouseDown={fvToolEditMode ? (e) => {
@@ -12914,7 +12946,7 @@ export default function Page() {
                   {/* Zbierz */}
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); } }}
+                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
                     data-zone="sickle"
@@ -12943,6 +12975,7 @@ export default function Page() {
                       if (fvToolEditMode) return;
                       setFvSeedPickerOpen(prev => !prev);
                       setFvCompostPickerOpen(false);
+                      if (tutorialStep === 5) void advanceTutorialStep(6);
                     }}
                     onMouseDown={fvToolEditMode ? (e) => {
                       e.preventDefault();
@@ -12996,6 +13029,7 @@ export default function Page() {
                       if (fvToolEditMode) return;
                       setFvCompostPickerOpen(prev => !prev);
                       setFvSeedPickerOpen(false);
+                      if (tutorialStep === 2) void advanceTutorialStep(3);
                     }}
                     onMouseDown={fvToolEditMode ? (e) => {
                       e.preventDefault();
@@ -13090,6 +13124,7 @@ export default function Page() {
                                           setSelectedTool(null);
                                           setFvSeedPickerOpen(false);
                                           setSeedPickerTip(null);
+                                          if (tutorialStep === 6 && seedId === "carrot_good") void advanceTutorialStep(7);
                                         }}
                                         onMouseEnter={(e) => {
                                           const rect = e.currentTarget.getBoundingClientRect();
@@ -13272,6 +13307,7 @@ export default function Page() {
                                         setSelectedSeedId(isSel ? null : cKey);
                                         setSelectedTool(null);
                                         setFvCompostPickerOpen(false);
+                                        if (tutorialStep === 3 && cKey === "guide_compost") void advanceTutorialStep(4);
                                       }}
                                       className="flex items-center gap-3 rounded-xl border-2 px-3 py-2 transition-colors text-left"
                                       style={{ borderColor: isSel ? "#86efac" : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(20,40,10,0.9)" : "rgba(20,12,6,0.7)" }}
@@ -14049,6 +14085,24 @@ export default function Page() {
 
                   </div>
                 </div>
+
+                {/* ─── Blok przewodnika krok 12 ─── */}
+                {tutorialStep === 12 && (
+                  <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-4 py-3">
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#d8ba7a]">📖 Etap 1 przewodnika — Krok 12/13</p>
+                    <p className="mb-3 text-[13px] text-[#f9e7b2] leading-snug">
+                      Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw. W tym przypadku możliwe były: <span className="text-gray-400">🤢 popsuta marchew</span>, <span className="text-green-300">🌿 zwykła marchew</span>, <span className="text-purple-300">✨ epicka marchew</span> i <span className="text-yellow-300">🌟 legendarna marchew</span>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void advanceTutorialStep(13)}
+                      className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-5 py-2 text-[13px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
+                    >
+                      Dalej →
+                    </button>
+                  </div>
+                )}
+
               </div>
             );
           })()}
@@ -15172,6 +15226,52 @@ export default function Page() {
           </div>
         );
       })()}
+
+
+        {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
+        {tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (
+          <div className="fixed bottom-5 left-1/2 z-[87] w-full max-w-[480px] -translate-x-1/2 px-4 pointer-events-none">
+            <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] p-4 shadow-2xl backdrop-blur-sm pointer-events-auto">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-[#d8ba7a] font-black">📖 Etap 1 przewodnika</p>
+                <p className="text-[10px] text-[#8b6a3e]">Krok {tutorialStep}/13</p>
+              </div>
+              <div className="mb-3 h-1 rounded-full bg-[#3a2510]/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#d8ba7a] transition-all duration-500"
+                  style={{ width: `${(tutorialStep / 13) * 100}%` }}
+                />
+              </div>
+              <p className="text-sm font-bold text-[#f9e7b2] leading-snug">
+                {([
+                  "",
+                  "Kliknij Pola uprawne, aby rozpocząć pracę na swoim ranczu.",
+                  "Kliknij Kompost. Użyjemy go, żeby przyspieszyć pierwsze marchewki.",
+                  "Wybierz Kompost Przewodnika.",
+                  "Użyj kompostu na pustym polu, żeby jednorazowo je wzmocnić.",
+                  "Teraz kliknij Nasiona.",
+                  "Wybierz zwykłą marchewkę.",
+                  "Posadź marchewkę na polu z Kompostem Przewodnika.",
+                  "Kliknij Konewkę.",
+                  "Podlej swoją marchewkę.",
+                  "Kliknij Zbierz.",
+                  "Poczekaj, aż marchewka urośnie, a potem ją zbierz.",
+                  "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
+                  "Świetnie! Etap 1 przewodnika ukończony. Za chwilę przejdziemy dalej.",
+                ] as string[])[tutorialStep]}
+              </p>
+              {tutorialStep < 13 && (
+                <button
+                  type="button"
+                  onClick={() => setGuideExitStep(1)}
+                  className="mt-2 text-[11px] text-[#8b6a3e] hover:text-red-400 transition-colors"
+                >
+                  Pomiń przewodnik
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         </main>
     </div>
