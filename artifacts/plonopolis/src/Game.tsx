@@ -2134,6 +2134,7 @@ export default function Page() {
   const [tutorialWateredIds, setTutorialWateredIds] = React.useState<number[]>([]);
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
+  const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -15376,14 +15377,41 @@ export default function Page() {
             "Kliknij Zbierz.",
             `Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy. Zebrane pola: ${_t11}/3`,
             "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
-            "Świetnie! Etap 1 przewodnika ukończony. Za chwilę przejdziemy dalej.",
+            "Świetnie! Etap 1 przewodnika ukończony.\n\nPRZEWODNIK W BUDOWIE — na razie tyle. Możesz zminimalizować to okno.",
           ];
+
+          if (tutorialStep === 13 && tutorialPanelMinimized) {
+            return (
+              <div className="fixed bottom-5 left-1/2 z-[87] -translate-x-1/2 pointer-events-none">
+                <button
+                  type="button"
+                  onClick={() => setTutorialPanelMinimized(false)}
+                  className="pointer-events-auto rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] px-5 py-2 text-sm font-black text-[#d8ba7a] shadow-2xl backdrop-blur-sm hover:bg-[rgba(30,16,4,0.98)] transition"
+                >
+                  Etap 1 ukończony — Przewodnik w budowie
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div className="fixed bottom-5 left-1/2 z-[87] w-full max-w-[700px] -translate-x-1/2 px-4 pointer-events-none">
               <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] p-6 shadow-2xl backdrop-blur-sm pointer-events-auto">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm uppercase tracking-widest text-[#d8ba7a] font-black">Etap 1 przewodnika</p>
-                  <p className="text-sm text-[#8b6a3e]">Krok {tutorialStep}/13</p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm text-[#8b6a3e]">Krok {tutorialStep}/13</p>
+                    {tutorialStep === 13 && (
+                      <button
+                        type="button"
+                        onClick={() => setTutorialPanelMinimized(true)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#8b6a3e]/60 bg-[rgba(255,255,255,0.04)] text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/60 transition text-base font-black leading-none"
+                        title="Minimalizuj"
+                      >
+                        −
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-4 h-2 rounded-full bg-[#3a2510]/60 overflow-hidden">
                   <div
@@ -15391,7 +15419,7 @@ export default function Page() {
                     style={{ width: `${(tutorialStep / 13) * 100}%` }}
                   />
                 </div>
-                <p className="text-xl font-bold text-[#f9e7b2] leading-snug">
+                <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
                   {_texts[tutorialStep]}
                 </p>
                 {tutorialStep === 12 && (
