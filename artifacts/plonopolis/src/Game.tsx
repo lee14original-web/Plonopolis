@@ -15403,15 +15403,6 @@ export default function Page() {
                     Dalej
                   </button>
                 )}
-                {tutorialStep < 13 && (
-                  <button
-                    type="button"
-                    onClick={() => setGuideExitStep(1)}
-                    className="mt-3 text-sm text-[#8b6a3e] hover:text-red-400 transition-colors"
-                  >
-                    Pomiń przewodnik
-                  </button>
-                )}
               </div>
             </div>
           );
