@@ -2135,7 +2135,7 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
-  const [tutorialArrow, setTutorialArrow] = React.useState<{ x: number; y: number } | null>(null);
+  const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -3760,11 +3760,8 @@ export default function Page() {
       4:  '[data-tutorial-target="tutorial-plot-empty"]',
       5:  '[data-tutorial-target="nasiona-btn"]',
       6:  '[data-tutorial-target="carrot-good-item"]',
-      7:  '[data-tutorial-target="tutorial-plot-compost"]',
       8:  '[data-tutorial-target="konewka-btn"]',
-      9:  '[data-tutorial-target="tutorial-plot-growing"]',
       10: '[data-tutorial-target="zbierz-btn"]',
-      11: '[data-tutorial-target="tutorial-plot-ready"]',
       12: '[data-tutorial-target="tutorial-dalej-btn"]',
     };
     const recalc = () => {
@@ -3774,7 +3771,7 @@ export default function Page() {
       if (!el) { setTutorialArrow(null); return; }
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) { setTutorialArrow(null); return; }
-      setTutorialArrow({ x: rect.left + rect.width / 2, y: rect.top });
+      setTutorialArrow({ cx: rect.left + rect.width / 2, top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height });
     };
     recalc();
     window.addEventListener("resize", recalc);
@@ -6713,9 +6710,9 @@ export default function Page() {
       width: `${activeHitboxPos.polaUprawne.width}%`,
       height: `${activeHitboxPos.polaUprawne.height}%`,
       zIndex: tutorialStep === 1 ? 6 : 4,
-      outline: tutorialStep === 1 ? "3px solid rgba(251,191,36,0.85)" : undefined,
-      borderRadius: tutorialStep === 1 ? "12px" : undefined,
-      boxShadow: tutorialStep === 1 ? "0 0 22px rgba(251,191,36,0.5)" : undefined,
+      outline: tutorialStep === 1 ? "4px solid rgba(251,191,36,1)" : undefined,
+      borderRadius: tutorialStep === 1 ? "14px" : undefined,
+      boxShadow: tutorialStep === 1 ? "0 0 0 6px rgba(251,191,36,0.25), 0 0 45px rgba(251,191,36,0.85), 0 0 90px rgba(251,191,36,0.45)" : undefined,
     }}
     title=""
   />
@@ -13557,7 +13554,7 @@ export default function Page() {
                         const _tutKey = (() => {
                           if (fieldHitboxEditMode) return null;
                           if (tutorialStep === 4 && isUnlocked && !_pc.cropId && !_pc.compostBonus) return "tutorial-plot-empty";
-                          if (tutorialStep === 7 && tutorialPlotIds.includes(plotId) && isUnlocked && !_pc.cropId && !!_pc.compostBonus) return "tutorial-plot-compost";
+                          if (tutorialStep === 7 && isUnlocked && !_pc.cropId && _pc.compostBonus?.type === "guide") return "tutorial-plot-compost";
                           if (tutorialStep === 9 && tutorialPlotIds.includes(plotId) && !!_pc.cropId && !isCropReady(plotId) && !_pc.watered) return "tutorial-plot-growing";
                           if (tutorialStep === 11 && tutorialPlotIds.includes(plotId) && isCropReady(plotId)) return "tutorial-plot-ready";
                           return null;
@@ -13569,7 +13566,7 @@ export default function Page() {
                             data-tutorial-target={_tutKey ?? undefined}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
-                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onDragStart={(e) => e.preventDefault()}
                             onMouseEnter={() => { tryApplyFieldAction(plotId); }}
                             onMouseDown={(e) => {
@@ -13597,7 +13594,7 @@ export default function Page() {
                               } else if (selectedSeedId && isCompostKey(selectedSeedId)) {
                                 if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId) {
-                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId]) _started = true;
+                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId] && !(tutorialStep === 7 && _plot.compostBonus?.type !== "guide")) _started = true;
                               } else if (_plot.cropId && isCropReady(plotId)) {
                                 _started = true;
                               }
@@ -13623,7 +13620,7 @@ export default function Page() {
                               if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
                               if (selectedSeedId && isGuideCompostKey(selectedSeedId)) { void applyGuideCompostToPlot(plotId); return; }
                               if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
-                              if (selectedSeedId) { handlePlantFromSelectedSeed(plotId); return; }
+                              if (selectedSeedId) { if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); return; } handlePlantFromSelectedSeed(plotId); return; }
                               if (getPlotCrop(plotId).cropId && isCropReady(plotId)) void handleHarvestPlot(plotId);
                             }}
                             title={(() => {
@@ -13645,7 +13642,7 @@ export default function Page() {
                               fieldHitboxEditMode
                                 ? "cursor-move border-2 border-orange-400/70 bg-orange-900/10"
                                 : isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
-                            }${_tutKey ? " z-[91] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`}
+                            }${_tutKey ? " z-[91] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}${tutorialStep === 7 && isUnlocked && _pc.compostBonus?.type !== "guide" && !_pc.cropId && !fieldHitboxEditMode ? " opacity-30" : ""}`}
                             style={{
                               left: plot.left,
                               top: plot.top,
@@ -15525,15 +15522,6 @@ export default function Page() {
                 <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
                   {_texts[tutorialStep]}
                 </p>
-                {tutorialStep === 12 && (
-                  <button
-                    type="button"
-                    onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); }}
-                    className="mt-4 rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-6 py-3 text-base font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
-                  >
-                    Dalej
-                  </button>
-                )}
               </div>
             </div>
           );
@@ -15544,15 +15532,26 @@ export default function Page() {
           <div className="fixed inset-0 z-[5] pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
         )}
 
-        {/* Tutorial: strzałka wskazująca aktywny element */}
-        {tutorialArrow && (
-          <div
-            className="fixed z-[93] pointer-events-none"
-            style={{ left: tutorialArrow.x, top: tutorialArrow.y - 58, transform: "translateX(-50%)" }}
-          >
-            <div className="animate-bounce flex flex-col items-center">
-              <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 34 L0 15 H9 V0 H17 V15 H26 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="1.5" strokeLinejoin="round"/>
+        {/* Tutorial: strzałki wskazujące aktywny element */}
+        {tutorialArrow && tutorialStep === 1 && [
+          { left: tutorialArrow.cx - 24, top: tutorialArrow.top - 62 - 20, rotate: "0deg", delay: "0s" },
+          { left: tutorialArrow.cx - 24, top: tutorialArrow.bottom + 20, rotate: "180deg", delay: "0.1s" },
+          { left: tutorialArrow.left - 75, top: tutorialArrow.top + tutorialArrow.height / 2 - 31, rotate: "90deg", delay: "0.15s" },
+          { left: tutorialArrow.right + 27, top: tutorialArrow.top + tutorialArrow.height / 2 - 31, rotate: "-90deg", delay: "0.2s" },
+        ].map((a, i) => (
+          <div key={`tut-arrow-${i}`} className="fixed z-[93] pointer-events-none" style={{ left: a.left, top: a.top }}>
+            <div className="animate-bounce" style={{ transform: `rotate(${a.rotate})`, animationDelay: a.delay }}>
+              <svg width="48" height="62" viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        ))}
+        {tutorialArrow && tutorialStep !== 1 && (
+          <div className="fixed z-[93] pointer-events-none" style={{ left: tutorialArrow.cx - 24, top: tutorialArrow.top - 82 }}>
+            <div className="animate-bounce">
+              <svg width="48" height="62" viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
               </svg>
             </div>
           </div>
