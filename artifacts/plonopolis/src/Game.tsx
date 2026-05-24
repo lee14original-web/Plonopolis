@@ -3741,7 +3741,7 @@ export default function Page() {
       }
     })();
     return () => { cancelled = true; };
-  }, [isFieldViewOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isFieldViewOpen, profile?.id]);
 
   // Tick dla pasków postępu sadzenia/zbioru — działa tylko gdy są aktywne akcje
   useEffect(() => {
