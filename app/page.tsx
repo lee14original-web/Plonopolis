@@ -2135,6 +2135,7 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
+  const [tutorialArrow, setTutorialArrow] = React.useState<{ x: number; y: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -3747,6 +3748,40 @@ export default function Page() {
     })();
     return () => { cancelled = true; };
   }, [isFieldViewOpen, profile?.id]);
+
+  // Tutorial strzałka — oblicza pozycję targetu, odpytuje co 400 ms
+  useEffect(() => {
+    const _active = !!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true;
+    if (!_active || tutorialStep < 1 || tutorialStep > 12) { setTutorialArrow(null); return; }
+    const _selectors: Partial<Record<number, string>> = {
+      1:  '[data-tutorial-target="pola-uprawne"]',
+      2:  '[data-tutorial-target="kompost-btn"]',
+      3:  '[data-tutorial-target="guide-compost-item"]',
+      4:  '[data-tutorial-target="tutorial-plot-empty"]',
+      5:  '[data-tutorial-target="nasiona-btn"]',
+      6:  '[data-tutorial-target="carrot-good-item"]',
+      7:  '[data-tutorial-target="tutorial-plot-compost"]',
+      8:  '[data-tutorial-target="konewka-btn"]',
+      9:  '[data-tutorial-target="tutorial-plot-growing"]',
+      10: '[data-tutorial-target="zbierz-btn"]',
+      11: '[data-tutorial-target="tutorial-plot-ready"]',
+      12: '[data-tutorial-target="tutorial-dalej-btn"]',
+    };
+    const recalc = () => {
+      const sel = _selectors[tutorialStep];
+      if (!sel) { setTutorialArrow(null); return; }
+      const el = document.querySelector(sel);
+      if (!el) { setTutorialArrow(null); return; }
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) { setTutorialArrow(null); return; }
+      setTutorialArrow({ x: rect.left + rect.width / 2, y: rect.top });
+    };
+    recalc();
+    window.addEventListener("resize", recalc);
+    const _int = setInterval(recalc, 400);
+    return () => { window.removeEventListener("resize", recalc); clearInterval(_int); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, isFieldViewOpen, fvCompostPickerOpen, fvSeedPickerOpen, profile?.id, profile?.tutorial_started, profile?.tutorial_completed, profile?.tutorial_skipped]);
 
   // Tick dla pasków postępu sadzenia/zbioru — działa tylko gdy są aktywne akcje
   useEffect(() => {
@@ -6670,13 +6705,17 @@ export default function Page() {
     onMouseEnter={() => setHoveredPolaUprawne(true)}
     onMouseLeave={() => setHoveredPolaUprawne(false)}
     data-zone="polaUprawne"
+    data-tutorial-target="pola-uprawne"
     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105"
     style={{
       left: `${activeHitboxPos.polaUprawne.left}%`,
       top: `${activeHitboxPos.polaUprawne.top}%`,
       width: `${activeHitboxPos.polaUprawne.width}%`,
       height: `${activeHitboxPos.polaUprawne.height}%`,
-      zIndex: 4,
+      zIndex: tutorialStep === 1 ? 6 : 4,
+      outline: tutorialStep === 1 ? "3px solid rgba(251,191,36,0.85)" : undefined,
+      borderRadius: tutorialStep === 1 ? "12px" : undefined,
+      boxShadow: tutorialStep === 1 ? "0 0 22px rgba(251,191,36,0.5)" : undefined,
     }}
     title=""
   />
@@ -13061,6 +13100,7 @@ export default function Page() {
                   {/* Konewka */}
                   <button
                     type="button"
+                    data-tutorial-target="konewka-btn"
                     onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
@@ -13069,7 +13109,7 @@ export default function Page() {
                       const pos = fvKonewkaPos;
                       fvToolDragRef.current = { btn: "konewka", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
                     <img src="/ui/watering_can_transparent.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
@@ -13085,6 +13125,7 @@ export default function Page() {
                   {/* Zbierz */}
                   <button
                     type="button"
+                    data-tutorial-target="zbierz-btn"
                     onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
@@ -13094,7 +13135,7 @@ export default function Page() {
                       const pos = fvZbierzPos;
                       fvToolDragRef.current = { btn: "zbierz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : (e) => setHoveredSickle(false)}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
                     <img src="/ui/sierp.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated" }} />
@@ -13110,6 +13151,7 @@ export default function Page() {
                   {/* ─── Przycisk Nasiona ─── */}
                   <button
                     type="button"
+                    data-tutorial-target="nasiona-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
                       setFvSeedPickerOpen(prev => !prev);
@@ -13121,7 +13163,7 @@ export default function Page() {
                       const pos = fvNasonaPos;
                       fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
                   >
                     {(() => {
@@ -13164,6 +13206,7 @@ export default function Page() {
                   {/* ─── Przycisk Kompost ─── */}
                   <button
                     type="button"
+                    data-tutorial-target="kompost-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
                       setFvCompostPickerOpen(prev => !prev);
@@ -13175,7 +13218,7 @@ export default function Page() {
                       const pos = fvKompostPos;
                       fvToolDragRef.current = { btn: "kompost", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isGuideCompostKey(selectedSeedId)) ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(250,204,21,0.5)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isGuideCompostKey(selectedSeedId)) ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(250,204,21,0.5)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 2 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvKompostPos.l, top: fvKompostPos.t, width: fvKompostPos.w, height: fvKompostPos.h }}
                   >
                     {(() => {
@@ -13255,7 +13298,7 @@ export default function Page() {
                                   const sprite = q === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : q === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : q === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
                                   const isSel = selectedSeedId === seedId;
                                   return (
-                                    <div key={seedId} className="flex flex-col items-center gap-1">
+                                    <div key={seedId} className={`flex flex-col items-center gap-1${tutorialStep === 6 && seedId === "carrot_good" ? " outline outline-2 outline-amber-400 rounded-xl shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`} data-tutorial-target={tutorialStep === 6 && seedId === "carrot_good" ? "carrot-good-item" : undefined}>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -13442,14 +13485,15 @@ export default function Page() {
                                     <button
                                       key={cKey}
                                       type="button"
+                                      data-tutorial-target={tutorialStep === 3 && cKey === "guide_compost" ? "guide-compost-item" : undefined}
                                       onClick={() => {
                                         setSelectedSeedId(isSel ? null : cKey);
                                         setSelectedTool(null);
                                         setFvCompostPickerOpen(false);
                                         if (tutorialStep === 3 && cKey === "guide_compost") void advanceTutorialStep(4);
                                       }}
-                                      className="flex items-center gap-3 rounded-xl border-2 px-3 py-2 transition-colors text-left"
-                                      style={{ borderColor: isSel ? "#86efac" : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(20,40,10,0.9)" : "rgba(20,12,6,0.7)" }}
+                                      className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2 transition-colors text-left${tutorialStep === 3 && cKey === "guide_compost" ? " ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`}
+                                      style={{ borderColor: isSel ? "#86efac" : tutorialStep === 3 && cKey === "guide_compost" ? "#fbbf24" : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(20,40,10,0.9)" : "rgba(20,12,6,0.7)" }}
                                     >
                                       <span className="text-2xl select-none">{def.icon}</span>
                                       <div className="flex-1 min-w-0">
@@ -13509,10 +13553,20 @@ export default function Page() {
                         const isUnlocked = isPlotUnlocked(plotId);
                         const isSelected = selectedPlotId === plotId;
                         const plotCost = getPlotUnlockCost(plotId);
+                        const _pc = getPlotCrop(plotId);
+                        const _tutKey = (() => {
+                          if (fieldHitboxEditMode) return null;
+                          if (tutorialStep === 4 && isUnlocked && !_pc.cropId && !_pc.compostBonus) return "tutorial-plot-empty";
+                          if (tutorialStep === 7 && tutorialPlotIds.includes(plotId) && isUnlocked && !_pc.cropId && !!_pc.compostBonus) return "tutorial-plot-compost";
+                          if (tutorialStep === 9 && tutorialPlotIds.includes(plotId) && !!_pc.cropId && !isCropReady(plotId) && !_pc.watered) return "tutorial-plot-growing";
+                          if (tutorialStep === 11 && tutorialPlotIds.includes(plotId) && isCropReady(plotId)) return "tutorial-plot-ready";
+                          return null;
+                        })();
 
                         return (
                           <button
                             key={plotId}
+                            data-tutorial-target={_tutKey ?? undefined}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
@@ -13591,7 +13645,7 @@ export default function Page() {
                               fieldHitboxEditMode
                                 ? "cursor-move border-2 border-orange-400/70 bg-orange-900/10"
                                 : isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
-                            }`}
+                            }${_tutKey ? " z-[91] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`}
                             style={{
                               left: plot.left,
                               top: plot.top,
@@ -14002,6 +14056,10 @@ export default function Page() {
               </div>
             </div>
 
+          {/* Tutorial overlay wewnątrz field view — przyciemnia tło, narzędzia z-[90] zostają widoczne */}
+          {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep >= 2 && tutorialStep <= 11 && (
+            <div className="absolute inset-0 z-[89] pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
+          )}
           </div>
         )}
 
@@ -14263,8 +14321,9 @@ export default function Page() {
                     </p>
                     <button
                       type="button"
+                      data-tutorial-target="tutorial-dalej-btn"
                       onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); }}
-                      className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-6 py-3 text-base font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)]"
+                      className="rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-6 py-3 text-base font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
                     >
                       Dalej
                     </button>
@@ -15479,6 +15538,25 @@ export default function Page() {
             </div>
           );
         })()}
+
+        {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
+        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep === 1 && !isFieldViewOpen && (
+          <div className="fixed inset-0 z-[5] pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
+        )}
+
+        {/* Tutorial: strzałka wskazująca aktywny element */}
+        {tutorialArrow && (
+          <div
+            className="fixed z-[93] pointer-events-none"
+            style={{ left: tutorialArrow.x, top: tutorialArrow.y - 58, transform: "translateX(-50%)" }}
+          >
+            <div className="animate-bounce flex flex-col items-center">
+              <svg width="26" height="34" viewBox="0 0 26 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 34 L0 15 H9 V0 H17 V15 H26 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="1.5" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        )}
 
         </main>
     </div>
