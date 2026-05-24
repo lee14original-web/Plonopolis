@@ -1433,14 +1433,6 @@ const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string 
   duzy_pien:{ name: "Duży pień",  icon: "🌲", color: "#a16207" },
   kret:     { name: "Kret",       icon: "🐾", color: "#a8a29e" },
 };
-// Koszty muszą być spójne z generate_plot_obstacles() w SQL
-const OBSTACLE_COSTS: Record<string, number> = { chwasty: 5, kamienie: 50, maly_pien: 150, duzy_pien: 250, kret: 500 };
-// Generuj brakujący wpis przeszkody (równe 20% szanse, jak w SQL pool)
-function generateObstacleEntry(): { type: string; cost: number } {
-  const types = ["chwasty", "kamienie", "maly_pien", "duzy_pien", "kret"] as const;
-  const type = types[Math.floor(Math.random() * types.length)];
-  return { type, cost: OBSTACLE_COSTS[type] };
-}
 
 const XP_TABLE: Record<number, number> = {
   // lvl 1-7: szybki start (30-90 min do lvl 3 z podstawowymi uprawami)
@@ -3738,34 +3730,20 @@ export default function Page() {
     const _userId = profile.id;
     let cancelled = false;
     void (async () => {
+      // Wywołaj RPC repair (uzupełni brakujące plot_obstacles po stronie serwera)
+      await supabase.rpc("game_repair_plot_obstacles", { p_user_id: _userId });
+      if (cancelled) return;
+      // Pobierz świeży stan po repair
       const { data: freshRow } = await supabase
         .from("profiles")
         .select("unlocked_plots, plot_obstacles")
         .eq("id", _userId)
         .single();
       if (cancelled || !freshRow) return;
-      const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
-      const freshObstacles: Record<string, { type: string; cost: number }> =
-        freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)
-          ? (freshRow.plot_obstacles as Record<string, { type: string; cost: number }>)
-          : {};
-      // Uzupełnij pola 21–100, które nie są odblokowane ani nie mają przeszkody (brakujące dane)
-      const gapEntries: Record<string, { type: string; cost: number }> = {};
-      for (let _pid = 21; _pid <= 100; _pid++) {
-        if (!freshUnlocked.includes(_pid) && !freshObstacles[String(_pid)]) {
-          gapEntries[String(_pid)] = generateObstacleEntry();
-        }
+      setUnlockedPlots(parseUnlockedPlots(freshRow.unlocked_plots));
+      if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)) {
+        setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
       }
-      if (Object.keys(gapEntries).length > 0) {
-        const merged = { ...freshObstacles, ...gapEntries };
-        await supabase.from("profiles").update({
-          plot_obstacles: merged as unknown as Record<string, unknown>,
-        }).eq("id", _userId);
-        if (!cancelled) setPlotObstacles(merged);
-      } else {
-        if (!cancelled) setPlotObstacles(freshObstacles);
-      }
-      if (!cancelled) setUnlockedPlots(freshUnlocked);
     })();
     return () => { cancelled = true; };
   }, [isFieldViewOpen, profile?.id]);
@@ -13901,23 +13879,30 @@ export default function Page() {
                                               freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)
                                                 ? (freshRow.plot_obstacles as Record<string, { type: string; cost: number }>)
                                                 : {};
-                                            setUnlockedPlots(freshUnlocked);
                                             if (freshUnlocked.includes(selectedPlotId)) {
                                               // Prawdziwy desync — pole jest odblokowane w DB
+                                              setUnlockedPlots(freshUnlocked);
                                               setPlotObstacles(freshObstacles);
                                               setSelectedPlotId(null);
                                               setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
                                             } else if (!freshObstacles[String(selectedPlotId)]) {
-                                              // Nadal brak przeszkody — wygeneruj i zapisz do DB
-                                              const newEntry = generateObstacleEntry();
-                                              const merged = { ...freshObstacles, [String(selectedPlotId)]: newEntry };
-                                              await supabase.from("profiles").update({
-                                                plot_obstacles: merged as unknown as Record<string, unknown>,
-                                              }).eq("id", profile.id);
-                                              setPlotObstacles(merged);
+                                              // Brak przeszkody — wywołaj RPC repair po stronie serwera
+                                              await supabase.rpc("game_repair_plot_obstacles", { p_user_id: profile.id });
+                                              const { data: repairedRow } = await supabase
+                                                .from("profiles")
+                                                .select("unlocked_plots, plot_obstacles")
+                                                .eq("id", profile.id)
+                                                .single();
+                                              if (repairedRow) {
+                                                setUnlockedPlots(parseUnlockedPlots(repairedRow.unlocked_plots));
+                                                if (repairedRow.plot_obstacles && typeof repairedRow.plot_obstacles === "object" && !Array.isArray(repairedRow.plot_obstacles)) {
+                                                  setPlotObstacles(repairedRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+                                                }
+                                              }
                                               setSelectedPlotId(null);
                                               setMessage({ type: "info", title: "Przeszkoda uzupełniona", text: `Dane pola #${selectedPlotId} zostały odświeżone.` });
                                             } else {
+                                              setUnlockedPlots(freshUnlocked);
                                               setPlotObstacles(freshObstacles);
                                               setSelectedPlotId(null);
                                             }
