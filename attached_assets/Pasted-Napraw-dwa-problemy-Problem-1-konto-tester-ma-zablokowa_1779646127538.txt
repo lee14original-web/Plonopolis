@@ -1,0 +1,59 @@
+Napraw dwa problemy.
+
+Problem 1 — konto tester ma zablokowane pola uprawne
+
+Objaw:
+Na koncie tester w Widoku pola wiele pól pokazuje 0 PLN i po kliknięciu wyskakuje modal:
+"Desynchronizacja stanu"
+"To pole jest prawdopodobnie już odblokowane w bazie danych, ale lokalny stan gry tego nie wie. Kliknij Napraw, aby zsynchronizować."
+
+Wygląda jak rozjazd między DB a lokalnym stanem pól.
+
+Zrób audyt:
+1. Sprawdź, z czego UI bierze informację, które pola są odblokowane.
+2. Sprawdź, czy profile/DB dla konta tester ma poprawny stan odblokowanych pól.
+3. Sprawdź, dlaczego UI pokazuje 0 PLN i traktuje pola jako zablokowane/desync.
+4. Sprawdź działanie przycisku "Napraw stan pola":
+   - czy faktycznie synchronizuje stan,
+   - czy robi to tylko dla jednego pola,
+   - czy można zrobić automatyczny repair przy wejściu do Widoku pola.
+5. Jeśli pole jest już odblokowane w DB, UI nie powinno pokazywać ceny ani desync.
+6. Jeśli lokalny state jest stary, po loadProfile/applyProfileState ma zostać odbudowany z DB.
+7. Nie zmieniaj cen pól ani ekonomii.
+8. Nie odblokowuj pól za darmo, jeśli DB ich nie ma.
+9. Napraw tylko desynchronizację wyświetlania/stanu.
+
+Problem 2 — kolory toastów blokad
+
+Aktualnie:
+- Miasto zablokowane
+- Lada zablokowana
+- Kompostownik zablokowany
+
+pokazują niebieskie toast/info.
+
+Chcę:
+Te trzy komunikaty mają być czerwone jak wcześniejsze blokady:
+- Sad zablokowany
+- Stodoła zablokowana
+- Ul zablokowany
+
+Wymagania:
+1. Zmień typ/toast styling dla:
+   - Miasto zablokowane
+   - Lada zablokowana
+   - Kompostownik zablokowany
+   na czerwony/error style.
+2. Nie zmieniaj treści komunikatów, chyba że trzeba minimalnie:
+   - "Miasto odblokuje się od poziomu 2."
+   - "Lada dla klientów odblokuje się od poziomu 2."
+   - "Kompostownik odblokuje się od poziomu 2."
+3. Styl ma być spójny z toastem "Sad zablokowany".
+4. Nie zmieniaj progów odblokowania.
+5. Nie zmieniaj tooltipów hover.
+6. Nie zmieniaj logiki tutoriala.
+
+Technicznie:
+1. Typecheck.
+2. Pokaż audyt, diff i plan testów.
+3. Nie pushuj jeszcze.
