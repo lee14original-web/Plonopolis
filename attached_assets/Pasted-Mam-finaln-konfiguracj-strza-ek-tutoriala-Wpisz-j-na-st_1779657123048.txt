@@ -1,0 +1,122 @@
+Mam finalną konfigurację strzałek tutoriala. Wpisz ją na stałe do kodu i usuń tymczasowy TutorialArrowEditor.
+
+Final config:
+
+{
+  "1": {
+    "top": {
+      "x": 858.5707397460938,
+      "y": 201.1171875,
+      "size": 84,
+      "rotation": 0
+    },
+    "bottom": {
+      "x": 841.5707397460938,
+      "y": 594.1317138671875,
+      "size": 84,
+      "rotation": 180
+    },
+    "left": {
+      "x": 1234.6469116210938,
+      "y": 389.6244354248047,
+      "size": 76,
+      "rotation": 90
+    },
+    "right": {
+      "x": 442.3560791015625,
+      "y": 398.62445068359375,
+      "size": 82,
+      "rotation": -90
+    }
+  },
+  "2": {
+    "x": 153.36874389648438,
+    "y": 132.5,
+    "size": 108,
+    "rotation": 0
+  },
+  "3": {
+    "x": 1090.0000610351562,
+    "y": 587.1390991210938,
+    "size": 80,
+    "rotation": 0
+  },
+  "5": {
+    "x": 154.36874389648438,
+    "y": 326.875,
+    "size": 102,
+    "rotation": 0
+  },
+  "6": {
+    "x": 852.6125183105469,
+    "y": 643.435546875,
+    "size": 122,
+    "rotation": 90
+  },
+  "8": {
+    "x": 155.36874389648438,
+    "y": 529.25,
+    "size": 112,
+    "rotation": 0
+  },
+  "10": {
+    "x": 152.34686279296875,
+    "y": 718.625,
+    "size": 118,
+    "rotation": 0
+  },
+  "12": {
+    "x": 1408.33154296875,
+    "y": 696.096923828125,
+    "size": 122,
+    "rotation": 0
+  }
+}
+
+Wymagania:
+1. Usuń tymczasowy edytor:
+   - ?tutorialArrowEditor=1,
+   - localStorage tutorialArrowEditor,
+   - panel edytora,
+   - drag & drop,
+   - przyciski X/Y/Size/Rotate,
+   - Copy cfg,
+   - _taeOn, _taeCfg, _taeSel1, _taeDrag i funkcje pomocnicze edytora.
+
+2. Zostaw tylko finalne renderowanie strzałek według stałej konfiguracji.
+
+3. Kroki ze strzałkami:
+   - 1, 2, 3, 5, 6, 8, 10, 12.
+
+4. Kroki bez strzałek:
+   - 7, 9, 11, 13.
+
+5. Step 1:
+   - pokazuj 4 strzałki: top, bottom, left, right,
+   - każda według final config,
+   - rotacja zgodnie z configiem.
+
+6. Pozostałe kroki:
+   - pokazuj jedną strzałkę według final config.
+
+7. Zachowaj:
+   - pointer-events-none dla strzałek,
+   - animate-bounce,
+   - z-index nad UI,
+   - brak overlay/ciemnego tła na step 1,
+   - obecne highlighty/ringi aktywnych elementów,
+   - step 7 blokowanie sadzenia tylko na polach z compostBonus?.type === "guide",
+   - brak drugiego przycisku Dalej w step 12.
+
+8. Nie zmieniaj:
+   - tutorial_step,
+   - guide_compost,
+   - DB,
+   - nagród,
+   - zbiorów,
+   - podlewania,
+   - sadzenia poza istniejącym step 7 guardem.
+
+9. Typecheck.
+10. Pokaż diff.
+11. Nie pushuj jeszcze.
