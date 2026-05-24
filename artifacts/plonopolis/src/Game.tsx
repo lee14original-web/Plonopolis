@@ -13554,7 +13554,7 @@ export default function Page() {
                         const _tutKey = (() => {
                           if (fieldHitboxEditMode) return null;
                           if (tutorialStep === 4 && isUnlocked && !_pc.cropId && !_pc.compostBonus) return "tutorial-plot-empty";
-                          if (tutorialStep === 7 && tutorialPlotIds.includes(plotId) && isUnlocked && !_pc.cropId && !!_pc.compostBonus) return "tutorial-plot-compost";
+                          if (tutorialStep === 7 && isUnlocked && !_pc.cropId && _pc.compostBonus?.type === "guide") return "tutorial-plot-compost";
                           if (tutorialStep === 9 && tutorialPlotIds.includes(plotId) && !!_pc.cropId && !isCropReady(plotId) && !_pc.watered) return "tutorial-plot-growing";
                           if (tutorialStep === 11 && tutorialPlotIds.includes(plotId) && isCropReady(plotId)) return "tutorial-plot-ready";
                           return null;
@@ -13566,7 +13566,7 @@ export default function Page() {
                             data-tutorial-target={_tutKey ?? undefined}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
-                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else if (tutorialStep === 7 && !tutorialPlotIds.includes(plotId)) { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
+                            onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onDragStart={(e) => e.preventDefault()}
                             onMouseEnter={() => { tryApplyFieldAction(plotId); }}
                             onMouseDown={(e) => {
@@ -13594,7 +13594,7 @@ export default function Page() {
                               } else if (selectedSeedId && isCompostKey(selectedSeedId)) {
                                 if (!_plot.cropId && !_plot.compostBonus && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0) _started = true;
                               } else if (selectedSeedId) {
-                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId] && !(tutorialStep === 7 && !tutorialPlotIds.includes(plotId))) _started = true;
+                                if (!_plot.cropId && (seedInventoryRef.current[selectedSeedId] ?? 0) > 0 && !pendingFieldActions[plotId] && !(tutorialStep === 7 && _plot.compostBonus?.type !== "guide")) _started = true;
                               } else if (_plot.cropId && isCropReady(plotId)) {
                                 _started = true;
                               }
@@ -13620,7 +13620,7 @@ export default function Page() {
                               if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
                               if (selectedSeedId && isGuideCompostKey(selectedSeedId)) { void applyGuideCompostToPlot(plotId); return; }
                               if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
-                              if (selectedSeedId) { if (tutorialStep === 7 && !tutorialPlotIds.includes(plotId)) { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); return; } handlePlantFromSelectedSeed(plotId); return; }
+                              if (selectedSeedId) { if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); return; } handlePlantFromSelectedSeed(plotId); return; }
                               if (getPlotCrop(plotId).cropId && isCropReady(plotId)) void handleHarvestPlot(plotId);
                             }}
                             title={(() => {
@@ -13642,7 +13642,7 @@ export default function Page() {
                               fieldHitboxEditMode
                                 ? "cursor-move border-2 border-orange-400/70 bg-orange-900/10"
                                 : isUnlocked ? "cursor-pointer hover:scale-[1.02]" : "cursor-pointer opacity-90"
-                            }${_tutKey ? " z-[91] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}${tutorialStep === 7 && isUnlocked && !tutorialPlotIds.includes(plotId) && !_pc.cropId && !fieldHitboxEditMode ? " opacity-30" : ""}`}
+                            }${_tutKey ? " z-[91] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}${tutorialStep === 7 && isUnlocked && _pc.compostBonus?.type !== "guide" && !_pc.cropId && !fieldHitboxEditMode ? " opacity-30" : ""}`}
                             style={{
                               left: plot.left,
                               top: plot.top,
