@@ -3724,6 +3724,25 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [isFieldViewOpen]);
 
+  // Auto-naprawa desynchronizacji pól przy każdym otwarciu widoku pola
+  useEffect(() => {
+    if (!isFieldViewOpen || !profile?.id) return;
+    let cancelled = false;
+    void (async () => {
+      const { data: freshRow } = await supabase
+        .from("profiles")
+        .select("unlocked_plots, plot_obstacles")
+        .eq("id", profile.id)
+        .single();
+      if (cancelled || !freshRow) return;
+      setUnlockedPlots(parseUnlockedPlots(freshRow.unlocked_plots));
+      if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
+        setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isFieldViewOpen, profile?.id]);
+
   // Tick dla pasków postępu sadzenia/zbioru — działa tylko gdy są aktywne akcje
   useEffect(() => {
     if (Object.keys(pendingFieldActions).length === 0) return;
@@ -6708,7 +6727,7 @@ export default function Page() {
                             data-no-map-drag="true"
                             onClick={() => {
                               if (!_cityUnlocked) {
-                                setMessage({ type: "info", title: "Miasto zablokowane", text: `Miasto odblokuje się od poziomu ${CITY_UNLOCK_LVL}.` });
+                                setMessage({ type: "error", title: "Miasto zablokowane", text: `Miasto odblokuje się od poziomu ${CITY_UNLOCK_LVL}.` });
                                 return;
                               }
                               handleChangeMap("city");
@@ -6763,7 +6782,7 @@ export default function Page() {
                             onClick={() => {
                               if (!_ladaUnlocked) {
                                 setHoveredLada(false);
-                                setMessage({ type: "info", title: "Lada zablokowana", text: `Lada dla klientów odblokuje się od poziomu ${LADA_UNLOCK_LVL}.` });
+                                setMessage({ type: "error", title: "Lada zablokowana", text: `Lada dla klientów odblokuje się od poziomu ${LADA_UNLOCK_LVL}.` });
                                 return;
                               }
                               setHoveredLada(false);
@@ -6791,7 +6810,7 @@ export default function Page() {
                             onClick={() => {
                               if (!_kompostUnlocked) {
                                 setHoveredKompostownik(false);
-                                setMessage({ type: "info", title: "Kompostownik zablokowany", text: `Kompostownik odblokuje się od poziomu ${KOMPOST_UNLOCK_LVL}.` });
+                                setMessage({ type: "error", title: "Kompostownik zablokowany", text: `Kompostownik odblokuje się od poziomu ${KOMPOST_UNLOCK_LVL}.` });
                                 return;
                               }
                               setHoveredKompostownik(false);
