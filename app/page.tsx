@@ -3727,16 +3727,21 @@ export default function Page() {
   // Auto-naprawa desynchronizacji pól przy każdym otwarciu widoku pola
   useEffect(() => {
     if (!isFieldViewOpen || !profile?.id) return;
+    const _userId = profile.id;
     let cancelled = false;
     void (async () => {
+      // Wywołaj RPC repair (uzupełni brakujące plot_obstacles po stronie serwera)
+      await supabase.rpc("game_repair_plot_obstacles", { p_user_id: _userId });
+      if (cancelled) return;
+      // Pobierz świeży stan po repair
       const { data: freshRow } = await supabase
         .from("profiles")
         .select("unlocked_plots, plot_obstacles")
-        .eq("id", profile.id)
+        .eq("id", _userId)
         .single();
       if (cancelled || !freshRow) return;
       setUnlockedPlots(parseUnlockedPlots(freshRow.unlocked_plots));
-      if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
+      if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)) {
         setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
       }
     })();
@@ -13839,17 +13844,17 @@ export default function Page() {
 
                             const _obstType = getPlotObstacleType(selectedPlotId);
                             const _obstDef = _obstType ? OBSTACLE_DEFS[_obstType] : null;
-                            // Desynchronizacja: pole nie jest odblokowane lokalnie, ale brak też danych przeszkody
-                            const _isStaleState = selectedPlotId > 20 && !_obstType && selectedPlotCost === 0;
+                            // Brak danych przeszkody: pole > 20 nie jest odblokowane i nie ma wpisu w plot_obstacles
+                            const _isMissingObstacle = selectedPlotId > 20 && !_obstType && !isPlotUnlocked(selectedPlotId);
                             return (
                               <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/50 px-4">
                                 <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                  {_isStaleState ? (
+                                  {_isMissingObstacle ? (
                                     <>
-                                      <p className="text-xs uppercase tracking-[0.35em] text-yellow-400">Desynchronizacja stanu</p>
+                                      <p className="text-xs uppercase tracking-[0.35em] text-yellow-400">Brak danych przeszkody</p>
                                       <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
                                       <p className="mt-2 text-sm text-[#f2ddb0] leading-relaxed">
-                                        To pole jest prawdopodobnie już odblokowane w bazie danych, ale lokalny stan gry tego nie wie. Kliknij "Napraw", aby zsynchronizować.
+                                        Brak danych przeszkody dla tego pola. Kliknij "Napraw", aby odświeżyć stan pól.
                                       </p>
                                       <div className="mt-6 flex justify-end gap-3">
                                         <button
@@ -13868,18 +13873,38 @@ export default function Page() {
                                               .select("unlocked_plots, plot_obstacles")
                                               .eq("id", profile.id)
                                               .single();
-                                            if (freshRow) {
-                                              const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+                                            if (!freshRow) return;
+                                            const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+                                            const freshObstacles: Record<string, { type: string; cost: number }> =
+                                              freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)
+                                                ? (freshRow.plot_obstacles as Record<string, { type: string; cost: number }>)
+                                                : {};
+                                            if (freshUnlocked.includes(selectedPlotId)) {
+                                              // Prawdziwy desync — pole jest odblokowane w DB
                                               setUnlockedPlots(freshUnlocked);
-                                              if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
-                                                setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+                                              setPlotObstacles(freshObstacles);
+                                              setSelectedPlotId(null);
+                                              setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
+                                            } else if (!freshObstacles[String(selectedPlotId)]) {
+                                              // Brak przeszkody — wywołaj RPC repair po stronie serwera
+                                              await supabase.rpc("game_repair_plot_obstacles", { p_user_id: profile.id });
+                                              const { data: repairedRow } = await supabase
+                                                .from("profiles")
+                                                .select("unlocked_plots, plot_obstacles")
+                                                .eq("id", profile.id)
+                                                .single();
+                                              if (repairedRow) {
+                                                setUnlockedPlots(parseUnlockedPlots(repairedRow.unlocked_plots));
+                                                if (repairedRow.plot_obstacles && typeof repairedRow.plot_obstacles === "object" && !Array.isArray(repairedRow.plot_obstacles)) {
+                                                  setPlotObstacles(repairedRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+                                                }
                                               }
                                               setSelectedPlotId(null);
-                                              if (freshUnlocked.includes(selectedPlotId)) {
-                                                setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
-                                              } else {
-                                                setMessage({ type: "info", title: "Zsynchronizowano", text: `Pole #${selectedPlotId} nie jest odblokowane w bazie — kliknij je, aby odblokować.` });
-                                              }
+                                              setMessage({ type: "info", title: "Przeszkoda uzupełniona", text: `Dane pola #${selectedPlotId} zostały odświeżone.` });
+                                            } else {
+                                              setUnlockedPlots(freshUnlocked);
+                                              setPlotObstacles(freshObstacles);
+                                              setSelectedPlotId(null);
                                             }
                                           }}
                                           className="rounded-2xl border border-yellow-400/80 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
