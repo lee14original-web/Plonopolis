@@ -1,0 +1,64 @@
+Dopisz do aktualnej poprawki tutorial arrows jeszcze 3 rzeczy.
+
+1. Step 1 — strzałki przyczepione do Pola uprawne + overlay
+Popraw według wcześniejszego założenia:
+- step 1 strzałki nie mogą być fixed x/y niezależne od mapy,
+- mają być liczone względem aktualnego getBoundingClientRect targetu "Pola uprawne",
+- gdy gracz przeciąga mapę, strzałki mają jechać razem z polem,
+- przywróć delikatne przyciemnienie tła rgba(0,0,0,0.35), pointer-events-none,
+- target "Pola uprawne" ma być nad overlayem i czytelny,
+- boczne strzałki muszą faktycznie wskazywać na pole, nie wszystkie w dół.
+
+2. Step 6 — popraw kierunek strzałki
+Problem:
+W step 6 strzałka przy marchewce ma zły kierunek/rotację. Wygląda jak ten sam problem co w step 1 — mimo rotation SVG dalej wygląda jak skierowany w dół.
+
+Napraw:
+- sprawdź komponent/SVG strzałki,
+- upewnij się, że rotation faktycznie obraca całą strzałkę,
+- jeśli transform jest na złym elemencie, przenieś transform rotate na wrapper albo SVG tak, żeby działał wizualnie,
+- step 6 ma wskazywać dokładnie na kafelek zwykłej marchewki,
+- zachowaj size i pozycję z final config, ale popraw kierunek.
+
+3. Przyspieszenie marchewek po podlaniu w tutorialu
+Problem:
+Między step 9 a step 10/11 gracz czeka około 45 sekund aż marchewki urosną.
+
+Chcemy:
+Tylko podczas aktywnego Przewodnika Etap 1, tylko dla tych 3 marchewek z Kompostem Przewodnika, po podlaniu przyspieszyć wzrost o 99%.
+
+Wymagania:
+- Działa tylko gdy tutorialStep jest 9 albo 10/11 w Etapie 1.
+- Działa tylko dla pól z compostBonus?.type === "guide".
+- Działa tylko dla marchewki tutorialowej, czyli cropId marchewki / carrot_good według aktualnego modelu.
+- Po podlaniu takiego pola skróć pozostały czas wzrostu o 99%, czyli zostaw około 1% remaining time.
+- Nie wpływaj na normalne marchewki poza tutorialem.
+- Nie wpływaj na inne uprawy.
+- Nie zmieniaj bazowych czasów upraw.
+- Nie zmieniaj działania Kompostu Przewodnika przed sadzeniem.
+- Nie zmieniaj ekonomii ani EXP.
+- Jeśli wzrost jest liczony lokalnie, zaktualizuj lokalny plot state tak, żeby po chwili marchewki były gotowe.
+- Jeśli wzrost jest liczony z DB timestampów, po podlaniu tutorialowej marchewki z guide compost zaktualizuj odpowiedni timestamp/readyAt w tym samym istniejącym mechanizmie, bez tworzenia dziur w DB.
+- Zachowaj typecheck.
+
+4. Step 11 — zmiana tekstu
+Jeśli przyspieszenie po podlaniu działa, usuń z tekstu step 11 fragment:
+"poczekaj aż marchewki urosną, a potem"
+
+Tekst step 11 ma być krótszy, np.:
+"Kliknij gotowe marchewki, aby je zebrać."
+albo:
+"Zbierz gotowe marchewki."
+
+5. Nie zmieniaj:
+- tutorial_step poza istniejącą logiką,
+- guide_compost item,
+- DB schema,
+- nagród,
+- sprzedaży,
+- marketu,
+- normalnych upraw poza tutorialowym przypadkiem.
+
+6. Typecheck.
+7. Pokaż diff i plan testów.
+8. Nie pushuj jeszcze.

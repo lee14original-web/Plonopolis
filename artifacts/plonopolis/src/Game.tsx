@@ -3159,6 +3159,24 @@ export default function Page() {
       const _remaining = tutorialPlotIds.filter(id => !_newWatered.includes(id) && !isCropReady(id));
       if (_remaining.length === 0) void advanceTutorialStep(10);
     }
+
+    // Tutorial: po podlaniu pola z Kompostem Przewodnika skróć czas wzrostu marchewki o 99%
+    if ([9, 10, 11].includes(tutorialStep) && _preservedCompostBonus?.type === "guide" && plot.cropId === "carrot" && plot.plantedAt && profile?.id) {
+      const _effGrowth = getEffectiveGrowthTimeMs(plotId);
+      const _elapsed = Date.now() - plot.plantedAt;
+      const _remaining99 = Math.max(5_000, (_effGrowth - _elapsed) * 0.01);
+      const _newPlantedAt = Date.now() - (_effGrowth - _remaining99);
+      setPlotCrops(prev => {
+        const _curr = prev[plotId];
+        if (!_curr) return prev;
+        const _upd = { ...prev, [plotId]: { ..._curr, plantedAt: _newPlantedAt } };
+        void supabase.from("profiles").update({
+          plot_crops: serializePlotCrops(_upd) as unknown as Record<string,unknown>,
+        }).eq("id", profile!.id);
+        return _upd;
+      });
+    }
+
     const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
     const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
     const _zaradPct = (WATER_BASE + _zaradBonus + _waterEqPct) * 100;
@@ -15475,7 +15493,7 @@ export default function Page() {
                 : "Marchewki zdążyły już urosnąć. Przejdźmy do zbioru.";
             })(),
             "Kliknij Zbierz.",
-            `Poczekaj, aż marchewki urosną, a potem zbierz 3 pierwsze uprawy. Zebrane pola: ${_t11}/3`,
+            `Zbierz gotowe marchewki — zebrałeś ${_t11}/3.`,
             "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
             "Świetnie! Etap 1 przewodnika ukończony.\n\nPRZEWODNIK W BUDOWIE — na razie tyle. Możesz zminimalizować to okno.",
           ];
@@ -15527,37 +15545,52 @@ export default function Page() {
           );
         })()}
 
+        {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
+        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep === 1 && !isFieldViewOpen && (
+          <div className="fixed inset-0 z-[5] pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
+        )}
+
         {/* Tutorial: strzałki wskazujące aktywny element */}
         {(()=>{
           const _noArrow=[7,9,11,13];
           const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
           if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
           type SA={x:number;y:number;size:number;rotation:number};
-          const cfg1:{top:SA;bottom:SA;left:SA;right:SA}={
-            top:   {x:858.57,  y:201.12, size:84,  rotation:0},
-            bottom:{x:841.57,  y:594.13, size:84,  rotation:180},
-            left:  {x:1234.65, y:389.62, size:76,  rotation:90},
-            right: {x:442.36,  y:398.62, size:82,  rotation:-90},
-          };
-          const cfgN:Record<number,SA>={
-            2: {x:153.37, y:132.50,  size:108, rotation:0},
-            3: {x:1090.00,y:587.14,  size:80,  rotation:0},
-            5: {x:154.37, y:326.88,  size:102, rotation:0},
-            6: {x:852.61, y:643.44,  size:122, rotation:90},
-            8: {x:155.37, y:529.25,  size:112, rotation:0},
-            10:{x:152.35, y:718.63,  size:118, rotation:0},
-            12:{x:1408.33,y:696.10,  size:122, rotation:0},
-          };
+          // Rotation na osobnym wrapperze wewnętrznym — nie na animate-bounce div.
+          // CSS @keyframes bounce nadpisuje transform inline na tym samym elemencie.
           const arr=(a:SA,key:string)=>{const h=Math.round(a.size*62/48);return(
             <div key={key} className="fixed z-[93] pointer-events-none" style={{left:a.x-a.size/2,top:a.y-h/2}}>
-              <div className="animate-bounce" style={{transform:`rotate(${a.rotation}deg)`}}>
-                <svg width={a.size} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-                </svg>
+              <div className="animate-bounce">
+                <div style={{transform:`rotate(${a.rotation}deg)`}}>
+                  <svg width={a.size} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
             </div>
           );};
-          if(tutorialStep===1) return <>{(["top","bottom","left","right"] as const).map(k=>arr(cfg1[k],`tut-arr-1-${k}`))}</>;
+          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
+          if(tutorialStep===1){
+            if(!tutorialArrow) return null;
+            const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
+            const cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            return <>{[
+              {x:cx,            y:ft-ah/2-14,   rotation:0   as number, k:"top"},
+              {x:cx,            y:fb+ah/2+14,   rotation:180 as number, k:"bottom"},
+              {x:fl-sz/2-14,    y:cy,           rotation:-90 as number, k:"left"},
+              {x:fr+sz/2+14,    y:cy,           rotation:90  as number, k:"right"},
+            ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
+          }
+          // Kroki 2–12: stałe pozycje z final config
+          const cfgN:Record<number,SA>={
+            2: {x:153.37, y:132.50, size:108, rotation:0},
+            3: {x:1090.00,y:587.14, size:80,  rotation:0},
+            5: {x:154.37, y:326.88, size:102, rotation:0},
+            6: {x:852.61, y:643.44, size:122, rotation:90},
+            8: {x:155.37, y:529.25, size:112, rotation:0},
+            10:{x:152.35, y:718.63, size:118, rotation:0},
+            12:{x:1408.33,y:696.10, size:122, rotation:0},
+          };
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
 
