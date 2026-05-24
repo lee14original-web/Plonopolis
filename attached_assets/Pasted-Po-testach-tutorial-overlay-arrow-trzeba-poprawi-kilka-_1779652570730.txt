@@ -1,0 +1,86 @@
+Po testach tutorial overlay/arrow trzeba poprawić kilka rzeczy wizualnych i UX.
+
+Nie zmieniaj logiki tutorial_step, guide_compost, zbiorów, nagród ani DB.
+Popraw tylko overlay/strzałki/highlight i przyciski Dalej.
+
+1. Step 1 — Pola uprawne na mapie farmy
+Obecnie strzałka jest za mała i za mało czytelna.
+Popraw:
+- zwiększ strzałkę tutoriala około 2x,
+- dla step 1 dodaj kilka strzałek wokół celu:
+  - jedna z góry,
+  - jedna z lewej,
+  - jedna z prawej,
+  - jedna od dołu,
+- wszystkie mają wskazywać na przycisk/obszar "Pola uprawne",
+- mocniej rozjaśnij/podświetl obszar Pola uprawne,
+- nie przesadzaj z ciemnością tła,
+- kliknięcie Pola uprawne musi dalej działać.
+
+2. Step 2 — Kompost
+Obecnie strzałka wskazuje złe miejsce i jest za mała.
+Popraw:
+- strzałka ma wskazywać dokładnie na kafelek/przycisk Kompost po lewej,
+- powiększ strzałkę tak jak w step 1,
+- najlepiej pozycjonuj ją względem środka targetu Kompost, nie losowego punktu nad planszą.
+
+3. Step 3 — Kompost Przewodnika
+Popraw strzałkę:
+- ma wskazywać dokładnie na item "Starter Kompost Przewodnika" w oknie wyboru kompostu,
+- nie na tło/pola za oknem,
+- strzałka większa.
+
+4. Step 5 — Nasiona
+Popraw strzałkę:
+- ma wskazywać dokładnie na przycisk/kafelek Nasiona po lewej,
+- strzałka większa.
+
+5. Step 6 — zwykła marchewka
+Popraw strzałkę:
+- ma wskazywać dokładnie na kafelek marchewki w oknie "Nasiona w plecaku",
+- nie na środek okna,
+- strzałka większa.
+
+6. Step 7 — sadzenie marchewek
+Tutaj NIE pokazuj strzałki.
+Zamiast tego:
+- podświetl tylko pola, na których gracz wcześniej użył Kompostu Przewodnika,
+- pola bez Kompostu Przewodnika mają być chwilowo wizualnie zablokowane/przygaszone,
+- gracz powinien wyraźnie widzieć, że ma kliknąć tylko pola z Kompostem Przewodnika,
+- nie blokuj całej gry na stałe, tylko w tym kroku tutoriala,
+- jeśli kliknie pole bez Kompostu Przewodnika w step 7, nie sadź tam marchewki; pokaż krótki komunikat/toast typu:
+  "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika."
+- nie zmieniaj normalnej logiki sadzenia poza aktywnym tutorialStep 7.
+
+7. Step 9 — podlewanie rosnących marchewek
+Nie pokazuj strzałki.
+Zostaw tylko highlight/ring na właściwych rosnących marchewkach do podlania.
+
+8. Step 10 — Zbierz
+Popraw strzałkę:
+- ma wskazywać dokładnie na przycisk/kafelek Zbierz po lewej,
+- strzałka większa.
+
+9. Step 11 — gotowe marchewki do zebrania
+Nie pokazuj strzałki.
+Zostaw tylko highlight/ring na gotowych marchewkach.
+
+10. Step 12 — Ostatnie zbiory / Dalej
+Popraw:
+- strzałka ma wskazywać dokładnie na przycisk Dalej w panelu "Ostatnie zbiory",
+- usuń drugi przycisk "Dalej" z dolnego panelu "Etap 1 Przewodnika" w step 12,
+- w step 12 ma zostać tylko przycisk Dalej w oknie/panelu "Ostatnie zbiory",
+- nie zmieniaj działania przejścia do step 13.
+
+11. Ogólne poprawki strzałek
+- Zwiększ rozmiar strzałek.
+- Strzałka powinna być pozycjonowana względem konkretnego targetu:
+  getBoundingClientRect targetu + kierunek zależny od typu elementu.
+- Dla pickerów/okien modalnych strzałka ma celować w element w oknie, nie w element pod spodem.
+- Dla kroków 7, 9, 11 strzałki całkiem wyłącz.
+- Zachowaj pointer-events-none dla overlay i strzałek.
+- Aktywne elementy mają pozostać klikalne.
+
+12. Typecheck.
+13. Pokaż diff i plan testów.
+14. Nie pushuj jeszcze.
