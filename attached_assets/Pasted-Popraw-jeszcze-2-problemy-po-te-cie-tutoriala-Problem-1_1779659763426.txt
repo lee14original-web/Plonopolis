@@ -1,0 +1,54 @@
+Popraw jeszcze 2 problemy po teście tutoriala.
+
+Problem 1 — Step 1 strzałki są za bardzo w lewo
+
+Objaw:
+W step 1 strzałki jadą już z mapą, ale cały zestaw jest przesunięty trochę w lewo względem Pola uprawne.
+
+Popraw:
+1. Dla step 1 dodaj offset poziomy do obliczeń strzałek względem rect targetu:
+   - step1ArrowOffsetX około +80 px albo +100 px.
+2. Wszystkie 4 strzałki step 1 mają przesunąć się w prawo razem:
+   - top,
+   - bottom,
+   - left,
+   - right.
+3. Nadal licz pozycję względem getBoundingClientRect targetu, nie wracaj do fixed x/y.
+4. Nadal strzałki mają jechać z mapą podczas przeciągania.
+5. Overlay step 1 zostaje rgba(0,0,0,0.35).
+
+Problem 2 — Step 9 pokazuje, że marchewki są gotowe, ale nie są
+
+Objaw:
+Po podlaniu w step 9 panel pokazuje:
+"Marchewki zdążyły już urosnąć. Przejdźmy do zbioru."
+ale na polach:
+- część marchewek nadal ma timer, np. 00:35,
+- jedna wygląda jak gotowa, ale kliknięcie pokazuje toast "Uprawa jeszcze rośnie",
+- nie da się ich zebrać.
+
+To znaczy, że tutorial przechodzi dalej na podstawie złego warunku gotowości albo lokalny/DB plantedAt nie jest jeszcze spójny.
+
+Popraw logikę step 9/10/11:
+
+1. Po podlaniu tutorialowych marchewek z compostBonus?.type === "guide" speedup ma ustawić je tak, żeby były gotowe po około 5 sekundach.
+2. Tutorial NIE może pokazać tekstu "Marchewki zdążyły już urosnąć" dopóki wszystkie 3 tutorialowe marchewki faktycznie nie są gotowe według tej samej funkcji, której używa kliknięcie zbioru.
+3. Źródło prawdy dla gotowości musi być jedno:
+   - ta sama logika ready, która decyduje, czy można zebrać pole.
+4. Jeśli po podlaniu zostało jeszcze 5 sekund:
+   - zostań na kroku podlewania albo pokaż neutralny tekst typu:
+     "Świetnie, marchewki zaraz będą gotowe."
+   - nie przechodź do zbioru za wcześnie.
+5. Dopiero gdy wszystkie 3 tutorialowe marchewki są faktycznie gotowe:
+   - przejdź do step 10 / pokaż kliknięcie Zbierz,
+   - potem step 11 pozwala zebrać gotowe marchewki.
+6. Po speedupie zrób odświeżenie lokalnego stanu tak, żeby UI, timer i logika zbioru widziały te same plantedAt.
+7. Jeśli trzeba, dodaj mały timer/polling w tutorialu po step 9, który co 500 ms sprawdza, czy 3 tutorialowe marchewki są już faktycznie ready i dopiero wtedy advance.
+8. Nie opieraj przejścia na samym wyglądzie cropId ani samym watered=true.
+9. Nie ustawiaj tekstu "gotowe" dopóki handleHarvest/ready check by tego nie potwierdził.
+10. Nie rób natychmiastowego 0 sekund — około 5 sekund jest OK.
+11. Nie zmieniaj normalnych upraw poza tutorialowymi marchewkami z guide compost.
+12. Nie zmieniaj DB schema, nagród, ekonomii, guide_compost.
+13. Typecheck.
+14. Pokaż diff i plan testów.
+15. Nie pushuj jeszcze.

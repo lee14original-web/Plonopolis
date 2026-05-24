@@ -3111,13 +3111,7 @@ export default function Page() {
         title: "Uprawa gotowa",
         text: "Ta uprawa jest już gotowa do zbioru.",
       });
-      if (tutorialStep === 9 && tutorialPlotIds.includes(plotId)) {
-        const _canWaterAny = tutorialPlotIds.some(id => {
-          const _p = getPlotCrop(id);
-          return _p.cropId && !isCropReady(id) && !_p.watered;
-        });
-        if (!_canWaterAny) void advanceTutorialStep(10);
-      }
+      // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
       return;
     }
 
@@ -3142,8 +3136,7 @@ export default function Page() {
     if (tutorialStep === 9 && tutorialPlotIds.includes(plotId)) {
       const _newWatered = tutorialWateredIds.includes(plotId) ? tutorialWateredIds : [...tutorialWateredIds, plotId];
       setTutorialWateredIds(_newWatered);
-      const _remaining = tutorialPlotIds.filter(id => !_newWatered.includes(id) && !isCropReady(id));
-      if (_remaining.length === 0) void advanceTutorialStep(10);
+      // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
     }
 
     // Połączone: przywróć compostBonus (jeśli serwer go zgubił) + speedup tutorialowej marchewki
@@ -4213,21 +4206,23 @@ export default function Page() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, tutorialPlotIds, plotCrops]);
 
-  // ─── Tutorial krok 9: auto-skip jeśli wszystkie marchewki już urosły ───
+  // ─── Tutorial krok 9: advance do step 10 gdy wszystkie tutorialowe marchewki faktycznie gotowe ───
+  // plotCrops w deps: efekt ponownie odpala gdy plantedAt zmieni się (np. po speedupie),
+  // co zapewnia świeżą closure dla isCropReady.
   useEffect(() => {
     if (tutorialStep !== 9 || tutorialPlotIds.length === 0 || !profile?.id) return;
-    const _check = () => {
-      const _canWaterAny = tutorialPlotIds.some(id => {
-        const _p = getPlotCrop(id);
-        return _p.cropId && !isCropReady(id) && !_p.watered;
-      });
-      if (!_canWaterAny) void advanceTutorialStep(10);
-    };
-    _check();
-    const _iv = setInterval(_check, 3000);
+    // Natychmiastowe sprawdzenie ze świeżą closure
+    if (tutorialPlotIds.every(id => isCropReady(id))) {
+      void advanceTutorialStep(10);
+      return;
+    }
+    // Polling co 500 ms — backup dla czasu wzrostu (~5 s po speedupie)
+    const _iv = setInterval(() => {
+      if (tutorialPlotIds.every(id => isCropReady(id))) void advanceTutorialStep(10);
+    }, 500);
     return () => clearInterval(_iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorialStep, tutorialPlotIds.join(","), profile?.id]);
+  }, [tutorialStep, tutorialPlotIds, profile?.id, plotCrops]);
 
   useEffect(() => {
     if (!isDraggingBackpack) return;
@@ -15495,9 +15490,12 @@ export default function Page() {
             "Kliknij Konewkę.",
             (() => {
               const _canWaterAny = tutorialPlotIds.some(id => { const _p = plotCrops[id]; return _p?.cropId && !isCropReady(id) && !_p.watered; });
-              return _canWaterAny
-                ? `Podlej swoje marchewki, jeśli jeszcze rosną. Podlane: ${_t9}/3`
-                : "Marchewki zdążyły już urosnąć. Przejdźmy do zbioru.";
+              if (_canWaterAny) return `Podlej swoje marchewki, jeśli jeszcze rosną. Podlane: ${_t9}/3`;
+              // Wszystkie podlane — sprawdź czy faktycznie gotowe (nie wystarczy watered=true)
+              const _allReady = tutorialPlotIds.length > 0 && tutorialPlotIds.every(id => isCropReady(id));
+              return _allReady
+                ? "Marchewki gotowe! Za chwilę przejdziemy do zbioru."
+                : "Marchewki podlane, za chwilę będą gotowe do zbioru.";
             })(),
             "Kliknij Zbierz.",
             `Zbierz gotowe marchewki — zebrałeś ${_t11}/3.`,
@@ -15577,15 +15575,16 @@ export default function Page() {
             </div>
           );};
           // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
+          // ox: korekta pozioma — "Pola uprawne" button jest szerszy niż widoczna siatka pól
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            const ox=90, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
             return <>{[
-              {x:cx,            y:ft-ah/2-14,   rotation:0   as number, k:"top"},
-              {x:cx,            y:fb+ah/2+14,   rotation:180 as number, k:"bottom"},
-              {x:fl-sz/2-14,    y:cy,           rotation:-90 as number, k:"left"},
-              {x:fr+sz/2+14,    y:cy,           rotation:90  as number, k:"right"},
+              {x:cx+ox,         y:ft-ah/2-14,   rotation:0   as number, k:"top"},
+              {x:cx+ox,         y:fb+ah/2+14,   rotation:180 as number, k:"bottom"},
+              {x:fl+ox-sz/2-14, y:cy,           rotation:-90 as number, k:"left"},
+              {x:fr+ox+sz/2+14, y:cy,           rotation:90  as number, k:"right"},
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
           // Kroki 2–12: stałe pozycje z final config
