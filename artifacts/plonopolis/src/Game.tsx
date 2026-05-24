@@ -3139,20 +3139,6 @@ export default function Page() {
 
     await applyProfileState(extractRpcProfile(data));
 
-    // Jeśli serwer zgubił bonus kompostu przy podlewaniu — przywróć go i zapisz
-    if (_preservedCompostBonus && profile?.id) {
-      setPlotCrops(prev => {
-        const _curr = prev[plotId];
-        if (!_curr || _curr.compostBonus) return prev;
-        const _merged = { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
-        // Asynchronicznie persystuj scalone plot_crops
-        void supabase.from("profiles").update({
-          plot_crops: serializePlotCrops(_merged) as unknown as Record<string,unknown>,
-        }).eq("id", profile.id);
-        return _merged;
-      });
-    }
-
     if (tutorialStep === 9 && tutorialPlotIds.includes(plotId)) {
       const _newWatered = tutorialWateredIds.includes(plotId) ? tutorialWateredIds : [...tutorialWateredIds, plotId];
       setTutorialWateredIds(_newWatered);
@@ -3160,16 +3146,36 @@ export default function Page() {
       if (_remaining.length === 0) void advanceTutorialStep(10);
     }
 
-    // Tutorial: po podlaniu pola z Kompostem Przewodnika skróć czas wzrostu marchewki o 99%
-    if ([9, 10, 11].includes(tutorialStep) && _preservedCompostBonus?.type === "guide" && plot.cropId === "carrot" && plot.plantedAt && profile?.id) {
-      const _effGrowth = getEffectiveGrowthTimeMs(plotId);
-      const _elapsed = Date.now() - plot.plantedAt;
-      const _remaining99 = Math.max(5_000, (_effGrowth - _elapsed) * 0.01);
-      const _newPlantedAt = Date.now() - (_effGrowth - _remaining99);
+    // Połączone: przywróć compostBonus (jeśli serwer go zgubił) + speedup tutorialowej marchewki
+    // Jeden setPlotCrops i jeden write do DB — unika race condition między dwoma write'ami.
+    const _shouldSpeedup = [9, 10, 11].includes(tutorialStep)
+      && _preservedCompostBonus?.type === "guide"
+      && plot.cropId === "carrot"
+      && plot.plantedAt != null;
+    const _needsCompostRestore = Boolean(_preservedCompostBonus);
+    if ((_needsCompostRestore || _shouldSpeedup) && profile?.id) {
+      // Oblicz nowy plantedAt poza updater'em (closure stale po await, ale Math.max(5000) zawsze wygrywa)
+      let _newPlantedAt: number | null = null;
+      if (_shouldSpeedup && plot.plantedAt != null) {
+        const _effGrowth = getEffectiveGrowthTimeMs(plotId);
+        const _elapsed = Date.now() - plot.plantedAt;
+        _newPlantedAt = Date.now() - (_effGrowth - Math.max(5_000, (_effGrowth - _elapsed) * 0.01));
+      }
       setPlotCrops(prev => {
+        // prev = świeży stan z applyProfileState (watered: true na tym polu)
         const _curr = prev[plotId];
         if (!_curr) return prev;
-        const _upd = { ...prev, [plotId]: { ..._curr, plantedAt: _newPlantedAt } };
+        const _compostMissing = _needsCompostRestore && !_curr.compostBonus;
+        const _hasChange = _compostMissing || (_shouldSpeedup && _newPlantedAt != null);
+        if (!_hasChange) return prev;
+        const _upd = {
+          ...prev,
+          [plotId]: {
+            ..._curr,
+            ...(_compostMissing ? { compostBonus: _preservedCompostBonus } : {}),
+            ...(_shouldSpeedup && _newPlantedAt != null ? { plantedAt: _newPlantedAt } : {}),
+          },
+        };
         void supabase.from("profiles").update({
           plot_crops: serializePlotCrops(_upd) as unknown as Record<string,unknown>,
         }).eq("id", profile!.id);
@@ -3793,7 +3799,8 @@ export default function Page() {
     };
     recalc();
     window.addEventListener("resize", recalc);
-    const _int = setInterval(recalc, 400);
+    // Step 1: 100 ms — strzałki jadą z mapą podczas drag, mniejszy lag
+    const _int = setInterval(recalc, tutorialStep === 1 ? 100 : 400);
     return () => { window.removeEventListener("resize", recalc); clearInterval(_int); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, isFieldViewOpen, fvCompostPickerOpen, fvSeedPickerOpen, profile?.id, profile?.tutorial_started, profile?.tutorial_completed, profile?.tutorial_skipped]);
