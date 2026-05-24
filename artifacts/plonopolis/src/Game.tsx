@@ -1433,6 +1433,14 @@ const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string 
   duzy_pien:{ name: "Duży pień",  icon: "🌲", color: "#a16207" },
   kret:     { name: "Kret",       icon: "🐾", color: "#a8a29e" },
 };
+// Koszty muszą być spójne z generate_plot_obstacles() w SQL
+const OBSTACLE_COSTS: Record<string, number> = { chwasty: 5, kamienie: 50, maly_pien: 150, duzy_pien: 250, kret: 500 };
+// Generuj brakujący wpis przeszkody (równe 20% szanse, jak w SQL pool)
+function generateObstacleEntry(): { type: string; cost: number } {
+  const types = ["chwasty", "kamienie", "maly_pien", "duzy_pien", "kret"] as const;
+  const type = types[Math.floor(Math.random() * types.length)];
+  return { type, cost: OBSTACLE_COSTS[type] };
+}
 
 const XP_TABLE: Record<number, number> = {
   // lvl 1-7: szybki start (30-90 min do lvl 3 z podstawowymi uprawami)
@@ -3727,18 +3735,37 @@ export default function Page() {
   // Auto-naprawa desynchronizacji pól przy każdym otwarciu widoku pola
   useEffect(() => {
     if (!isFieldViewOpen || !profile?.id) return;
+    const _userId = profile.id;
     let cancelled = false;
     void (async () => {
       const { data: freshRow } = await supabase
         .from("profiles")
         .select("unlocked_plots, plot_obstacles")
-        .eq("id", profile.id)
+        .eq("id", _userId)
         .single();
       if (cancelled || !freshRow) return;
-      setUnlockedPlots(parseUnlockedPlots(freshRow.unlocked_plots));
-      if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
-        setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
+      const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+      const freshObstacles: Record<string, { type: string; cost: number }> =
+        freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)
+          ? (freshRow.plot_obstacles as Record<string, { type: string; cost: number }>)
+          : {};
+      // Uzupełnij pola 21–100, które nie są odblokowane ani nie mają przeszkody (brakujące dane)
+      const gapEntries: Record<string, { type: string; cost: number }> = {};
+      for (let _pid = 21; _pid <= 100; _pid++) {
+        if (!freshUnlocked.includes(_pid) && !freshObstacles[String(_pid)]) {
+          gapEntries[String(_pid)] = generateObstacleEntry();
+        }
       }
+      if (Object.keys(gapEntries).length > 0) {
+        const merged = { ...freshObstacles, ...gapEntries };
+        await supabase.from("profiles").update({
+          plot_obstacles: merged as unknown as Record<string, unknown>,
+        }).eq("id", _userId);
+        if (!cancelled) setPlotObstacles(merged);
+      } else {
+        if (!cancelled) setPlotObstacles(freshObstacles);
+      }
+      if (!cancelled) setUnlockedPlots(freshUnlocked);
     })();
     return () => { cancelled = true; };
   }, [isFieldViewOpen, profile?.id]);
@@ -13839,17 +13866,17 @@ export default function Page() {
 
                             const _obstType = getPlotObstacleType(selectedPlotId);
                             const _obstDef = _obstType ? OBSTACLE_DEFS[_obstType] : null;
-                            // Desynchronizacja: pole nie jest odblokowane lokalnie, ale brak też danych przeszkody
-                            const _isStaleState = selectedPlotId > 20 && !_obstType && selectedPlotCost === 0;
+                            // Brak danych przeszkody: pole > 20 nie jest odblokowane i nie ma wpisu w plot_obstacles
+                            const _isMissingObstacle = selectedPlotId > 20 && !_obstType && !isPlotUnlocked(selectedPlotId);
                             return (
                               <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black/50 px-4">
                                 <div className="w-full max-w-md rounded-[28px] border border-[#c79b48] bg-[linear-gradient(180deg,rgba(66,39,17,0.98),rgba(34,20,10,0.98))] p-6 text-[#f7e7bf] shadow-[0_20px_80px_rgba(0,0,0,0.55)]">
-                                  {_isStaleState ? (
+                                  {_isMissingObstacle ? (
                                     <>
-                                      <p className="text-xs uppercase tracking-[0.35em] text-yellow-400">Desynchronizacja stanu</p>
+                                      <p className="text-xs uppercase tracking-[0.35em] text-yellow-400">Brak danych przeszkody</p>
                                       <h2 className="mt-3 text-2xl font-black text-[#fff1c7]">Pole #{selectedPlotId}</h2>
                                       <p className="mt-2 text-sm text-[#f2ddb0] leading-relaxed">
-                                        To pole jest prawdopodobnie już odblokowane w bazie danych, ale lokalny stan gry tego nie wie. Kliknij "Napraw", aby zsynchronizować.
+                                        Brak danych przeszkody dla tego pola. Kliknij "Napraw", aby odświeżyć stan pól.
                                       </p>
                                       <div className="mt-6 flex justify-end gap-3">
                                         <button
@@ -13868,18 +13895,31 @@ export default function Page() {
                                               .select("unlocked_plots, plot_obstacles")
                                               .eq("id", profile.id)
                                               .single();
-                                            if (freshRow) {
-                                              const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
-                                              setUnlockedPlots(freshUnlocked);
-                                              if (freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object") {
-                                                setPlotObstacles(freshRow.plot_obstacles as Record<string, { type: string; cost: number }>);
-                                              }
+                                            if (!freshRow) return;
+                                            const freshUnlocked = parseUnlockedPlots(freshRow.unlocked_plots);
+                                            const freshObstacles: Record<string, { type: string; cost: number }> =
+                                              freshRow.plot_obstacles && typeof freshRow.plot_obstacles === "object" && !Array.isArray(freshRow.plot_obstacles)
+                                                ? (freshRow.plot_obstacles as Record<string, { type: string; cost: number }>)
+                                                : {};
+                                            setUnlockedPlots(freshUnlocked);
+                                            if (freshUnlocked.includes(selectedPlotId)) {
+                                              // Prawdziwy desync — pole jest odblokowane w DB
+                                              setPlotObstacles(freshObstacles);
                                               setSelectedPlotId(null);
-                                              if (freshUnlocked.includes(selectedPlotId)) {
-                                                setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
-                                              } else {
-                                                setMessage({ type: "info", title: "Zsynchronizowano", text: `Pole #${selectedPlotId} nie jest odblokowane w bazie — kliknij je, aby odblokować.` });
-                                              }
+                                              setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${selectedPlotId} jest odblokowane — stan naprawiony.` });
+                                            } else if (!freshObstacles[String(selectedPlotId)]) {
+                                              // Nadal brak przeszkody — wygeneruj i zapisz do DB
+                                              const newEntry = generateObstacleEntry();
+                                              const merged = { ...freshObstacles, [String(selectedPlotId)]: newEntry };
+                                              await supabase.from("profiles").update({
+                                                plot_obstacles: merged as unknown as Record<string, unknown>,
+                                              }).eq("id", profile.id);
+                                              setPlotObstacles(merged);
+                                              setSelectedPlotId(null);
+                                              setMessage({ type: "info", title: "Przeszkoda uzupełniona", text: `Dane pola #${selectedPlotId} zostały odświeżone.` });
+                                            } else {
+                                              setPlotObstacles(freshObstacles);
+                                              setSelectedPlotId(null);
                                             }
                                           }}
                                           className="rounded-2xl border border-yellow-400/80 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-5 py-2 text-sm font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
