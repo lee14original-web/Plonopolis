@@ -158,6 +158,8 @@ type Crop = {
 
 type CompostType = "growth"|"yield"|"exp"|"guide";
 type CompostBonus = { type: CompostType; value: number };
+type TutArrowSA = { x: number; y: number; size: number; rotation: number };
+type TutArrowStep1 = { top: TutArrowSA; bottom: TutArrowSA; left: TutArrowSA; right: TutArrowSA };
 type PlotCropState = {
   cropId: string | null;
   plantedAt: number | null;
@@ -2136,6 +2138,10 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
+  const [_taeOn] = React.useState<boolean>(() => { try { return new URLSearchParams(window.location.search).get("tutorialArrowEditor")==="1"||localStorage.getItem("tutorialArrowEditor")==="1"; } catch { return false; } });
+  const [_taeCfg, _setTaeCfg] = React.useState<Record<string, TutArrowSA|TutArrowStep1>>(() => { const c:Record<string,TutArrowSA|TutArrowStep1>={}; [1,2,3,5,6,8,10,12].forEach(s=>{try{const r=localStorage.getItem(`tutorialArrowConfig.step${s}`);if(r)c[String(s)]=JSON.parse(r) as TutArrowSA|TutArrowStep1;}catch{}}); return c; });
+  const [_taeSel1, _setTaeSel1] = React.useState<"top"|"bottom"|"left"|"right">("top");
+  const [_taeDrag, _setTaeDrag] = React.useState<{step:number;key:string;x:number;y:number}|null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -15527,35 +15533,107 @@ export default function Page() {
           );
         })()}
 
-        {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
-        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep === 1 && !isFieldViewOpen && (
-          <div className="fixed inset-0 z-[5] pointer-events-none" style={{ background: "rgba(0,0,0,0.35)" }} />
-        )}
-
-        {/* Tutorial: strzałki wskazujące aktywny element */}
-        {tutorialArrow && tutorialStep === 1 && [
-          { left: tutorialArrow.cx - 24, top: tutorialArrow.top - 62 - 20, rotate: "0deg", delay: "0s" },
-          { left: tutorialArrow.cx - 24, top: tutorialArrow.bottom + 20, rotate: "180deg", delay: "0.1s" },
-          { left: tutorialArrow.left - 75, top: tutorialArrow.top + tutorialArrow.height / 2 - 31, rotate: "90deg", delay: "0.15s" },
-          { left: tutorialArrow.right + 27, top: tutorialArrow.top + tutorialArrow.height / 2 - 31, rotate: "-90deg", delay: "0.2s" },
-        ].map((a, i) => (
-          <div key={`tut-arrow-${i}`} className="fixed z-[93] pointer-events-none" style={{ left: a.left, top: a.top }}>
-            <div className="animate-bounce" style={{ transform: `rotate(${a.rotate})`, animationDelay: a.delay }}>
-              <svg width="48" height="62" viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        ))}
-        {tutorialArrow && tutorialStep !== 1 && (
-          <div className="fixed z-[93] pointer-events-none" style={{ left: tutorialArrow.cx - 24, top: tutorialArrow.top - 82 }}>
-            <div className="animate-bounce">
-              <svg width="48" height="62" viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        )}
+        {/* Tutorial: strzałki + dev editor (aktywuj przez ?tutorialArrowEditor=1 lub localStorage) */}
+        {(()=>{
+          const _noArrow=[7,9,11,13];
+          const _edSteps=[1,2,3,5,6,8,10,12];
+          const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
+          if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
+          if(!_taeOn&&!tutorialArrow) return null;
+          const _defPos1:Record<string,TutArrowSA>=tutorialArrow?{
+            top:   {x:tutorialArrow.cx,               y:tutorialArrow.top-93,                              size:48,rotation:0},
+            bottom:{x:tutorialArrow.cx,               y:tutorialArrow.bottom+93,                           size:48,rotation:180},
+            left:  {x:tutorialArrow.left-75,          y:tutorialArrow.top+tutorialArrow.height/2,          size:48,rotation:90},
+            right: {x:tutorialArrow.right+75,         y:tutorialArrow.top+tutorialArrow.height/2,          size:48,rotation:-90},
+          }:{top:{x:400,y:100,size:48,rotation:0},bottom:{x:400,y:600,size:48,rotation:180},left:{x:100,y:350,size:48,rotation:90},right:{x:700,y:350,size:48,rotation:-90}};
+          const _defPosN:TutArrowSA=tutorialArrow?{x:tutorialArrow.cx,y:tutorialArrow.top-93,size:48,rotation:0}:{x:400,y:200,size:48,rotation:0};
+          const _getCfg1=(key:string):TutArrowSA|null=>(_taeCfg["1"] as TutArrowStep1|undefined)?.[key as keyof TutArrowStep1]??null;
+          const _getCfgN=(s:number):TutArrowSA|null=>(_taeCfg[String(s)] as TutArrowSA|undefined)??null;
+          const _saveCfg=(step:number,key:string,a:TutArrowSA)=>{
+            _setTaeCfg(prev=>{
+              const k=String(step);
+              const next=step===1?{...((prev[k] as TutArrowStep1|undefined)??{}),[key]:a}:a;
+              try{localStorage.setItem(`tutorialArrowConfig.step${step}`,JSON.stringify(next));}catch{}
+              return{...prev,[k]:next as TutArrowSA|TutArrowStep1};
+            });
+          };
+          const _adjCfg=(step:number,key:string,field:keyof TutArrowSA,delta:number)=>{
+            const base=step===1?(_getCfg1(key)??_defPos1[key]):(_getCfgN(step)??_defPosN);
+            _saveCfg(step,key,{...base,[field]:base[field]+delta});
+          };
+          const _renderArrow=(a:TutArrowSA,sn:number,k:string)=>{
+            const h=Math.round(a.size*62/48);
+            const drag=_taeDrag?.step===sn&&_taeDrag?.key===k;
+            const ex=drag?_taeDrag!.x:a.x, ey=drag?_taeDrag!.y:a.y;
+            return(
+              <div key={`ta-${sn}-${k}`} className={`fixed z-[93] ${_taeOn?"cursor-grab":"pointer-events-none"}`} style={{left:ex-a.size/2,top:ey-h/2}}
+                onMouseDown={_taeOn?(e)=>{
+                  e.preventDefault();
+                  const sx=e.clientX,sy=e.clientY,ox=ex,oy=ey;
+                  const mv=(ev:MouseEvent)=>_setTaeDrag({step:sn,key:k,x:ox+ev.clientX-sx,y:oy+ev.clientY-sy});
+                  const up=(ev:MouseEvent)=>{document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);_setTaeDrag(null);_saveCfg(sn,k,{x:ox+ev.clientX-sx,y:oy+ev.clientY-sy,size:a.size,rotation:a.rotation});};
+                  document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
+                }:undefined}
+              >
+                <div className={drag?"":"animate-bounce"} style={{transform:`rotate(${a.rotation}deg)`}}>
+                  <svg width={a.size} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            );
+          };
+          const arrows:React.ReactNode[]=[];
+          if(tutorialStep===1){
+            (["top","bottom","left","right"] as const).forEach(k=>{arrows.push(_renderArrow(_getCfg1(k)??_defPos1[k],1,k));});
+          } else {
+            const cfg=_edSteps.includes(tutorialStep)?(_getCfgN(tutorialStep)??_defPosN):_defPosN;
+            arrows.push(_renderArrow(cfg,tutorialStep,"single"));
+          }
+          const editorPanel=_taeOn&&_edSteps.includes(tutorialStep)?(()=>{
+            const ck=tutorialStep===1?_taeSel1:"single";
+            const cfg=tutorialStep===1?(_getCfg1(_taeSel1)??_defPos1[_taeSel1]):(_getCfgN(tutorialStep)??_defPosN);
+            const _copy=()=>{
+              const out:Record<string,unknown>={};
+              [1,2,3,5,6,8,10,12].forEach(s=>{
+                const k=String(s);
+                if(s===1){const c1:Record<string,TutArrowSA>={};(["top","bottom","left","right"] as const).forEach(d=>{c1[d]=(_taeCfg[k] as TutArrowStep1|undefined)?.[d]??_defPos1[d];});out[k]=c1;}
+                else{out[k]=(_taeCfg[k] as TutArrowSA|undefined)??{..._defPosN};}
+              });
+              navigator.clipboard.writeText(JSON.stringify(out,null,2)).catch(()=>{});
+            };
+            return(
+              <div className="fixed top-4 right-4 z-[200] bg-black/90 border border-amber-400/70 rounded-xl p-3 text-xs text-amber-200 min-w-[215px]" style={{pointerEvents:"auto"}}>
+                <p className="font-black text-amber-400 mb-2 text-sm">🎯 Arrow Editor</p>
+                <div className="flex gap-2 items-center mb-2">
+                  <span className="text-gray-400">Step <b className="text-white">{tutorialStep}</b></span>
+                  {tutorialStep===1&&<select value={_taeSel1} onChange={e=>_setTaeSel1(e.target.value as "top"|"bottom"|"left"|"right")} className="ml-auto bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-[10px] text-white">{(["top","bottom","left","right"] as const).map(d=><option key={d} value={d}>{d}</option>)}</select>}
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mb-2 text-[10px]">
+                  <span className="text-gray-400">X: <b className="text-white">{Math.round(cfg.x)}</b></span>
+                  <span className="text-gray-400">Y: <b className="text-white">{Math.round(cfg.y)}</b></span>
+                  <span className="text-gray-400">Size: <b className="text-white">{cfg.size}</b></span>
+                  <span className="text-gray-400">Rot: <b className="text-white">{cfg.rotation}°</b></span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {([["X","x",2],["Y","y",2],["Size","size",2],["Rotate","rotation",5]] as [string,keyof TutArrowSA,number][]).map(([l,f,inc])=>(
+                    <div key={l} className="flex items-center gap-1">
+                      <span className="w-12 text-gray-400 shrink-0">{l}</span>
+                      <button type="button" onClick={()=>_adjCfg(tutorialStep,ck,f,-inc)} className="flex-1 bg-gray-700 hover:bg-gray-600 rounded py-0.5 font-bold">−</button>
+                      <button type="button" onClick={()=>_adjCfg(tutorialStep,ck,f,inc)}  className="flex-1 bg-gray-700 hover:bg-gray-600 rounded py-0.5 font-bold">+</button>
+                    </div>
+                  ))}
+                  <div className="flex gap-1 mt-1">
+                    <button type="button" onClick={()=>_saveCfg(tutorialStep,ck,tutorialStep===1?{..._defPos1[_taeSel1]}:{..._defPosN})} className="flex-1 bg-red-900/60 hover:bg-red-800 rounded py-0.5 text-[10px]">Reset</button>
+                    <button type="button" onClick={_copy} className="flex-1 bg-green-900/60 hover:bg-green-800 rounded py-0.5 text-[10px]">Copy cfg</button>
+                  </div>
+                </div>
+                <p className="mt-2 text-[9px] text-gray-600">Przeciągnij strzałkę myszką lub użyj −/+</p>
+              </div>
+            );
+          })():null;
+          return <>{arrows}{editorPanel}</>;
+        })()}
 
         </main>
     </div>

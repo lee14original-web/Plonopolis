@@ -1,0 +1,95 @@
+Dodaj tymczasowy edytor pozycji strzałek tutoriala dla Etapu 1.
+
+Cel:
+Chcę sam ręcznie ustawić pozycję i rozmiar strzałek dla każdego kroku tutoriala, bo automatyczne pozycjonowanie nie trafia dobrze.
+
+Wymagania edytora:
+1. Edytor ma działać tylko w dev/admin trybie, np. gdy w URL jest:
+   ?tutorialArrowEditor=1
+   albo przez localStorage flag:
+   localStorage.setItem("tutorialArrowEditor", "1")
+
+2. Gdy edytor jest aktywny:
+   - pokaż mały panel w prawym górnym rogu,
+   - panel ma pokazywać aktualny tutorialStep,
+   - panel ma pokazywać aktualne parametry strzałki/strzałek:
+     x, y, size, rotation, opacity,
+   - dodaj przyciski:
+     X - / X +
+     Y - / Y +
+     Size - / Size +
+     Rotate - / Rotate +
+     Reset
+     Copy config
+
+3. Strzałki mają być przeciągane myszką:
+   - drag & drop po ekranie,
+   - po puszczeniu myszy zapisuj pozycję do localStorage.
+
+4. Dla każdego kroku zapisuj osobną konfigurację:
+   tutorialArrowConfig.step1
+   tutorialArrowConfig.step2
+   tutorialArrowConfig.step3
+   tutorialArrowConfig.step5
+   tutorialArrowConfig.step6
+   tutorialArrowConfig.step8
+   tutorialArrowConfig.step10
+   tutorialArrowConfig.step12
+
+5. Step 1 ma obsługiwać kilka strzałek:
+   - top
+   - bottom
+   - left
+   - right
+
+Każda z nich musi mieć własne:
+   x, y, size, rotation
+
+6. Kroki bez strzałek:
+   - step 7
+   - step 9
+   - step 11
+   - step 13
+
+Nie pokazuj tam strzałek.
+
+7. W edytorze dodaj możliwość wyboru strzałki w step 1:
+   - top
+   - bottom
+   - left
+   - right
+
+8. "Copy config" ma kopiować do schowka gotowy JSON z konfiguracją wszystkich ustawionych strzałek, np.:
+
+{
+  "1": {
+    "top": { "x": 1000, "y": 120, "size": 70, "rotation": 0 },
+    "bottom": { "x": 1000, "y": 520, "size": 70, "rotation": 180 },
+    "left": { "x": 650, "y": 330, "size": 70, "rotation": 90 },
+    "right": { "x": 1350, "y": 330, "size": 70, "rotation": -90 }
+  },
+  "2": { "x": 180, "y": 120, "size": 70, "rotation": 0 },
+  "3": { "x": 620, "y": 300, "size": 70, "rotation": 0 },
+  "5": { "x": 180, "y": 350, "size": 70, "rotation": 0 },
+  "6": { "x": 360, "y": 260, "size": 70, "rotation": 0 },
+  "8": { "x": 180, "y": 560, "size": 70, "rotation": 0 },
+  "10": { "x": 180, "y": 760, "size": 70, "rotation": 0 },
+  "12": { "x": 900, "y": 720, "size": 70, "rotation": 0 }
+}
+
+9. W normalnym trybie gracza edytor ma być niewidoczny.
+
+10. Na razie konfiguracja może być tylko w localStorage.
+Nie zapisuj tego do DB.
+
+11. Nie zmieniaj tutorial_step.
+12. Nie zmieniaj guide_compost.
+13. Nie zmieniaj logiki zbiorów, podlewania, sadzenia ani nagród.
+14. Nie zmieniaj step 7/9/11 highlightów.
+15. Nie pushuj jeszcze.
+16. Typecheck i pokaż diff.
+
+Dodatkowo:
+- Usuń automatyczne 4 strzałki ze step 1 albo pozwól edytorowi je nadpisywać.
+- Step 1 nie musi przyciemniać Pola uprawne.
+- Strzałki boczne w step 1 mają mieć poprawną rotację i wskazywać na pole, nie być wszystkie skierowane w dół.
