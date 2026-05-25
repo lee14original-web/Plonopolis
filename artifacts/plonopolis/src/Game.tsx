@@ -5433,9 +5433,16 @@ export default function Page() {
     seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - 1 };
     // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
     if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
-    // Persist
+    // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
+    // Chroni przed nadpisaniem poprzednich pól gdy gracz szybko stosuje kompost na kilka pól.
+    const { data: _freshRowC } = await supabase
+      .from("profiles")
+      .select("plot_crops")
+      .eq("id", profile.id)
+      .single();
+    const _safePlotsC = { ...parsePlotCrops(_freshRowC?.plot_crops), [plotId]: nextPlot };
     await supabase.from("profiles").update({
-      plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+      plot_crops: serializePlotCrops(_safePlotsC) as unknown as Record<string,unknown>,
       seed_inventory: nextInv,
     }).eq("id", profile.id);
     // Notice
@@ -5475,9 +5482,16 @@ export default function Page() {
       setSeedInventory(nextInv);
       seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
       if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
-      // Persist
+      // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
+      // Chroni tutorial step 4: szybkie kliknięcie 3 pól nie nadpisuje poprzednich compostBonusów.
+      const { data: _freshRowG } = await supabase
+        .from("profiles")
+        .select("plot_crops")
+        .eq("id", profile.id)
+        .single();
+      const _safePlotsG = { ...parsePlotCrops(_freshRowG?.plot_crops), [plotId]: nextPlot };
       await supabase.from("profiles").update({
-        plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+        plot_crops: serializePlotCrops(_safePlotsG) as unknown as Record<string,unknown>,
         seed_inventory: nextInv,
       }).eq("id", profile.id);
       // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
