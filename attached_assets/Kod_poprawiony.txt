@@ -10619,4 +10619,20 @@ export default function Page() {
       )}
       </main>
   );
-}  
+}  Zrób 3 drobne poprawki w Widoku pola:
+
+1. Przycisk "Edytuj narzędzia" pokazuj tylko dla rangi/roli tester.
+   Dla zwykłych graczy ma być ukryty.
+
+2. W nagłówku usuń mały napis "WIDOK POLA".
+
+3. Powiększ nagłówek/opis:
+   - "Pola uprawne" większe,
+   - opis większy i zmień na:
+     "Poruszaj się po polach myszką lub WASD. Przytrzymaj myszkę i przeciągnij po polach, aby szybko sadzić, podlewać albo zbierać."
+
+4. Kafelki statusu Odblokowane/Rośnie/Gotowe powiększ o ok. 25%, ale pilnuj żeby nie wychodziły poza ekran i nie nachodziły na X.
+
+Nie ruszaj pól, narzędzi, tutoriala, DB ani logiki upraw.
+
+Typecheck, pokaż diff, nie pushuj.

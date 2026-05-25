@@ -13145,7 +13145,8 @@ export default function Page() {
                     ✕
                   </button>
 
-                  {/* ─── Przycisk edycji hitboxów narzędzi ─── */}
+                  {/* ─── Przycisk edycji hitboxów narzędzi (tylko tester/admin/owner) ─── */}
+                  {canEditHitboxes && (
                   <button
                     type="button"
                     onClick={() => setFvToolEditMode(m => !m)}
@@ -13153,6 +13154,7 @@ export default function Page() {
                   >
                     🎯 {fvToolEditMode ? "Zakończ edycję" : "Edytuj narzędzia"}
                   </button>
+                  )}
 
                   {/* ─── Panel współrzędnych (widoczny tylko w trybie edycji) ─── */}
                   {fvToolEditMode && (
@@ -13195,8 +13197,8 @@ export default function Page() {
                     className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
-                    <img src="/ui/ikona_konewka.png" alt="Konewka" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
-                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Konewka</p>
+                    <img src="/ui/ikona_konewka.png" alt="Konewka" className="h-[60%] w-[60%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                     {fvToolEditMode && (
                       <div
                         onMouseDown={(e) => { e.stopPropagation(); const pos = fvKonewkaPos; fvToolDragRef.current = { btn: "konewka", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
@@ -13221,8 +13223,8 @@ export default function Page() {
                     className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
-                    <img src="/ui/ikona_zbierz.png" alt="Zbierz" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
-                    <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Zbierz</p>
+                    <img src="/ui/ikona_zbierz.png" alt="Zbierz" className="h-[60%] w-[60%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                     {fvToolEditMode && (
                       <div
                         onMouseDown={(e) => { e.stopPropagation(); const pos = fvZbierzPos; fvToolDragRef.current = { btn: "zbierz", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
@@ -13273,8 +13275,8 @@ export default function Page() {
                       }
                       return (
                         <>
-                          <img src="/ui/ikona_nasiona.png" alt="Nasiona" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
-                          <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Nasiona</p>
+                          <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Nasiona</p>
+                          <img src="/ui/ikona_nasiona.png" alt="Nasiona" className="h-[60%] w-[60%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                         </>
                       );
                     })()}
@@ -13332,8 +13334,8 @@ export default function Page() {
                       }
                       return (
                         <>
-                          <img src="/ui/ikona_kompost.png" alt="Kompost" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
-                          <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Kompost</p>
+                          <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Kompost</p>
+                          <img src="/ui/ikona_kompost.png" alt="Kompost" className="h-[60%] w-[60%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                         </>
                       );
                     })()}
@@ -13605,9 +13607,8 @@ export default function Page() {
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                      <h2 className="mt-1 text-2xl font-black text-[#f9e7b2]">Pola uprawne</h2>
-                      <p className="mt-1 text-base text-[#dfcfab] font-medium">Sadź, podlewaj i zbieraj swoje plony.</p>
+                      <h2 className="text-3xl font-black text-[#f9e7b2]">Pola uprawne</h2>
+                      <p className="mt-2 text-lg text-[#dfcfab] font-medium leading-snug max-w-lg">Poruszaj się po polach myszką lub WASD. Przytrzymaj myszkę i przeciągnij po polach, aby szybko sadzić, podlewać albo zbierać.</p>
                     </div>
                     {(() => {
                       const _growing = Object.entries(plotCrops).filter(([id, p]) => p.cropId && !isCropReady(Number(id))).length;
@@ -13619,9 +13620,9 @@ export default function Page() {
                             { label: "Rośnie",      value: String(_growing) },
                             { label: "Gotowe",      value: String(_ready) },
                           ] as {label:string;value:string}[]).map(({ label, value }) => (
-                            <div key={label} className="flex flex-col items-center justify-center rounded-xl border border-[#c9973a]/60 bg-[rgba(14,8,2,0.85)] px-4 py-2 shadow-[0_0_8px_rgba(201,151,58,0.15)]">
-                              <span className="text-[11px] uppercase tracking-wider text-[#a07030] font-bold leading-none">{label}</span>
-                              <span className="mt-1 text-xl font-black text-[#f9e7b2] leading-none">{value}</span>
+                            <div key={label} className="flex flex-col items-center justify-center rounded-xl border border-[#c9973a]/60 bg-[rgba(14,8,2,0.85)] px-5 py-2.5 shadow-[0_0_8px_rgba(201,151,58,0.15)]">
+                              <span className="text-[14px] uppercase tracking-wider text-[#a07030] font-bold leading-none">{label}</span>
+                              <span className="mt-1.5 text-2xl font-black text-[#f9e7b2] leading-none">{value}</span>
                             </div>
                           ))}
                         </div>
