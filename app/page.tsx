@@ -13103,7 +13103,7 @@ export default function Page() {
             >
                 <div
                   ref={fieldViewScrollRef}
-                  className="relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto select-none"
+                  className="fv-scroll relative w-full h-full bg-[rgba(20,12,6,0.96)] p-5 overflow-auto select-none"
                   style={{ cursor: fieldScrollDragRef.current?.active && fieldScrollDragRef.current?.moved ? "grabbing" : undefined, userSelect: fieldScrollDragRef.current?.moved ? "none" : undefined }}
                   onMouseDown={(e) => {
                     if (e.button !== 0) return;
@@ -13603,20 +13603,27 @@ export default function Page() {
                     </div>
                   )}
 
-                  <div className="mb-4 pr-28">
-                    <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pola uprawne</h2>
-                    <p className="mt-1 text-sm text-[#dfcfab]">Sadź, podlewaj i zbieraj swoje plony.</p>
+                  <div className="mb-4 pr-28 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
+                      <h2 className="mt-1 text-2xl font-black text-[#f9e7b2]">Pola uprawne</h2>
+                      <p className="mt-1 text-base text-[#dfcfab] font-medium">Sadź, podlewaj i zbieraj swoje plony.</p>
+                    </div>
                     {(() => {
                       const _growing = Object.entries(plotCrops).filter(([id, p]) => p.cropId && !isCropReady(Number(id))).length;
                       const _ready = Object.entries(plotCrops).filter(([id, p]) => p.cropId && isCropReady(Number(id))).length;
                       return (
-                        <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold text-[#dfcfab]">
-                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Odblokowane:</span> {unlockedPlots.length}/100</span>
-                          <span className="text-[#8b6a3e]">·</span>
-                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Rośnie:</span> {_growing}</span>
-                          <span className="text-[#8b6a3e]">·</span>
-                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Gotowe:</span> {_ready}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {([
+                            { label: "Odblokowane", value: `${unlockedPlots.length}/100` },
+                            { label: "Rośnie",      value: String(_growing) },
+                            { label: "Gotowe",      value: String(_ready) },
+                          ] as {label:string;value:string}[]).map(({ label, value }) => (
+                            <div key={label} className="flex flex-col items-center justify-center rounded-xl border border-[#c9973a]/60 bg-[rgba(14,8,2,0.85)] px-4 py-2 shadow-[0_0_8px_rgba(201,151,58,0.15)]">
+                              <span className="text-[11px] uppercase tracking-wider text-[#a07030] font-bold leading-none">{label}</span>
+                              <span className="mt-1 text-xl font-black text-[#f9e7b2] leading-none">{value}</span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })()}
