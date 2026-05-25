@@ -577,7 +577,7 @@ const COMPOST_DEFS: Record<CompostType, { id:string; name:string; icon:string; d
   growth: { id:"compost_growth", name:"Kompost Wzrostu",  icon:"⚡", desc:"Przyspiesza wzrost upraw",   effectLabel:"⚡ Szybszy wzrost",   bonusValues:[5,10,15],  bonusLabel:(v)=>`-${v}% czasu wzrostu`, tierName:(v)=>v<=5?"Słaby":v<=10?"Średni":"Mocny" },
   yield:  { id:"compost_yield",  name:"Kompost Urodzaju", icon:"🌾", desc:"Zwiększa plon przy zbiorze", effectLabel:"🌾 Większy plon",     bonusValues:[1,2,3],    bonusLabel:(v)=>`+${v} sztuk plonu`,     tierName:(v)=>v<=1?"Słaby":v<=2?"Średni":"Mocny" },
   exp:    { id:"compost_exp",    name:"Kompost Nauki",    icon:"⭐", desc:"Daje więcej EXP przy zbiorze", effectLabel:"⭐ Więcej EXP",     bonusValues:[10,20,30], bonusLabel:(v)=>`+${v}% EXP`,            tierName:(v)=>v<=10?"Słaby":v<=20?"Średni":"Mocny" },
-  guide:  { id:"guide_compost",  name:"Kompost Przewodnika", icon:"🌟", desc:"Specjalny kompost dla początkujących. Skraca czas wzrostu uprawy o 75%. Nie można go sprzedać na targu.", effectLabel:"🌟 −75% czasu wzrostu", bonusValues:[75], bonusLabel:()=>`−75% czasu wzrostu`, tierName:()=>"Starter" },
+  guide:  { id:"guide_compost",  name:"Kompost Przewodnika", icon:"🌟", desc:"Specjalny kompost dla początkujących. Skraca czas wzrostu uprawy o 75%. Nie można go sprzedać na targu.", effectLabel:"🌟 −75% czasu wzrostu", bonusValues:[75], bonusLabel:()=>`−75% czasu wzrostu`, tierName:()=>"Kompost Przewodnika" },
 };
 // Wagi losowania tieru: 50% słaby, 35% śrni, 15% mocny
 const COMPOST_TIER_WEIGHTS = [50, 35, 15];
@@ -1756,10 +1756,10 @@ export default function Page() {
 
   // ── Edytor pozycji przycisków narzędzi (konewka/zbierz) na obrazie pola ──
   const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
-  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 58, t: 560, w: 192, h: 179 });
-  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 58, t: 760, w: 190, h: 176 });
-  const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 58, t: 360, w: 192, h: 179 });
-  const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 160, w: 192, h: 179 });
+  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 58, t: 614, w: 192, h: 179 });
+  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 58, t: 834, w: 190, h: 176 });
+  const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 58, t: 397, w: 192, h: 179 });
+  const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 184, w: 192, h: 179 });
   const [fvSeedPickerOpen, setFvSeedPickerOpen] = React.useState(false);
   const [fvCompostPickerOpen, setFvCompostPickerOpen] = React.useState(false);
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
@@ -3143,7 +3143,8 @@ export default function Page() {
 
     // Połączone: przywróć compostBonus (jeśli serwer go zgubił) + speedup tutorialowej marchewki
     // Jeden setPlotCrops i jeden write do DB — unika race condition między dwoma write'ami.
-    const _shouldSpeedup = [9, 10, 11].includes(tutorialStep)
+    const _shouldSpeedup = tutorialStep === 9
+      && tutorialPlotIds.includes(plotId)
       && _preservedCompostBonus?.type === "guide"
       && plot.cropId === "carrot"
       && plot.plantedAt != null;
@@ -3154,7 +3155,7 @@ export default function Page() {
       if (_shouldSpeedup && plot.plantedAt != null) {
         const _effGrowth = getEffectiveGrowthTimeMs(plotId);
         const _elapsed = Date.now() - plot.plantedAt;
-        _newPlantedAt = Date.now() - (_effGrowth - Math.max(5_000, (_effGrowth - _elapsed) * 0.01));
+        _newPlantedAt = Date.now() - (_effGrowth - Math.max(5_000, (_effGrowth - _elapsed) * 0.10));
       }
       setPlotCrops(prev => {
         // prev = świeży stan z applyProfileState (watered: true na tym polu)
