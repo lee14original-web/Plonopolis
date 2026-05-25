@@ -5498,8 +5498,8 @@ export default function Page() {
       setCompostNotice({ type: "guide", value: 75, plotId });
       setTimeout(() => setCompostNotice(null), 5000);
       if (tutorialStep === 4) {
-        // Licz faktyczne pola z guide zamiast ufać tylko tablicy — recovery po refreshie
-        const _guidePlots = Object.entries({ ...plotCrops, [plotId]: nextPlot })
+        // Licz faktyczne pola z guide z AKTUALNEGO (świeżego) plot_crops — nie stale closure
+        const _guidePlots = Object.entries(_safePlotsG)
           .filter(([, p]) => p.compostBonus?.type === "guide")
           .map(([id]) => Number(id));
         const _nextIds = Array.from(new Set([...tutorialPlotIds, ..._guidePlots]));
@@ -13275,7 +13275,7 @@ export default function Page() {
                     data-tutorial-target="nasiona-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
-                      if (tutorialStep >= 2 && tutorialStep <= 4) return;
+                      if ((tutorialStep >= 2 && tutorialStep <= 4) || tutorialStep === 11) return;
                       setFvSeedPickerOpen(prev => !prev);
                       setFvCompostPickerOpen(false);
                       if (tutorialStep === 5) void advanceTutorialStep(6);
@@ -13285,7 +13285,7 @@ export default function Page() {
                       const pos = fvNasonaPos;
                       fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 2 && tutorialStep <= 4 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${((tutorialStep >= 2 && tutorialStep <= 4) || tutorialStep === 11) && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
                   >
                     {(() => {
