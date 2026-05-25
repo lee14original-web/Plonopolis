@@ -3141,42 +3141,39 @@ export default function Page() {
       // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
     }
 
-    // Połączone: przywróć compostBonus (jeśli serwer go zgubił) + speedup tutorialowej marchewki
-    // Jeden setPlotCrops i jeden write do DB — unika race condition między dwoma write'ami.
+    // ─── compostBonus restore + tutorial step 9 speedup ───
+    // Dane bierzemy bezpośrednio z odpowiedzi RPC (nie ze stale closure),
+    // a DB write robimy z await poza setPlotCrops — gwarantuje ten sam plantedAt w UI i DB.
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
     const _tutorialEligible = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
-    if ((_needsCompostRestore || _tutorialEligible) && profile?.id) {
-      // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35),
-      // więc isCropReady używa zawsze 180000 × 0.35 = 63000ms — niezależnie od statystyk gracza.
-      // Ustawiamy plantedAt tak, żeby marchewka była gotowa za 7 sekund.
-      const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
-      const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
-      setPlotCrops(prev => {
-        // prev = świeży stan z applyProfileState (watered: true na tym polu)
-        const _curr = prev[plotId];
-        if (!_curr) return prev;
-        const _compostMissing = _needsCompostRestore && !_curr.compostBonus;
-        // Sprawdź guide compost w świeżym stanie ALBO w _preservedCompostBonus (gdy serwer go wyczyścił)
-        const _effectiveCompostType = (_curr.compostBonus ?? (_compostMissing ? _preservedCompostBonus : null))?.type;
-        const _doSpeedup = _tutorialEligible
-          && _effectiveCompostType === "guide"
-          && _curr.cropId === "carrot"
-          && _curr.plantedAt != null;
-        const _hasChange = _compostMissing || _doSpeedup;
-        if (!_hasChange) return prev;
-        const _upd = {
-          ...prev,
-          [plotId]: {
-            ..._curr,
-            ...(_compostMissing ? { compostBonus: _preservedCompostBonus } : {}),
-            ...(_doSpeedup ? { plantedAt: _tutorialSpeedupAt } : {}),
-          },
+    if (_needsCompostRestore || _tutorialEligible) {
+      // Świeży stan plot_crops z odpowiedzi RPC (ten sam, który applyProfileState właśnie załadował)
+      const _rpcPlots = parsePlotCrops(extractRpcProfile(data)?.plot_crops);
+      const _rpcPlot = _rpcPlots[plotId];
+      const _compostMissing = _needsCompostRestore && !_rpcPlot?.compostBonus;
+      const _activeCompost = _rpcPlot?.compostBonus ?? (_compostMissing ? _preservedCompostBonus : null);
+      const _doSpeedup = _tutorialEligible
+        && _activeCompost?.type === "guide"
+        && _rpcPlot?.cropId === "carrot"
+        && _rpcPlot?.plantedAt != null;
+      if ((_compostMissing || _doSpeedup) && _rpcPlot && profile?.id) {
+        // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35)
+        // → isCropReady zawsze używa 180000 × 0.35 = 63000ms, niezależnie od statystyk gracza
+        const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
+        const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
+        const _updPlot: PlotCropState = {
+          ..._rpcPlot,
+          ...(_compostMissing ? { compostBonus: _preservedCompostBonus } : {}),
+          ...(_doSpeedup ? { plantedAt: _tutorialSpeedupAt } : {}),
         };
-        void supabase.from("profiles").update({
-          plot_crops: serializePlotCrops(_upd) as unknown as Record<string,unknown>,
-        }).eq("id", profile!.id);
-        return _upd;
-      });
+        // 1. Lokalny stan UI
+        setPlotCrops(prev => ({ ...prev, [plotId]: _updPlot }));
+        // 2. Zapis do Supabase — await (nie void), identyczny plantedAt co UI
+        const _updPlots = { ..._rpcPlots, [plotId]: _updPlot };
+        await supabase.from("profiles").update({
+          plot_crops: serializePlotCrops(_updPlots) as unknown as Record<string, unknown>,
+        }).eq("id", profile.id);
+      }
     }
 
     const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
