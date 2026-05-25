@@ -15564,7 +15564,7 @@ export default function Page() {
               const _allReady = tutorialPlotIds.length > 0 && tutorialPlotIds.every(id => isCropReady(id));
               return _allReady
                 ? "Marchewki gotowe! Za chwilę przejdziemy do zbioru."
-                : "Marchewki podlane, za chwilę będą gotowe do zbioru.";
+                : "Marchewki podlane. Poczekaj chwilę — gdy będą gotowe, przewodnik sam przejdzie dalej.";
             })(),
             "Kliknij Zbierz.",
             `Zbierz gotowe marchewki — zebrałeś ${_t11}/3.`,
