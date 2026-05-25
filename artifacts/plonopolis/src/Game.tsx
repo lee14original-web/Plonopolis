@@ -13605,10 +13605,21 @@ export default function Page() {
 
                   <div className="mb-4 pr-28">
                     <p className="text-xs uppercase tracking-[0.25em] text-[#d8ba7a]">Widok pola</p>
-                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Twoje pole uprawne</h2>
-                    <p className="mt-2 text-sm text-[#dfcfab]">
-                      Wybierz uprawę lub kompost przyciskami po prawej, użyj konewki lub sierpa, a potem kliknij pole. Możesz też używać WASD i strzałek.
-                    </p>
+                    <h2 className="mt-2 text-2xl font-black text-[#f9e7b2]">Pola uprawne</h2>
+                    <p className="mt-1 text-sm text-[#dfcfab]">Sadź, podlewaj i zbieraj swoje plony.</p>
+                    {(() => {
+                      const _growing = Object.entries(plotCrops).filter(([id, p]) => p.cropId && !isCropReady(Number(id))).length;
+                      const _ready = Object.entries(plotCrops).filter(([id, p]) => p.cropId && isCropReady(Number(id))).length;
+                      return (
+                        <div className="mt-2 flex flex-wrap gap-3 text-xs font-bold text-[#dfcfab]">
+                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Odblokowane:</span> {unlockedPlots.length}/100</span>
+                          <span className="text-[#8b6a3e]">·</span>
+                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Rośnie:</span> {_growing}</span>
+                          <span className="text-[#8b6a3e]">·</span>
+                          <span className="flex items-center gap-1"><span className="text-[#d8ba7a]">Gotowe:</span> {_ready}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
