@@ -13195,7 +13195,7 @@ export default function Page() {
                     className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
-                    <img src="/ui/ikona_konewka.png" alt="Konewka" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
+                    <img src="/ui/ikona_konewka.png" alt="Konewka" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Konewka</p>
                     {fvToolEditMode && (
                       <div
@@ -13221,7 +13221,7 @@ export default function Page() {
                     className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
                     style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
-                    <img src="/ui/ikona_zbierz.png" alt="Zbierz" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
+                    <img src="/ui/ikona_zbierz.png" alt="Zbierz" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                     <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Zbierz</p>
                     {fvToolEditMode && (
                       <div
@@ -13273,7 +13273,7 @@ export default function Page() {
                       }
                       return (
                         <>
-                          <img src="/ui/ikona_nasiona.png" alt="Nasiona" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
+                          <img src="/ui/ikona_nasiona.png" alt="Nasiona" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                           <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Nasiona</p>
                         </>
                       );
@@ -13332,7 +13332,7 @@ export default function Page() {
                       }
                       return (
                         <>
-                          <img src="/ui/ikona_kompost.png" alt="Kompost" className="h-[50%] w-[50%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
+                          <img src="/ui/ikona_kompost.png" alt="Kompost" className="h-[65%] w-[65%] object-contain pointer-events-none" style={{ imageRendering: "pixelated", mixBlendMode: "screen" }} />
                           <p className="text-[10px] font-black text-[#f9e7b2] pointer-events-none leading-none mt-0.5">Kompost</p>
                         </>
                       );
