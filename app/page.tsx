@@ -5433,9 +5433,16 @@ export default function Page() {
     seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - 1 };
     // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
     if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
-    // Persist
+    // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
+    // Chroni przed nadpisaniem poprzednich pól gdy gracz szybko stosuje kompost na kilka pól.
+    const { data: _freshRowC } = await supabase
+      .from("profiles")
+      .select("plot_crops")
+      .eq("id", profile.id)
+      .single();
+    const _safePlotsC = { ...parsePlotCrops(_freshRowC?.plot_crops), [plotId]: nextPlot };
     await supabase.from("profiles").update({
-      plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+      plot_crops: serializePlotCrops(_safePlotsC) as unknown as Record<string,unknown>,
       seed_inventory: nextInv,
     }).eq("id", profile.id);
     // Notice
@@ -5475,9 +5482,16 @@ export default function Page() {
       setSeedInventory(nextInv);
       seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
       if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
-      // Persist
+      // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
+      // Chroni tutorial step 4: szybkie kliknięcie 3 pól nie nadpisuje poprzednich compostBonusów.
+      const { data: _freshRowG } = await supabase
+        .from("profiles")
+        .select("plot_crops")
+        .eq("id", profile.id)
+        .single();
+      const _safePlotsG = { ...parsePlotCrops(_freshRowG?.plot_crops), [plotId]: nextPlot };
       await supabase.from("profiles").update({
-        plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+        plot_crops: serializePlotCrops(_safePlotsG) as unknown as Record<string,unknown>,
         seed_inventory: nextInv,
       }).eq("id", profile.id);
       // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
@@ -13208,7 +13222,7 @@ export default function Page() {
                   <button
                     type="button"
                     data-tutorial-target="konewka-btn"
-                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
+                    onClick={() => { if (!fvToolEditMode) { if (tutorialStep >= 5 && tutorialStep <= 7) return; setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
                     onMouseDown={fvToolEditMode ? (e) => {
@@ -13216,7 +13230,7 @@ export default function Page() {
                       const pos = fvKonewkaPos;
                       fvToolDragRef.current = { btn: "konewka", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 5 && tutorialStep <= 7 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Konewka</p>
@@ -13233,7 +13247,7 @@ export default function Page() {
                   <button
                     type="button"
                     data-tutorial-target="zbierz-btn"
-                    onClick={() => { if (!fvToolEditMode) { setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
+                    onClick={() => { if (!fvToolEditMode) { if (tutorialStep >= 8 && tutorialStep <= 9) return; setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
                     data-zone="sickle"
@@ -13242,7 +13256,7 @@ export default function Page() {
                       const pos = fvZbierzPos;
                       fvToolDragRef.current = { btn: "zbierz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : (e) => setHoveredSickle(false)}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 8 && tutorialStep <= 9 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Zbierz</p>
@@ -13261,6 +13275,7 @@ export default function Page() {
                     data-tutorial-target="nasiona-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
+                      if (tutorialStep >= 2 && tutorialStep <= 4) return;
                       setFvSeedPickerOpen(prev => !prev);
                       setFvCompostPickerOpen(false);
                       if (tutorialStep === 5) void advanceTutorialStep(6);
@@ -13270,7 +13285,7 @@ export default function Page() {
                       const pos = fvNasonaPos;
                       fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 2 && tutorialStep <= 4 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
                   >
                     {(() => {
