@@ -1,0 +1,63 @@
+Popraw dwa problemy z tutorialem.
+
+Problem 1 — Step 1, przesuwanie 4 strzałek jako całości
+
+Chcę tymczasowo móc przesunąć cały zestaw 4 strzałek step 1 razem, bo ręczne zgadywanie offsetu jest wolne.
+
+Dodaj prosty tymczasowy edytor tylko dla step 1:
+- aktywny tylko po URL ?step1ArrowEditor=1 albo localStorage step1ArrowEditor="1",
+- pokazuje mały panel dev w prawym górnym rogu,
+- pokazuje aktualny step1ArrowOffsetX i step1ArrowOffsetY,
+- przyciski:
+  X -10 / X +10
+  Y -10 / Y +10
+  X -1 / X +1
+  Y -1 / Y +1
+  Reset
+  Copy offset
+- dodatkowo pozwól złapać/przeciągnąć dowolną ze strzałek step 1 i wtedy przesuwać CAŁĄ grupę 4 strzałek razem,
+- zapisuj offset do localStorage,
+- Copy offset ma kopiować JSON np.:
+  { "step1ArrowOffsetX": 40, "step1ArrowOffsetY": -10 }
+
+W normalnym trybie gracza edytor niewidoczny.
+
+Ważne:
+- step 1 strzałki nadal mają być liczone względem getBoundingClientRect targetu Pola uprawne,
+- offset ma być tylko dodatkiem do pozycji całej grupy,
+- strzałki nadal mają jechać z mapą,
+- overlay step 1 zostaje,
+- nie zmieniaj stepów 2/3/5/6/8/10/12.
+
+Problem 2 — Step 4 pokazuje 2/3 mimo że 3 pola mają Kompost Przewodnika
+
+Objaw:
+Po szybkim klikaniu / zmuleniu gry 3 pola mają faktycznie Kompost Przewodnika, ale panel tutoriala pokazuje:
+"Wzmocnione pola: 2/3"
+Po Ctrl+F5 nadal jest 2/3, mimo że na siatce widać 3 pola ze STARTER.
+
+Wniosek:
+tutorial licznik step 4 bazuje częściowo na tutorialPlotIds/localStorage albo nie zsynchronizował jednego pola, zamiast liczyć faktyczny stan pól.
+
+Napraw:
+1. W step 4 licznik "Wzmocnione pola X/3" ma liczyć faktyczne pola z Kompostem Przewodnika:
+   compostBonus?.type === "guide"
+   na odblokowanych, pustych polach.
+2. Nie opieraj licznika tylko na tutorialPlotIds.
+3. Jeśli po refreshu są już 3 pola z compostBonus?.type === "guide", tutorial ma sam przejść do step 5 albo pokazać 3/3 i pozwolić iść dalej zgodnie z obecną logiką.
+4. Dodaj recovery useEffect:
+   - gdy tutorialStep === 4,
+   - policz wszystkie pola z compostBonus?.type === "guide",
+   - jeśli count >= 3:
+      - zapisz pierwsze 3 takie plotId do tutorialPlotIds/localStorage,
+      - advanceTutorialStep(5)
+     albo jeśli aktualna architektura wymaga, ustaw stan tak, żeby istniejący mechanizm przeszedł do step 5.
+5. Przy nakładaniu kompostu zabezpiecz przed podwójnym klikaniem:
+   - jeśli pendingFieldActions[plotId] albo akcja kompostu już trwa, ignoruj kolejne kliknięcie,
+   - nie pozwól, żeby szybkie kliknięcie rozjechało licznik.
+6. Step 7 nadal ma bazować na faktycznym compostBonus?.type === "guide", nie tylko tutorialPlotIds.
+7. Nie cofaj zmian speedupu marchewek.
+8. Nie zmieniaj DB schema, nagród, ekonomii, guide_compost item.
+9. Typecheck.
+10. Pokaż diff i plan testów.
+11. Nie pushuj jeszcze.
