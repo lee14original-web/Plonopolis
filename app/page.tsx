@@ -2136,6 +2136,19 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
+  const [step1ArrowOffsetX, setStep1ArrowOffsetX] = React.useState<number>(() => {
+    try { return Number(window.localStorage.getItem("step1ArrowOffsetX") ?? "0") || 0; } catch { return 0; }
+  });
+  const [step1ArrowOffsetY, setStep1ArrowOffsetY] = React.useState<number>(() => {
+    try { return Number(window.localStorage.getItem("step1ArrowOffsetY") ?? "0") || 0; } catch { return 0; }
+  });
+  const isStep1ArrowEditorActive = React.useMemo<boolean>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("step1ArrowEditor") === "1" || window.localStorage.getItem("step1ArrowEditor") === "1";
+    } catch { return false; }
+  }, []);
+  const step1ArrowDragRef = React.useRef<{active:boolean;startX:number;startY:number;startOX:number;startOY:number;curOX:number;curOY:number}>({active:false,startX:0,startY:0,startOX:0,startOY:0,curOX:0,curOY:0});
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -2183,6 +2196,8 @@ export default function Page() {
   const [kompostBatch, setKompostBatch] = React.useState<CompostBatch>({ fill: 0, scoreSum: 0, cropIds: [] });
   // Flaga przeciw race conditions: blokuje równoległe deposit/claim (np. szybkie podwójne kliknięcia)
   const kompostBusyRef = React.useRef(false);
+  // Chroni applyGuideCompostToPlot przed podwójnym kliknięciem (plotId w toku)
+  const compostApplyingRef = React.useRef(new Set<number>());
   const saveKompostBatch = (batch: CompostBatch) => {
     const uid = profile?.id ?? "";
     const clean: CompostBatch = {
@@ -4193,6 +4208,26 @@ export default function Page() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, tutorialPlotIds, plotCrops]);
 
+  // ─── Tutorial krok 4: recovery — wykryj pola z Kompostem Przewodnika po refreshie ───
+  useEffect(() => {
+    if (tutorialStep !== 4 || !profile?.id) return;
+    const _guidePlots = Object.entries(plotCrops)
+      .filter(([, p]) => p.compostBonus?.type === "guide")
+      .map(([id]) => Number(id));
+    if (_guidePlots.length === 0) return;
+    if (_guidePlots.length >= 3) {
+      const _top3 = _guidePlots.slice(0, 3);
+      setTutorialPlotIds(_top3);
+      saveTutorialPlotIdsToStorage(profile.id, _top3);
+      void advanceTutorialStep(5);
+    } else {
+      // Synchronizuj tutorialPlotIds z faktycznym stanem pól (bez nadpisywania istniejących)
+      const _merged = Array.from(new Set([...tutorialPlotIds, ..._guidePlots]));
+      if (_merged.length !== tutorialPlotIds.length) setTutorialPlotIds(_merged);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, plotCrops, profile?.id]);
+
   // ─── Tutorial krok 7: recovery — wykryj już posadzone marchewki (np. po refreshie) ───
   useEffect(() => {
     if (tutorialStep !== 7 || tutorialPlotIds.length === 0 || !profile?.id) return;
@@ -5369,6 +5404,8 @@ export default function Page() {
   // ─── KOMPOST PRZEWODNIKA: stosuj na puste pole (przed sadzeniem) — multiplier 0.25 ───
   async function applyGuideCompostToPlot(plotId: number) {
     if (!profile?.id) return;
+    // Blokada przed szybkim podwójnym kliknięciem na to samo pole
+    if (compostApplyingRef.current.has(plotId)) return;
     if ((seedInventory["guide_compost"] ?? 0) <= 0) {
       setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz Kompostu Przewodnika w plecaku." });
       return;
@@ -5382,33 +5419,42 @@ export default function Page() {
       setMessage({ type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
       return;
     }
-    // Ustaw compostBonus typu "guide" — getEffectiveGrowthTimeMs zastosuje mnożnik 0.25
-    const nextPlot: PlotCropState = { ...plot, compostBonus: { type: "guide", value: 75 } };
-    const nextPlots = { ...plotCrops, [plotId]: nextPlot };
-    setPlotCrops(nextPlots);
-    // Odejmij 1 z inwentarza
-    const nextInv = { ...seedInventory };
-    nextInv["guide_compost"] = (nextInv["guide_compost"] ?? 0) - 1;
-    const ranOut = nextInv["guide_compost"] <= 0;
-    if (ranOut) delete nextInv["guide_compost"];
-    setSeedInventory(nextInv);
-    seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
-    if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
-    // Persist
-    await supabase.from("profiles").update({
-      plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
-      seed_inventory: nextInv,
-    }).eq("id", profile.id);
-    // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
-    setCompostNotice({ type: "guide", value: 75, plotId });
-    setTimeout(() => setCompostNotice(null), 5000);
-    if (tutorialStep === 4) {
-      const _nextIds = tutorialPlotIds.includes(plotId) ? tutorialPlotIds : [...tutorialPlotIds, plotId];
-      setTutorialPlotIds(_nextIds);
-      if (_nextIds.length >= 3) {
-        saveTutorialPlotIdsToStorage(profile.id, _nextIds);
-        void advanceTutorialStep(5);
+    compostApplyingRef.current.add(plotId);
+    try {
+      // Ustaw compostBonus typu "guide" — getEffectiveGrowthTimeMs zastosuje mnożnik 0.25
+      const nextPlot: PlotCropState = { ...plot, compostBonus: { type: "guide", value: 75 } };
+      const nextPlots = { ...plotCrops, [plotId]: nextPlot };
+      setPlotCrops(nextPlots);
+      // Odejmij 1 z inwentarza
+      const nextInv = { ...seedInventory };
+      nextInv["guide_compost"] = (nextInv["guide_compost"] ?? 0) - 1;
+      const ranOut = nextInv["guide_compost"] <= 0;
+      if (ranOut) delete nextInv["guide_compost"];
+      setSeedInventory(nextInv);
+      seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
+      if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
+      // Persist
+      await supabase.from("profiles").update({
+        plot_crops: serializePlotCrops(nextPlots) as unknown as Record<string,unknown>,
+        seed_inventory: nextInv,
+      }).eq("id", profile.id);
+      // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
+      setCompostNotice({ type: "guide", value: 75, plotId });
+      setTimeout(() => setCompostNotice(null), 5000);
+      if (tutorialStep === 4) {
+        // Licz faktyczne pola z guide zamiast ufać tylko tablicy — recovery po refreshie
+        const _guidePlots = Object.entries({ ...plotCrops, [plotId]: nextPlot })
+          .filter(([, p]) => p.compostBonus?.type === "guide")
+          .map(([id]) => Number(id));
+        const _nextIds = Array.from(new Set([...tutorialPlotIds, ..._guidePlots]));
+        setTutorialPlotIds(_nextIds);
+        if (_nextIds.length >= 3) {
+          saveTutorialPlotIdsToStorage(profile.id, _nextIds.slice(0, 3));
+          void advanceTutorialStep(5);
+        }
       }
+    } finally {
+      compostApplyingRef.current.delete(plotId);
     }
   }
 
@@ -15474,7 +15520,10 @@ export default function Page() {
 
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
         {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (() => {
-          const _t4 = tutorialPlotIds.length;
+          // W step 4: licz faktyczne pola z guide kompostem (nie ufaj tylko tutorialPlotIds po refreshie)
+          const _t4 = tutorialStep === 4
+            ? Math.min(3, Object.values(plotCrops).filter(p => p.compostBonus?.type === "guide").length)
+            : tutorialPlotIds.length;
           const _t7 = tutorialPlantedIds.length;
           const _t9 = tutorialWateredIds.length;
           const _t11 = tutorialHarvestedIds.length;
@@ -15574,18 +15623,62 @@ export default function Page() {
               </div>
             </div>
           );};
-          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
+          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow) + dev offset
           // ox: korekta pozioma — "Pola uprawne" button jest szerszy niż widoczna siatka pól
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
             const ox=90, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
-            return <>{[
-              {x:cx+ox,         y:ft-ah/2-14,   rotation:0   as number, k:"top"},
-              {x:cx+ox,         y:fb+ah/2+14,   rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14, y:cy,           rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14, y:cy,           rotation:90  as number, k:"right"},
-            ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
+            const aox=step1ArrowOffsetX, aoy=step1ArrowOffsetY;
+            const _saveOffset=(x:number,y:number)=>{
+              try{window.localStorage.setItem("step1ArrowOffsetX",String(x));window.localStorage.setItem("step1ArrowOffsetY",String(y));}catch{}
+            };
+            const _onMouseDown=!isStep1ArrowEditorActive?undefined:(e:React.MouseEvent)=>{
+              e.preventDefault();
+              const d=step1ArrowDragRef.current;
+              d.active=true; d.startX=e.clientX; d.startY=e.clientY;
+              d.startOX=step1ArrowOffsetX; d.startOY=step1ArrowOffsetY;
+              d.curOX=step1ArrowOffsetX; d.curOY=step1ArrowOffsetY;
+              const onMove=(ev:MouseEvent)=>{
+                if(!d.active)return;
+                d.curOX=d.startOX+(ev.clientX-d.startX);
+                d.curOY=d.startOY+(ev.clientY-d.startY);
+                setStep1ArrowOffsetX(d.curOX);
+                setStep1ArrowOffsetY(d.curOY);
+              };
+              const onUp=()=>{
+                d.active=false;
+                document.removeEventListener("mousemove",onMove);
+                document.removeEventListener("mouseup",onUp);
+                _saveOffset(d.curOX,d.curOY);
+              };
+              document.addEventListener("mousemove",onMove);
+              document.addEventListener("mouseup",onUp);
+            };
+            const arrows=[
+              {x:cx+ox+aox,         y:ft-ah/2-14+aoy, rotation:0   as number, k:"top"},
+              {x:cx+ox+aox,         y:fb+ah/2+14+aoy, rotation:180 as number, k:"bottom"},
+              {x:fl+ox-sz/2-14+aox, y:cy+aoy,          rotation:-90 as number, k:"left"},
+              {x:fr+ox+sz/2+14+aox, y:cy+aoy,          rotation:90  as number, k:"right"},
+            ];
+            return <>{arrows.map(({x,y,rotation,k})=>{
+              const h=Math.round(sz*62/48);
+              return(
+                <div key={`tut-arr-1-${k}`}
+                  className={`fixed z-[93] ${isStep1ArrowEditorActive?"cursor-grab":"pointer-events-none"}`}
+                  style={{left:x-sz/2,top:y-h/2}}
+                  onMouseDown={_onMouseDown}
+                >
+                  <div className="animate-bounce">
+                    <div style={{transform:`rotate(${rotation}deg)`}}>
+                      <svg width={sz} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}</>;
           }
           // Kroki 2–12: stałe pozycje z final config
           const cfgN:Record<number,SA>={
@@ -15599,6 +15692,34 @@ export default function Page() {
           };
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
+
+        {/* ─── Dev: Step 1 Arrow Editor (tylko gdy ?step1ArrowEditor=1 lub localStorage) ─── */}
+        {isStep1ArrowEditorActive && !!profile?.id && tutorialStep === 1 && (
+          <div className="fixed top-4 right-4 z-[300] select-none rounded-2xl border-2 border-amber-400 bg-black/90 p-3 text-xs text-white" style={{minWidth:210}}>
+            <div className="mb-2 font-black text-amber-400">Step 1 Arrow Editor</div>
+            <div className="mb-2 font-mono">X: {step1ArrowOffsetX} / Y: {step1ArrowOffsetY}</div>
+            <div className="flex flex-wrap gap-1">
+              {([
+                ["X −10", ()=>{const v=step1ArrowOffsetX-10;setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
+                ["X +10", ()=>{const v=step1ArrowOffsetX+10;setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
+                ["Y −10", ()=>{const v=step1ArrowOffsetY-10;setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
+                ["Y +10", ()=>{const v=step1ArrowOffsetY+10;setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
+                ["X −1",  ()=>{const v=step1ArrowOffsetX-1; setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
+                ["X +1",  ()=>{const v=step1ArrowOffsetX+1; setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
+                ["Y −1",  ()=>{const v=step1ArrowOffsetY-1; setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
+                ["Y +1",  ()=>{const v=step1ArrowOffsetY+1; setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
+                ["Reset", ()=>{setStep1ArrowOffsetX(0);setStep1ArrowOffsetY(0);try{localStorage.setItem("step1ArrowOffsetX","0");localStorage.setItem("step1ArrowOffsetY","0");}catch{}}],
+                ["Copy offset", ()=>{try{navigator.clipboard.writeText(JSON.stringify({step1ArrowOffsetX,step1ArrowOffsetY}));}catch{}}],
+              ] as [string,()=>void][]).map(([label,fn])=>(
+                <button key={label} type="button" onClick={fn}
+                  className="rounded px-2 py-1 bg-amber-700 hover:bg-amber-500 transition text-xs font-bold text-white">
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-[10px] text-amber-300/70">Przeciągnij strzałkę, żeby przesunąć grupę</div>
+          </div>
+        )}
 
         </main>
     </div>
