@@ -3143,33 +3143,33 @@ export default function Page() {
 
     // Połączone: przywróć compostBonus (jeśli serwer go zgubił) + speedup tutorialowej marchewki
     // Jeden setPlotCrops i jeden write do DB — unika race condition między dwoma write'ami.
-    const _shouldSpeedup = tutorialStep === 9
-      && tutorialPlotIds.includes(plotId)
-      && _preservedCompostBonus?.type === "guide"
-      && plot.cropId === "carrot"
-      && plot.plantedAt != null;
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
-    if ((_needsCompostRestore || _shouldSpeedup) && profile?.id) {
-      // Oblicz nowy plantedAt poza updater'em (closure stale po await, ale Math.max(5000) zawsze wygrywa)
-      let _newPlantedAt: number | null = null;
-      if (_shouldSpeedup && plot.plantedAt != null) {
-        const _effGrowth = getEffectiveGrowthTimeMs(plotId);
-        const _elapsed = Date.now() - plot.plantedAt;
-        _newPlantedAt = Date.now() - (_effGrowth - Math.max(5_000, (_effGrowth - _elapsed) * 0.10));
-      }
+    const _tutorialEligible = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
+    if ((_needsCompostRestore || _tutorialEligible) && profile?.id) {
+      // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35),
+      // więc isCropReady używa zawsze 180000 × 0.35 = 63000ms — niezależnie od statystyk gracza.
+      // Ustawiamy plantedAt tak, żeby marchewka była gotowa za 7 sekund.
+      const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
+      const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
       setPlotCrops(prev => {
         // prev = świeży stan z applyProfileState (watered: true na tym polu)
         const _curr = prev[plotId];
         if (!_curr) return prev;
         const _compostMissing = _needsCompostRestore && !_curr.compostBonus;
-        const _hasChange = _compostMissing || (_shouldSpeedup && _newPlantedAt != null);
+        // Sprawdź guide compost w świeżym stanie ALBO w _preservedCompostBonus (gdy serwer go wyczyścił)
+        const _effectiveCompostType = (_curr.compostBonus ?? (_compostMissing ? _preservedCompostBonus : null))?.type;
+        const _doSpeedup = _tutorialEligible
+          && _effectiveCompostType === "guide"
+          && _curr.cropId === "carrot"
+          && _curr.plantedAt != null;
+        const _hasChange = _compostMissing || _doSpeedup;
         if (!_hasChange) return prev;
         const _upd = {
           ...prev,
           [plotId]: {
             ..._curr,
             ...(_compostMissing ? { compostBonus: _preservedCompostBonus } : {}),
-            ...(_shouldSpeedup && _newPlantedAt != null ? { plantedAt: _newPlantedAt } : {}),
+            ...(_doSpeedup ? { plantedAt: _tutorialSpeedupAt } : {}),
           },
         };
         void supabase.from("profiles").update({
