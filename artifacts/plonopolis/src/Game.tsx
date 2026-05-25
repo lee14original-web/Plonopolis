@@ -3141,51 +3141,58 @@ export default function Page() {
       // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
     }
 
-    // ─── compostBonus restore + tutorial step 9 speedup ───
-    // Dane z odpowiedzi RPC (świeże, nie stale closure). DB write z await poza setPlotCrops.
-    // Race condition guard: przed write'em pobieramy najnowszy plot_crops z DB i mergujemy
-    // tylko ten jeden plotId — nie nadpisujemy innych pól starszym snapshotem.
+    // ─── compostBonus restore + tutorial step 9 speedup (wszystkie tutorialPlotIds) ───
+    // Fetch najświeższego plot_crops z DB — race condition guard przy szybkim podlewaniu.
+    // Po każdym skutecznym podlaniu w step 9 sprawdzamy WSZYSTKIE tutorialPlotIds i ustawiamy
+    // speedup plantedAt dla każdego pola z marchewką + guide compost, niezależnie od tego,
+    // które pole właśnie podlano.
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
-    const _tutorialEligible = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
-    if (_needsCompostRestore || _tutorialEligible) {
-      const _rpcPlot = parsePlotCrops(extractRpcProfile(data)?.plot_crops)[plotId];
-      const _compostMissing = _needsCompostRestore && !_rpcPlot?.compostBonus;
-      const _activeCompost = _rpcPlot?.compostBonus ?? (_compostMissing ? _preservedCompostBonus : null);
-      const _doSpeedup = _tutorialEligible
-        && _activeCompost?.type === "guide"
-        && _rpcPlot?.cropId === "carrot"
-        && _rpcPlot?.plantedAt != null;
-      if ((_compostMissing || _doSpeedup) && _rpcPlot && profile?.id) {
-        // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35)
-        // → isCropReady zawsze używa 180000 × 0.35 = 63000ms, niezależnie od statystyk gracza
-        const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
-        const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
-        const _updPlot: PlotCropState = {
-          ..._rpcPlot,
-          ...(_compostMissing ? { compostBonus: _preservedCompostBonus } : {}),
-          ...(_doSpeedup ? { plantedAt: _tutorialSpeedupAt } : {}),
-        };
-        // 1. Lokalny stan UI
-        setPlotCrops(prev => ({ ...prev, [plotId]: _updPlot }));
-        // 2. Fetch najświeższego plot_crops z DB (race condition guard przy szybkim sadzeniu/podlewaniu)
-        //    Mergujemy TYLKO ten jeden plotId — reszta pól pochodzi z aktualnego stanu DB.
-        const { data: _freshRow } = await supabase
-          .from("profiles")
-          .select("plot_crops")
-          .eq("id", profile.id)
-          .single();
-        const _freshPlots = parsePlotCrops(_freshRow?.plot_crops);
-        const _safeUpdPlots = { ..._freshPlots, [plotId]: _updPlot };
+    const _tutorialStep9 = tutorialStep === 9;
+    if ((_needsCompostRestore || _tutorialStep9) && profile?.id) {
+      const { data: _freshRow } = await supabase
+        .from("profiles")
+        .select("plot_crops")
+        .eq("id", profile!.id)
+        .single();
+      const _freshPlots = parsePlotCrops(_freshRow?.plot_crops);
+      // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35)
+      // → isCropReady zawsze używa 180000 × 0.35 = 63000ms, niezależnie od statystyk gracza
+      const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
+      const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
+      // Zbieramy tylko zmienione pola
+      const _updatedPlots: Record<number, PlotCropState> = {};
+      // 1. compostBonus restore dla aktualnie podlewanego pola (jeśli serwer go zgubił)
+      if (_needsCompostRestore) {
+        const _curr = _freshPlots[plotId];
+        if (_curr && !_curr.compostBonus) {
+          _updatedPlots[plotId] = { ..._curr, compostBonus: _preservedCompostBonus };
+        }
+      }
+      // 2. Speedup dla WSZYSTKICH tutorialPlotIds z marchewką + guide compost
+      if (_tutorialStep9) {
+        for (const _tId of tutorialPlotIds) {
+          // Bierz z _updatedPlots[_tId] jeśli już zmodyfikowany (np. compost restore), inaczej z _freshPlots
+          const _tPlot = _updatedPlots[_tId] ?? _freshPlots[_tId];
+          if (_tPlot?.cropId === "carrot" && _tPlot?.compostBonus?.type === "guide" && _tPlot?.plantedAt != null) {
+            _updatedPlots[_tId] = { ..._tPlot, plantedAt: _tutorialSpeedupAt };
+          }
+        }
+      }
+      if (Object.keys(_updatedPlots).length > 0) {
+        // Lokalny stan UI — tylko zmienione pola
+        setPlotCrops(prev => ({ ...prev, ..._updatedPlots }));
+        // Zapis do DB — świeży stan + nasze zmiany, await (nie void)
+        const _safeUpdPlots = { ..._freshPlots, ..._updatedPlots };
         const { error: _writeErr } = await supabase.from("profiles").update({
           plot_crops: serializePlotCrops(_safeUpdPlots) as unknown as Record<string, unknown>,
-        }).eq("id", profile.id);
+        }).eq("id", profile!.id);
         if (process.env.NODE_ENV !== "production") {
           console.debug("[tutorial step9 speedup]", {
-            plotId,
-            cropId: _rpcPlot.cropId,
-            compostType: _activeCompost?.type,
-            oldPlantedAt: _rpcPlot.plantedAt,
-            newPlantedAt: _doSpeedup ? _tutorialSpeedupAt : _rpcPlot.plantedAt,
+            wateredPlotId: plotId,
+            speedupApplied: Object.entries(_updatedPlots)
+              .filter(([, p]) => p.plantedAt === _tutorialSpeedupAt)
+              .map(([id]) => Number(id)),
+            newPlantedAt: _tutorialSpeedupAt,
             dbOk: !_writeErr,
             dbError: _writeErr?.message ?? null,
           });
@@ -4385,7 +4392,7 @@ export default function Page() {
       const v = compostValueFromKey(id);
       if (t) {
         const def = COMPOST_DEFS[t];
-        return { name: `${def.tierName(v)} ${def.name}`, icon: def.icon };
+        return { name: t === "guide" ? def.name : `${def.tierName(v)} ${def.name}`, icon: def.icon };
       }
     }
     const eq = CHAR_EQUIP_ITEMS.find(i => i.id === id);
@@ -12067,7 +12074,7 @@ export default function Page() {
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{def.icon}</span>
                         <div>
-                          <p className="text-base font-black text-amber-200">{def.tierName(v)} {def.name}</p>
+                          <p className="text-base font-black text-amber-200">{t === "guide" ? def.name : `${def.tierName(v)} ${def.name}`}</p>
                           <p className="text-[11px] text-[#bfa274]">Kompost</p>
                         </div>
                       </div>
