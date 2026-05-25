@@ -3142,14 +3142,13 @@ export default function Page() {
     }
 
     // ─── compostBonus restore + tutorial step 9 speedup ───
-    // Dane bierzemy bezpośrednio z odpowiedzi RPC (nie ze stale closure),
-    // a DB write robimy z await poza setPlotCrops — gwarantuje ten sam plantedAt w UI i DB.
+    // Dane z odpowiedzi RPC (świeże, nie stale closure). DB write z await poza setPlotCrops.
+    // Race condition guard: przed write'em pobieramy najnowszy plot_crops z DB i mergujemy
+    // tylko ten jeden plotId — nie nadpisujemy innych pól starszym snapshotem.
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
     const _tutorialEligible = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
     if (_needsCompostRestore || _tutorialEligible) {
-      // Świeży stan plot_crops z odpowiedzi RPC (ten sam, który applyProfileState właśnie załadował)
-      const _rpcPlots = parsePlotCrops(extractRpcProfile(data)?.plot_crops);
-      const _rpcPlot = _rpcPlots[plotId];
+      const _rpcPlot = parsePlotCrops(extractRpcProfile(data)?.plot_crops)[plotId];
       const _compostMissing = _needsCompostRestore && !_rpcPlot?.compostBonus;
       const _activeCompost = _rpcPlot?.compostBonus ?? (_compostMissing ? _preservedCompostBonus : null);
       const _doSpeedup = _tutorialEligible
@@ -3168,11 +3167,29 @@ export default function Page() {
         };
         // 1. Lokalny stan UI
         setPlotCrops(prev => ({ ...prev, [plotId]: _updPlot }));
-        // 2. Zapis do Supabase — await (nie void), identyczny plantedAt co UI
-        const _updPlots = { ..._rpcPlots, [plotId]: _updPlot };
-        await supabase.from("profiles").update({
-          plot_crops: serializePlotCrops(_updPlots) as unknown as Record<string, unknown>,
+        // 2. Fetch najświeższego plot_crops z DB (race condition guard przy szybkim sadzeniu/podlewaniu)
+        //    Mergujemy TYLKO ten jeden plotId — reszta pól pochodzi z aktualnego stanu DB.
+        const { data: _freshRow } = await supabase
+          .from("profiles")
+          .select("plot_crops")
+          .eq("id", profile.id)
+          .single();
+        const _freshPlots = parsePlotCrops(_freshRow?.plot_crops);
+        const _safeUpdPlots = { ..._freshPlots, [plotId]: _updPlot };
+        const { error: _writeErr } = await supabase.from("profiles").update({
+          plot_crops: serializePlotCrops(_safeUpdPlots) as unknown as Record<string, unknown>,
         }).eq("id", profile.id);
+        if (process.env.NODE_ENV !== "production") {
+          console.debug("[tutorial step9 speedup]", {
+            plotId,
+            cropId: _rpcPlot.cropId,
+            compostType: _activeCompost?.type,
+            oldPlantedAt: _rpcPlot.plantedAt,
+            newPlantedAt: _doSpeedup ? _tutorialSpeedupAt : _rpcPlot.plantedAt,
+            dbOk: !_writeErr,
+            dbError: _writeErr?.message ?? null,
+          });
+        }
       }
     }
 
