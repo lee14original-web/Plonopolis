@@ -2136,19 +2136,6 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
-  const [step1ArrowOffsetX, setStep1ArrowOffsetX] = React.useState<number>(() => {
-    try { return Number(window.localStorage.getItem("step1ArrowOffsetX") ?? "0") || 0; } catch { return 0; }
-  });
-  const [step1ArrowOffsetY, setStep1ArrowOffsetY] = React.useState<number>(() => {
-    try { return Number(window.localStorage.getItem("step1ArrowOffsetY") ?? "0") || 0; } catch { return 0; }
-  });
-  const isStep1ArrowEditorActive = React.useMemo<boolean>(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("step1ArrowEditor") === "1" || window.localStorage.getItem("step1ArrowEditor") === "1";
-    } catch { return false; }
-  }, []);
-  const step1ArrowDragRef = React.useRef<{active:boolean;startX:number;startY:number;startOX:number;startOY:number;curOX:number;curOY:number}>({active:false,startX:0,startY:0,startOX:0,startOY:0,curOX:0,curOY:0});
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -3807,8 +3794,41 @@ export default function Page() {
     };
     recalc();
     window.addEventListener("resize", recalc);
-    // Step 1: 100 ms — strzałki jadą z mapą podczas drag, mniejszy lag
-    const _int = setInterval(recalc, tutorialStep === 1 ? 100 : 400);
+    if (tutorialStep === 1) {
+      // rAF: śledzenie rect co klatkę, setState tylko gdy zmiana > 0.5 px
+      let _rafId: number;
+      let _prev: typeof tutorialArrow = null;
+      const _loop = () => {
+        const _sel = _selectors[1];
+        if (_sel) {
+          const _el = document.querySelector(_sel);
+          if (_el) {
+            const _r = _el.getBoundingClientRect();
+            if (_r.width > 0 || _r.height > 0) {
+              const _cx = _r.left + _r.width / 2;
+              if (!_prev ||
+                  Math.abs(_cx - _prev.cx) > 0.5 ||
+                  Math.abs(_r.top - _prev.top) > 0.5 ||
+                  Math.abs(_r.left - _prev.left) > 0.5 ||
+                  Math.abs(_r.right - _prev.right) > 0.5) {
+                _prev = { cx: _cx, top: _r.top, bottom: _r.bottom, left: _r.left, right: _r.right, width: _r.width, height: _r.height };
+                setTutorialArrow(_prev);
+              }
+            } else if (_prev !== null) {
+              _prev = null;
+              setTutorialArrow(null);
+            }
+          } else if (_prev !== null) {
+            _prev = null;
+            setTutorialArrow(null);
+          }
+        }
+        _rafId = requestAnimationFrame(_loop);
+      };
+      _rafId = requestAnimationFrame(_loop);
+      return () => { window.removeEventListener("resize", recalc); cancelAnimationFrame(_rafId); };
+    }
+    const _int = setInterval(recalc, 400);
     return () => { window.removeEventListener("resize", recalc); clearInterval(_int); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, isFieldViewOpen, fvCompostPickerOpen, fvSeedPickerOpen, profile?.id, profile?.tutorial_started, profile?.tutorial_completed, profile?.tutorial_skipped]);
@@ -15623,62 +15643,18 @@ export default function Page() {
               </div>
             </div>
           );};
-          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow) + dev offset
-          // ox: korekta pozioma — "Pola uprawne" button jest szerszy niż widoczna siatka pól
+          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
+          // ox=90 + stały offset X=-410 → ox_final=-320; offset Y=0
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const ox=90, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
-            const aox=step1ArrowOffsetX, aoy=step1ArrowOffsetY;
-            const _saveOffset=(x:number,y:number)=>{
-              try{window.localStorage.setItem("step1ArrowOffsetX",String(x));window.localStorage.setItem("step1ArrowOffsetY",String(y));}catch{}
-            };
-            const _onMouseDown=!isStep1ArrowEditorActive?undefined:(e:React.MouseEvent)=>{
-              e.preventDefault();
-              const d=step1ArrowDragRef.current;
-              d.active=true; d.startX=e.clientX; d.startY=e.clientY;
-              d.startOX=step1ArrowOffsetX; d.startOY=step1ArrowOffsetY;
-              d.curOX=step1ArrowOffsetX; d.curOY=step1ArrowOffsetY;
-              const onMove=(ev:MouseEvent)=>{
-                if(!d.active)return;
-                d.curOX=d.startOX+(ev.clientX-d.startX);
-                d.curOY=d.startOY+(ev.clientY-d.startY);
-                setStep1ArrowOffsetX(d.curOX);
-                setStep1ArrowOffsetY(d.curOY);
-              };
-              const onUp=()=>{
-                d.active=false;
-                document.removeEventListener("mousemove",onMove);
-                document.removeEventListener("mouseup",onUp);
-                _saveOffset(d.curOX,d.curOY);
-              };
-              document.addEventListener("mousemove",onMove);
-              document.addEventListener("mouseup",onUp);
-            };
-            const arrows=[
-              {x:cx+ox+aox,         y:ft-ah/2-14+aoy, rotation:0   as number, k:"top"},
-              {x:cx+ox+aox,         y:fb+ah/2+14+aoy, rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14+aox, y:cy+aoy,          rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14+aox, y:cy+aoy,          rotation:90  as number, k:"right"},
-            ];
-            return <>{arrows.map(({x,y,rotation,k})=>{
-              const h=Math.round(sz*62/48);
-              return(
-                <div key={`tut-arr-1-${k}`}
-                  className={`fixed z-[93] ${isStep1ArrowEditorActive?"cursor-grab":"pointer-events-none"}`}
-                  style={{left:x-sz/2,top:y-h/2}}
-                  onMouseDown={_onMouseDown}
-                >
-                  <div className="animate-bounce">
-                    <div style={{transform:`rotate(${rotation}deg)`}}>
-                      <svg width={sz} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}</>;
+            const ox=-320, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            return <>{[
+              {x:cx+ox,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
+              {x:cx+ox,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
+              {x:fl+ox-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
+              {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
+            ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
           // Kroki 2–12: stałe pozycje z final config
           const cfgN:Record<number,SA>={
@@ -15692,34 +15668,6 @@ export default function Page() {
           };
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
-
-        {/* ─── Dev: Step 1 Arrow Editor (tylko gdy ?step1ArrowEditor=1 lub localStorage) ─── */}
-        {isStep1ArrowEditorActive && !!profile?.id && tutorialStep === 1 && (
-          <div className="fixed top-4 right-4 z-[300] select-none rounded-2xl border-2 border-amber-400 bg-black/90 p-3 text-xs text-white" style={{minWidth:210}}>
-            <div className="mb-2 font-black text-amber-400">Step 1 Arrow Editor</div>
-            <div className="mb-2 font-mono">X: {step1ArrowOffsetX} / Y: {step1ArrowOffsetY}</div>
-            <div className="flex flex-wrap gap-1">
-              {([
-                ["X −10", ()=>{const v=step1ArrowOffsetX-10;setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
-                ["X +10", ()=>{const v=step1ArrowOffsetX+10;setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
-                ["Y −10", ()=>{const v=step1ArrowOffsetY-10;setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
-                ["Y +10", ()=>{const v=step1ArrowOffsetY+10;setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
-                ["X −1",  ()=>{const v=step1ArrowOffsetX-1; setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
-                ["X +1",  ()=>{const v=step1ArrowOffsetX+1; setStep1ArrowOffsetX(v);try{localStorage.setItem("step1ArrowOffsetX",String(v));}catch{}}],
-                ["Y −1",  ()=>{const v=step1ArrowOffsetY-1; setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
-                ["Y +1",  ()=>{const v=step1ArrowOffsetY+1; setStep1ArrowOffsetY(v);try{localStorage.setItem("step1ArrowOffsetY",String(v));}catch{}}],
-                ["Reset", ()=>{setStep1ArrowOffsetX(0);setStep1ArrowOffsetY(0);try{localStorage.setItem("step1ArrowOffsetX","0");localStorage.setItem("step1ArrowOffsetY","0");}catch{}}],
-                ["Copy offset", ()=>{try{navigator.clipboard.writeText(JSON.stringify({step1ArrowOffsetX,step1ArrowOffsetY}));}catch{}}],
-              ] as [string,()=>void][]).map(([label,fn])=>(
-                <button key={label} type="button" onClick={fn}
-                  className="rounded px-2 py-1 bg-amber-700 hover:bg-amber-500 transition text-xs font-bold text-white">
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 text-[10px] text-amber-300/70">Przeciągnij strzałkę, żeby przesunąć grupę</div>
-          </div>
-        )}
 
         </main>
     </div>
