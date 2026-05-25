@@ -1,0 +1,61 @@
+Dodaj proszę narzędzie testowe SQL/RPC do resetowania konta testowego do stanu nowego gracza, żeby łatwo testować przewodnik bez tworzenia nowych kont.
+
+Cel:
+Chcę móc zresetować konto, np. login = 'tester', do stanu świeżego gracza:
+- level 1,
+- exp 0,
+- xp_to_next_level zgodne z funkcją game_xp_to_next_level(1),
+- tutorial_started = false,
+- tutorial_completed = false,
+- tutorial_skipped = false,
+- tutorial_step = 0 albo null zgodnie z aktualnym modelem,
+- bez guide_compost,
+- startowe pola/uprawy/plecak jak nowe konto.
+
+Ważne:
+Po takim resecie i odświeżeniu strony na koncie tester ma znowu pojawić się okno startowe przewodnika, tak jak na nowym koncie.
+
+Przygotuj najpierw gotowy SQL do Supabase, np. funkcję administratorską/testową:
+
+public.admin_reset_tutorial_test_account(p_login text)
+
+Wymagania bezpieczeństwa:
+1. Funkcja ma być do używania ręcznie w Supabase SQL Editor, nie z frontendu.
+2. Nie wystawiaj jej w UI gry.
+3. Jeśli robisz SECURITY DEFINER, zabezpiecz search_path.
+4. Funkcja ma resetować tylko konto o podanym loginie.
+5. Nie usuwaj konta z auth.users.
+6. Nie zmieniaj emaila ani auth_id.
+7. Nie usuwaj profilu — tylko resetuj dane gry.
+
+Reset powinien objąć minimum:
+- level,
+- xp,
+- xp_to_next_level,
+- money/gold do startowej wartości,
+- inventory/seed inventory/item inventory zgodnie ze świeżym kontem,
+- unlocked_plots do startowych pól,
+- plot_crops wyczyścić,
+- plot_obstacles wygenerować/naprawić jak dla nowego konta,
+- tutorial flags,
+- tutorial_step,
+- harvest_log/tymczasowe dane, jeśli są w profilu,
+- customer orders/lada jeśli są zapisane w profilu i powinny być świeże,
+- cooldowny tutorialowe, jeśli istnieją.
+
+Nie resetuj:
+- loginu,
+- avataru, chyba że świeże konto normalnie ma default avatar i uznasz, że trzeba — wtedy napisz.
+- created_at,
+- auth/user id.
+
+Po SQL podaj też komendę użycia:
+select public.admin_reset_tutorial_test_account('tester');
+
+I komendę weryfikacji:
+select login, level, xp, xp_to_next_level, tutorial_started, tutorial_completed, tutorial_skipped, tutorial_step
+from public.profiles
+where login = 'tester';
+
+Nie pushuj jeszcze.
+Pokaż SQL i listę kolumn, które resetujesz.
