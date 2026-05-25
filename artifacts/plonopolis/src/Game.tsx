@@ -1756,10 +1756,10 @@ export default function Page() {
 
   // ── Edytor pozycji przycisków narzędzi (konewka/zbierz) na obrazie pola ──
   const [fvToolEditMode, setFvToolEditMode] = React.useState(false);
-  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 58, t: 560, w: 192, h: 179 });
-  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 58, t: 760, w: 190, h: 176 });
-  const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 58, t: 360, w: 192, h: 179 });
-  const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 160, w: 192, h: 179 });
+  const [fvKonewkaPos, setFvKonewkaPos] = React.useState({ l: 58, t: 614, w: 192, h: 179 });
+  const [fvZbierzPos, setFvZbierzPos] = React.useState({ l: 58, t: 834, w: 190, h: 176 });
+  const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 58, t: 397, w: 192, h: 179 });
+  const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 184, w: 192, h: 179 });
   const [fvSeedPickerOpen, setFvSeedPickerOpen] = React.useState(false);
   const [fvCompostPickerOpen, setFvCompostPickerOpen] = React.useState(false);
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
