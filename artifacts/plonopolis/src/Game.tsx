@@ -14002,10 +14002,10 @@ export default function Page() {
 
                                 <div className="absolute inset-x-1 bottom-1 z-10 text-center">
                                   {getPlotCrop(plotId).cropId ? (
-                                    <span className="rounded-md bg-black/45 px-1 py-0.5 text-[9px] font-bold text-white/90 sm:px-1.5 sm:text-[10px]">
+                                    <span className="rounded-md bg-black/45 px-1 py-0.5 text-[13px] font-bold text-white/90 sm:px-1.5 sm:text-[15px]">
                                       {isCropReady(plotId)
-                                        ? `${getPlantedCrop(plotId)?.name ?? "Gotowe"}`
-                                        : `${getPlantedCrop(plotId)?.name ?? "Uprawa"} • ${formatHMS(getRemainingGrowthSeconds(plotId))}`}
+                                        ? "Gotowe"
+                                        : formatHMS(getRemainingGrowthSeconds(plotId))}
                                     </span>
                                   ) : (
                                     <span className="text-sm font-black text-white drop-shadow-[0_0_8px_rgba(255,220,120,0.9)] md:text-base">
