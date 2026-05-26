@@ -386,6 +386,18 @@ const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
 const BASE_WATER_MS   = 700;
 
+// ─── Predefiniowane pozycje okna tutoriala (per-step) ───
+const TUT_PANEL_PRESET_POSITIONS: Record<number, {x: number; y: number}> = {
+  1: {x: 666, y: 785},
+  2: {x: 603, y: 460},
+  3: {x: 609, y: 825},
+  4: {x: 602, y: 444},
+  5: {x: 602, y: 560},
+  6: {x: 603, y: 843},
+  7: {x: 601, y: 836},
+  8: {x: 919, y: 1087},
+};
+
 // ═══ BALANS WZROSTU UPRAW (capy bonusów + globalne minimum) ═══
 // Każdy bonus mnoży niezależnie. Globalne minimum chroni przed exploit-em multiplikatywności.
 // Po zmianie: max teoretyczny stack to -65% czasu wzrostu (globalne min 0.35 = 35% bazowego czasu).
@@ -2136,8 +2148,12 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
-  const [tutPanelPositions, setTutPanelPositions] = React.useState<Record<number, {x: number; y: number}>>({});
+  const [tutPanelPositions, setTutPanelPositions] = React.useState<Record<number, {x: number; y: number}>>(TUT_PANEL_PRESET_POSITIONS);
   const [tutPanelPasteVal, setTutPanelPasteVal] = React.useState("");
+  const [waterQueue, setWaterQueue] = React.useState<number[]>([]);
+  const waterQueueRef = React.useRef<number[]>([]);
+  const waterQueueActiveRef = React.useRef<number | null>(null);
+  const waterQueueProcessingRef = React.useRef(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
@@ -3086,38 +3102,68 @@ export default function Page() {
     return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   }
 
+  // ─── Kolejka podlewania — sekwencyjne przetwarzanie wielu pól ───
+
+  function enqueueWater(plotId: number) {
+    if (!profile) return;
+    // Walidacja na aktualnym stanie — z komunikatem dla gracza
+    const plot = getPlotCrop(plotId);
+    const crop = getPlantedCrop(plotId);
+    if (!crop || !plot.cropId) {
+      setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+      return;
+    }
+    if (plot.watered) {
+      setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+      return;
+    }
+    if (isCropReady(plotId)) {
+      setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+      return;
+    }
+    // Deduplikacja: nie dodawaj jeśli już w kolejce lub aktualnie podlewane
+    if (waterQueueRef.current.includes(plotId) || waterQueueActiveRef.current === plotId) return;
+    waterQueueRef.current = [...waterQueueRef.current, plotId];
+    setWaterQueue([...waterQueueRef.current]);
+    if (!waterQueueProcessingRef.current) void processWaterQueue();
+  }
+
+  async function processOneWaterPlot(plotId: number): Promise<void> {
+    // Fresh check przed pokazaniem wskaźnika
+    const _fp = plotCropsRef.current[plotId];
+    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) return;
+    // Pokaż wskaźnik „Podlewanie..."
+    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
+    // Odczekaj czas animacji
+    await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
+    // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
+    await handleWaterPlot(plotId, true);
+  }
+
+  async function processWaterQueue(): Promise<void> {
+    if (waterQueueProcessingRef.current) return;
+    waterQueueProcessingRef.current = true;
+    try {
+      while (waterQueueRef.current.length > 0) {
+        const plotId = waterQueueRef.current[0];
+        waterQueueRef.current = waterQueueRef.current.slice(1);
+        setWaterQueue([...waterQueueRef.current]);
+        waterQueueActiveRef.current = plotId;
+        await processOneWaterPlot(plotId);
+        waterQueueActiveRef.current = null;
+      }
+    } finally {
+      waterQueueProcessingRef.current = false;
+      waterQueueActiveRef.current = null;
+    }
+  }
+
   async function handleWaterPlot(plotId: number, _skipTimer = false) {
     if (!profile) return;
 
     if (!_skipTimer) {
-      // ─── Pre-timer: walidacja na aktualnym stanie ───
-      const plot = getPlotCrop(plotId);
-      const crop = getPlantedCrop(plotId);
-      if (!crop || !plot.cropId) {
-        setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
-        return;
-      }
-      if (plot.watered) {
-        setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
-        return;
-      }
-      if (isCropReady(plotId)) {
-        setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
-        // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
-        return;
-      }
-      if (pendingFieldActions[plotId]) {
-        setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
-        return;
-      }
-      // Ustaw timer postępu — RPC wykona się po zakończeniu
-      const _waterDurMs = BASE_WATER_MS;
-      setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: _waterDurMs } }));
-      const _tid = setTimeout(() => {
-        fieldActionTimeoutsRef.current.delete(plotId);
-        void handleWaterPlot(plotId, true);
-      }, _waterDurMs);
-      fieldActionTimeoutsRef.current.set(plotId, _tid);
+      // Delegate do kolejki — sekwencyjne podlewanie
+      enqueueWater(plotId);
       return;
     }
 
