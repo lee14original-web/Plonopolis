@@ -13376,7 +13376,7 @@ export default function Page() {
                                 <div className="absolute inset-0 rounded-[10px] pointer-events-none animate-pulse" style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.65) 0%, rgba(139,92,246,0.1) 40%, rgba(167,139,250,0.65) 100%)", boxShadow: "inset 0 0 18px rgba(167,139,250,0.9), 0 0 14px rgba(167,139,250,0.8)" }} />
                               )}
                               <p className="absolute bottom-5 left-0 right-0 text-center text-[9px] font-black text-white pointer-events-none leading-none px-1 truncate drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{crop.name}</p>
-                              <p className="absolute bottom-1 left-0 right-0 text-center text-[9px] font-black text-green-300 pointer-events-none leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">×{cnt}</p>
+                              <p className="absolute bottom-1 left-0 right-0 text-center text-[14px] font-black text-green-300 pointer-events-none leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">×{cnt}</p>
                             </>
                           );
                         }
