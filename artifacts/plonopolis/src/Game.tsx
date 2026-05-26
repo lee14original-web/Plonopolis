@@ -384,6 +384,7 @@ const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
 const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
+const BASE_WATER_MS   = 700;
 
 // ═══ BALANS WZROSTU UPRAW (capy bonusów + globalne minimum) ═══
 // Każdy bonus mnoży niezależnie. Globalne minimum chroni przed exploit-em multiplikatywności.
@@ -398,7 +399,7 @@ const COMPOST_MULT_MIN       = 0.80;   // cap −20% (z Kompostu Wzrostu)
 const WATER_BASE             = 0.05;   // min 5% zawsze z konewki (bez statystyk)
 const WATER_MULT_MIN         = 0.10;   // globalny min: konewka nie skróci więcej niż 90%
 type PendingFieldAction = {
-  kind: "plant" | "harvest";
+  kind: "plant" | "harvest" | "water";
   startMs: number;
   durationMs: number;
   seedId?: string;
@@ -2954,7 +2955,7 @@ export default function Page() {
     }
 
     if (selectedTool === "watering_can") {
-      handleWaterPlot(selectedPlotId);
+      void handleWaterPlot(selectedPlotId);
       return;
     }
 
@@ -3085,39 +3086,55 @@ export default function Page() {
     return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   }
 
-  async function handleWaterPlot(plotId: number) {
+  async function handleWaterPlot(plotId: number, _skipTimer = false) {
     if (!profile) return;
+
+    if (!_skipTimer) {
+      // ─── Pre-timer: walidacja na aktualnym stanie ───
+      const plot = getPlotCrop(plotId);
+      const crop = getPlantedCrop(plotId);
+      if (!crop || !plot.cropId) {
+        setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+        return;
+      }
+      if (plot.watered) {
+        setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+        return;
+      }
+      if (isCropReady(plotId)) {
+        setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+        // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
+        return;
+      }
+      if (pendingFieldActions[plotId]) {
+        setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
+        return;
+      }
+      // Ustaw timer postępu — RPC wykona się po zakończeniu
+      const _waterDurMs = BASE_WATER_MS;
+      setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: _waterDurMs } }));
+      const _tid = setTimeout(() => {
+        fieldActionTimeoutsRef.current.delete(plotId);
+        void handleWaterPlot(plotId, true);
+      }, _waterDurMs);
+      fieldActionTimeoutsRef.current.set(plotId, _tid);
+      return;
+    }
+
+    // ─── _skipTimer = true — timer dobiegł końca, fresh check przed RPC ───
+    {
+      const _fp = plotCropsRef.current[plotId];
+      if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+        setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+        return;
+      }
+    }
+    // Zdejmij wskaźnik paska, kontynuuj RPC
+    setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const plot = getPlotCrop(plotId);
     const crop = getPlantedCrop(plotId);
-
-    if (!crop || !plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Brak uprawy",
-        text: "Najpierw posadź roślinę na tym polu.",
-      });
-      return;
-    }
-
-    if (plot.watered) {
-      setMessage({
-        type: "info",
-        title: "Pole już podlane",
-        text: "To pole zostało już podlane.",
-      });
-      return;
-    }
-
-    if (isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa gotowa",
-        text: "Ta uprawa jest już gotowa do zbioru.",
-      });
-      // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
-      return;
-    }
+    if (!crop || !plot.cropId) return; // guard po fresh check
 
     // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
     const _preservedCompostBonus = plot.compostBonus ?? null;
@@ -13757,7 +13774,7 @@ export default function Page() {
                               if (!isUnlocked) return;
                               // Akcja już wykonana w onMouseDown (drag) — pomiń
                               if (dragEndedRef.current) { dragEndedRef.current = false; return; }
-                              if (selectedTool === "watering_can") { handleWaterPlot(plotId); return; }
+                              if (selectedTool === "watering_can") { void handleWaterPlot(plotId); return; }
                               if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
                               if (selectedSeedId && isGuideCompostKey(selectedSeedId)) { void applyGuideCompostToPlot(plotId); return; }
                               if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
@@ -13900,9 +13917,10 @@ export default function Page() {
                                   const _elapsed = Math.max(0, Date.now() - _act.startMs);
                                   const _pct = Math.min(100, Math.max(0, (_elapsed / _act.durationMs) * 100));
                                   const _isPlant = _act.kind === "plant";
-                                  const _color = _isPlant ? "#22d3ee" : "#fbbf24";
-                                  const _glow = _isPlant ? "rgba(34,211,238,0.7)" : "rgba(251,191,36,0.7)";
-                                  const _label = _isPlant ? "Sadzenie..." : "Zbiór...";
+                                  const _isWater = _act.kind === "water";
+                                  const _color = _isPlant ? "#22d3ee" : _isWater ? "#60a5fa" : "#fbbf24";
+                                  const _glow = _isPlant ? "rgba(34,211,238,0.7)" : _isWater ? "rgba(96,165,250,0.7)" : "rgba(251,191,36,0.7)";
+                                  const _label = _isPlant ? "Sadzenie..." : _isWater ? "Podlewanie..." : "Zbiór...";
                                   return (
                                     <>
                                       <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl bg-black/35" />
