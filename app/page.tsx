@@ -6769,14 +6769,8 @@ export default function Page() {
             <>
               <div className="fixed right-4 top-4 z-[90] flex flex-col items-end gap-1.5">
                 <button
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="rounded-2xl border border-red-400/40 bg-red-950/40 px-5 py-2.5 text-base font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
-                >
-                  Wyloguj
-                </button>
-                <button
                   onClick={() => setShowSettingsModal(true)}
-                  className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(22,13,8,0.75)] px-3.5 py-2.5 text-xl backdrop-blur-sm transition hover:bg-[rgba(22,13,8,0.95)] hover:border-[#d8ba7a]/40"
+                  className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(22,13,8,0.75)] px-4 py-3 text-4xl backdrop-blur-sm transition hover:bg-[rgba(22,13,8,0.95)] hover:border-[#d8ba7a]/40"
                   title="Ustawienia"
                 >
                   ⚙️
@@ -14628,8 +14622,14 @@ export default function Page() {
 
                 {/* ─── Inne ─── */}
                 <div className="mb-5 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">⚙️ Inne</p>
-                  <p className="text-xs text-[#8b6a3e]">Więcej opcji pojawi się w kolejnych aktualizacjach.</p>
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">⚙️ Inne</p>
+                  <p className="mb-3 text-xs text-[#8b6a3e]">Więcej opcji pojawi się w kolejnych aktualizacjach.</p>
+                  <button
+                    onClick={() => { setShowSettingsModal(false); setShowLogoutConfirm(true); }}
+                    className="w-full rounded-xl border border-red-500/40 bg-red-950/30 py-2.5 text-sm font-bold text-red-300 transition hover:bg-red-950/50 hover:border-red-400/60"
+                  >
+                    🚪 Wyloguj
+                  </button>
                 </div>
 
                 <button
