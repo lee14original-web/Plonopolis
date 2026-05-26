@@ -782,6 +782,10 @@ const EXTRA_EQ_KEY   = "plonopolis_extra_eq";
 const KOMPOST_KEY    = "plonopolis_kompost_charges";
 const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
+const SETTINGS_KEY   = "plonopolis_settings";
+type GraphicsQuality = "low" | "medium" | "high";
+interface GameSettings { musicEnabled: boolean; soundEnabled: boolean; graphicsQuality: GraphicsQuality; }
+const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high" };
 const ACTIVE_USER_KEY = "plonopolis_active_user";
 // Klucze localStorage przypisane do sesji gracza (bez userId w nazwie) — czyszczone przy zmianie konta
 const PER_SESSION_KEYS = [
@@ -2241,6 +2245,13 @@ export default function Page() {
   const [kompostHoverTip, setKompostHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [kompostTierHoverTip, setKompostTierHoverTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [showKompostHelp, setShowKompostHelp] = React.useState(false);
+  const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+  const [gameSettings, setGameSettings] = React.useState<GameSettings>({ ...DEFAULT_GAME_SETTINGS });
+  const saveGameSettings = (next: GameSettings) => {
+    setGameSettings(next);
+    const uid = profile?.id ?? "";
+    if (uid) try { localStorage.setItem(lsKey(SETTINGS_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ }
+  };
   const [seedPickerTip, setSeedPickerTip] = React.useState<{ x: number; y: number; node: React.ReactNode; color: string } | null>(null);
   const [cardTip, setCardTip] = React.useState<React.ReactNode>(null);
   const [avatarTipVisible, setAvatarTipVisible] = React.useState(false);
@@ -2686,6 +2697,7 @@ export default function Page() {
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
+    setGameSettings(lsLoadMigrate(SETTINGS_KEY, uid, s => { const p = JSON.parse(s) as Partial<GameSettings>; return { ...DEFAULT_GAME_SETTINGS, ...p }; }, () => ({ ...DEFAULT_GAME_SETTINGS })));
     // Barn: ładuj z localStorage, nadpisz owned/slots/prodStart z DB (DB autorytarne dla timingów)
     const _lsBarn = lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState);
     const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
@@ -6756,6 +6768,13 @@ export default function Page() {
                   className="rounded-2xl border border-red-400/40 bg-red-950/40 px-5 py-2.5 text-base font-bold text-red-100 backdrop-blur-sm transition hover:bg-red-950/60"
                 >
                   Wyloguj
+                </button>
+                <button
+                  onClick={() => setShowSettingsModal(true)}
+                  className="rounded-2xl border border-[#8b6a3e]/40 bg-[rgba(22,13,8,0.75)] px-3.5 py-2.5 text-xl backdrop-blur-sm transition hover:bg-[rgba(22,13,8,0.95)] hover:border-[#d8ba7a]/40"
+                  title="Ustawienia"
+                >
+                  ⚙️
                 </button>
                 {sessionTimeLeft !== null && (() => {
                   const totalSec = Math.ceil(sessionTimeLeft / 1000);
@@ -14565,6 +14584,79 @@ export default function Page() {
           })()}
 
           {/* ═══ POPUP POTWIERDZENIA WYLOGOWANIA (Esc na farmie) ═══ */}
+          {showSettingsModal && (
+            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSettingsModal(false)}>
+              <div className="relative w-full max-w-[460px] rounded-[24px] border border-[#8b6a3e]/60 bg-[rgba(20,12,6,0.98)] p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <button onClick={() => setShowSettingsModal(false)} className="absolute right-4 top-4 text-xl text-[#8b6a3e] transition hover:text-[#f9e7b2]">✕</button>
+                <p className="mb-1 text-center text-3xl">⚙️</p>
+                <h3 className="mb-5 text-center text-xl font-black text-[#f9e7b2]">Ustawienia</h3>
+
+                {/* ─── Muzyka ─── */}
+                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🎵 Muzyka</p>
+                  <label className="flex cursor-pointer items-center justify-between gap-3">
+                    <span className="text-sm text-[#dfcfab]">Muzyka włączona</span>
+                    <button
+                      type="button"
+                      onClick={() => saveGameSettings({ ...gameSettings, musicEnabled: !gameSettings.musicEnabled })}
+                      className={`relative h-6 w-11 rounded-full border transition ${gameSettings.musicEnabled ? "border-amber-500/60 bg-amber-600/40" : "border-[#8b6a3e]/40 bg-black/30"}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${gameSettings.musicEnabled ? "left-5 bg-amber-400" : "left-0.5 bg-[#8b6a3e]"}`} />
+                    </button>
+                  </label>
+                </div>
+
+                {/* ─── Dźwięki ─── */}
+                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🔊 Dźwięki</p>
+                  <label className="flex cursor-pointer items-center justify-between gap-3">
+                    <span className="text-sm text-[#dfcfab]">Efekty dźwiękowe</span>
+                    <button
+                      type="button"
+                      onClick={() => saveGameSettings({ ...gameSettings, soundEnabled: !gameSettings.soundEnabled })}
+                      className={`relative h-6 w-11 rounded-full border transition ${gameSettings.soundEnabled ? "border-amber-500/60 bg-amber-600/40" : "border-[#8b6a3e]/40 bg-black/30"}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${gameSettings.soundEnabled ? "left-5 bg-amber-400" : "left-0.5 bg-[#8b6a3e]"}`} />
+                    </button>
+                  </label>
+                </div>
+
+                {/* ─── Grafika ─── */}
+                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🖼️ Grafika</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-[#dfcfab]">Jakość grafiki</span>
+                    <div className="flex gap-1.5">
+                      {(["low","medium","high"] as GraphicsQuality[]).map(q => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => saveGameSettings({ ...gameSettings, graphicsQuality: q })}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition ${gameSettings.graphicsQuality === q ? "border-amber-500/70 bg-amber-600/30 text-amber-300" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-[#8b6a3e]/70 hover:text-[#dfcfab]"}`}
+                        >
+                          {q === "low" ? "Niska" : q === "medium" ? "Średnia" : "Wysoka"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─── Inne ─── */}
+                <div className="mb-5 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                  <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">⚙️ Inne</p>
+                  <p className="text-xs text-[#8b6a3e]">Więcej opcji pojawi się w kolejnych aktualizacjach.</p>
+                </div>
+
+                <button
+                  onClick={() => setShowSettingsModal(false)}
+                  className="w-full rounded-2xl border border-[#8b6a3e]/60 bg-black/30 py-3 text-base font-bold text-[#dfcfab] transition hover:bg-white/5"
+                >
+                  Zamknij
+                </button>
+              </div>
+            </div>
+          )}
+
           {showLogoutConfirm && (
             <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)}>
               <div className="relative w-full max-w-[380px] rounded-[24px] border border-red-500/40 bg-[rgba(20,5,5,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
