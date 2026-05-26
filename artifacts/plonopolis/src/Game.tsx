@@ -2136,7 +2136,7 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
-  const [s1OX, setS1OX] = React.useState(-410);
+  const [s1OX, setS1OX] = React.useState(-291);
   const [s1OY, setS1OY] = React.useState(0);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
