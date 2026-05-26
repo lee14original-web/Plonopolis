@@ -2136,6 +2136,8 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
+  const [s1OX, setS1OX] = React.useState(-410);
+  const [s1OY, setS1OY] = React.useState(0);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -15688,9 +15690,22 @@ export default function Page() {
           type SA={x:number;y:number;size:number;rotation:number};
           // Rotation na osobnym wrapperze wewnętrznym — nie na animate-bounce div.
           // CSS @keyframes bounce nadpisuje transform inline na tym samym elemencie.
-          const arr=(a:SA,key:string)=>{const h=Math.round(a.size*62/48);return(
+          // Lewa/prawa strzałka (rotation ±90): animacja pozioma, bez skakania góra/dół.
+          const arr=(a:SA,key:string)=>{
+            const h=Math.round(a.size*62/48);
+            const isH=Math.abs(a.rotation)===90;
+            const bounceAnim=isH
+              ? (a.rotation===-90
+                  ? "bounceLeft 1s ease-in-out infinite"
+                  : "bounceRight 1s ease-in-out infinite")
+              : undefined;
+            return(
             <div key={key} className="fixed z-[93] pointer-events-none" style={{left:a.x-a.size/2,top:a.y-h/2}}>
-              <div className="animate-bounce">
+              <style>{`
+                @keyframes bounceLeft{0%,100%{transform:translateX(-20%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateX(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}
+                @keyframes bounceRight{0%,100%{transform:translateX(20%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateX(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}
+              `}</style>
+              <div className={isH?undefined:"animate-bounce"} style={isH?{animation:bounceAnim}:{}}>
                 <div style={{transform:`rotate(${a.rotation}deg)`}}>
                   <svg width={a.size} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
@@ -15700,16 +15715,16 @@ export default function Page() {
             </div>
           );};
           // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
-          // ox=90 + stały offset X=-410 → ox_final=-320; offset Y=0
+          // Edytor: s1OX (offset X), s1OY (offset Y) — regulowane panelem step1ArrowEditor
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const ox=-320, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            const ox=s1OX, oy=s1OY, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
             return <>{[
-              {x:cx+ox,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
-              {x:cx+ox,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
+              {x:cx+ox,         y:ft-ah/2-14+oy, rotation:0   as number, k:"top"},
+              {x:cx+ox,         y:fb+ah/2+14+oy, rotation:180 as number, k:"bottom"},
+              {x:fl+ox-sz/2-14, y:cy+oy,          rotation:-90 as number, k:"left"},
+              {x:fr+ox+sz/2+14, y:cy+oy,          rotation:90  as number, k:"right"},
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
           // Kroki 2–12: stałe pozycje z final config
@@ -15724,6 +15739,30 @@ export default function Page() {
           };
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
+
+        {/* step1ArrowEditor — tymczasowy panel do ustawiania offsetu strzałek step 1 */}
+        {tutorialStep === 1 && (
+          <div className="fixed z-[300] bottom-4 right-4 pointer-events-auto select-none"
+            style={{background:"rgba(0,0,0,0.85)",color:"#fff",fontFamily:"monospace",fontSize:12,padding:"10px 14px",borderRadius:10,border:"1px solid #8b6a3e",minWidth:220}}>
+            <div style={{fontWeight:"bold",marginBottom:6,color:"#f9e7b2"}}>step1ArrowEditor</div>
+            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+              <span style={{width:28}}>OX:</span>
+              <span style={{width:44,textAlign:"right"}}>{s1OX}</span>
+              <button onClick={()=>setS1OX(p=>p-10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-10</button>
+              <button onClick={()=>setS1OX(p=>p-1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-1</button>
+              <button onClick={()=>setS1OX(p=>p+1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+1</button>
+              <button onClick={()=>setS1OX(p=>p+10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+10</button>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{width:28}}>OY:</span>
+              <span style={{width:44,textAlign:"right"}}>{s1OY}</span>
+              <button onClick={()=>setS1OY(p=>p-10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-10</button>
+              <button onClick={()=>setS1OY(p=>p-1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-1</button>
+              <button onClick={()=>setS1OY(p=>p+1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+1</button>
+              <button onClick={()=>setS1OY(p=>p+10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+10</button>
+            </div>
+          </div>
+        )}
 
         </main>
     </div>
