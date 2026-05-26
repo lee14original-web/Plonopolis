@@ -3138,8 +3138,10 @@ export default function Page() {
       setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
       return;
     }
-    // Reset startMs — pole zaczyna faktyczne przetwarzanie (overlay już widoczny od kliknięcia)
-    setPendingFieldActions(prev => prev[plotId] ? { ...prev, [plotId]: { ...prev[plotId], startMs: Date.now() } } : prev);
+    // Ustaw overlay tylko jeśli jeszcze nie istnieje — unika restartu animacji przy polu w kolejce
+    if (!pendingFieldActions[plotId]) {
+      setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
+    }
     // Odczekaj czas animacji
     await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
     // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
