@@ -2136,8 +2136,6 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
-  const [s1OX, setS1OX] = React.useState(-291);
-  const [s1OY, setS1OY] = React.useState(0);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -13224,7 +13222,7 @@ export default function Page() {
                   <button
                     type="button"
                     data-tutorial-target="konewka-btn"
-                    onClick={() => { if (!fvToolEditMode) { if (tutorialStep >= 5 && tutorialStep <= 7) return; setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
+                    onClick={() => { if (!fvToolEditMode) { if ((tutorialStep >= 2 && tutorialStep <= 7) || (tutorialStep >= 10 && tutorialStep <= 11)) return; setSelectedTool(prev => prev === "watering_can" ? null : "watering_can"); setSelectedSeedId(null); if (tutorialStep === 8) { const _canW = tutorialPlotIds.some(id => { const _p = getPlotCrop(id); return _p.cropId && !isCropReady(id) && !_p.watered; }); void advanceTutorialStep(_canW ? 9 : 10); } } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredWateringCan(true); }}
                     onMouseLeave={() => setHoveredWateringCan(false)}
                     onMouseDown={fvToolEditMode ? (e) => {
@@ -13232,7 +13230,7 @@ export default function Page() {
                       const pos = fvKonewkaPos;
                       fvToolDragRef.current = { btn: "konewka", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 5 && tutorialStep <= 7 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "watering_can" ? "border-cyan-300 bg-cyan-900/70 shadow-[0_0_20px_rgba(80,200,255,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 8 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${((tutorialStep >= 2 && tutorialStep <= 7) || (tutorialStep >= 10 && tutorialStep <= 11)) && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvKonewkaPos.l, top: fvKonewkaPos.t, width: fvKonewkaPos.w, height: fvKonewkaPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Konewka</p>
@@ -13249,7 +13247,7 @@ export default function Page() {
                   <button
                     type="button"
                     data-tutorial-target="zbierz-btn"
-                    onClick={() => { if (!fvToolEditMode) { if (tutorialStep >= 8 && tutorialStep <= 9) return; setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
+                    onClick={() => { if (!fvToolEditMode) { if (tutorialStep >= 2 && tutorialStep <= 9) return; setSelectedTool(prev => prev === "sickle" ? null : "sickle"); setSelectedSeedId(null); setHoveredSickle(false); if (tutorialStep === 10) void advanceTutorialStep(11); } }}
                     onMouseEnter={() => { if (!fvToolEditMode) setHoveredSickle(true); }}
                     onMouseLeave={() => setHoveredSickle(false)}
                     data-zone="sickle"
@@ -13258,7 +13256,7 @@ export default function Page() {
                       const pos = fvZbierzPos;
                       fvToolDragRef.current = { btn: "zbierz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : (e) => setHoveredSickle(false)}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 8 && tutorialStep <= 9 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : selectedTool === "sickle" ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(255,220,120,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 10 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 2 && tutorialStep <= 9 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvZbierzPos.l, top: fvZbierzPos.t, width: fvZbierzPos.w, height: fvZbierzPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Zbierz</p>
@@ -13277,7 +13275,7 @@ export default function Page() {
                     data-tutorial-target="nasiona-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
-                      if ((tutorialStep >= 2 && tutorialStep <= 4) || tutorialStep === 11) return;
+                      if ((tutorialStep >= 2 && tutorialStep <= 4) || (tutorialStep >= 8 && tutorialStep <= 11)) return;
                       setFvSeedPickerOpen(prev => !prev);
                       setFvCompostPickerOpen(false);
                       if (tutorialStep === 5) void advanceTutorialStep(6);
@@ -13287,7 +13285,7 @@ export default function Page() {
                       const pos = fvNasonaPos;
                       fvToolDragRef.current = { btn: "nasiona", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${((tutorialStep >= 2 && tutorialStep <= 4) || tutorialStep === 11) && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && !isCompostKey(selectedSeedId) && !isGuideCompostKey(selectedSeedId)) ? "border-green-300 bg-green-900/70 shadow-[0_0_20px_rgba(100,220,100,0.5)]" : fvSeedPickerOpen ? "border-green-500 bg-green-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 5 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${((tutorialStep >= 2 && tutorialStep <= 4) || (tutorialStep >= 8 && tutorialStep <= 11)) && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvNasonaPos.l, top: fvNasonaPos.t, width: fvNasonaPos.w, height: fvNasonaPos.h }}
                   >
                     {(() => {
@@ -13333,6 +13331,7 @@ export default function Page() {
                     data-tutorial-target="kompost-btn"
                     onClick={() => {
                       if (fvToolEditMode) return;
+                      if (tutorialStep >= 5 && tutorialStep <= 11) return;
                       setFvCompostPickerOpen(prev => !prev);
                       setFvSeedPickerOpen(false);
                       if (tutorialStep === 2) void advanceTutorialStep(3);
@@ -13342,7 +13341,7 @@ export default function Page() {
                       const pos = fvKompostPos;
                       fvToolDragRef.current = { btn: "kompost", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
                     } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isGuideCompostKey(selectedSeedId)) ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(250,204,21,0.5)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 2 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : (selectedSeedId && isGuideCompostKey(selectedSeedId)) ? "border-yellow-300 bg-yellow-900/70 shadow-[0_0_20px_rgba(250,204,21,0.5)]" : (selectedSeedId && isCompostKey(selectedSeedId)) ? "border-lime-300 bg-lime-900/70 shadow-[0_0_20px_rgba(140,220,60,0.5)]" : fvCompostPickerOpen ? "border-lime-500 bg-lime-950/80" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}${tutorialStep === 2 && !fvToolEditMode ? " ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.55)]" : ""}${tutorialStep >= 5 && tutorialStep <= 11 && !fvToolEditMode ? " opacity-40 cursor-not-allowed" : ""}`}
                     style={{ left: fvKompostPos.l, top: fvKompostPos.t, width: fvKompostPos.w, height: fvKompostPos.h }}
                   >
                     {(() => {
@@ -13645,9 +13644,9 @@ export default function Page() {
                   )}
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h2 className="text-3xl font-black text-[#f9e7b2]">Pola uprawne</h2>
-                      <p className="mt-2 text-lg text-[#dfcfab] font-medium leading-snug max-w-lg">Poruszaj się po polach myszką lub WASD. Przytrzymaj myszkę i przeciągnij po polach, aby szybko sadzić, podlewać albo zbierać.</p>
+                      <p className="mt-2 text-lg text-[#dfcfab] font-medium leading-snug">Poruszaj się po polach myszką lub WASD. Przytrzymaj myszkę i przeciągnij po polach, aby szybko sadzić, podlewać albo zbierać.</p>
                     </div>
                     {(() => {
                       const _growing = Object.entries(plotCrops).filter(([id, p]) => p.cropId && !isCropReady(Number(id))).length;
@@ -15715,16 +15714,15 @@ export default function Page() {
             </div>
           );};
           // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
-          // Edytor: s1OX (offset X), s1OY (offset Y) — regulowane panelem step1ArrowEditor
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const ox=s1OX, oy=s1OY, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            const ox=-291, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
             return <>{[
-              {x:cx+ox,         y:ft-ah/2-14+oy, rotation:0   as number, k:"top"},
-              {x:cx+ox,         y:fb+ah/2+14+oy, rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14, y:cy+oy,          rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14, y:cy+oy,          rotation:90  as number, k:"right"},
+              {x:cx+ox,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
+              {x:cx+ox,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
+              {x:fl+ox-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
+              {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
           // Kroki 2–12: stałe pozycje z final config
@@ -15739,30 +15737,6 @@ export default function Page() {
           };
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
-
-        {/* step1ArrowEditor — tymczasowy panel do ustawiania offsetu strzałek step 1 */}
-        {tutorialStep === 1 && (
-          <div className="fixed z-[300] bottom-4 right-4 pointer-events-auto select-none"
-            style={{background:"rgba(0,0,0,0.85)",color:"#fff",fontFamily:"monospace",fontSize:12,padding:"10px 14px",borderRadius:10,border:"1px solid #8b6a3e",minWidth:220}}>
-            <div style={{fontWeight:"bold",marginBottom:6,color:"#f9e7b2"}}>step1ArrowEditor</div>
-            <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
-              <span style={{width:28}}>OX:</span>
-              <span style={{width:44,textAlign:"right"}}>{s1OX}</span>
-              <button onClick={()=>setS1OX(p=>p-10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-10</button>
-              <button onClick={()=>setS1OX(p=>p-1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-1</button>
-              <button onClick={()=>setS1OX(p=>p+1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+1</button>
-              <button onClick={()=>setS1OX(p=>p+10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+10</button>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{width:28}}>OY:</span>
-              <span style={{width:44,textAlign:"right"}}>{s1OY}</span>
-              <button onClick={()=>setS1OY(p=>p-10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-10</button>
-              <button onClick={()=>setS1OY(p=>p-1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>-1</button>
-              <button onClick={()=>setS1OY(p=>p+1)}  style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+1</button>
-              <button onClick={()=>setS1OY(p=>p+10)} style={{padding:"1px 6px",cursor:"pointer",background:"#333",color:"#fff",border:"1px solid #555",borderRadius:4}}>+10</button>
-            </div>
-          </div>
-        )}
 
         </main>
     </div>
