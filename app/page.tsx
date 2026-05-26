@@ -3121,6 +3121,9 @@ export default function Page() {
     }
     // Deduplikacja: nie dodawaj jeśli już w kolejce lub aktualnie podlewane
     if (waterQueueRef.current.includes(plotId) || waterQueueActiveRef.current === plotId) return;
+    // Overlay pojawia się natychmiast przy kliknięciu (widoczny przez cały czas w kolejce)
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
+    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
     waterQueueRef.current = [...waterQueueRef.current, plotId];
     setWaterQueue([...waterQueueRef.current]);
     if (!waterQueueProcessingRef.current) void processWaterQueue();
@@ -3131,11 +3134,12 @@ export default function Page() {
     const _fp = plotCropsRef.current[plotId];
     if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
       if (process.env.NODE_ENV !== "production") console.debug("[water overlay] skip (stale)", { plotId, fp: _fp });
+      // Czyść overlay — pole niepoprawne, nie będzie podlewane
+      setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
       return;
     }
-    // Pokaż overlay dopiero gdy to pole faktycznie zaczyna się podlewać
-    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
-    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
+    // Reset startMs — pole zaczyna faktyczne przetwarzanie (overlay już widoczny od kliknięcia)
+    setPendingFieldActions(prev => prev[plotId] ? { ...prev, [plotId]: { ...prev[plotId], startMs: Date.now() } } : prev);
     // Odczekaj czas animacji
     await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
     // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
@@ -3490,23 +3494,35 @@ export default function Page() {
 
       // Jeśli serwer zgubił bonus kompostu przy sadzeniu — przywróć go i zapisz
       if (_preservedCompostBonus && profile?.id) {
+        // Pobierz świeże plot_crops — unika nadpisania równoległych zapisów (race condition)
+        const { data: _freshRow } = await supabase
+          .from("profiles")
+          .select("plot_crops")
+          .eq("id", profile.id)
+          .single();
+        const _freshPlots = parsePlotCrops(_freshRow?.plot_crops);
+        const _freshEntry = _freshPlots[plotId];
+        if (_freshEntry && !_freshEntry.compostBonus) {
+          const _safeMerged = { ..._freshPlots, [plotId]: { ..._freshEntry, compostBonus: _preservedCompostBonus } };
+          await supabase.from("profiles").update({
+            plot_crops: serializePlotCrops(_safeMerged) as unknown as Record<string, unknown>,
+          }).eq("id", profile.id);
+        }
+        // Zaktualizuj lokalny stan (niezależnie od DB — bezpieczne przez functional update)
         setPlotCrops(prev => {
           const _curr = prev[plotId];
           if (!_curr || _curr.compostBonus) return prev;
-          const _merged = { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
-          // Asynchronicznie persystuj scalone plot_crops
-          void supabase.from("profiles").update({
-            plot_crops: serializePlotCrops(_merged) as unknown as Record<string,unknown>,
-          }).eq("id", profile.id);
-          return _merged;
+          return { ...prev, [plotId]: { ..._curr, compostBonus: _preservedCompostBonus } };
         });
       }
 
       if (tutorialStep === 7) {
         if (tutorialPlotIds.includes(plotId)) {
-          const _newPlanted = tutorialPlantedIds.includes(plotId) ? tutorialPlantedIds : [...tutorialPlantedIds, plotId];
-          setTutorialPlantedIds(_newPlanted);
-          if (_newPlanted.length >= 3) void advanceTutorialStep(8);
+          // Functional update — unika stale closure race przy szybkim sadzeniu 3 pól
+          setTutorialPlantedIds(prev => prev.includes(plotId) ? prev : [...prev, plotId]);
+          // Licz z plotCropsRef (świeże po applyProfileState), nie ze stałego closure
+          const _planted = tutorialPlotIds.filter(id => !!plotCropsRef.current[id]?.cropId).length;
+          if (_planted >= 3) void advanceTutorialStep(8);
         } else if (tutorialPlotIds.length > 0) {
           setMessage({ type: "info", title: "Przewodnik", text: "Posadź marchewki na polach z Kompostem Przewodnika." });
           return;
@@ -15667,7 +15683,7 @@ export default function Page() {
           const _t4 = tutorialStep === 4
             ? Math.min(3, Object.values(plotCrops).filter(p => p.compostBonus?.type === "guide").length)
             : tutorialPlotIds.length;
-          const _t7 = tutorialPlantedIds.length;
+          const _t7 = tutorialStep === 7 ? tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId).length : tutorialPlantedIds.length;
           const _t9 = tutorialWateredIds.length;
           const _t11 = tutorialHarvestedIds.length;
           const _texts: string[] = [
