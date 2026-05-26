@@ -784,8 +784,8 @@ const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
 const SLOT_BOX_KEY   = "plonopolis_slot_box";
 const SETTINGS_KEY   = "plonopolis_settings";
 type GraphicsQuality = "low" | "medium" | "high";
-interface GameSettings { musicEnabled: boolean; soundEnabled: boolean; graphicsQuality: GraphicsQuality; }
-const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high" };
+interface GameSettings { musicEnabled: boolean; soundEnabled: boolean; graphicsQuality: GraphicsQuality; musicVolume: number; }
+const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
 const ACTIVE_USER_KEY = "plonopolis_active_user";
 // Klucze localStorage przypisane do sesji gracza (bez userId w nazwie) — czyszczone przy zmianie konta
 const PER_SESSION_KEYS = [
@@ -2249,6 +2249,8 @@ export default function Page() {
   const [gameSettings, setGameSettings] = React.useState<GameSettings>({ ...DEFAULT_GAME_SETTINGS });
   const saveGameSettings = (next: GameSettings) => {
     setGameSettings(next);
+    setMusicMuted(!next.musicEnabled);
+    setMusicVolume(next.musicVolume);
     const uid = profile?.id ?? "";
     if (uid) try { localStorage.setItem(lsKey(SETTINGS_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ }
   };
@@ -2697,7 +2699,10 @@ export default function Page() {
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
-    setGameSettings(lsLoadMigrate(SETTINGS_KEY, uid, s => { const p = JSON.parse(s) as Partial<GameSettings>; return { ...DEFAULT_GAME_SETTINGS, ...p }; }, () => ({ ...DEFAULT_GAME_SETTINGS })));
+    const _loadedSettings = lsLoadMigrate(SETTINGS_KEY, uid, s => { const p = JSON.parse(s) as Partial<GameSettings>; return { ...DEFAULT_GAME_SETTINGS, ...p }; }, () => ({ ...DEFAULT_GAME_SETTINGS }));
+    setGameSettings(_loadedSettings);
+    setMusicMuted(!_loadedSettings.musicEnabled);
+    setMusicVolume(_loadedSettings.musicVolume);
     // Barn: ładuj z localStorage, nadpisz owned/slots/prodStart z DB (DB autorytarne dla timingów)
     const _lsBarn = lsLoadMigrate(BARN_STATE_KEY, uid, s => { const p = JSON.parse(s); return { ...defaultBarnState(), ...p } as BarnState; }, defaultBarnState);
     const _dbBarn = source.barn_state as Record<string, { owned: number; slots: number; prodStart: number }> | null | undefined;
@@ -6811,42 +6816,6 @@ export default function Page() {
               )}
 
 
-              {/* ═══ MUZYKA ═══ */}
-              <div className="fixed right-4 z-[92]" style={{ top: "300px" }}>
-                <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(22,13,8,0.92)] px-3 py-3 shadow-2xl backdrop-blur-sm w-[72px]">
-                  {/* Ikona dźwięku */}
-                  <button
-                    type="button"
-                    onClick={() => setMusicMuted(m => !m)}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#8b6a3e]/50 bg-black/30 text-xl transition hover:border-[#d8ba7a]/50"
-                    title={musicMuted ? "Włącz muzykę" : "Wycisz muzykę"}
-                  >
-                    {musicMuted ? "🔇" : musicVolume < 0.15 ? "🔈" : musicVolume < 0.6 ? "🔉" : "🔊"}
-                  </button>
-
-                  {/* Suwak pionowy */}
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={musicMuted ? 0 : musicVolume}
-                    onChange={e => {
-                      const v = parseFloat(e.target.value);
-                      setMusicVolume(v);
-                      if (v > 0 && musicMuted) setMusicMuted(false);
-                      if (v === 0) setMusicMuted(true);
-                    }}
-                    className="h-24 w-2 cursor-pointer appearance-none rounded-full bg-[#3a2510] accent-[#d8ba7a]"
-                    style={{ writingMode: "vertical-lr", direction: "rtl" }}
-                    title="Głośność muzyki"
-                  />
-
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-[#8b6a3e]">
-                    {musicMuted ? "Wycisz" : `${Math.round((musicMuted ? 0 : musicVolume) * 100)}%`}
-                  </p>
-                </div>
-              </div>
 
               <div className={`fixed left-1/2 top-4 z-[89] w-full max-w-[700px] -translate-x-1/2 px-4 transition-opacity duration-300 ${isFieldViewOpen ? "opacity-30" : "opacity-100"}`}>
                 <div className="z-10 w-full rounded-[24px] border border-[#8b6a3e] bg-[rgba(33,20,12,0.88)] px-4 py-2 text-[#f5dfb0] shadow-2xl backdrop-blur-sm">
@@ -14604,6 +14573,22 @@ export default function Page() {
                       <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${gameSettings.musicEnabled ? "left-5 bg-amber-400" : "left-0.5 bg-[#8b6a3e]"}`} />
                     </button>
                   </label>
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className="w-5 text-center text-base">{!gameSettings.musicEnabled ? "🔇" : gameSettings.musicVolume < 0.15 ? "🔈" : gameSettings.musicVolume < 0.6 ? "🔉" : "🔊"}</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round(gameSettings.musicVolume * 100)}
+                      onChange={e => {
+                        const v = parseInt(e.target.value) / 100;
+                        saveGameSettings({ ...gameSettings, musicVolume: v, musicEnabled: v > 0 });
+                      }}
+                      className="flex-1 cursor-pointer accent-[#d8ba7a]"
+                    />
+                    <span className="w-9 text-right text-xs font-bold tabular-nums text-[#d8ba7a]">{Math.round(gameSettings.musicVolume * 100)}%</span>
+                  </div>
                 </div>
 
                 {/* ─── Dźwięki ─── */}
