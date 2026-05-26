@@ -3141,13 +3141,12 @@ export default function Page() {
       // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
     }
 
-    // ─── compostBonus restore + tutorial step 9 speedup (wszystkie tutorialPlotIds) ───
+    // ─── compostBonus restore + tutorial step 9 speedup (tylko podlewane pole) ───
     // Fetch najświeższego plot_crops z DB — race condition guard przy szybkim podlewaniu.
-    // Po każdym skutecznym podlaniu w step 9 sprawdzamy WSZYSTKIE tutorialPlotIds i ustawiamy
-    // speedup plantedAt dla każdego pola z marchewką + guide compost, niezależnie od tego,
-    // które pole właśnie podlano.
+    // Speedup plantedAt stosujemy TYLKO dla aktualnie podlanego plotId (nie wszystkich tutorialPlotIds),
+    // żeby szybkie podlewanie kilku pól nie nadpisywało plantedAt pozostałych marchewek.
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
-    const _tutorialStep9 = tutorialStep === 9;
+    const _tutorialStep9 = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
     if ((_needsCompostRestore || _tutorialStep9) && profile?.id) {
       const { data: _freshRow } = await supabase
         .from("profiles")
@@ -3168,14 +3167,11 @@ export default function Page() {
           _updatedPlots[plotId] = { ..._curr, compostBonus: _preservedCompostBonus };
         }
       }
-      // 2. Speedup dla WSZYSTKICH tutorialPlotIds z marchewką + guide compost
+      // 2. Speedup tylko dla aktualnie podlanego plotId — marchewka + guide compost
       if (_tutorialStep9) {
-        for (const _tId of tutorialPlotIds) {
-          // Bierz z _updatedPlots[_tId] jeśli już zmodyfikowany (np. compost restore), inaczej z _freshPlots
-          const _tPlot = _updatedPlots[_tId] ?? _freshPlots[_tId];
-          if (_tPlot?.cropId === "carrot" && _tPlot?.compostBonus?.type === "guide" && _tPlot?.plantedAt != null) {
-            _updatedPlots[_tId] = { ..._tPlot, plantedAt: _tutorialSpeedupAt };
-          }
+        const _tPlot = _updatedPlots[plotId] ?? _freshPlots[plotId];
+        if (_tPlot?.cropId === "carrot" && _tPlot?.compostBonus?.type === "guide" && _tPlot?.plantedAt != null) {
+          _updatedPlots[plotId] = { ..._tPlot, plantedAt: _tutorialSpeedupAt };
         }
       }
       if (Object.keys(_updatedPlots).length > 0) {
