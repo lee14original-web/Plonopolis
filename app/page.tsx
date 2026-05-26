@@ -384,6 +384,7 @@ const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
 const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
+const BASE_WATER_MS   = 700;
 
 // ═══ BALANS WZROSTU UPRAW (capy bonusów + globalne minimum) ═══
 // Każdy bonus mnoży niezależnie. Globalne minimum chroni przed exploit-em multiplikatywności.
@@ -398,7 +399,7 @@ const COMPOST_MULT_MIN       = 0.80;   // cap −20% (z Kompostu Wzrostu)
 const WATER_BASE             = 0.05;   // min 5% zawsze z konewki (bez statystyk)
 const WATER_MULT_MIN         = 0.10;   // globalny min: konewka nie skróci więcej niż 90%
 type PendingFieldAction = {
-  kind: "plant" | "harvest";
+  kind: "plant" | "harvest" | "water";
   startMs: number;
   durationMs: number;
   seedId?: string;
@@ -2135,6 +2136,8 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
+  const [tutPanelPositions, setTutPanelPositions] = React.useState<Record<number, {x: number; y: number}>>({});
+  const [tutPanelPasteVal, setTutPanelPasteVal] = React.useState("");
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
@@ -2952,7 +2955,7 @@ export default function Page() {
     }
 
     if (selectedTool === "watering_can") {
-      handleWaterPlot(selectedPlotId);
+      void handleWaterPlot(selectedPlotId);
       return;
     }
 
@@ -3083,39 +3086,55 @@ export default function Page() {
     return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   }
 
-  async function handleWaterPlot(plotId: number) {
+  async function handleWaterPlot(plotId: number, _skipTimer = false) {
     if (!profile) return;
+
+    if (!_skipTimer) {
+      // ─── Pre-timer: walidacja na aktualnym stanie ───
+      const plot = getPlotCrop(plotId);
+      const crop = getPlantedCrop(plotId);
+      if (!crop || !plot.cropId) {
+        setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+        return;
+      }
+      if (plot.watered) {
+        setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+        return;
+      }
+      if (isCropReady(plotId)) {
+        setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+        // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
+        return;
+      }
+      if (pendingFieldActions[plotId]) {
+        setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
+        return;
+      }
+      // Ustaw timer postępu — RPC wykona się po zakończeniu
+      const _waterDurMs = BASE_WATER_MS;
+      setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: _waterDurMs } }));
+      const _tid = setTimeout(() => {
+        fieldActionTimeoutsRef.current.delete(plotId);
+        void handleWaterPlot(plotId, true);
+      }, _waterDurMs);
+      fieldActionTimeoutsRef.current.set(plotId, _tid);
+      return;
+    }
+
+    // ─── _skipTimer = true — timer dobiegł końca, fresh check przed RPC ───
+    {
+      const _fp = plotCropsRef.current[plotId];
+      if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+        setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+        return;
+      }
+    }
+    // Zdejmij wskaźnik paska, kontynuuj RPC
+    setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const plot = getPlotCrop(plotId);
     const crop = getPlantedCrop(plotId);
-
-    if (!crop || !plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Brak uprawy",
-        text: "Najpierw posadź roślinę na tym polu.",
-      });
-      return;
-    }
-
-    if (plot.watered) {
-      setMessage({
-        type: "info",
-        title: "Pole już podlane",
-        text: "To pole zostało już podlane.",
-      });
-      return;
-    }
-
-    if (isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa gotowa",
-        text: "Ta uprawa jest już gotowa do zbioru.",
-      });
-      // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
-      return;
-    }
+    if (!crop || !plot.cropId) return; // guard po fresh check
 
     // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
     const _preservedCompostBonus = plot.compostBonus ?? null;
@@ -13755,7 +13774,7 @@ export default function Page() {
                               if (!isUnlocked) return;
                               // Akcja już wykonana w onMouseDown (drag) — pomiń
                               if (dragEndedRef.current) { dragEndedRef.current = false; return; }
-                              if (selectedTool === "watering_can") { handleWaterPlot(plotId); return; }
+                              if (selectedTool === "watering_can") { void handleWaterPlot(plotId); return; }
                               if (selectedTool === "sickle") { void handleHarvestPlot(plotId); return; }
                               if (selectedSeedId && isGuideCompostKey(selectedSeedId)) { void applyGuideCompostToPlot(plotId); return; }
                               if (selectedSeedId && isCompostKey(selectedSeedId)) { void applyCompostToPlot(plotId, selectedSeedId); return; }
@@ -13898,9 +13917,10 @@ export default function Page() {
                                   const _elapsed = Math.max(0, Date.now() - _act.startMs);
                                   const _pct = Math.min(100, Math.max(0, (_elapsed / _act.durationMs) * 100));
                                   const _isPlant = _act.kind === "plant";
-                                  const _color = _isPlant ? "#22d3ee" : "#fbbf24";
-                                  const _glow = _isPlant ? "rgba(34,211,238,0.7)" : "rgba(251,191,36,0.7)";
-                                  const _label = _isPlant ? "Sadzenie..." : "Zbiór...";
+                                  const _isWater = _act.kind === "water";
+                                  const _color = _isPlant ? "#22d3ee" : _isWater ? "#60a5fa" : "#fbbf24";
+                                  const _glow = _isPlant ? "rgba(34,211,238,0.7)" : _isWater ? "rgba(96,165,250,0.7)" : "rgba(251,191,36,0.7)";
+                                  const _label = _isPlant ? "Sadzenie..." : _isWater ? "Podlewanie..." : "Zbiór...";
                                   return (
                                     <>
                                       <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl bg-black/35" />
@@ -15639,37 +15659,114 @@ export default function Page() {
             );
           }
 
-          return (
-            <div className="fixed bottom-5 left-1/2 z-[87] w-full max-w-[700px] -translate-x-1/2 px-4 pointer-events-none">
-              <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] p-6 shadow-2xl backdrop-blur-sm pointer-events-auto">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm uppercase tracking-widest text-[#d8ba7a] font-black">Etap 1 przewodnika</p>
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-[#8b6a3e]">Krok {tutorialStep}/13</p>
-                    {tutorialStep === 13 && (
-                      <button
-                        type="button"
-                        onClick={() => setTutorialPanelMinimized(true)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#8b6a3e]/60 bg-[rgba(255,255,255,0.04)] text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/60 transition text-base font-black leading-none"
-                        title="Minimalizuj"
-                      >
-                        −
-                      </button>
-                    )}
+          return (() => {
+            const _tutPos = canEditHitboxes ? tutPanelPositions[tutorialStep] : undefined;
+            return (
+              <div
+                className={`fixed z-[87] w-full max-w-[700px] px-4 pointer-events-none${_tutPos ? "" : " bottom-5 left-1/2 -translate-x-1/2"}`}
+                style={_tutPos ? { left: _tutPos.x, top: _tutPos.y } : undefined}
+              >
+                <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] shadow-2xl backdrop-blur-sm pointer-events-auto relative overflow-hidden">
+                  {/* ── Drag handle — tylko tester/admin/owner ── */}
+                  {canEditHitboxes && (
+                    <div
+                      className="w-full h-7 flex items-center justify-center cursor-move select-none border-b border-orange-400/20 bg-orange-900/20 hover:bg-orange-900/40 rounded-t-2xl"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const _cur = tutPanelPositions[tutorialStep] ?? {
+                          x: Math.round((window.innerWidth - 700) / 2 + 16),
+                          y: Math.round(window.innerHeight - 220),
+                        };
+                        const _sX = _cur.x, _sY = _cur.y, _sMX = e.clientX, _sMY = e.clientY;
+                        const _onMove = (ev: MouseEvent) => {
+                          setTutPanelPositions(prev => ({ ...prev, [tutorialStep]: { x: _sX + ev.clientX - _sMX, y: _sY + ev.clientY - _sMY } }));
+                        };
+                        const _onUp = () => {
+                          document.removeEventListener("mousemove", _onMove);
+                          document.removeEventListener("mouseup", _onUp);
+                        };
+                        document.addEventListener("mousemove", _onMove);
+                        document.addEventListener("mouseup", _onUp);
+                      }}
+                    >
+                      <span className="text-orange-400/70 text-[11px] font-mono pointer-events-none">⠿ przeciągnij</span>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm uppercase tracking-widest text-[#d8ba7a] font-black">Etap 1 przewodnika</p>
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm text-[#8b6a3e]">Krok {tutorialStep}/13</p>
+                        {tutorialStep === 13 && (
+                          <button
+                            type="button"
+                            onClick={() => setTutorialPanelMinimized(true)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#8b6a3e]/60 bg-[rgba(255,255,255,0.04)] text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/60 transition text-base font-black leading-none"
+                            title="Minimalizuj"
+                          >
+                            −
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mb-4 h-2 rounded-full bg-[#3a2510]/60 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#d8ba7a] transition-all duration-500"
+                        style={{ width: `${(tutorialStep / 13) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
+                      {_texts[tutorialStep]}
+                    </p>
+                    {/* ── Panel edycji — tylko tester/admin/owner ── */}
+                    {canEditHitboxes && (() => {
+                      const _ep = tutPanelPositions[tutorialStep];
+                      const _ex = _ep?.x ?? Math.round((window.innerWidth - 700) / 2 + 16);
+                      const _ey = _ep?.y ?? Math.round(window.innerHeight - 220);
+                      return (
+                        <div className="mt-4 pt-4 border-t border-orange-400/30 space-y-2">
+                          <p className="font-mono text-[11px] text-orange-300">step: <b>{tutorialStep}</b> | x: <b>{_ex}</b> | y: <b>{_ey}</b></p>
+                          <div className="flex gap-2 flex-wrap">
+                            <button type="button"
+                              onClick={() => { void navigator.clipboard.writeText(JSON.stringify({ step: tutorialStep, x: _ex, y: _ey })); }}
+                              className="text-[11px] px-2 py-1 rounded border border-orange-400/50 bg-orange-900/40 text-orange-200 hover:bg-orange-800/60 font-mono"
+                            >Kopiuj pozycję</button>
+                            {_ep && (
+                              <button type="button"
+                                onClick={() => setTutPanelPositions(prev => { const _n = { ...prev }; delete _n[tutorialStep]; return _n; })}
+                                className="text-[11px] px-2 py-1 rounded border border-red-400/50 bg-red-900/40 text-red-200 hover:bg-red-800/60 font-mono"
+                              >Reset</button>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              value={tutPanelPasteVal}
+                              onChange={e => setTutPanelPasteVal(e.target.value)}
+                              placeholder='{"step":1,"x":320,"y":720}'
+                              className="flex-1 text-[11px] px-2 py-1 rounded border border-[#8b6a3e]/50 bg-[rgba(10,6,2,0.8)] text-[#f9e7b2] font-mono placeholder:text-[#6b5030]"
+                            />
+                            <button type="button"
+                              onClick={() => {
+                                try {
+                                  const _p = JSON.parse(tutPanelPasteVal) as {x?: unknown; y?: unknown; step?: unknown};
+                                  if (typeof _p.x === "number" && typeof _p.y === "number") {
+                                    const _tgt = typeof _p.step === "number" ? _p.step : tutorialStep;
+                                    setTutPanelPositions(prev => ({ ...prev, [_tgt]: { x: _p.x as number, y: _p.y as number } }));
+                                    setTutPanelPasteVal("");
+                                  }
+                                } catch (_e) { /* ignoruj błąd parsowania */ }
+                              }}
+                              className="text-[11px] px-2 py-1 rounded border border-orange-400/50 bg-orange-900/40 text-orange-200 hover:bg-orange-800/60 font-mono"
+                            >Wklej</button>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
-                <div className="mb-4 h-2 rounded-full bg-[#3a2510]/60 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#d8ba7a] transition-all duration-500"
-                    style={{ width: `${(tutorialStep / 13) * 100}%` }}
-                  />
-                </div>
-                <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
-                  {_texts[tutorialStep]}
-                </p>
               </div>
-            </div>
-          );
+            );
+          })();
         })()}
 
         {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
