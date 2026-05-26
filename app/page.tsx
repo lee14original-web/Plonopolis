@@ -14032,12 +14032,12 @@ export default function Page() {
                                     const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
                                     return _od ? (
                                       <>
-                                        <span className="text-[14px] leading-none">{_od.icon}</span>
-                                        <span className="mt-0.5 text-[9px] font-bold leading-tight" style={{ color: _od.color }}>{_od.name}</span>
-                                        <span className="text-[8px] font-black text-amber-300 leading-none">{plotCost} PLN</span>
+                                        <span className="text-[21px] leading-none">{_od.icon}</span>
+                                        <span className="mt-0.5 text-[13px] font-bold leading-tight" style={{ color: _od.color }}>{_od.name}</span>
+                                        <span className="text-[12px] font-black text-amber-300 leading-none">{plotCost} PLN</span>
                                       </>
                                     ) : (
-                                      <span className="text-[9px] font-bold uppercase leading-tight text-[#f5dfb0]">
+                                      <span className="text-[13px] font-bold uppercase leading-tight text-[#f5dfb0]">
                                         {plotCost} PLN
                                       </span>
                                     );
