@@ -3121,9 +3121,6 @@ export default function Page() {
     }
     // Deduplikacja: nie dodawaj jeśli już w kolejce lub aktualnie podlewane
     if (waterQueueRef.current.includes(plotId) || waterQueueActiveRef.current === plotId) return;
-    // ── Overlay pojawia się SYNCHRONICZNIE w handlerze kliknięcia (tak jak plant/harvest) ──
-    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
-    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
     waterQueueRef.current = [...waterQueueRef.current, plotId];
     setWaterQueue([...waterQueueRef.current]);
     if (!waterQueueProcessingRef.current) void processWaterQueue();
@@ -3134,11 +3131,11 @@ export default function Page() {
     const _fp = plotCropsRef.current[plotId];
     if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
       if (process.env.NODE_ENV !== "production") console.debug("[water overlay] skip (stale)", { plotId, fp: _fp });
-      setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
       return;
     }
-    // Resetuj startMs — overlay był ustawiony przy kolejkowaniu, teraz zaczynamy faktyczne przetwarzanie
-    setPendingFieldActions(prev => prev[plotId] ? { ...prev, [plotId]: { ...prev[plotId], startMs: Date.now() } } : prev);
+    // Pokaż overlay dopiero gdy to pole faktycznie zaczyna się podlewać
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
+    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
     // Odczekaj czas animacji
     await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
     // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
