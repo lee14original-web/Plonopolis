@@ -384,7 +384,7 @@ const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
 const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
-const BASE_WATER_MS   = 700;
+const BASE_WATER_MS   = 1000;
 
 // ─── Predefiniowane pozycje okna tutoriala (per-step) ───
 const TUT_PANEL_PRESET_POSITIONS: Record<number, {x: number; y: number}> = {
@@ -3121,17 +3121,24 @@ export default function Page() {
     }
     // Deduplikacja: nie dodawaj jeśli już w kolejce lub aktualnie podlewane
     if (waterQueueRef.current.includes(plotId) || waterQueueActiveRef.current === plotId) return;
+    // ── Overlay pojawia się SYNCHRONICZNIE w handlerze kliknięcia (tak jak plant/harvest) ──
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
+    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
     waterQueueRef.current = [...waterQueueRef.current, plotId];
     setWaterQueue([...waterQueueRef.current]);
     if (!waterQueueProcessingRef.current) void processWaterQueue();
   }
 
   async function processOneWaterPlot(plotId: number): Promise<void> {
-    // Fresh check przed pokazaniem wskaźnika
+    // Fresh check — plot mógł stać się niepoprawny czekając w kolejce
     const _fp = plotCropsRef.current[plotId];
-    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) return;
-    // Pokaż wskaźnik „Podlewanie..."
-    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
+    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+      if (process.env.NODE_ENV !== "production") console.debug("[water overlay] skip (stale)", { plotId, fp: _fp });
+      setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+      return;
+    }
+    // Resetuj startMs — overlay był ustawiony przy kolejkowaniu, teraz zaczynamy faktyczne przetwarzanie
+    setPendingFieldActions(prev => prev[plotId] ? { ...prev, [plotId]: { ...prev[plotId], startMs: Date.now() } } : prev);
     // Odczekaj czas animacji
     await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
     // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
@@ -3169,11 +3176,13 @@ export default function Page() {
     {
       const _fp = plotCropsRef.current[plotId];
       if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+        if (process.env.NODE_ENV !== "production") console.debug("[water overlay] clear (skip-fresh)", { plotId, fp: _fp });
         setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         return;
       }
     }
     // Zdejmij wskaźnik paska, kontynuuj RPC
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] clear (before RPC)", { plotId });
     setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const plot = getPlotCrop(plotId);
