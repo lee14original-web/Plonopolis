@@ -14293,23 +14293,9 @@ export default function Page() {
             const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
             const items = Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>;
 
-            // ── EXP breakdown per jakość ──────────────────────────────────────
-            const _expByQ: Record<string, {label:string;badge:string;count:number;rawExp:number}> = {};
-            for (const e of harvestLog) {
-              const _qd2 = CROP_QUALITY_DEFS[e.quality];
-              const _cd2 = CROPS.find(c => c.id === e.cropId);
-              const _perUnit = _cd2 ? _cd2.expReward * _qd2.expMult : 0;
-              if (!_expByQ[e.quality]) _expByQ[e.quality] = { label: _qd2.label, badge: _qd2.badge, count: 0, rawExp: 0 };
-              _expByQ[e.quality].count += e.baseAmount;
-              _expByQ[e.quality].rawExp += e.baseAmount * _perUnit;
-            }
-            const _rawTotalExp = Math.round(Object.values(_expByQ).reduce((s, g) => s + g.rawExp, 0));
-            const _bonusExpAdded = totalExp - _rawTotalExp;
-            const _logExpBonusPct = harvestLog.reduce((m, e) => Math.max(m, e.expBonusPct ?? 0), 0);
             const _logCompostExpPct = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "exp" ? (e.compostBonus?.value ?? 0) : 0), 0);
             const _logCompostGrowthPct = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "growth" ? (e.compostBonus?.value ?? 0) : 0), 0);
             const _logCompostYield = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "yield" ? (e.compostBonus?.value ?? 0) : 0), 0);
-            const _qualOrder = ["good","epic","legendary","rotten"] as const;
 
             // ── Aktywne bonusy zbioru (bieżący stan eq + statystyki) ──────────
             const _eqExpPct    = Math.round(getEquipBonusPct("% EXP z upraw", charEquipped) + getEquipBonusPct("% EXP", charEquipped));
@@ -14403,33 +14389,17 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Prawa: rozbicie EXP + aktywne bonusy */}
+                  {/* Prawa: EXP + aktywne bonusy */}
                   <div className="w-[220px] shrink-0 flex flex-col divide-y divide-[#8b6a3e]/20">
 
-                    {/* Rozbicie EXP */}
+                    {/* EXP z serwera */}
                     <div className="p-4">
-                      <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">Rozbicie EXP</p>
-                      <div className="flex flex-col gap-1">
-                        {_qualOrder.filter(q => (_expByQ[q]?.count ?? 0) > 0).map(q => {
-                          const _qg = _expByQ[q];
-                          return (
-                            <div key={q} className="flex items-center justify-between text-[11px] gap-1">
-                              <span className="text-[#c8b890] truncate">{_qg.badge} {_qg.label}: {_qg.count} szt.</span>
-                              <span className={`font-bold shrink-0 ${q === "rotten" ? "text-[#6b7280]" : "text-sky-300"}`}>+{_qg.rawExp}</span>
-                            </div>
-                          );
-                        })}
-                        {_bonusExpAdded > 0 && (
-                          <div className="flex items-center justify-between text-[11px] gap-1">
-                            <span className="text-amber-300 truncate">⭐ Bonus +{_logExpBonusPct}%</span>
-                            <span className="font-bold text-amber-300 shrink-0">+{_bonusExpAdded}</span>
-                          </div>
-                        )}
+                      <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-3">EXP za zbiory</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-[#c8b890]">Przyznany przez serwer</span>
+                        <span className="text-xl font-black text-sky-200">+{totalExp}</span>
                       </div>
-                      <div className="mt-3 flex items-center justify-between border-t-2 border-[#8b6a3e]/50 pt-3">
-                        <span className="text-xs font-black text-[#d8ba7a] uppercase tracking-wider">Razem:</span>
-                        <span className="text-xl font-black text-sky-200">+{totalExp} EXP</span>
-                      </div>
+                      <p className="text-[10px] leading-snug text-[#6b7280]">Zależy od jakości zasadzonego nasiona i aktywnych bonusów.</p>
                     </div>
 
                     {/* Aktywne bonusy zbioru */}
