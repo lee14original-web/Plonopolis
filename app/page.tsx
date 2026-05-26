@@ -14331,17 +14331,17 @@ export default function Page() {
             return (
               <div className="fixed bottom-4 right-4 z-[88] w-[min(95vw,600px)] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden">
                 {/* Nagłówek */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/30">
-                  <p className="text-[12px] font-black uppercase tracking-[0.2em] text-[#d8ba7a]">
-                    🎒 Ostatnie zbiory{tutorialStep !== 12 && harvestCountdown > 0 ? ` (${harvestCountdown}s)` : ""}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.6)]">
+                  <p className="text-sm font-black uppercase tracking-[0.15em] text-[#d8ba7a]">
+                    Ostatnie zbiory{tutorialStep !== 12 && harvestCountdown > 0 ? ` (${harvestCountdown}s)` : ""}
                   </p>
                   {tutorialStep === 12 ? (
                     <button
                       onClick={() => setMessage({ type: "info", title: "Przewodnik", text: "Najpierw kliknij Dalej w przewodniku poniżej." })}
-                      className="rounded-lg bg-[rgba(255,255,255,0.06)] px-3 py-1 text-[10px] text-[#8b6a3e] opacity-50 cursor-not-allowed"
+                      className="rounded-xl border border-[#8b6a3e]/30 bg-[rgba(255,255,255,0.04)] px-4 py-1.5 text-xs font-bold text-[#8b6a3e] opacity-50 cursor-not-allowed"
                     >✕ Zamknij</button>
                   ) : (
-                    <button onClick={() => setHarvestLog([])} className="rounded-lg bg-[rgba(255,255,255,0.06)] px-3 py-1 text-[10px] text-[#8b6a3e] hover:text-[#d8ba7a] transition-colors">✕ Zamknij</button>
+                    <button onClick={() => setHarvestLog([])} className="rounded-xl border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.04)] px-4 py-1.5 text-xs font-bold text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/40 transition-colors">✕ Zamknij</button>
                   )}
                 </div>
 
@@ -14350,7 +14350,7 @@ export default function Page() {
 
                   {/* Lewa: ikony zebranych przedmiotów */}
                   <div className="flex-1 min-w-0 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-[#8b6a3e] mb-3">Zebrano</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-3">Zebrano</p>
                     <div className="flex flex-wrap gap-2">
                       {items.map((g, i) => {
                         const _qd = CROP_QUALITY_DEFS[g.quality];
@@ -14408,7 +14408,7 @@ export default function Page() {
 
                     {/* Rozbicie EXP */}
                     <div className="p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[#8b6a3e] mb-2">Rozbicie EXP</p>
+                      <p className="text-xs font-black uppercase tracking-widest text-[#8b6a3e] mb-2">Rozbicie EXP</p>
                       <div className="flex flex-col gap-1">
                         {_qualOrder.filter(q => (_expByQ[q]?.count ?? 0) > 0).map(q => {
                           const _qg = _expByQ[q];
@@ -14426,9 +14426,9 @@ export default function Page() {
                           </div>
                         )}
                       </div>
-                      <div className="mt-2 flex items-center justify-between border-t border-[#8b6a3e]/40 pt-2">
-                        <span className="text-[11px] font-black text-[#d8ba7a]">Razem:</span>
-                        <span className="text-[16px] font-black text-sky-300">+{totalExp} EXP</span>
+                      <div className="mt-3 flex items-center justify-between border-t-2 border-[#8b6a3e]/50 pt-3">
+                        <span className="text-xs font-black text-[#d8ba7a] uppercase tracking-wider">Razem:</span>
+                        <span className="text-xl font-black text-sky-200">+{totalExp} EXP</span>
                       </div>
                     </div>
 
