@@ -384,7 +384,7 @@ const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
 const BASE_PLANT_MS   = 2000;
 const BASE_HARVEST_MS = 2000;
-const BASE_WATER_MS   = 700;
+const BASE_WATER_MS   = 1000;
 
 // ─── Predefiniowane pozycje okna tutoriala (per-step) ───
 const TUT_PANEL_PRESET_POSITIONS: Record<number, {x: number; y: number}> = {
@@ -3127,10 +3127,14 @@ export default function Page() {
   }
 
   async function processOneWaterPlot(plotId: number): Promise<void> {
-    // Fresh check przed pokazaniem wskaźnika
+    // Fresh check — plot mógł stać się niepoprawny czekając w kolejce
     const _fp = plotCropsRef.current[plotId];
-    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) return;
-    // Pokaż wskaźnik „Podlewanie..."
+    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+      if (process.env.NODE_ENV !== "production") console.debug("[water overlay] skip (stale)", { plotId, fp: _fp });
+      return;
+    }
+    // Pokaż overlay dopiero gdy to pole faktycznie zaczyna się podlewać
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
     setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
     // Odczekaj czas animacji
     await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
@@ -3169,11 +3173,13 @@ export default function Page() {
     {
       const _fp = plotCropsRef.current[plotId];
       if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+        if (process.env.NODE_ENV !== "production") console.debug("[water overlay] clear (skip-fresh)", { plotId, fp: _fp });
         setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         return;
       }
     }
     // Zdejmij wskaźnik paska, kontynuuj RPC
+    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] clear (before RPC)", { plotId });
     setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
 
     const plot = getPlotCrop(plotId);
