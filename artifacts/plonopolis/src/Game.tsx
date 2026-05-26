@@ -3329,6 +3329,12 @@ export default function Page() {
       return;
     }
 
+    // Twarda blokada tutorial step 7: tylko pola z Kompostem Przewodnika
+    if (tutorialStep === 7 && plot.compostBonus?.type !== "guide") {
+      setMessage({ type: "info", title: "Przewodnik", text: "Najpierw użyj Kompostu Przewodnika na tym polu." });
+      return;
+    }
+
     // Optymistyczne odliczenie nasiona — natychmiast, zanim timer ruszy.
     // Blokuje race condition gdy gracz szybko klika różne pola.
     setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
@@ -15683,7 +15689,7 @@ export default function Page() {
           const _t4 = tutorialStep === 4
             ? Math.min(3, Object.values(plotCrops).filter(p => p.compostBonus?.type === "guide").length)
             : tutorialPlotIds.length;
-          const _t7 = tutorialStep === 7 ? tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId).length : tutorialPlantedIds.length;
+          const _t7 = tutorialStep === 7 ? tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId && plotCrops[id]?.compostBonus?.type === "guide").length : tutorialPlantedIds.length;
           const _t9 = tutorialWateredIds.length;
           const _t11 = tutorialHarvestedIds.length;
           const _texts: string[] = [
