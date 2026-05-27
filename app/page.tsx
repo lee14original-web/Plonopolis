@@ -1748,7 +1748,7 @@ export default function Page() {
     password: "",
   });
 
-  const [selectedPlotId, setSelectedPlotId] = useState<number | null>(1);
+  const [selectedPlotId, setSelectedPlotId] = useState<number | null>(null);
   const [unlockedPlots, setUnlockedPlots] = useState<number[]>(getDefaultUnlockedPlots());
   const [plotObstacles, setPlotObstacles] = useState<Record<string, { type: string; cost: number }>>({});
   const [plotToBuy, setPlotToBuy] = useState<number | null>(null);
