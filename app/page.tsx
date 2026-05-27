@@ -1801,7 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1313, t: 839, w: 268, h: 395 });
+  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 58, t: 1020, w: 192, h: 232 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -14696,7 +14696,7 @@ export default function Page() {
 
 
 
-          {!!profile?.id && (harvestLog.length > 0 || fvToolEditMode) && isFieldViewOpen && (() => {
+          {!!profile?.id && isFieldViewOpen && (() => {
             const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
@@ -14776,10 +14776,11 @@ export default function Page() {
                 )}
 
                 {/* Zebrano — ikony (max 35 = 5×7, siatka skalowana do szerokości panelu) */}
-                {!fvToolEditMode && items.length > 0 && (
+                {!fvToolEditMode && (
                   <div className="p-1.5">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[#8b6a3e] mb-1">Zebrano</p>
-                    <div className="grid grid-cols-5 gap-1">
+                    {items.length === 0
+                      ? <p className="text-center text-[9px] text-[#8b6a3e] py-3">brak zbiorów</p>
+                      : <div className="grid grid-cols-5 gap-1">
                       {items.slice(0, 35).map((g, i) => {
                         const _qd = CROP_QUALITY_DEFS[g.quality];
                         const _cropDef = CROPS.find(c => c.id === g.cropId);
@@ -14829,6 +14830,7 @@ export default function Page() {
                         );
                       })}
                     </div>
+                    }
                     {items.length > 35 && (
                       <p className="mt-1 text-center text-[8px] text-[#8b6a3e]">+{items.length - 35} więcej</p>
                     )}
