@@ -1718,6 +1718,10 @@ export default function Page() {
     const t = setTimeout(() => setMessage(null), ms);
     return () => clearTimeout(t);
   }, [message]);
+  // Preloading grafik avatarów przy starcie gry — żeby modal otwierał się bez lagów
+  React.useEffect(() => {
+    ALL_SKINS.forEach(src => { const img = new Image(); img.src = src; });
+  }, []);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
@@ -1927,7 +1931,7 @@ export default function Page() {
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
   const [unlockedEpicAvatars, setUnlockedEpicAvatars] = React.useState<number[]>([]);
-  const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("mezczyzni");
+  const [skinTab, setSkinTab] = React.useState<"mezczyzni"|"kobiety"|"wszystkie"|"epickie">("wszystkie");
   const [epicPurchaseTarget, setEpicPurchaseTarget] = React.useState<number|null>(null);
   const [hoveredEpicSkin, setHoveredEpicSkin] = React.useState<number|null>(null);
   const [hoveredNormalSkin, setHoveredNormalSkin] = React.useState<number|null>(null);
@@ -13007,7 +13011,7 @@ export default function Page() {
                 })()}
                 {/* Zakładki */}
                 <div className="mb-6 flex gap-2 justify-center flex-wrap">
-                  {(["mezczyzni","kobiety","epickie","wszystkie"] as const).map(tab => (
+                  {(["wszystkie","mezczyzni","kobiety","epickie"] as const).map(tab => (
                     <button key={tab} onClick={() => setSkinTab(tab)}
                       className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition border ${
                         skinTab === tab
