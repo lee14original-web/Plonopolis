@@ -1795,13 +1795,18 @@ export default function Page() {
   const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 184, w: 192, h: 179 });
   const [fvSeedPickerOpen, setFvSeedPickerOpen] = React.useState(false);
   const [fvCompostPickerOpen, setFvCompostPickerOpen] = React.useState(false);
-  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
+  // ─── Prawa kolumna: narzędzia masowe (premium) ───
+  const [fvCiagnikPos,  setFvCiagnikPos]  = React.useState({ l: 1670, t: 184, w: 192, h: 179 });
+  const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
+  const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
+  const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
+  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
-      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : setFvKompostPos;
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : setFvKombajnPos;
       if (d.mode === "move") {
         setter({
           l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX))),
@@ -5884,6 +5889,134 @@ export default function Page() {
     setKompostRewards(rewards);
     } finally {
       kompostBusyRef.current = false;
+    }
+  }
+
+  // ─── Narzędzia masowe (premium) ───
+
+  function handleBulkCompost() {
+    if (tutorialStep >= 1 && tutorialStep <= 11) {
+      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      return;
+    }
+    if (!profile?.id) return;
+    const compostKey = selectedSeedId;
+    if (!compostKey || !isCompostKey(compostKey)) {
+      setMessage({ type:"info", title:"Ciągnik", text:"Najpierw wybierz kompost z plecaka (kliknij przycisk Kompost po lewej)." });
+      return;
+    }
+    const t = compostTypeFromKey(compostKey);
+    if (!t) return;
+    const value = compostValueFromKey(compostKey);
+    const available = seedInventory[compostKey] ?? 0;
+    if (available <= 0) {
+      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
+      return;
+    }
+    const plotUpdates: Record<number, PlotCropState> = {};
+    let used = 0;
+    for (const plotId of unlockedPlots) {
+      if (used >= available) break;
+      const plot = getPlotCrop(plotId);
+      if (plot.cropId || plot.compostBonus) continue;
+      plotUpdates[plotId] = { ...plot, compostBonus: { type: t, value } };
+      used++;
+    }
+    if (used === 0) {
+      setMessage({ type:"info", title:"Ciągnik", text:"Brak wolnych pól bez kompostu." });
+      return;
+    }
+    setPlotCrops(prev => ({ ...prev, ...plotUpdates }));
+    const newInv = { ...seedInventory };
+    newInv[compostKey] = (newInv[compostKey] ?? 0) - used;
+    if ((newInv[compostKey] ?? 0) <= 0) delete newInv[compostKey];
+    setSeedInventory(newInv);
+    seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - used };
+    if ((seedInventoryRef.current[compostKey] ?? 0) <= 0 && selectedSeedId === compostKey) setSelectedSeedId(null);
+    const _pid = profile.id;
+    const _pu = { ...plotUpdates };
+    const _ni = newInv;
+    compostWriteChainRef.current = compostWriteChainRef.current.then(async () => {
+      const { data: _fr } = await supabase.from("profiles").select("plot_crops").eq("id", _pid).single();
+      const _sp = { ...parsePlotCrops(_fr?.plot_crops) };
+      for (const [id, ps] of Object.entries(_pu)) _sp[Number(id)] = ps;
+      await supabase.from("profiles").update({
+        plot_crops: serializePlotCrops(_sp) as unknown as Record<string, unknown>,
+        seed_inventory: _ni,
+      }).eq("id", _pid);
+    });
+    setMessage({ type:"success", title:"🚜 Ciągnik", text:`Zastosowano kompost na ${used} pol${used === 1 ? "u" : "ach"}.` });
+  }
+
+  function handleBulkPlant() {
+    if (tutorialStep >= 1 && tutorialStep <= 11) {
+      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      return;
+    }
+    const seedId = selectedSeedId;
+    if (!seedId || isCompostKey(seedId) || isGuideCompostKey(seedId)) {
+      setMessage({ type:"info", title:"Ogrodnik", text:"Najpierw wybierz nasiono z plecaka (kliknij przycisk Nasiona po lewej)." });
+      return;
+    }
+    const { quality: _q } = parseQualityKey(seedId);
+    if (_q === "rotten") {
+      setMessage({ type:"info", title:"Ogrodnik", text:"Zgniłe nasiona nie nadają się do sadzenia." });
+      return;
+    }
+    const available = seedInventoryRef.current[seedId] ?? 0;
+    if (available <= 0) {
+      setMessage({ type:"info", title:"Brak nasion", text:"Nie masz już tych nasion w plecaku." });
+      return;
+    }
+    let queued = 0;
+    for (const plotId of unlockedPlots) {
+      if (queued >= available) break;
+      const plot = getPlotCrop(plotId);
+      if (plot.cropId) continue;
+      handlePlantFromSelectedSeed(plotId, seedId);
+      queued++;
+    }
+    if (queued === 0) {
+      setMessage({ type:"info", title:"Ogrodnik", text:"Brak wolnych pól do posadzenia." });
+    } else {
+      setMessage({ type:"success", title:"🌱 Ogrodnik", text:`Sadzę na ${queued} pol${queued === 1 ? "u" : "ach"}…` });
+    }
+  }
+
+  function handleBulkWater() {
+    if (tutorialStep >= 1 && tutorialStep <= 11) {
+      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      return;
+    }
+    let queued = 0;
+    for (const plotId of unlockedPlots) {
+      const plot = getPlotCrop(plotId);
+      if (!plot.cropId || plot.watered || isCropReady(plotId)) continue;
+      void handleWaterPlot(plotId);
+      queued++;
+    }
+    if (queued === 0) {
+      setMessage({ type:"info", title:"Zraszacz", text:"Brak pól do podlania (wszystkie podlane lub gotowe)." });
+    } else {
+      setMessage({ type:"success", title:"💧 Zraszacz", text:`Podlewam ${queued} pol${queued === 1 ? "e" : "i"}…` });
+    }
+  }
+
+  function handleBulkHarvest() {
+    if (tutorialStep >= 1 && tutorialStep <= 11) {
+      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      return;
+    }
+    let queued = 0;
+    for (const plotId of unlockedPlots) {
+      if (!isCropReady(plotId)) continue;
+      void handleHarvestPlot(plotId);
+      queued++;
+    }
+    if (queued === 0) {
+      setMessage({ type:"info", title:"Kombajn", text:"Brak gotowych upraw do zebrania." });
+    } else {
+      setMessage({ type:"success", title:"🌾 Kombajn", text:`Zbieram z ${queued} pol${queued === 1 ? "a" : "i"}…` });
     }
   }
 
@@ -13368,6 +13501,23 @@ export default function Page() {
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-lime-300">♻️ Kompost</p>
                           <p className="font-mono text-xs text-lime-100">l:<span className="font-black text-white">{fvKompostPos.l}</span> t:<span className="font-black text-white">{fvKompostPos.t}</span> w:<span className="font-black text-white">{fvKompostPos.w}</span> h:<span className="font-black text-white">{fvKompostPos.h}</span></p>
                         </div>
+                        <p className="mt-2 mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-orange-300/70">— Prawa kolumna —</p>
+                        <div className="rounded-xl border border-amber-400/30 bg-amber-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-amber-300">🚜 Ciągnik</p>
+                          <p className="font-mono text-xs text-amber-100">l:<span className="font-black text-white">{fvCiagnikPos.l}</span> t:<span className="font-black text-white">{fvCiagnikPos.t}</span> w:<span className="font-black text-white">{fvCiagnikPos.w}</span> h:<span className="font-black text-white">{fvCiagnikPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-emerald-400/30 bg-emerald-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-emerald-300">🌿 Ogrodnik</p>
+                          <p className="font-mono text-xs text-emerald-100">l:<span className="font-black text-white">{fvOgrodnikPos.l}</span> t:<span className="font-black text-white">{fvOgrodnikPos.t}</span> w:<span className="font-black text-white">{fvOgrodnikPos.w}</span> h:<span className="font-black text-white">{fvOgrodnikPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-blue-400/30 bg-blue-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-blue-300">💧 Zraszacz</p>
+                          <p className="font-mono text-xs text-blue-100">l:<span className="font-black text-white">{fvZraszaczPos.l}</span> t:<span className="font-black text-white">{fvZraszaczPos.t}</span> w:<span className="font-black text-white">{fvZraszaczPos.w}</span> h:<span className="font-black text-white">{fvZraszaczPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-yellow-400/30 bg-yellow-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">🌾 Kombajn</p>
+                          <p className="font-mono text-xs text-yellow-100">l:<span className="font-black text-white">{fvKombajnPos.l}</span> t:<span className="font-black text-white">{fvKombajnPos.t}</span> w:<span className="font-black text-white">{fvKombajnPos.w}</span> h:<span className="font-black text-white">{fvKombajnPos.h}</span></p>
+                        </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
                     </div>
@@ -13796,6 +13946,96 @@ export default function Page() {
                       </div>
                     </div>
                   )}
+
+                  {/* ─── Prawa kolumna: narzędzia masowe ─── */}
+
+                  {/* Ciągnik — bulk compost */}
+                  <button
+                    type="button"
+                    onClick={() => { if (!fvToolEditMode) handleBulkCompost(); }}
+                    onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "ciagnik", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvCiagnikPos.l, startT: fvCiagnikPos.t, startW: fvCiagnikPos.w, startH: fvCiagnikPos.h }; } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvCiagnikPos.l, top: fvCiagnikPos.t, width: fvCiagnikPos.w, height: fvCiagnikPos.h }}
+                  >
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Ciągnik</p>
+                    <span className="pointer-events-none text-4xl leading-none">🚜</span>
+                    <p className="mt-1 text-[11px] text-[#a07030] pointer-events-none leading-tight text-center px-1">kompost na wolne pola</p>
+                    {fvToolEditMode && (
+                      <div className="pointer-events-none absolute bottom-1 right-1 flex flex-col items-end gap-0.5">
+                        <p className="font-mono text-[8px] text-orange-300 leading-none">{fvCiagnikPos.l},{fvCiagnikPos.t}</p>
+                        <div
+                          className="pointer-events-auto h-3 w-3 cursor-se-resize rounded-sm bg-orange-400/60"
+                          onMouseDown={(e) => { e.stopPropagation(); fvToolDragRef.current = { btn: "ciagnik", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: fvCiagnikPos.l, startT: fvCiagnikPos.t, startW: fvCiagnikPos.w, startH: fvCiagnikPos.h }; }}
+                        />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Ogrodnik — bulk plant */}
+                  <button
+                    type="button"
+                    onClick={() => { if (!fvToolEditMode) handleBulkPlant(); }}
+                    onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "ogrodnik", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvOgrodnikPos.l, startT: fvOgrodnikPos.t, startW: fvOgrodnikPos.w, startH: fvOgrodnikPos.h }; } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvOgrodnikPos.l, top: fvOgrodnikPos.t, width: fvOgrodnikPos.w, height: fvOgrodnikPos.h }}
+                  >
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Ogrodnik</p>
+                    <span className="pointer-events-none text-4xl leading-none">🌿</span>
+                    <p className="mt-1 text-[11px] text-[#a07030] pointer-events-none leading-tight text-center px-1">sadzi na wszystkich wolnych</p>
+                    {fvToolEditMode && (
+                      <div className="pointer-events-none absolute bottom-1 right-1 flex flex-col items-end gap-0.5">
+                        <p className="font-mono text-[8px] text-orange-300 leading-none">{fvOgrodnikPos.l},{fvOgrodnikPos.t}</p>
+                        <div
+                          className="pointer-events-auto h-3 w-3 cursor-se-resize rounded-sm bg-orange-400/60"
+                          onMouseDown={(e) => { e.stopPropagation(); fvToolDragRef.current = { btn: "ogrodnik", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: fvOgrodnikPos.l, startT: fvOgrodnikPos.t, startW: fvOgrodnikPos.w, startH: fvOgrodnikPos.h }; }}
+                        />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Zraszacz — bulk water */}
+                  <button
+                    type="button"
+                    onClick={() => { if (!fvToolEditMode) handleBulkWater(); }}
+                    onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "zraszacz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvZraszaczPos.l, startT: fvZraszaczPos.t, startW: fvZraszaczPos.w, startH: fvZraszaczPos.h }; } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvZraszaczPos.l, top: fvZraszaczPos.t, width: fvZraszaczPos.w, height: fvZraszaczPos.h }}
+                  >
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Zraszacz</p>
+                    <span className="pointer-events-none text-4xl leading-none">💧</span>
+                    <p className="mt-1 text-[11px] text-[#a07030] pointer-events-none leading-tight text-center px-1">podlewa wszystko co rośnie</p>
+                    {fvToolEditMode && (
+                      <div className="pointer-events-none absolute bottom-1 right-1 flex flex-col items-end gap-0.5">
+                        <p className="font-mono text-[8px] text-orange-300 leading-none">{fvZraszaczPos.l},{fvZraszaczPos.t}</p>
+                        <div
+                          className="pointer-events-auto h-3 w-3 cursor-se-resize rounded-sm bg-orange-400/60"
+                          onMouseDown={(e) => { e.stopPropagation(); fvToolDragRef.current = { btn: "zraszacz", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: fvZraszaczPos.l, startT: fvZraszaczPos.t, startW: fvZraszaczPos.w, startH: fvZraszaczPos.h }; }}
+                        />
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Kombajn — bulk harvest */}
+                  <button
+                    type="button"
+                    onClick={() => { if (!fvToolEditMode) handleBulkHarvest(); }}
+                    onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "kombajn", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvKombajnPos.l, startT: fvKombajnPos.t, startW: fvKombajnPos.w, startH: fvKombajnPos.h }; } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvKombajnPos.l, top: fvKombajnPos.t, width: fvKombajnPos.w, height: fvKombajnPos.h }}
+                  >
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Kombajn</p>
+                    <span className="pointer-events-none text-4xl leading-none">🌾</span>
+                    <p className="mt-1 text-[11px] text-[#a07030] pointer-events-none leading-tight text-center px-1">zbiera wszystkie gotowe</p>
+                    {fvToolEditMode && (
+                      <div className="pointer-events-none absolute bottom-1 right-1 flex flex-col items-end gap-0.5">
+                        <p className="font-mono text-[8px] text-orange-300 leading-none">{fvKombajnPos.l},{fvKombajnPos.t}</p>
+                        <div
+                          className="pointer-events-auto h-3 w-3 cursor-se-resize rounded-sm bg-orange-400/60"
+                          onMouseDown={(e) => { e.stopPropagation(); fvToolDragRef.current = { btn: "kombajn", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: fvKombajnPos.l, startT: fvKombajnPos.t, startW: fvKombajnPos.w, startH: fvKombajnPos.h }; }}
+                        />
+                      </div>
+                    )}
+                  </button>
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
