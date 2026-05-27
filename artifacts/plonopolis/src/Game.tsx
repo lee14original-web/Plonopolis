@@ -3202,23 +3202,25 @@ export default function Page() {
     }
   }
 
-  async function handleWaterPlot(plotId: number, _skipTimer = false) {
+  async function handleWaterPlot(plotId: number, _skipTimer = false, _skipCropCheck = false) {
     if (!profile) return;
 
     if (!_skipTimer) {
-      const _pv = getPlotCrop(plotId);
-      const _cv = getPlantedCrop(plotId);
-      if (!_cv || !_pv.cropId) {
-        setMessage({ fieldOnly: true, type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
-        return;
-      }
-      if (_pv.watered) {
-        setMessage({ fieldOnly: true, type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
-        return;
-      }
-      if (isCropReady(plotId)) {
-        setMessage({ fieldOnly: true, type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
-        return;
+      if (!_skipCropCheck) {
+        const _pv = getPlotCrop(plotId);
+        const _cv = getPlantedCrop(plotId);
+        if (!_cv || !_pv.cropId) {
+          setMessage({ fieldOnly: true, type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+          return;
+        }
+        if (_pv.watered) {
+          setMessage({ fieldOnly: true, type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+          return;
+        }
+        if (isCropReady(plotId)) {
+          setMessage({ fieldOnly: true, type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+          return;
+        }
       }
       enqueuePlotAction(plotId, "water", async () => {
         const _fp = plotCropsRef.current[plotId];
@@ -5985,6 +5987,14 @@ export default function Page() {
     }
     let queued = 0;
     for (const plotId of unlockedPlots) {
+      // Pola kolejkowane przez Ogrodnika — podlej po sadzeniu (kolejka sekwencyjna gwarantuje porządek)
+      if (queuedPlantPlotIds.has(plotId)) {
+        if (!queuedWaterPlotIds.has(plotId)) {
+          void handleWaterPlot(plotId, false, true);
+          queued++;
+        }
+        continue;
+      }
       const plot = getPlotCrop(plotId);
       if (!plot.cropId || plot.watered || isCropReady(plotId)) continue;
       void handleWaterPlot(plotId);
@@ -14657,7 +14667,7 @@ export default function Page() {
 
 
 
-          {!!profile?.id && harvestLog.length > 0 && (() => {
+          {!!profile?.id && isFieldViewOpen && harvestLog.length > 0 && (() => {
             const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
