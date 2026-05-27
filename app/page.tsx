@@ -2650,7 +2650,7 @@ export default function Page() {
       const hasPrevLS  = localStorage.getItem(`plonopolis_prevlv_${source.id}`) !== null;
       const skin = hasSkinLS ? d.skin
         : (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
-          ? source.avatar_skin : 0;
+          ? source.avatar_skin : -1;
       const stats: PlayerStatsMap = hasStatsLS ? d.stats
         : (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats))
           ? source.player_stats as PlayerStatsMap : { ...DEFAULT_STATS };
