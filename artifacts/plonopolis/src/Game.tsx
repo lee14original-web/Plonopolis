@@ -714,48 +714,48 @@ const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:" pkt Wiedzy", flat:true}] },
   { id:"d2",  name:"Rękawice Siewcy",         slot:"dlonie", icon:"🧤", unlockLevel:2,  bonuses:[{base:1,  label:" pkt Wiedzy", flat:true}] },
   { id:"d3",  name:"Rękawice Rolnika",        slot:"dlonie", icon:"🧤", unlockLevel:3,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
-  { id:"d4",  name:"Grabie Ogrodnika",        slot:"dlonie", icon:"🌿", unlockLevel:4,  bonuses:[{base:1,  label:"% speed upraw"}] },
-  { id:"d5",  name:"Rękawice Ziemi",          slot:"dlonie", icon:"🧤", unlockLevel:5,  bonuses:[{base:2,  label:"% efekt kompostu"}] },
+  { id:"d4",  name:"Grabie Ogrodnika",        slot:"dlonie", icon:"🌿", unlockLevel:4,  bonuses:[{base:1,  label:" pkt Wiedzy", flat:true}] },
+  { id:"d5",  name:"Rękawice Ziemi",          slot:"dlonie", icon:"🧤", unlockLevel:5,  bonuses:[{base:2,  label:" pkt Sadownika", flat:true}] },
   { id:"d6",  name:"Łopata Polowa",           slot:"dlonie", icon:"🌿", unlockLevel:6,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
-  { id:"d7",  name:"Rękawice Urodzaju",       slot:"dlonie", icon:"🧤", unlockLevel:7,  bonuses:[{base:1,  label:"% extra harvest"}] },
+  { id:"d7",  name:"Rękawice Urodzaju",       slot:"dlonie", icon:"🧤", unlockLevel:7,  bonuses:[{base:1,  label:" pkt Zrecznosci", flat:true}] },
   { id:"d8",  name:"Kosz Zbieracza",          slot:"dlonie", icon:"🧺", unlockLevel:8,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
-  { id:"d9",  name:"Motyka Rolna",            slot:"dlonie", icon:"⛏️", unlockLevel:9,  bonuses:[{base:2,  label:"% speed upraw"}] },
+  { id:"d9",  name:"Motyka Rolna",            slot:"dlonie", icon:"⛏️", unlockLevel:9,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
   { id:"d10", name:"Sekator Sadu",            slot:"dlonie", icon:"✂️", unlockLevel:10, bonuses:[{base:3,  label:"% speed drzew"}] },
   { id:"d11", name:"Rękawice Farmera",        slot:"dlonie", icon:"🧤", unlockLevel:11, bonuses:[{base:2,  label:"% EXP z upraw"}] },
-  { id:"d12", name:"Rękawice Zbiorów",        slot:"dlonie", icon:"🧤", unlockLevel:12, bonuses:[{base:1,  label:"% extra harvest"}] },
+  { id:"d12", name:"Rękawice Zbiorów",        slot:"dlonie", icon:"🧤", unlockLevel:12, bonuses:[{base:1,  label:" pkt Zrecznosci", flat:true}] },
   { id:"d13", name:"Narzędzia Sadownika",     slot:"dlonie", icon:"🔧", unlockLevel:13, bonuses:[{base:4,  label:"% speed drzew"}] },
-  { id:"d14", name:"Rękawice Nawadniania",    slot:"dlonie", icon:"🧤", unlockLevel:14, bonuses:[{base:3,  label:"% efekt wody"}] },
+  { id:"d14", name:"Rękawice Nawadniania",    slot:"dlonie", icon:"🧤", unlockLevel:14, bonuses:[{base:3,  label:" pkt Zaradnosci", flat:true}] },
   { id:"d15", name:"Rękawice Hodowcy",        slot:"dlonie", icon:"🧤", unlockLevel:15, bonuses:[{base:3,  label:"% reward zwierząt"}] },
   { id:"d16", name:"Srebrny Sekator",         slot:"dlonie", icon:"✂️", unlockLevel:16, bonuses:[{base:5,  label:"% speed drzew"}] },
-  { id:"d17", name:"Rękawice Plonów",         slot:"dlonie", icon:"🧤", unlockLevel:17, bonuses:[{base:2,  label:"% extra harvest"}] },
+  { id:"d17", name:"Rękawice Plonów",         slot:"dlonie", icon:"🧤", unlockLevel:17, bonuses:[{base:2,  label:" pkt Zrecznosci", flat:true}] },
   { id:"d18", name:"Widły Farmera",           slot:"dlonie", icon:"🌿", unlockLevel:18, bonuses:[{base:4,  label:"% EXP z upraw"}] },
   { id:"d19", name:"Narzędzia Mistrza",       slot:"dlonie", icon:"🔧", unlockLevel:19, bonuses:[{base:3,  label:" pkt Wiedzy", flat:true}] },
   { id:"d20", name:"Rękawice Pszczelarza",    slot:"dlonie", icon:"🐝", unlockLevel:20, bonuses:[{base:20, label:"% zużycia stroju"}] },
-  { id:"d21", name:"Motyka Obfitości",        slot:"dlonie", icon:"⛏️", unlockLevel:21, bonuses:[{base:2,  label:"% extra harvest"}] },
+  { id:"d21", name:"Motyka Obfitości",        slot:"dlonie", icon:"⛏️", unlockLevel:21, bonuses:[{base:2,  label:" pkt Zrecznosci", flat:true}] },
   { id:"d22", name:"Rękawice Żniwiarza",      slot:"dlonie", icon:"🧤", unlockLevel:22, bonuses:[{base:4,  label:" pkt Wiedzy", flat:true}] },
   { id:"d23", name:"Sekator Premium",         slot:"dlonie", icon:"✂️", unlockLevel:23, bonuses:[{base:6,  label:"% speed drzew"}] },
-  { id:"d24", name:"Rękawice Natury",         slot:"dlonie", icon:"🧤", unlockLevel:24, bonuses:[{base:3,  label:"% speed upraw"}] },
-  { id:"d25", name:"Mistyczne Dłonie Farmy",  slot:"dlonie", icon:"✨", unlockLevel:25, bonuses:[{base:3, label:" pkt Wiedzy", flat:true},{base:2,label:"% extra harvest"}] },
+  { id:"d24", name:"Rękawice Natury",         slot:"dlonie", icon:"🧤", unlockLevel:24, bonuses:[{base:3,  label:" pkt Wiedzy", flat:true}] },
+  { id:"d25", name:"Mistyczne Dłonie Farmy",  slot:"dlonie", icon:"✨", unlockLevel:25, bonuses:[{base:3, label:" pkt Wiedzy", flat:true},{base:2,label:" pkt Zrecznosci", flat:true}] },
   // ─── NOGI (LVL 1–30) ───
-  { id:"n1",  name:"Stare Kalosze",           slot:"nogi", icon:"👢", unlockLevel:1,  bonuses:[{base:2,  label:"% speed upraw"}] },
-  { id:"n2",  name:"Kalosze Rolnika",         slot:"nogi", icon:"👢", unlockLevel:3,  bonuses:[{base:3,  label:"% speed upraw"}] },
+  { id:"n1",  name:"Stare Kalosze",           slot:"nogi", icon:"👢", unlockLevel:1,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
+  { id:"n2",  name:"Kalosze Rolnika",         slot:"nogi", icon:"👢", unlockLevel:3,  bonuses:[{base:3,  label:" pkt Wiedzy", flat:true}] },
   { id:"n3",  name:"Buty Polowe",             slot:"nogi", icon:"👢", unlockLevel:6,  bonuses:[{base:5,  label:"% efekt podlewania"}] },
   { id:"n4",  name:"Buty Zbieracza",          slot:"nogi", icon:"👢", unlockLevel:9,  bonuses:[{base:4,  label:" pkt Wiedzy", flat:true}] },
   { id:"n5",  name:"Buty Błotne",             slot:"nogi", icon:"👢", unlockLevel:12, bonuses:[{base:8,  label:"% efekt podlewania"}] },
   { id:"n6",  name:"Ostrogi Hodowcy",         slot:"nogi", icon:"⚡", unlockLevel:15, bonuses:[{base:6,  label:"% reward zwierząt"}] },
-  { id:"n7",  name:"Szybkie Kalosze",         slot:"nogi", icon:"👢", unlockLevel:18, bonuses:[{base:6,  label:"% speed upraw"}] },
+  { id:"n7",  name:"Szybkie Kalosze",         slot:"nogi", icon:"👢", unlockLevel:18, bonuses:[{base:6,  label:" pkt Wiedzy", flat:true}] },
   { id:"n8",  name:"Buty Sadownika",          slot:"nogi", icon:"🥾", unlockLevel:21, bonuses:[{base:8,  label:"% speed drzew"}] },
   { id:"n9",  name:"Buty Zaradności",         slot:"nogi", icon:"👢", unlockLevel:24, bonuses:[{base:10, label:"% efekt podlewania"}] },
-  { id:"n10", name:"Buty Burzy",              slot:"nogi", icon:"⚡", unlockLevel:27, bonuses:[{base:8, label:"% speed upraw"},{base:4,label:" pkt Wiedzy", flat:true}] },
-  { id:"n11", name:"Legendarne Kalosze",      slot:"nogi", icon:"👑", unlockLevel:30, bonuses:[{base:10, label:"% speed upraw"}] },
+  { id:"n10", name:"Buty Burzy",              slot:"nogi", icon:"⚡", unlockLevel:27, bonuses:[{base:12, label:" pkt Wiedzy", flat:true}] },
+  { id:"n11", name:"Legendarne Kalosze",      slot:"nogi", icon:"👑", unlockLevel:30, bonuses:[{base:10, label:" pkt Wiedzy", flat:true}] },
   // ─── GŁOWA (LVL 1–30) ───
   { id:"g1",  name:"Słomkowy Kapelusz",       slot:"glowa", icon:"👒", unlockLevel:1,  bonuses:[{base:5,  label:"% EXP z upraw"}] },
-  { id:"g2",  name:"Kapelusz Rolnika",        slot:"glowa", icon:"👒", unlockLevel:5,  bonuses:[{base:5,  label:"% EXP z upraw"},{base:3,label:"% speed upraw"}] },
-  { id:"g3",  name:"Kapelusz Pszczelarza",    slot:"glowa", icon:"🐝", unlockLevel:10, bonuses:[{base:10, label:"% produkcji miodu"},{base:5,label:"% speed upraw"}] },
-  { id:"g4",  name:"Czapka Szczęścia",        slot:"glowa", icon:"🍀", unlockLevel:15, bonuses:[{base:5, label:"% bonus drop"},{base:3,label:"% extra harvest"},{base:5,label:"% EXP"}] },
-  { id:"g5",  name:"Korona Sadownika",        slot:"glowa", icon:"👑", unlockLevel:20, bonuses:[{base:10,label:"% speed drzew"},{base:5,label:"% reward zwierząt"},{base:5,label:"% speed upraw"}] },
-  { id:"g6",  name:"Kapelusz Mistrza Farmy",  slot:"glowa", icon:"🎓", unlockLevel:25, bonuses:[{base:5,label:" pkt Wiedzy",flat:true},{base:10,label:"% EXP"},{base:5,label:"% speed upraw"},{base:3,label:"% extra harvest"}] },
-  { id:"g7",  name:"Korona Plonopolis",       slot:"glowa", icon:"👑", unlockLevel:30, bonuses:[{base:8,label:"% speed upraw"},{base:8,label:"% speed drzew"},{base:8,label:"% reward zwierząt"},{base:5,label:"% extra harvest"}] },
+  { id:"g2",  name:"Kapelusz Rolnika",        slot:"glowa", icon:"👒", unlockLevel:5,  bonuses:[{base:5,  label:"% EXP z upraw"},{base:3,label:" pkt Wiedzy", flat:true}] },
+  { id:"g3",  name:"Kapelusz Pszczelarza",    slot:"glowa", icon:"🐝", unlockLevel:10, bonuses:[{base:10, label:"% produkcji miodu"},{base:5,label:" pkt Wiedzy", flat:true}] },
+  { id:"g4",  name:"Czapka Szczęścia",        slot:"glowa", icon:"🍀", unlockLevel:15, bonuses:[{base:5, label:" pkt Szczescia", flat:true},{base:3,label:" pkt Zrecznosci", flat:true},{base:5,label:"% EXP"}] },
+  { id:"g5",  name:"Korona Sadownika",        slot:"glowa", icon:"👑", unlockLevel:20, bonuses:[{base:10,label:"% speed drzew"},{base:5,label:"% reward zwierząt"},{base:5,label:" pkt Wiedzy", flat:true}] },
+  { id:"g6",  name:"Kapelusz Mistrza Farmy",  slot:"glowa", icon:"🎓", unlockLevel:25, bonuses:[{base:10,label:" pkt Wiedzy",flat:true},{base:10,label:"% EXP"},{base:3,label:" pkt Zrecznosci",flat:true}] },
+  { id:"g7",  name:"Korona Plonopolis",       slot:"glowa", icon:"👑", unlockLevel:30, bonuses:[{base:8,label:" pkt Wiedzy",flat:true},{base:8,label:"% speed drzew"},{base:8,label:"% reward zwierząt"},{base:5,label:" pkt Zrecznosci",flat:true}] },
 ];
 const EQUIP_SLOT_META: Record<EquipSlot,{label:string;icon:string;desc:string}> = {
   dlonie: { label:"Dłonie", icon:"🧤", desc:"Rękawice, narzędzia, przedmioty robocze" },
@@ -2397,7 +2397,7 @@ export default function Page() {
     // Skill Sadownik (rate 0.005) → mnożnik liczby owoców (więcej owoców z drzewa)
     const sadownikBonus = calcStatEffect(effectiveStats.sadownik, 0.005) / 100;
     // Szczęście + eq "% bonus drop" → szansa na rare/golden
-    const luckPct = calcStatEffect(effectiveStats.szczescie, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+    const luckPct = calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025);
     TREES.forEach(t => {
       const st = next[t.id];
       if (!st || st.owned === 0) return;
@@ -3050,26 +3050,25 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(wiedzaEffective, WIEDZA_RATE) / 100;
     const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
-    // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost z eq "% efekt kompostu")
-    const compostBoost = 1 + getEquipBonusPct("% efekt kompostu", charEquipped) / 100;
+    // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost ze Sadownika)
+    const sadownikEff = effectiveStats.sadownik + getEquipFlatBonus(" pkt Sadownika", charEquipped);
+    const compostBoost = 1 + calcStatEffect(sadownikEff, 0.005) / 100;
     const compostMult = plot.compostBonus?.type === "guide"
       ? 0.25  // Kompost Przewodnika: flat −75% czasu wzrostu, bez cap i bez eq boost
       : (plot.compostBonus?.type === "growth")
       ? Math.max(COMPOST_MULT_MIN, 1 - (plot.compostBonus.value * compostBoost / 100))
       : 1;
-    // Bonus z eq: % speed upraw (sumarycznie ze wszystkich slotów)
-    const equipGrowthPct = getEquipBonusPct("% speed upraw", charEquipped) / 100;
-    const equipGrowthMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - equipGrowthPct);
     let totalMult: number;
     if (plot.watered) {
-      const zaradnoscBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
-      // Bonus z eq: % efekt podlewania + % efekt wody (addytywny, nie mnożnik)
-      const waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+      const zaradnoscEff = effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
+      const zaradnoscBonus = calcStatEffect(zaradnoscEff, ZARADNOSC_RATE) / 100;
+      // Bonus z eq: % efekt podlewania (addytywny); pkt Zaradnosci wchłania dawne "% efekt wody"
+      const waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
       const totalWaterReduction = WATER_BASE + zaradnoscBonus + waterEqPct; // addytywny, bez capa
       const waterMult = Math.max(WATER_MULT_MIN, 1 - totalWaterReduction);
-      totalMult = waterMult * wiedzaMult * hiveMult * compostMult * equipGrowthMult;
+      totalMult = waterMult * wiedzaMult * hiveMult * compostMult;
     } else {
-      totalMult = wiedzaMult * hiveMult * compostMult * equipGrowthMult;
+      totalMult = wiedzaMult * hiveMult * compostMult;
     }
     // Globalne minimum: nawet z full buildem nie schodzimy poniżej GROWTH_GLOBAL_MIN_MULT bazowego czasu
     return Math.round(crop.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, totalMult));
@@ -3300,14 +3299,15 @@ export default function Page() {
       }
     }
 
-    const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
-    const _waterEqPct = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+    const _zaradnoscEff = effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
+    const _zaradBonus = calcStatEffect(_zaradnoscEff, ZARADNOSC_RATE) / 100;
+    const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
     const _zaradPct = (WATER_BASE + _zaradBonus + _waterEqPct) * 100;
     setMessage({
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
-        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (min 5% + Zaradność ${effectiveStats.zaradnosc}/100 + ekwipunek).`
+        ? `${crop.name} urośnie o ${_zaradPct.toFixed(1)}% szybciej (min 5% + Zaradność efektywna ${_zaradnoscEff}/100).`
         : `${crop.name} podlana. Rozwijaj Zaradnosc, aby przyspieszac wzrost.`,
     });
   }
@@ -5922,8 +5922,8 @@ export default function Page() {
       // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
       const _harvestDurMs = BASE_HARVEST_MS;
       const _harvestBonusesSnapshot = {
-        extraHarvestPct: getEquipBonusPct("% extra harvest", charEquipped),
-        bonusDropPct:    getEquipBonusPct("% bonus drop", charEquipped),
+        extraHarvestPct: calcStatEffect(effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped), 0.004),
+        bonusDropPct:    calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025),
         expPct:          getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped),
       };
       enqueuePlotAction(plotId, "harvest", async () => {
@@ -12725,7 +12725,7 @@ export default function Page() {
             const ownedTrees = TREES.filter(t => (orchardState[t.id]?.owned ?? 0) > 0);
             const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped);
             const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005);
-            const luckPct = calcStatEffect(playerStats?.szczescie ?? 0, 0.0025) + getEquipBonusPct("% bonus drop", charEquipped);
+            const luckPct = calcStatEffect((playerStats?.szczescie ?? 0) + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025);
             const fmtTime = (ms: number) => {
               if (ms <= 0) return "Gotowe!";
               const s = Math.floor(ms/1000);
@@ -13574,18 +13574,17 @@ export default function Page() {
                                           const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE);
                                           const _wiedzaPct = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw);
                                           const _hivePct = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
-                                          const _equipPct = Math.min((1 - EQUIP_GROWTH_MULT_MIN) * 100, getEquipBonusPct("% speed upraw", charEquipped));
                                           const _wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - _wiedzaPct / 100);
                                           const _hiveMult = Math.max(HIVE_MULT_MIN, 1 - _hivePct / 100);
-                                          const _equipMult = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - _equipPct / 100);
-                                          const _effMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult * _hiveMult * _equipMult));
-                                          const _zaradBonus = calcStatEffect(effectiveStats.zaradnosc ?? 0, ZARADNOSC_RATE);
-                                          const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
+                                          const _effMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult * _hiveMult));
+                                          const _zaradnoscEff2 = (effectiveStats.zaradnosc ?? 0) + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
+                                          const _zaradBonus = calcStatEffect(_zaradnoscEff2, ZARADNOSC_RATE);
+                                          const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped);
                                           const _waterTotalPct = (WATER_BASE * 100) + _zaradBonus + _waterEqPct;
-                                          const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100) * _wiedzaMult * _hiveMult * _equipMult));
+                                          const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100) * _wiedzaMult * _hiveMult));
                                           const _fmt = (ms: number) => { const t = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(t/3600); const m = Math.floor((t%3600)/60); const s = t%60; return h > 0 ? `${h}h ${m}min ${s}s` : m > 0 ? `${m}min ${s}s` : `${s}s`; };
                                           const _savedPct = Math.round(((_baseMs - _effMs) / _baseMs) * 100);
-                                          const _showBonus = _wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0;
+                                          const _showBonus = _wiedzaPct > 0 || _hivePct > 0;
                                           // Plony i EXP zależne od jakości
                                           const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
                                           const yieldText = q === "legendary" ? (crop.yieldAmount <= 2 ? "20–60 zw. + 5–12 epic." : "30–80 zw. + 8–18 epic.") : q === "epic" ? (crop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt.") : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
@@ -13657,7 +13656,7 @@ export default function Page() {
                                                 <div className="flex gap-3 text-[12px] text-[#8b6a3e]/60 mt-0.5 border-t border-white/5 pt-1.5">
                                                   {_wiedzaPct > 0 && <span>🧠 −{_wiedzaPct.toFixed(1)}%</span>}
                                                   {_hivePct > 0 && <span>🍯 −{_hivePct.toFixed(1)}%</span>}
-                                                  {_equipPct > 0 && <span>🧤 −{parseFloat(_equipPct.toFixed(1))}%</span>}
+                                                  
                                                 </div>
                                               )}
                                             </>
@@ -14422,18 +14421,18 @@ export default function Page() {
 
             // ── Aktywne bonusy zbioru (bieżący stan eq + statystyki) ──────────
             const _eqExpPct    = Math.round(getEquipBonusPct("% EXP z upraw", charEquipped) + getEquipBonusPct("% EXP", charEquipped));
-            const _eqExtraPct  = Math.round(getEquipBonusPct("% extra harvest", charEquipped));
-            const _eqDropPct   = Math.round(getEquipBonusPct("% bonus drop", charEquipped));
-            const _eqUprawPct  = Math.round(getEquipBonusPct("% speed upraw", charEquipped));
-            const _eqKompostPct= Math.round(getEquipBonusPct("% efekt kompostu", charEquipped));
             const _eqWiedzaPkt = Math.round(getEquipFlatBonus(" pkt Wiedzy", charEquipped));
-            const _stWiedza    = (effectiveStats.wiedza ?? 0) + _eqWiedzaPkt;
-            const _stZrecznosc = effectiveStats.zrecznosc ?? 0;
-            const _stZaradnosc = effectiveStats.zaradnosc ?? 0;
-            const _stSzczescie = effectiveStats.szczescie ?? 0;
+            const _eqZrecznPkt = Math.round(getEquipFlatBonus(" pkt Zrecznosci", charEquipped));
+            const _eqSzescPkt  = Math.round(getEquipFlatBonus(" pkt Szczescia", charEquipped));
+            const _eqSadownPkt = Math.round(getEquipFlatBonus(" pkt Sadownika", charEquipped));
+            const _eqZaradPkt  = Math.round(getEquipFlatBonus(" pkt Zaradnosci", charEquipped));
+            const _stWiedza    = (effectiveStats.wiedza    ?? 0) + _eqWiedzaPkt;
+            const _stZrecznosc = (effectiveStats.zrecznosc ?? 0) + _eqZrecznPkt;
+            const _stZaradnosc = (effectiveStats.zaradnosc ?? 0) + _eqZaradPkt;
+            const _stSzczescie = (effectiveStats.szczescie ?? 0) + _eqSzescPkt;
+            const _stSadownik  = (effectiveStats.sadownik  ?? 0) + _eqSadownPkt;
             const _hasAnyBonus = _stWiedza > 0 || _stZrecznosc > 0 || _stZaradnosc > 0 || _stSzczescie > 0
-              || _eqExpPct > 0 || _eqExtraPct > 0 || _eqDropPct > 0
-              || _eqUprawPct > 0 || _eqKompostPct > 0 || _logCompostExpPct > 0
+              || _stSadownik > 0 || _eqExpPct > 0 || _logCompostExpPct > 0
               || _logCompostGrowthPct > 0 || _logCompostYield > 0;
 
             return (
@@ -14553,34 +14552,16 @@ export default function Page() {
                               <span className="text-purple-300 shrink-0">+{Math.round(calcStatEffect(_stSzczescie, 0.0025))}% drop</span>
                             </div>
                           )}
+                          {_stSadownik > 0 && (
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[#c8b890]">🌳 Sadownik {_stSadownik}</span>
+                              <span className="text-green-300 shrink-0">+{Math.round(calcStatEffect(_stSadownik, 0.005))}% kompost</span>
+                            </div>
+                          )}
                           {_eqExpPct > 0 && (
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-[#c8b890]">🧤 EXP z upraw</span>
                               <span className="text-amber-300 shrink-0">+{_eqExpPct}%</span>
-                            </div>
-                          )}
-                          {_eqExtraPct > 0 && (
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[#c8b890]">🌾 Bonus plon</span>
-                              <span className="text-amber-300 shrink-0">+{_eqExtraPct}%</span>
-                            </div>
-                          )}
-                          {_eqDropPct > 0 && (
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[#c8b890]">🍀 Bonus drop</span>
-                              <span className="text-amber-300 shrink-0">+{_eqDropPct}%</span>
-                            </div>
-                          )}
-                          {_eqUprawPct > 0 && (
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[#c8b890]">🌱 Speed upraw</span>
-                              <span className="text-amber-300 shrink-0">+{_eqUprawPct}%</span>
-                            </div>
-                          )}
-                          {_eqKompostPct > 0 && (
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[#c8b890]">🌿 Efekt kompostu</span>
-                              <span className="text-green-300 shrink-0">+{_eqKompostPct}%</span>
                             </div>
                           )}
                           {_logCompostGrowthPct > 0 && (
@@ -14815,10 +14796,10 @@ export default function Page() {
         >
           <p className="mb-1 font-black text-yellow-300">Sierp — Zbierz</p>
           <p className="mb-3 text-[18px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
-          <p className="mb-1">Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(effectiveStats.zrecznosc, 0.004).toFixed(1)}%)</span></p>
-          <p className="text-[16px] text-[#8b6a3e] mb-2">z Zręczności ({effectiveStats.zrecznosc}/100{effectiveStats.zrecznosc !== playerStats.zrecznosc ? `, w tym +${effectiveStats.zrecznosc - playerStats.zrecznosc} z avatara` : ""})</p>
-          <p className="mb-1">Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(effectiveStats.szczescie, 0.0025).toFixed(1)}%)</span></p>
-          <p className="text-[16px] text-[#8b6a3e]">ze Szczęścia ({effectiveStats.szczescie}/100{effectiveStats.szczescie !== playerStats.szczescie ? `, w tym +${effectiveStats.szczescie - playerStats.szczescie} z avatara` : ""})</p>
+          <p className="mb-1">Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped), 0.004).toFixed(1)}%)</span></p>
+          <p className="text-[16px] text-[#8b6a3e] mb-2">Zręczność: {effectiveStats.zrecznosc} stat + {getEquipFlatBonus(" pkt Zrecznosci", charEquipped)} pkt z eq</p>
+          <p className="mb-1">Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025).toFixed(1)}%)</span></p>
+          <p className="text-[16px] text-[#8b6a3e]">Szczęście: {effectiveStats.szczescie} stat + {getEquipFlatBonus(" pkt Szczescia", charEquipped)} pkt z eq</p>
         </div>
       )}
     {/* Tooltip Ul — zablokowany */}
@@ -14983,12 +14964,13 @@ export default function Page() {
           style={{ left: Math.min(mousePos.x + 18, BASE_W - 300), top: Math.max(8, mousePos.y - 220) }}
         >
           <p className="mb-1 font-black text-cyan-300">Konewka</p>
-          <p className="mb-2 text-[18px] text-[#8b6a3e]">Skraca czas wzrostu — min 5% zawsze, rośnie z Zaradnością i ekwipunkiem (addytywnie, bez limitu)</p>
+          <p className="mb-2 text-[18px] text-[#8b6a3e]">Skraca czas wzrostu — min 5% zawsze, rośnie z Zaradnością i pkt Zaradności z ekwipunku (addytywnie, bez limitu)</p>
           <p>Skraca czas wzrostu o <span className="font-bold text-cyan-300">{(() => {
-            const _zb = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE) / 100;
-            const _we = (getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped)) / 100;
+            const _zaradEff = effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
+            const _zb = calcStatEffect(_zaradEff, ZARADNOSC_RATE) / 100;
+            const _we = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
             return ((WATER_BASE + _zb + _we) * 100).toFixed(1);
-          })()}%</span> (twoja Zaradność: {effectiveStats.zaradnosc}/100{effectiveStats.zaradnosc !== playerStats.zaradnosc ? `, w tym +${effectiveStats.zaradnosc - playerStats.zaradnosc} z avatara` : ""})</p>
+          })()}%</span> (Zaradność efektywna: {effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped)}/100)</p>
           <p className="mt-1">Roślinę można podlać <span className="font-bold text-yellow-300">max 1 raz</span></p>
         </div>
       )}
@@ -15016,19 +14998,17 @@ export default function Page() {
               const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE); // % redukcji surowy
               const _wiedzaPct   = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw); // cap
               const _hivePct     = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
-              const _equipPct    = Math.min((1 - EQUIP_GROWTH_MULT_MIN) * 100, getEquipBonusPct("% speed upraw", charEquipped));
               const _wiedzaMult  = Math.max(WIEDZA_MULT_MIN, 1 - _wiedzaPct / 100);
               const _hiveMult    = Math.max(HIVE_MULT_MIN, 1 - _hivePct / 100);
-              const _equipMult   = Math.max(EQUIP_GROWTH_MULT_MIN, 1 - _equipPct / 100);
-              const _totalMultDry = _wiedzaMult * _hiveMult * _equipMult;
+              const _totalMultDry = _wiedzaMult * _hiveMult;
               const _effMs       = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultDry));
               // Bonus z wody (jeśli podlejesz) — orientacyjnie z aktualnymi statami/eq
-              const _zaradnosc   = effectiveStats.zaradnosc ?? 0;
+              const _zaradnosc   = (effectiveStats.zaradnosc ?? 0) + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
               const _zaradBonus  = calcStatEffect(_zaradnosc, ZARADNOSC_RATE);
-              const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped) + getEquipBonusPct("% efekt wody", charEquipped);
+              const _waterEqPct  = getEquipBonusPct("% efekt podlewania", charEquipped);
               const _waterTotalPct = (WATER_BASE * 100) + _zaradBonus + _waterEqPct; // addytywny
               const _waterMult   = Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100);
-              const _totalMultWet = _waterMult * _wiedzaMult * _hiveMult * _equipMult;
+              const _totalMultWet = _waterMult * _wiedzaMult * _hiveMult;
               const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _totalMultWet));
               const _hitGlobalMin = _totalMultWet < GROWTH_GLOBAL_MIN_MULT;
               const _fmt = (ms: number) => {
@@ -15049,11 +15029,10 @@ export default function Page() {
                   <div className="mt-1 rounded-lg bg-black/30 p-2 text-[13px]">
                     <p className="font-bold text-[#f9e7b2]">⏱ Twój czas: <span className="text-emerald-300">{_fmt(_effMs)}</span></p>
                     <p className="text-[11px] text-[#8b6a3e]">Bazowo: {_fmt(_baseMs)}{_saved > 0 && <> · oszczędzasz <span className="text-emerald-400 font-bold">{_fmt(_saved)}</span> ({_savedPct}%)</>}</p>
-                    {(_wiedzaPct > 0 || _hivePct > 0 || _equipPct > 0) && (
+                    {(_wiedzaPct > 0 || _hivePct > 0) && (
                       <div className="mt-1.5 space-y-0.5 text-[12px]">
                         {_wiedzaPct > 0 && <p>📚 Wiedza ({_wiedzaEff}): <span className="text-emerald-300">−{_wiedzaPct.toFixed(1)}%</span></p>}
                         {_hivePct > 0 && <p>🍯 Ul (poz. {hiveData.level}): <span className="text-emerald-300">−{_hivePct}%</span></p>}
-                        {_equipPct > 0 && <p>👕 Ekwipunek (% speed upraw): <span className="text-emerald-300">−{_equipPct}%</span></p>}
                       </div>
                     )}
                     {_waterTotalPct > 0 && (
