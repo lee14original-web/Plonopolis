@@ -3132,9 +3132,20 @@ export default function Page() {
   // ─── Ujednolicona kolejka akcji polowych — sekwencyjne przetwarzanie ───
 
   function enqueuePlotAction(plotId: number, kind: string, execute: () => Promise<void>) {
-    if (!profile) return;
-    if (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === kind) return;
-    if (fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === kind)) return;
+    if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] enqueuePlotAction", { plotId, kind, active: fieldQueueActiveRef.current, queueLen: fieldQueueRef.current.length });
+    if (!profile) {
+      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT no-profile", { plotId, kind });
+      return;
+    }
+    if (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === kind) {
+      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT dedup-active", { plotId, kind });
+      return;
+    }
+    if (fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === kind)) {
+      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT dedup-queue", { plotId, kind });
+      return;
+    }
+    if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] ACCEPT", { plotId, kind, newQueueLen: fieldQueueRef.current.length + 1 });
     // Dla harvest: zawiń execute — dodaj do queuedHarvestPlotIds i usuń po zakończeniu
     const wrappedExecute = kind === "harvest"
       ? async () => { try { await execute(); } finally { setQueuedHarvestPlotIds(prev => { const s = new Set(prev); s.delete(plotId); return s; }); } }
@@ -3295,45 +3306,33 @@ export default function Page() {
     });
   }
 
-  async function handlePlantFromSelectedSeed(plotId: number, overrideSeedId?: string) {
+  async function handlePlantFromSelectedSeed(plotId: number, overrideSeedId?: string, _fromDrag = false) {
     if (!profile) return;
     const effectiveSeedId = overrideSeedId ?? selectedSeedId;
 
     if (!effectiveSeedId) {
-      setMessage({
-        type: "info",
-        title: "Brak nasiona",
-        text: "Wybierz nasiono z plecaka.",
-      });
+      if (!_fromDrag) setMessage({ type: "info", title: "Brak nasiona", text: "Wybierz nasiono z plecaka." });
       return;
     }
 
     const { baseCropId: _baseCropId, quality: _seedQuality } = parseQualityKey(effectiveSeedId);
-      if (_seedQuality === "rotten") {
-        setMessage({ type: "info", title: "Nie można posadzić", text: "Zepsuta uprawa nie nadaje się do sadzenia. Może przydać się do kompostu." });
-        return;
-      }
-      const crop = CROPS.find((item) => item.id === _baseCropId);
+    if (_seedQuality === "rotten") {
+      if (!_fromDrag) setMessage({ type: "info", title: "Nie można posadzić", text: "Zepsuta uprawa nie nadaje się do sadzenia. Może przydać się do kompostu." });
+      return;
+    }
+    const crop = CROPS.find((item) => item.id === _baseCropId);
     if (!crop) return;
 
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Pole zajęte",
-        text: "Na tym polu już coś rośnie.",
-      });
+      if (!_fromDrag) setMessage({ type: "info", title: "Pole zajęte", text: "Na tym polu już coś rośnie." });
       return;
     }
 
     const amount = seedInventoryRef.current[effectiveSeedId] ?? 0;
     if (amount <= 0) {
-      setMessage({
-        type: "info",
-        title: "Brak nasion",
-        text: "Nie masz już tych nasion w plecaku.",
-      });
+      if (!_fromDrag) setMessage({ type: "info", title: "Brak nasion", text: "Nie masz już tych nasion w plecaku." });
       return;
     }
 
@@ -3342,13 +3341,13 @@ export default function Page() {
       (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "plant") ||
       fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "plant")
     ) {
-      setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
+      if (!_fromDrag) setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
     }
 
     // Twarda blokada tutorial step 7: tylko pola z Kompostem Przewodnika
     if (tutorialStep === 7 && plot.compostBonus?.type !== "guide") {
-      setMessage({ type: "info", title: "Przewodnik", text: "Najpierw użyj Kompostu Przewodnika na tym polu." });
+      if (!_fromDrag) setMessage({ type: "info", title: "Przewodnik", text: "Najpierw użyj Kompostu Przewodnika na tym polu." });
       return;
     }
 
@@ -3388,26 +3387,32 @@ export default function Page() {
     if (!isDraggingPlantRef.current) return;
     if (dragPlantedFieldsRef.current.has(plotId)) return;
     if (!isPlotUnlocked(plotId)) return;
-    if (pendingFieldActions[plotId]) return;
-    const plot = getPlotCrop(plotId);
+    // Dedup przez ref (nie React state) — unika stale closure przy szybkim drag
+    if (fieldQueueActiveRef.current?.plotId === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) {
+      if (process.env.NODE_ENV !== "production") console.debug("[drag] skip — plotId in queue/active", { plotId });
+      return;
+    }
+    // Świeże dane pola z ref (plotCropsRef zawsze aktualny po applyProfileState)
+    const _fp = plotCropsRef.current[plotId];
+    if (process.env.NODE_ENV !== "production") console.debug("[drag] tryApplyFieldAction", { plotId, cropId: _fp?.cropId, tool: selectedTool, seed: selectedSeedId });
 
     // Konewka
     if (selectedTool === "watering_can") {
-      if (!plot.cropId || plot.watered || isCropReady(plotId)) return;
+      if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) return;
       dragPlantedFieldsRef.current.add(plotId);
       void handleWaterPlot(plotId);
       return;
     }
     // Sierp
     if (selectedTool === "sickle") {
-      if (!plot.cropId || !isCropReady(plotId)) return;
+      if (!_fp?.cropId || !isCropReady(plotId)) return;
       dragPlantedFieldsRef.current.add(plotId);
-      void handleHarvestPlot(plotId);
+      void handleHarvestPlot(plotId, false, undefined, true);
       return;
     }
     // Kompost
     if (selectedSeedId && isCompostKey(selectedSeedId)) {
-      if (plot.cropId || plot.compostBonus) return;
+      if (_fp?.cropId || _fp?.compostBonus) return;
       if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) { isDraggingPlantRef.current = false; return; }
       dragPlantedFieldsRef.current.add(plotId);
       void applyCompostToPlot(plotId, selectedSeedId);
@@ -3415,16 +3420,16 @@ export default function Page() {
     }
     // Nasiono
     if (selectedSeedId) {
-      if (plot.cropId) return;
+      if (_fp?.cropId) return;
       if ((seedInventoryRef.current[selectedSeedId] ?? 0) <= 0) { isDraggingPlantRef.current = false; return; }
       dragPlantedFieldsRef.current.add(plotId);
-      void handlePlantFromSelectedSeed(plotId);
+      void handlePlantFromSelectedSeed(plotId, undefined, true);
       return;
     }
     // Brak narzędzia/nasiona — zbierz gotowy plon
-    if (plot.cropId && isCropReady(plotId)) {
+    if (_fp?.cropId && isCropReady(plotId)) {
       dragPlantedFieldsRef.current.add(plotId);
-      void handleHarvestPlot(plotId);
+      void handleHarvestPlot(plotId, false, undefined, true);
     }
   }
 
@@ -3472,6 +3477,11 @@ export default function Page() {
 
       // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
       const _preservedCompostBonus = _freshPlot?.compostBonus ?? null;
+      // Snapshot bonusów kompostu WSZYSTKICH pól — applyProfileState może wymazać inne pola przy nadpisaniu plotCrops
+      const _allCompostSnapshot: Record<number, CompostBonus> = {};
+      for (const [_id, _p] of Object.entries(plotCropsRef.current)) {
+        if (_p.compostBonus) _allCompostSnapshot[Number(_id)] = _p.compostBonus;
+      }
 
       const { data, error } = await supabase.rpc("game_plant_crop", {
         p_plot_id: plotId,
@@ -3517,6 +3527,26 @@ export default function Page() {
       if (typeof window !== "undefined" && profile?.id) {
         const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
         localStorage.setItem(_pqKey, _seedQuality ?? "good");
+      }
+
+      // Przywróć bonusy kompostu dla INNYCH pól po applyProfileState
+      // applyProfileState robi setPlotCrops(_loadedPlots) — serwer może nie zwrócić compostBonus dla pól których nie ruszał
+      // UWAGA: aktualny plotId pomijamy — stan po RPC jest źródłem prawdy dla sadzonej działki
+      if (Object.keys(_allCompostSnapshot).length > 0) {
+        setPlotCrops(prev => {
+          let _changed = false;
+          const _merged = { ...prev };
+          for (const [_sid, _bonus] of Object.entries(_allCompostSnapshot)) {
+            const _pid = Number(_sid);
+            if (_pid === plotId) continue; // plant RPC jest źródłem prawdy dla tej działki
+            const _curr = _merged[_pid];
+            if (_curr && !_curr.compostBonus) {
+              _merged[_pid] = { ..._curr, compostBonus: _bonus };
+              _changed = true;
+            }
+          }
+          return _changed ? _merged : prev;
+        });
       }
 
       // Jeśli serwer zgubił bonus kompostu przy sadzeniu — przywróć go i zapisz
@@ -5821,35 +5851,24 @@ export default function Page() {
     plotId: number,
     _skipTimer: boolean = false,
     _snapBonusesArg?: { extraHarvestPct?: number; bonusDropPct?: number; expPct?: number },
+    _fromDrag = false,
   ) {
     if (!profile) return;
 
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) {
-      setMessage({
-        type: "info",
-        title: "Puste pole",
-        text: "Najpierw coś posadź na tym polu.",
-      });
+      if (!_fromDrag) setMessage({ type: "info", title: "Puste pole", text: "Najpierw coś posadź na tym polu." });
       return;
     }
 
     const crop = CROPS.find((item) => item.id === plot.cropId);
     if (!crop) {
-      setMessage({
-        type: "error",
-        title: "Nieznana uprawa",
-        text: "Nie udało się rozpoznać uprawy na tym polu.",
-      });
+      if (!_fromDrag) setMessage({ type: "error", title: "Nieznana uprawa", text: "Nie udało się rozpoznać uprawy na tym polu." });
       return;
     }
 
     if (!isCropReady(plotId)) {
-      setMessage({
-        type: "info",
-        title: "Uprawa jeszcze rośnie",
-        text: `${crop.name} będzie gotowa za około ${formatHMS(getRemainingGrowthSeconds(plotId))}.`,
-      });
+      if (!_fromDrag) setMessage({ type: "info", title: "Uprawa jeszcze rośnie", text: `${crop.name} będzie gotowa za około ${formatHMS(getRemainingGrowthSeconds(plotId))}.` });
       return;
     }
 
@@ -13759,7 +13778,16 @@ export default function Page() {
                       className="h-full w-full object-contain"
                     />
 
-                    <div className="absolute inset-0">
+                    <div
+                      className="absolute inset-0"
+                      onMouseMove={(e) => {
+                        if (!isDraggingPlantRef.current) return;
+                        const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+                        const btn = el?.closest('[data-plotid]') as HTMLElement | null;
+                        const _pid = btn ? Number(btn.dataset.plotid) : 0;
+                        if (_pid > 0) tryApplyFieldAction(_pid);
+                      }}
+                    >
                       {(fieldHitboxEditMode
                         ? Array.from({length:100},(_,i)=>({ id:i+1, left:`${fhCols[i%10].toFixed(1)}%`, top:`${fhRows[Math.floor(i/10)].toFixed(1)}%`, width:`${fhCellW.toFixed(1)}%`, height:`${fhCellH.toFixed(1)}%` }))
                         : FIELD_VIEW_PLOTS
@@ -13782,6 +13810,7 @@ export default function Page() {
                           <button
                             key={plotId}
                             data-tutorial-target={_tutKey ?? undefined}
+                            data-plotid={plotId}
                             type="button"
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
