@@ -72,6 +72,7 @@ type Message = {
   type: "success" | "error" | "info";
   title: string;
   text: string;
+  fieldOnly?: boolean;
 };
 
 type GameMessage = {
@@ -3208,15 +3209,15 @@ export default function Page() {
       const _pv = getPlotCrop(plotId);
       const _cv = getPlantedCrop(plotId);
       if (!_cv || !_pv.cropId) {
-        setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+        setMessage({ fieldOnly: true, type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
         return;
       }
       if (_pv.watered) {
-        setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+        setMessage({ fieldOnly: true, type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
         return;
       }
       if (isCropReady(plotId)) {
-        setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+        setMessage({ fieldOnly: true, type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
         return;
       }
       enqueuePlotAction(plotId, "water", async () => {
@@ -3257,7 +3258,7 @@ export default function Page() {
     });
 
     if (error) {
-      setMessage({
+      setMessage({ fieldOnly: true,
         type: "error",
         title: "Błąd podlewania",
         text: error.message,
@@ -3327,7 +3328,7 @@ export default function Page() {
     const _zaradBonus = calcStatEffect(_zaradnoscEff, ZARADNOSC_RATE) / 100;
     const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
     const _zaradPct = (WATER_BASE + _zaradBonus + _waterEqPct) * 100;
-    setMessage({
+    setMessage({ fieldOnly: true,
       type: "success",
       title: "Podlano pole 💧",
       text: _zaradPct > 0
@@ -3341,13 +3342,13 @@ export default function Page() {
     const effectiveSeedId = overrideSeedId ?? selectedSeedId;
 
     if (!effectiveSeedId) {
-      if (!_fromDrag) setMessage({ type: "info", title: "Brak nasiona", text: "Wybierz nasiono z plecaka." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Brak nasiona", text: "Wybierz nasiono z plecaka." });
       return;
     }
 
     const { baseCropId: _baseCropId, quality: _seedQuality } = parseQualityKey(effectiveSeedId);
     if (_seedQuality === "rotten") {
-      if (!_fromDrag) setMessage({ type: "info", title: "Nie można posadzić", text: "Zepsuta uprawa nie nadaje się do sadzenia. Może przydać się do kompostu." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Nie można posadzić", text: "Zepsuta uprawa nie nadaje się do sadzenia. Może przydać się do kompostu." });
       return;
     }
     const crop = CROPS.find((item) => item.id === _baseCropId);
@@ -3356,13 +3357,13 @@ export default function Page() {
     const plot = getPlotCrop(plotId);
 
     if (plot.cropId) {
-      if (!_fromDrag) setMessage({ type: "info", title: "Pole zajęte", text: "Na tym polu już coś rośnie." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Pole zajęte", text: "Na tym polu już coś rośnie." });
       return;
     }
 
     const amount = seedInventoryRef.current[effectiveSeedId] ?? 0;
     if (amount <= 0) {
-      if (!_fromDrag) setMessage({ type: "info", title: "Brak nasion", text: "Nie masz już tych nasion w plecaku." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Brak nasion", text: "Nie masz już tych nasion w plecaku." });
       return;
     }
 
@@ -3371,13 +3372,13 @@ export default function Page() {
       (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "plant") ||
       fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "plant")
     ) {
-      if (!_fromDrag) setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
     }
 
     // Twarda blokada tutorial step 7: tylko pola z Kompostem Przewodnika
     if (tutorialStep === 7 && plot.compostBonus?.type !== "guide") {
-      if (!_fromDrag) setMessage({ type: "info", title: "Przewodnik", text: "Najpierw użyj Kompostu Przewodnika na tym polu." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Przewodnik", text: "Najpierw użyj Kompostu Przewodnika na tym polu." });
       return;
     }
 
@@ -3479,14 +3480,14 @@ export default function Page() {
       // Używamy refs do FRESH state zamiast captured closures
       const _freshPlot: PlotCropState | undefined = plotCropsRef.current[plotId];
       if (_freshPlot?.cropId) {
-        setMessage({ type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
+        setMessage({ fieldOnly: true, type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
         _restoreSeed();
         return;
       }
       const _freshInv = seedInventoryRef.current;
       const _freshAmount = _freshInv[effectiveSeedId] ?? 0;
       if (_freshAmount < 0) {
-        setMessage({ type: "info", title: "Brak nasion", text: "W międzyczasie skończyły się nasiona." });
+        setMessage({ fieldOnly: true, type: "info", title: "Brak nasion", text: "W międzyczasie skończyły się nasiona." });
         // Nie przywracamy — nasiono już zostało odliczone, inny plot je "zużył"
         return;
       }
@@ -3535,14 +3536,14 @@ export default function Page() {
             // Brak odpowiedzi — usuń pole z lokalnych odblokowanych
             setUnlockedPlots(prev => prev.filter(id => id !== plotId));
           }
-          setMessage({
+          setMessage({ fieldOnly: true,
             type: "error",
             title: "Pole nie jest odblokowane",
             text: `Pole #${plotId} nie jest odblokowane w bazie danych. Stan lokalny został zsynchronizowany — kliknij pole, aby je odblokować.`,
           });
           return;
         }
-        setMessage({
+        setMessage({ fieldOnly: true,
           type: "error",
           title: "Błąd sadzenia",
           text: error.message,
@@ -3639,11 +3640,11 @@ export default function Page() {
           const _planted = tutorialPlotIds.filter(id => !!plotCropsRef.current[id]?.cropId).length;
           if (_planted >= 3) void advanceTutorialStep(8);
         } else if (tutorialPlotIds.length > 0) {
-          setMessage({ type: "info", title: "Przewodnik", text: "Posadź marchewki na polach z Kompostem Przewodnika." });
+          setMessage({ fieldOnly: true, type: "info", title: "Przewodnik", text: "Posadź marchewki na polach z Kompostem Przewodnika." });
           return;
         }
       }
-      setMessage({
+      setMessage({ fieldOnly: true,
         type: "success",
         title: "Posadzono uprawę",
         text: `Posadzono ${crop.name.toLowerCase()} na polu #${plotId}.`,
@@ -5507,7 +5508,7 @@ export default function Page() {
     const plotCost = getPlotUnlockCost(plotId);
 
     if (displayMoney < plotCost) {
-      setMessage({
+      setMessage({ fieldOnly: true,
         type: "error",
         title: "Za mało pieniędzy",
         text: `Potrzebujesz ${plotCost} PLN, aby kupić pole #${plotId}.`,
@@ -5536,16 +5537,16 @@ export default function Page() {
           setPlotToBuy(null);
           setSelectedPlotId(null);
           if (freshUnlocked.includes(plotId)) {
-            setMessage({ type: "info", title: "Stan zsynchronizowany", text: `Pole #${plotId} jest już odblokowane — stan lokalny został naprawiony.` });
+            setMessage({ fieldOnly: true, type: "info", title: "Stan zsynchronizowany", text: `Pole #${plotId} jest już odblokowane — stan lokalny został naprawiony.` });
           } else {
-            setMessage({ type: "error", title: "Nie można odblokować pola", text: `Pole #${plotId} nie ma danych przeszkody w bazie. Skontaktuj się z administratorem lub zresetuj przeszkody w ustawieniach.` });
+            setMessage({ fieldOnly: true, type: "error", title: "Nie można odblokować pola", text: `Pole #${plotId} nie ma danych przeszkody w bazie. Skontaktuj się z administratorem lub zresetuj przeszkody w ustawieniach.` });
           }
         } else {
-          setMessage({ type: "error", title: "Błąd zakupu pola", text: error.message });
+          setMessage({ fieldOnly: true, type: "error", title: "Błąd zakupu pola", text: error.message });
         }
         return;
       }
-      setMessage({
+      setMessage({ fieldOnly: true,
         type: "error",
         title: "Błąd zakupu pola",
         text: error.message,
@@ -5560,7 +5561,7 @@ export default function Page() {
 
     const _ot = getPlotObstacleType(plotId);
     const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
-    setMessage({
+    setMessage({ fieldOnly: true,
       type: "success",
       title: "Pole odblokowane",
       text: `Usunięto ${_od ? `${_od.icon} ${_od.name}` : "przeszkodę"} z pola #${plotId} za ${plotCost} PLN.`,
@@ -5578,16 +5579,16 @@ export default function Page() {
     if (!t) return;
     if (!profile?.id) return;
     if ((seedInventory[compostKey] ?? 0) <= 0) {
-      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
+      setMessage({ fieldOnly: true, type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
       return;
     }
     const plot = getPlotCrop(plotId);
     if (plot.cropId) {
-      setMessage({ type:"info", title:"Pole zajęte", text:"Kompost stosuje się na PUSTE pole — przed posadzeniem uprawy." });
+      setMessage({ fieldOnly: true, type:"info", title:"Pole zajęte", text:"Kompost stosuje się na PUSTE pole — przed posadzeniem uprawy." });
       return;
     }
     if (plot.compostBonus) {
-      setMessage({ type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
+      setMessage({ fieldOnly: true, type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
       return;
     }
     // Wartość bonusu jest ZASZYTA w kluczu kompostu (np. compost_growth_15 → 15)
@@ -5633,16 +5634,16 @@ export default function Page() {
     // Blokada przed szybkim podwójnym kliknięciem na to samo pole
     if (compostApplyingRef.current.has(plotId)) return;
     if ((seedInventory["guide_compost"] ?? 0) <= 0) {
-      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz Kompostu Przewodnika w plecaku." });
+      setMessage({ fieldOnly: true, type:"info", title:"Brak kompostu", text:"Nie masz Kompostu Przewodnika w plecaku." });
       return;
     }
     const plot = getPlotCrop(plotId);
     if (plot.cropId) {
-      setMessage({ type:"info", title:"Pole zajęte", text:"Kompost Przewodnika stosuje się na puste pole — przed posadzeniem uprawy." });
+      setMessage({ fieldOnly: true, type:"info", title:"Pole zajęte", text:"Kompost Przewodnika stosuje się na puste pole — przed posadzeniem uprawy." });
       return;
     }
     if (plot.compostBonus) {
-      setMessage({ type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
+      setMessage({ fieldOnly: true, type:"info", title:"Już wzbogacone", text:"To pole ma już aktywny kompost. Posadź na nim uprawę." });
       return;
     }
     compostApplyingRef.current.add(plotId);
@@ -5890,13 +5891,13 @@ export default function Page() {
 
   function handleBulkCompost() {
     if (tutorialStep >= 1 && tutorialStep <= 11) {
-      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      setMessage({ fieldOnly: true, type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
       return;
     }
     if (!profile?.id) return;
     const compostKey = selectedSeedId;
     if (!compostKey || !isCompostKey(compostKey)) {
-      setMessage({ type:"info", title:"Ciągnik", text:"Najpierw wybierz kompost z plecaka (kliknij przycisk Kompost po lewej)." });
+      setMessage({ fieldOnly: true, type:"info", title:"Ciągnik", text:"Najpierw wybierz kompost z plecaka (kliknij przycisk Kompost po lewej)." });
       return;
     }
     const t = compostTypeFromKey(compostKey);
@@ -5904,7 +5905,7 @@ export default function Page() {
     const value = compostValueFromKey(compostKey);
     const available = seedInventory[compostKey] ?? 0;
     if (available <= 0) {
-      setMessage({ type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
+      setMessage({ fieldOnly: true, type:"info", title:"Brak kompostu", text:"Nie masz tego kompostu w plecaku." });
       return;
     }
     const plotUpdates: Record<number, PlotCropState> = {};
@@ -5917,7 +5918,7 @@ export default function Page() {
       used++;
     }
     if (used === 0) {
-      setMessage({ type:"info", title:"Ciągnik", text:"Brak wolnych pól bez kompostu." });
+      setMessage({ fieldOnly: true, type:"info", title:"Ciągnik", text:"Brak wolnych pól bez kompostu." });
       return;
     }
     setPlotCrops(prev => ({ ...prev, ...plotUpdates }));
@@ -5939,27 +5940,27 @@ export default function Page() {
         seed_inventory: _ni,
       }).eq("id", _pid);
     });
-    setMessage({ type:"success", title:"🚜 Ciągnik", text:`Zastosowano kompost na ${used} pol${used === 1 ? "u" : "ach"}.` });
+    setMessage({ fieldOnly: true, type:"success", title:"🚜 Ciągnik", text:`Zastosowano kompost na ${used} pol${used === 1 ? "u" : "ach"}.` });
   }
 
   function handleBulkPlant() {
     if (tutorialStep >= 1 && tutorialStep <= 11) {
-      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      setMessage({ fieldOnly: true, type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
       return;
     }
     const seedId = selectedSeedId;
     if (!seedId || isCompostKey(seedId) || isGuideCompostKey(seedId)) {
-      setMessage({ type:"info", title:"Ogrodnik", text:"Najpierw wybierz nasiono z plecaka (kliknij przycisk Nasiona po lewej)." });
+      setMessage({ fieldOnly: true, type:"info", title:"Ogrodnik", text:"Najpierw wybierz nasiono z plecaka (kliknij przycisk Nasiona po lewej)." });
       return;
     }
     const { quality: _q } = parseQualityKey(seedId);
     if (_q === "rotten") {
-      setMessage({ type:"info", title:"Ogrodnik", text:"Zgniłe nasiona nie nadają się do sadzenia." });
+      setMessage({ fieldOnly: true, type:"info", title:"Ogrodnik", text:"Zgniłe nasiona nie nadają się do sadzenia." });
       return;
     }
     const available = seedInventoryRef.current[seedId] ?? 0;
     if (available <= 0) {
-      setMessage({ type:"info", title:"Brak nasion", text:"Nie masz już tych nasion w plecaku." });
+      setMessage({ fieldOnly: true, type:"info", title:"Brak nasion", text:"Nie masz już tych nasion w plecaku." });
       return;
     }
     let queued = 0;
@@ -5971,15 +5972,15 @@ export default function Page() {
       queued++;
     }
     if (queued === 0) {
-      setMessage({ type:"info", title:"Ogrodnik", text:"Brak wolnych pól do posadzenia." });
+      setMessage({ fieldOnly: true, type:"info", title:"Ogrodnik", text:"Brak wolnych pól do posadzenia." });
     } else {
-      setMessage({ type:"success", title:"🌱 Ogrodnik", text:`Sadzę na ${queued} pol${queued === 1 ? "u" : "ach"}…` });
+      setMessage({ fieldOnly: true, type:"success", title:"🌱 Ogrodnik", text:`Sadzę na ${queued} pol${queued === 1 ? "u" : "ach"}…` });
     }
   }
 
   function handleBulkWater() {
     if (tutorialStep >= 1 && tutorialStep <= 11) {
-      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      setMessage({ fieldOnly: true, type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
       return;
     }
     let queued = 0;
@@ -5990,15 +5991,15 @@ export default function Page() {
       queued++;
     }
     if (queued === 0) {
-      setMessage({ type:"info", title:"Zraszacz", text:"Brak pól do podlania (wszystkie podlane lub gotowe)." });
+      setMessage({ fieldOnly: true, type:"info", title:"Zraszacz", text:"Brak pól do podlania (wszystkie podlane lub gotowe)." });
     } else {
-      setMessage({ type:"success", title:"💧 Zraszacz", text:`Podlewam ${queued} pol${queued === 1 ? "e" : "i"}…` });
+      setMessage({ fieldOnly: true, type:"success", title:"💧 Zraszacz", text:`Podlewam ${queued} pol${queued === 1 ? "e" : "i"}…` });
     }
   }
 
   function handleBulkHarvest() {
     if (tutorialStep >= 1 && tutorialStep <= 11) {
-      setMessage({ type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
+      setMessage({ fieldOnly: true, type:"info", title:"Przewodnik aktywny", text:"Najpierw wykonaj krok przewodnika." });
       return;
     }
     let queued = 0;
@@ -6008,9 +6009,9 @@ export default function Page() {
       queued++;
     }
     if (queued === 0) {
-      setMessage({ type:"info", title:"Kombajn", text:"Brak gotowych upraw do zebrania." });
+      setMessage({ fieldOnly: true, type:"info", title:"Kombajn", text:"Brak gotowych upraw do zebrania." });
     } else {
-      setMessage({ type:"success", title:"🌾 Kombajn", text:`Zbieram z ${queued} pol${queued === 1 ? "a" : "i"}…` });
+      setMessage({ fieldOnly: true, type:"success", title:"🌾 Kombajn", text:`Zbieram z ${queued} pol${queued === 1 ? "a" : "i"}…` });
     }
   }
 
@@ -6024,7 +6025,7 @@ export default function Page() {
 
     const plot = getPlotCrop(plotId);
     if (!plot.cropId) {
-      if (!_fromDrag) setMessage({ type: "info", title: "Puste pole", text: "Najpierw coś posadź na tym polu." });
+      if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Puste pole", text: "Najpierw coś posadź na tym polu." });
       return;
     }
 
@@ -15003,15 +15004,12 @@ export default function Page() {
         const barColor = isErr ? 'bg-red-400' : isOk ? 'bg-emerald-400' : 'bg-sky-400';
         const icon = isErr ? '⚠️' : isOk ? '✅' : 'ℹ️';
         const durMs = isErr ? 8000 : 6000;
+        if (message.fieldOnly && !isFieldViewOpen) return null;
         return (
           <div
             key={`${message.title}-${message.text}`}
-            className={`fixed z-[9999] w-[min(92vw,520px)] pointer-events-none ${isFieldViewOpen ? '' : 'top-6 left-1/2 -translate-x-1/2'}`}
-            style={isFieldViewOpen ? {
-              left: `calc(50vw + ${(fvZbierzPos.l - BASE_W / 2) * gameScale}px)`,
-              top: `calc(50vh + ${(fvZbierzPos.t + fvZbierzPos.h - BASE_H / 2) * gameScale + 10}px)`,
-              animation: 'plonopolisToastInLeft 280ms cubic-bezier(0.16,1,0.3,1)',
-            } : { animation: 'plonopolisToastIn 280ms cubic-bezier(0.16,1,0.3,1)' }}
+            className="fixed bottom-6 left-4 z-[9999] w-[min(92vw,480px)] pointer-events-none"
+            style={{ animation: 'plonopolisToastInLeft 280ms cubic-bezier(0.16,1,0.3,1)' }}
           >
             <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border-2 backdrop-blur-md ${colorWrap}`}>
               <button
