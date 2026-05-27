@@ -382,9 +382,9 @@ const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął
 
 // ═══ CZAS AKCJI POLOWYCH (sadzenie/zbiór) ═══
 // Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
-const BASE_PLANT_MS   = 2000;
-const BASE_HARVEST_MS = 2000;
-const BASE_WATER_MS   = 1000;
+const BASE_PLANT_MS   = 600;
+const BASE_HARVEST_MS = 600;
+const BASE_WATER_MS   = 400;
 
 // ─── Predefiniowane pozycje okna tutoriala (per-step) ───
 const TUT_PANEL_PRESET_POSITIONS: Record<number, {x: number; y: number}> = {
@@ -3368,7 +3368,7 @@ export default function Page() {
 
     // Czas sadzenia z bonusem eq "% speed sadzenia"
     const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
-    const _plantDurMs = Math.max(400, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
+    const _plantDurMs = Math.max(200, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
 
     enqueuePlotAction(plotId, "plant", async () => {
       const _fp = plotCropsRef.current[plotId];
@@ -5923,7 +5923,7 @@ export default function Page() {
       ) return;
       // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
       const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
-      const _harvestDurMs = Math.max(400, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
+      const _harvestDurMs = Math.max(200, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
       const _harvestBonusesSnapshot = {
         extraHarvestPct: getEquipBonusPct("% extra harvest", charEquipped),
         bonusDropPct:    getEquipBonusPct("% bonus drop", charEquipped),
