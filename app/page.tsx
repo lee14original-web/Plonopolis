@@ -3141,7 +3141,7 @@ export default function Page() {
       : execute;
     fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute: wrappedExecute }];
     if (kind === "harvest") {
-      setQueuedHarvestPlotIds(prev => new Set([...prev, plotId]));
+      setQueuedHarvestPlotIds(prev => { const s = new Set(prev); s.add(plotId); return s; });
     }
     if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
