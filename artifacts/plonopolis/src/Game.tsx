@@ -14736,7 +14736,8 @@ export default function Page() {
                   left: `calc(50vw + ${(fvHarvestLogPos.l - BASE_W / 2) * gameScale}px)`,
                   top: `calc(50vh + ${(fvHarvestLogPos.t - BASE_H / 2) * gameScale}px)`,
                   width: `${fvHarvestLogPos.w * gameScale}px`,
-                  maxHeight: `${fvHarvestLogPos.h * gameScale}px`,
+                  height: fvToolEditMode ? `${fvHarvestLogPos.h * gameScale}px` : undefined,
+                  maxHeight: fvToolEditMode ? undefined : `${fvHarvestLogPos.h * gameScale}px`,
                 }}
                 onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "harvestlog", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvHarvestLogPos.l, startT: fvHarvestLogPos.t, startW: fvHarvestLogPos.w, startH: fvHarvestLogPos.h }; } : undefined}
               >
