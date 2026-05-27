@@ -1801,7 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1923, t: 1179, w: 321, h: 588 });
+  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1313, t: 839, w: 268, h: 395 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -14775,12 +14775,12 @@ export default function Page() {
                   </div>
                 )}
 
-                {/* Zebrano — ikony */}
+                {/* Zebrano — ikony (max 35 = 5×7, siatka skalowana do szerokości panelu) */}
                 {!fvToolEditMode && items.length > 0 && (
-                  <div className="p-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-[#8b6a3e] mb-1.5">Zebrano</p>
-                    <div className="flex flex-wrap gap-1">
-                      {items.map((g, i) => {
+                  <div className="p-1.5">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#8b6a3e] mb-1">Zebrano</p>
+                    <div className="grid grid-cols-5 gap-1">
+                      {items.slice(0, 35).map((g, i) => {
                         const _qd = CROP_QUALITY_DEFS[g.quality];
                         const _cropDef = CROPS.find(c => c.id === g.cropId);
                         const _sprite = g.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
@@ -14791,7 +14791,7 @@ export default function Page() {
                         const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
                         return (
                           <div key={i} className="group relative">
-                            <div className="relative h-[54px] w-[54px] cursor-default rounded-lg border-2 transition-transform duration-150 group-hover:scale-110"
+                            <div className="relative w-full aspect-square cursor-default rounded-md border-2 transition-transform duration-150 group-hover:scale-110"
                               style={_isExpOnly
                                 ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
                                 : g.quality === "legendary"
@@ -14799,36 +14799,39 @@ export default function Page() {
                                   : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
                               {_isExpOnly
                                 ? <span className="flex h-full w-full flex-col items-center justify-center gap-0.5">
-                                    <span className="text-[22px] leading-none">⭐</span>
-                                    <span className="text-[9px] font-black text-sky-300 leading-none">XP</span>
+                                    <span className="text-base leading-none">⭐</span>
+                                    <span className="text-[7px] font-black text-sky-300 leading-none">XP</span>
                                   </span>
                                 : _sprite
-                                  ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" />
-                                  : <span className="flex h-full w-full items-center justify-center text-2xl">🌾</span>
+                                  ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-0.5" />
+                                  : <span className="flex h-full w-full items-center justify-center text-lg">🌾</span>
                               }
                               {g.quality === "legendary" && !_isExpOnly && (
-                                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
+                                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
                                   <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                 </span>
                               )}
-                              <span className="absolute left-0.5 top-0.5 text-[9px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
-                              <span className="absolute bottom-0.5 right-0.5 rounded bg-black/70 px-0.5 text-[9px] font-black text-white leading-tight">
-                                {_total === 0 && g.bonusSource ? g.bonusSource : `×${_total}`}
+                              <span className="absolute left-0 top-0 text-[7px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
+                              <span className="absolute bottom-0 right-0 rounded bg-black/70 px-0.5 text-[7px] font-black text-white leading-tight">
+                                {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
                               </span>
                             </div>
                             {/* Tooltip */}
-                            <div className="pointer-events-none absolute bottom-[calc(100%+6px)] right-0 z-[200] hidden w-40 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
+                            <div className="pointer-events-none absolute bottom-[calc(100%+4px)] right-0 z-[200] hidden w-36 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-2.5 text-xs shadow-2xl group-hover:block">
                               <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
                               <p className="mb-1" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
                               {g.baseAmount > 0 && <p>Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
-                              {g.bonusAmount > 0 && <p>Bonus <span className="text-amber-300">({g.bonusSource})</span>: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
-                              {_isExpOnly && <p className="text-amber-300">🌟 Bonus EXP {g.bonusSource}</p>}
+                              {g.bonusAmount > 0 && <p>Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
+                              {_isExpOnly && <p className="text-amber-300">🌟 Bonus EXP</p>}
                               <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-sky-300">EXP: +{g.baseExp}</p>
                             </div>
                           </div>
                         );
                       })}
                     </div>
+                    {items.length > 35 && (
+                      <p className="mt-1 text-center text-[8px] text-[#8b6a3e]">+{items.length - 35} więcej</p>
+                    )}
                   </div>
                 )}
 
