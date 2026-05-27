@@ -5457,39 +5457,10 @@ export default function Page() {
     if (error) { setMessage({ type: "error", title: "Błąd resetu", text: error.message }); return; }
     const response = data as { ok?: boolean; error?: string; role?: string; level?: number; xp?: number; xp_to_next_level?: number; money?: number; current_map?: string } | null;
     if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
-    // Reset tutoriala w DB — czekamy zanim załadujemy profil (unikamy race condition)
+    // Reset tutoriala w DB — czekamy przed przeładowaniem strony
     if (_login) { await supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
-    // Natychmiastowy reset lokalnego stanu tutoriala (niezależnie od DB)
-    setTutorialStep(0);
-    setTutorialPlotIds([]);
-    setTutorialPlantedIds([]);
-    setTutorialWateredIds([]);
-    setTutorialHarvestedIds([]);
-    const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
-    const freshBarnState = defaultBarnState();
-    const freshOrchardState = defaultOrchardState();
-    const freshUnlockedPlots = Array.from({ length: 20 }, (_, i) => i + 1);
-    lastLoadedUserIdRef.current = null;
-    setEquipmentSlots(1); setEquipment([]);
-    setUnlockedEpicAvatars([]);
-    setUnlockedPlots(freshUnlockedPlots);
-    setPlotObstacles({});
-    setPlayerStats({ ...DEFAULT_STATS }); setFreeSkillPoints(3); setAvatarSkin(-1);
-    setAvatarChangeCount(0); setLastAvatarChangeAt(0);
-    saveAvatarDataLS(profile.id, -1, { ...DEFAULT_STATS }, 3, 1, 0, 0);
-    saveCharEquipped({ ...DEFAULT_CHAR_EQUIPPED });
-    saveItemUpg({});
-    saveOwnedEqItems({});
-    saveExtraEqItems([]);
-    setHiveData(freshHive);
-    saveBarnItems({});
-    saveBarnState(freshBarnState);
-    saveOrchardState(freshOrchardState);
-    saveFruitInventory({});
-    saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
-    try { localStorage.removeItem(KOMPOST_KEY); } catch {}
-    await loadProfile(profile.id);
-    setMessage({ type: "success", title: "🗑️ Konto zresetowane", text: "Wszystko wróciło do stanu nowego gracza." });
+    // Pełne przeładowanie strony — gwarantuje świeży stan (w tym okno przewodnika)
+    window.location.reload();
   }
 
   async function handleAddExp(amount: number) {
