@@ -381,9 +381,9 @@ const BEE_COST           = 75;     // koszt 1 pszczoły
 const HIVE_MIN_BEES_TO_PRODUCE = 5; // ile pszczół musi być żeby ul zaczął produkować miód
 
 // ═══ CZAS AKCJI POLOWYCH (sadzenie/zbiór) ═══
-// Bonusy z eq "% speed sadzenia" / "% speed zbioru" skracają je proporcjonalnie (max 80% redukcji).
-const BASE_PLANT_MS   = 600;
-const BASE_HARVEST_MS = 600;
+// Czasy akcji polowych są stałe — nie zależą od ekwipunku.
+const BASE_PLANT_MS   = 200;
+const BASE_HARVEST_MS = 200;
 const BASE_WATER_MS   = 400;
 
 // ─── Predefiniowane pozycje okna tutoriala (per-step) ───
@@ -711,14 +711,14 @@ function rollFromChances(chances: number[]): number {
 
 const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   // ─── DŁONIE (LVL 1–25, jeden per poziom) ───
-  { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:"% speed zbioru"}] },
-  { id:"d2",  name:"Rękawice Siewcy",         slot:"dlonie", icon:"🧤", unlockLevel:2,  bonuses:[{base:1,  label:"% speed sadzenia"}] },
-  { id:"d3",  name:"Rękawice Rolnika",        slot:"dlonie", icon:"🧤", unlockLevel:3,  bonuses:[{base:2,  label:"% speed zbioru"}] },
+  { id:"d1",  name:"Spracowane Rękawice",     slot:"dlonie", icon:"🧤", unlockLevel:1,  bonuses:[{base:1,  label:" pkt Wiedzy", flat:true}] },
+  { id:"d2",  name:"Rękawice Siewcy",         slot:"dlonie", icon:"🧤", unlockLevel:2,  bonuses:[{base:1,  label:" pkt Wiedzy", flat:true}] },
+  { id:"d3",  name:"Rękawice Rolnika",        slot:"dlonie", icon:"🧤", unlockLevel:3,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
   { id:"d4",  name:"Grabie Ogrodnika",        slot:"dlonie", icon:"🌿", unlockLevel:4,  bonuses:[{base:1,  label:"% speed upraw"}] },
   { id:"d5",  name:"Rękawice Ziemi",          slot:"dlonie", icon:"🧤", unlockLevel:5,  bonuses:[{base:2,  label:"% efekt kompostu"}] },
-  { id:"d6",  name:"Łopata Polowa",           slot:"dlonie", icon:"🌿", unlockLevel:6,  bonuses:[{base:2,  label:"% speed sadzenia"}] },
+  { id:"d6",  name:"Łopata Polowa",           slot:"dlonie", icon:"🌿", unlockLevel:6,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
   { id:"d7",  name:"Rękawice Urodzaju",       slot:"dlonie", icon:"🧤", unlockLevel:7,  bonuses:[{base:1,  label:"% extra harvest"}] },
-  { id:"d8",  name:"Kosz Zbieracza",          slot:"dlonie", icon:"🧺", unlockLevel:8,  bonuses:[{base:2,  label:"% speed zbioru"}] },
+  { id:"d8",  name:"Kosz Zbieracza",          slot:"dlonie", icon:"🧺", unlockLevel:8,  bonuses:[{base:2,  label:" pkt Wiedzy", flat:true}] },
   { id:"d9",  name:"Motyka Rolna",            slot:"dlonie", icon:"⛏️", unlockLevel:9,  bonuses:[{base:2,  label:"% speed upraw"}] },
   { id:"d10", name:"Sekator Sadu",            slot:"dlonie", icon:"✂️", unlockLevel:10, bonuses:[{base:3,  label:"% speed drzew"}] },
   { id:"d11", name:"Rękawice Farmera",        slot:"dlonie", icon:"🧤", unlockLevel:11, bonuses:[{base:2,  label:"% EXP z upraw"}] },
@@ -729,24 +729,24 @@ const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   { id:"d16", name:"Srebrny Sekator",         slot:"dlonie", icon:"✂️", unlockLevel:16, bonuses:[{base:5,  label:"% speed drzew"}] },
   { id:"d17", name:"Rękawice Plonów",         slot:"dlonie", icon:"🧤", unlockLevel:17, bonuses:[{base:2,  label:"% extra harvest"}] },
   { id:"d18", name:"Widły Farmera",           slot:"dlonie", icon:"🌿", unlockLevel:18, bonuses:[{base:4,  label:"% EXP z upraw"}] },
-  { id:"d19", name:"Narzędzia Mistrza",       slot:"dlonie", icon:"🔧", unlockLevel:19, bonuses:[{base:3,  label:"% speed zbioru"}] },
+  { id:"d19", name:"Narzędzia Mistrza",       slot:"dlonie", icon:"🔧", unlockLevel:19, bonuses:[{base:3,  label:" pkt Wiedzy", flat:true}] },
   { id:"d20", name:"Rękawice Pszczelarza",    slot:"dlonie", icon:"🐝", unlockLevel:20, bonuses:[{base:20, label:"% zużycia stroju"}] },
   { id:"d21", name:"Motyka Obfitości",        slot:"dlonie", icon:"⛏️", unlockLevel:21, bonuses:[{base:2,  label:"% extra harvest"}] },
-  { id:"d22", name:"Rękawice Żniwiarza",      slot:"dlonie", icon:"🧤", unlockLevel:22, bonuses:[{base:4,  label:"% speed zbioru"}] },
+  { id:"d22", name:"Rękawice Żniwiarza",      slot:"dlonie", icon:"🧤", unlockLevel:22, bonuses:[{base:4,  label:" pkt Wiedzy", flat:true}] },
   { id:"d23", name:"Sekator Premium",         slot:"dlonie", icon:"✂️", unlockLevel:23, bonuses:[{base:6,  label:"% speed drzew"}] },
   { id:"d24", name:"Rękawice Natury",         slot:"dlonie", icon:"🧤", unlockLevel:24, bonuses:[{base:3,  label:"% speed upraw"}] },
-  { id:"d25", name:"Mistyczne Dłonie Farmy",  slot:"dlonie", icon:"✨", unlockLevel:25, bonuses:[{base:3, label:"% speed zbioru"},{base:2,label:"% extra harvest"}] },
+  { id:"d25", name:"Mistyczne Dłonie Farmy",  slot:"dlonie", icon:"✨", unlockLevel:25, bonuses:[{base:3, label:" pkt Wiedzy", flat:true},{base:2,label:"% extra harvest"}] },
   // ─── NOGI (LVL 1–30) ───
   { id:"n1",  name:"Stare Kalosze",           slot:"nogi", icon:"👢", unlockLevel:1,  bonuses:[{base:2,  label:"% speed upraw"}] },
   { id:"n2",  name:"Kalosze Rolnika",         slot:"nogi", icon:"👢", unlockLevel:3,  bonuses:[{base:3,  label:"% speed upraw"}] },
   { id:"n3",  name:"Buty Polowe",             slot:"nogi", icon:"👢", unlockLevel:6,  bonuses:[{base:5,  label:"% efekt podlewania"}] },
-  { id:"n4",  name:"Buty Zbieracza",          slot:"nogi", icon:"👢", unlockLevel:9,  bonuses:[{base:4,  label:"% speed zbioru"}] },
+  { id:"n4",  name:"Buty Zbieracza",          slot:"nogi", icon:"👢", unlockLevel:9,  bonuses:[{base:4,  label:" pkt Wiedzy", flat:true}] },
   { id:"n5",  name:"Buty Błotne",             slot:"nogi", icon:"👢", unlockLevel:12, bonuses:[{base:8,  label:"% efekt podlewania"}] },
   { id:"n6",  name:"Ostrogi Hodowcy",         slot:"nogi", icon:"⚡", unlockLevel:15, bonuses:[{base:6,  label:"% reward zwierząt"}] },
   { id:"n7",  name:"Szybkie Kalosze",         slot:"nogi", icon:"👢", unlockLevel:18, bonuses:[{base:6,  label:"% speed upraw"}] },
   { id:"n8",  name:"Buty Sadownika",          slot:"nogi", icon:"🥾", unlockLevel:21, bonuses:[{base:8,  label:"% speed drzew"}] },
   { id:"n9",  name:"Buty Zaradności",         slot:"nogi", icon:"👢", unlockLevel:24, bonuses:[{base:10, label:"% efekt podlewania"}] },
-  { id:"n10", name:"Buty Burzy",              slot:"nogi", icon:"⚡", unlockLevel:27, bonuses:[{base:8, label:"% speed upraw"},{base:4,label:"% speed zbioru"}] },
+  { id:"n10", name:"Buty Burzy",              slot:"nogi", icon:"⚡", unlockLevel:27, bonuses:[{base:8, label:"% speed upraw"},{base:4,label:" pkt Wiedzy", flat:true}] },
   { id:"n11", name:"Legendarne Kalosze",      slot:"nogi", icon:"👑", unlockLevel:30, bonuses:[{base:10, label:"% speed upraw"}] },
   // ─── GŁOWA (LVL 1–30) ───
   { id:"g1",  name:"Słomkowy Kapelusz",       slot:"glowa", icon:"👒", unlockLevel:1,  bonuses:[{base:5,  label:"% EXP z upraw"}] },
@@ -3366,9 +3366,7 @@ export default function Page() {
       setSelectedSeedId(null);
     }
 
-    // Czas sadzenia z bonusem eq "% speed sadzenia"
-    const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
-    const _plantDurMs = Math.max(200, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
+    const _plantDurMs = BASE_PLANT_MS;
 
     enqueuePlotAction(plotId, "plant", async () => {
       const _fp = plotCropsRef.current[plotId];
@@ -5922,8 +5920,7 @@ export default function Page() {
         fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "harvest")
       ) return;
       // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
-      const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
-      const _harvestDurMs = Math.max(200, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
+      const _harvestDurMs = BASE_HARVEST_MS;
       const _harvestBonusesSnapshot = {
         extraHarvestPct: getEquipBonusPct("% extra harvest", charEquipped),
         bonusDropPct:    getEquipBonusPct("% bonus drop", charEquipped),
@@ -14427,7 +14424,6 @@ export default function Page() {
             const _eqExpPct    = Math.round(getEquipBonusPct("% EXP z upraw", charEquipped) + getEquipBonusPct("% EXP", charEquipped));
             const _eqExtraPct  = Math.round(getEquipBonusPct("% extra harvest", charEquipped));
             const _eqDropPct   = Math.round(getEquipBonusPct("% bonus drop", charEquipped));
-            const _eqZbiorPct  = Math.round(getEquipBonusPct("% speed zbioru", charEquipped));
             const _eqUprawPct  = Math.round(getEquipBonusPct("% speed upraw", charEquipped));
             const _eqKompostPct= Math.round(getEquipBonusPct("% efekt kompostu", charEquipped));
             const _eqWiedzaPkt = Math.round(getEquipFlatBonus(" pkt Wiedzy", charEquipped));
@@ -14436,7 +14432,7 @@ export default function Page() {
             const _stZaradnosc = effectiveStats.zaradnosc ?? 0;
             const _stSzczescie = effectiveStats.szczescie ?? 0;
             const _hasAnyBonus = _stWiedza > 0 || _stZrecznosc > 0 || _stZaradnosc > 0 || _stSzczescie > 0
-              || _eqExpPct > 0 || _eqExtraPct > 0 || _eqDropPct > 0 || _eqZbiorPct > 0
+              || _eqExpPct > 0 || _eqExtraPct > 0 || _eqDropPct > 0
               || _eqUprawPct > 0 || _eqKompostPct > 0 || _logCompostExpPct > 0
               || _logCompostGrowthPct > 0 || _logCompostYield > 0;
 
@@ -14573,12 +14569,6 @@ export default function Page() {
                             <div className="flex items-center justify-between gap-1">
                               <span className="text-[#c8b890]">🍀 Bonus drop</span>
                               <span className="text-amber-300 shrink-0">+{_eqDropPct}%</span>
-                            </div>
-                          )}
-                          {_eqZbiorPct > 0 && (
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[#c8b890]">⚡ Speed zbioru</span>
-                              <span className="text-amber-300 shrink-0">+{_eqZbiorPct}%</span>
                             </div>
                           )}
                           {_eqUprawPct > 0 && (
