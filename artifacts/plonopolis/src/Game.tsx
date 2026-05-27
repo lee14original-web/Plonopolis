@@ -5453,15 +5453,12 @@ export default function Page() {
     )) return;
     if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować całe konto?")) return;
     const _login = (profile as { login?: string }).login ?? null;
-    const [resetResult, tutorialResult] = await Promise.all([
-      supabase.rpc("dev_reset_account"),
-      _login ? supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }) : Promise.resolve({ data: null, error: null }),
-    ]);
-    const { data, error } = resetResult;
+    const { data, error } = await supabase.rpc("dev_reset_account");
     if (error) { setMessage({ type: "error", title: "Błąd resetu", text: error.message }); return; }
     const response = data as { ok?: boolean; error?: string; role?: string; level?: number; xp?: number; xp_to_next_level?: number; money?: number; current_map?: string } | null;
     if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
-    if (tutorialResult.error) { setMessage({ type: "error", title: "Błąd resetu tutoriala", text: tutorialResult.error.message }); return; }
+    // Dodatkowy reset tutoriala — ignoruj błędy uprawnień (funkcja admina po stronie DB)
+    if (_login) { void supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
     const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
     const freshBarnState = defaultBarnState();
     const freshOrchardState = defaultOrchardState();
