@@ -4089,6 +4089,8 @@ export default function Page() {
       } else if (key === "enter" || key === " ") {
         confirmSelectedPlot();
       } else if (key === "escape") {
+        // Podczas tutoriala blokuj wyjście z Widoku Pola przez Escape
+        if (tutorialStep >= 1 && tutorialStep <= 11) return;
         setIsFieldViewOpen(false);
         setSelectedPlotId(null);
       }
@@ -4096,7 +4098,7 @@ export default function Page() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId, plotToBuy]);
+  }, [isFieldViewOpen, selectedPlotId, unlockedPlots, displayLevel, plotCrops, selectedTool, selectedSeedId, plotToBuy, tutorialStep]);
 
   useEffect(() => {
     if (!showRankingPanel) return;
