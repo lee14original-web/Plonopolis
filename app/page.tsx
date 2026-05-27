@@ -1831,6 +1831,8 @@ export default function Page() {
   const [, setPendingTick] = useState(0);
   // Pola oczekujące w kolejce zbioru (zanim zacznie się animacja paska postępu)
   const [queuedHarvestPlotIds, setQueuedHarvestPlotIds] = useState<Set<number>>(new Set());
+  const [queuedPlantPlotIds, setQueuedPlantPlotIds] = useState<Set<number>>(new Set());
+  const [queuedWaterPlotIds, setQueuedWaterPlotIds] = useState<Set<number>>(new Set());
   // Mapa plotId → setTimeout id (do anulowania przy unmount)
   const fieldActionTimeoutsRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const sessionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3146,13 +3148,14 @@ export default function Page() {
       return;
     }
     if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] ACCEPT", { plotId, kind, newQueueLen: fieldQueueRef.current.length + 1 });
-    // Dla harvest: zawiń execute — dodaj do queuedHarvestPlotIds i usuń po zakończeniu
-    const wrappedExecute = kind === "harvest"
-      ? async () => { try { await execute(); } finally { setQueuedHarvestPlotIds(prev => { const s = new Set(prev); s.delete(plotId); return s; }); } }
+    // Zawiń execute — dodaj do odpowiedniego queuedXxxPlotIds i usuń po zakończeniu
+    const _setQueued = kind === "harvest" ? setQueuedHarvestPlotIds : kind === "plant" ? setQueuedPlantPlotIds : kind === "water" ? setQueuedWaterPlotIds : null;
+    const wrappedExecute = _setQueued
+      ? async () => { try { await execute(); } finally { _setQueued(prev => { const s = new Set(prev); s.delete(plotId); return s; }); } }
       : execute;
     fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute: wrappedExecute }];
-    if (kind === "harvest") {
-      setQueuedHarvestPlotIds(prev => { const s = new Set(prev); s.add(plotId); return s; });
+    if (_setQueued) {
+      _setQueued(prev => { const s = new Set(prev); s.add(plotId); return s; });
     }
     if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
@@ -14009,6 +14012,40 @@ export default function Page() {
                                     <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
                                       <div className="text-[10px] font-black uppercase tracking-wider" style={{
                                         color: "#fb923c",
+                                        textShadow: "0 0 4px rgba(0,0,0,0.95)",
+                                      }}>
+                                        Kolejka...
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Overlay kolejki sadzenia */}
+                                {queuedPlantPlotIds.has(plotId) && !pendingFieldActions[plotId] && (
+                                  <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl" style={{
+                                    background: "rgba(134,239,172,0.18)",
+                                    boxShadow: "inset 0 0 0 2.5px rgba(134,239,172,0.75)",
+                                  }}>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                                      <div className="text-[10px] font-black uppercase tracking-wider" style={{
+                                        color: "#86efac",
+                                        textShadow: "0 0 4px rgba(0,0,0,0.95)",
+                                      }}>
+                                        Kolejka...
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Overlay kolejki podlewania */}
+                                {queuedWaterPlotIds.has(plotId) && !pendingFieldActions[plotId] && (
+                                  <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl" style={{
+                                    background: "rgba(96,165,250,0.18)",
+                                    boxShadow: "inset 0 0 0 2.5px rgba(96,165,250,0.75)",
+                                  }}>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                                      <div className="text-[10px] font-black uppercase tracking-wider" style={{
+                                        color: "#60a5fa",
                                         textShadow: "0 0 4px rgba(0,0,0,0.95)",
                                       }}>
                                         Kolejka...
