@@ -1801,7 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 700, t: 300, w: 220, h: 280 });
+  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1923, t: 1179, w: 321, h: 588 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -14733,7 +14733,7 @@ export default function Page() {
 
             void _hasAnyBonus;
 
-            return (
+            return ReactDOM.createPortal(
               <div
                 className={`fixed z-[88] rounded-[14px] border bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden ${fvToolEditMode ? "cursor-move border-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]"}`}
                 style={{
@@ -14860,7 +14860,8 @@ export default function Page() {
                   </div>
                 )}
 
-              </div>
+              </div>,
+              document.body
             );
           })()}
 
