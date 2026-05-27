@@ -3354,9 +3354,8 @@ export default function Page() {
       return;
     }
 
-    // Optymistyczne odliczenie nasiona — natychmiast, zanim akcja ruszy.
-    // Blokuje race condition gdy gracz szybko klika różne pola.
-    setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
+    // Odlicz nasiono z ref natychmiast — guard dla dedupliku przy szybkim drag/klik
+    // setSeedInventory (UI) wywoływane dopiero wewnątrz execute, gdy kolejka dochodzi do tego pola
     seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) - 1 };
 
     // Gdy skończyły się nasiona — odznacz automatycznie
@@ -3371,11 +3370,12 @@ export default function Page() {
     enqueuePlotAction(plotId, "plant", async () => {
       const _fp = plotCropsRef.current[plotId];
       if (_fp?.cropId) {
-        // Pole zajęte — zwróć nasiono
-        setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) + 1 }));
+        // Pole zajęte — zwróć nasiono do ref (UI nie było jeszcze odliczone)
         seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) + 1 };
         return;
       }
+      // Odlicz nasiono w UI dopiero teraz — gdy kolejka dochodzi do tego pola
+      setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
       setPendingFieldActions(prev => ({
         ...prev,
         [plotId]: { kind: "plant", startMs: Date.now(), durationMs: _plantDurMs, seedId: effectiveSeedId },
