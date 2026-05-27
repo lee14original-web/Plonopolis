@@ -5457,8 +5457,14 @@ export default function Page() {
     if (error) { setMessage({ type: "error", title: "Błąd resetu", text: error.message }); return; }
     const response = data as { ok?: boolean; error?: string; role?: string; level?: number; xp?: number; xp_to_next_level?: number; money?: number; current_map?: string } | null;
     if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
-    // Dodatkowy reset tutoriala — ignoruj błędy uprawnień (funkcja admina po stronie DB)
-    if (_login) { void supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
+    // Reset tutoriala w DB — czekamy zanim załadujemy profil (unikamy race condition)
+    if (_login) { await supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
+    // Natychmiastowy reset lokalnego stanu tutoriala (niezależnie od DB)
+    setTutorialStep(0);
+    setTutorialPlotIds([]);
+    setTutorialPlantedIds([]);
+    setTutorialWateredIds([]);
+    setTutorialHarvestedIds([]);
     const freshHive: HiveData = { ...DEFAULT_HIVE_DATA };
     const freshBarnState = defaultBarnState();
     const freshOrchardState = defaultOrchardState();
