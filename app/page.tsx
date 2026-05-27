@@ -15011,8 +15011,12 @@ export default function Page() {
         return (
           <div
             key={`${message.title}-${message.text}`}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] w-[min(92vw,520px)] pointer-events-none"
-            style={{ animation: 'plonopolisToastIn 280ms cubic-bezier(0.16,1,0.3,1)' }}
+            className={`fixed z-[9999] w-[min(92vw,520px)] pointer-events-none ${isFieldViewOpen ? '' : 'top-6 left-1/2 -translate-x-1/2'}`}
+            style={isFieldViewOpen ? {
+              left: `calc(50vw + ${(fvZbierzPos.l - BASE_W / 2) * gameScale}px)`,
+              top: `calc(50vh + ${(fvZbierzPos.t + fvZbierzPos.h - BASE_H / 2) * gameScale + 10}px)`,
+              animation: 'plonopolisToastInLeft 280ms cubic-bezier(0.16,1,0.3,1)',
+            } : { animation: 'plonopolisToastIn 280ms cubic-bezier(0.16,1,0.3,1)' }}
           >
             <div className={`pointer-events-auto relative overflow-hidden rounded-2xl border-2 backdrop-blur-md ${colorWrap}`}>
               <button
@@ -15041,6 +15045,10 @@ export default function Page() {
               @keyframes plonopolisToastIn {
                 from { opacity: 0; transform: translate(-50%, -16px) scale(0.96); }
                 to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+              }
+              @keyframes plonopolisToastInLeft {
+                from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+                to   { opacity: 1; transform: translateY(0) scale(1); }
               }
               @keyframes plonopolisToastBar {
                 from { width: 100%; }
