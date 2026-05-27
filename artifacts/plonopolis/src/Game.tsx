@@ -2152,10 +2152,9 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
-  const [waterQueue, setWaterQueue] = React.useState<number[]>([]);
-  const waterQueueRef = React.useRef<number[]>([]);
-  const waterQueueActiveRef = React.useRef<number | null>(null);
-  const waterQueueProcessingRef = React.useRef(false);
+  const fieldQueueRef = React.useRef<Array<{ plotId: number; kind: string; execute: () => Promise<void> }>>([]);
+  const fieldQueueActiveRef = React.useRef<number | null>(null);
+  const fieldQueueProcessingRef = React.useRef(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
@@ -3006,11 +3005,22 @@ export default function Page() {
       return;
     }
 
-    setMessage({
-      type: "info",
-      title: `Pole #${selectedPlotId}`,
-      text: "Wybierz nasiono z plecaka albo kliknij narzędzie.",
-    });
+    const _hasSeedsInPack = Object.entries(seedInventoryRef.current).some(
+      ([k, v]) => !isCompostKey(k) && !isGuideCompostKey(k) && (v ?? 0) > 0,
+    );
+    if (!_hasSeedsInPack) {
+      setMessage({
+        type: "info",
+        title: "Brak nasion w plecaku",
+        text: "Kup nasiona w sklepie, żeby móc sadzić.",
+      });
+    } else {
+      setMessage({
+        type: "info",
+        title: `Pole #${selectedPlotId}`,
+        text: "Wybierz nasiono z plecaka albo kliknij narzędzie.",
+      });
+    }
   }
 
   function getPlotCrop(plotId: number) {
@@ -3117,69 +3127,30 @@ export default function Page() {
     return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
   }
 
-  // ─── Kolejka podlewania — sekwencyjne przetwarzanie wielu pól ───
+  // ─── Ujednolicona kolejka akcji polowych — sekwencyjne przetwarzanie ───
 
-  function enqueueWater(plotId: number) {
+  function enqueuePlotAction(plotId: number, kind: string, execute: () => Promise<void>) {
     if (!profile) return;
-    // Walidacja na aktualnym stanie — z komunikatem dla gracza
-    const plot = getPlotCrop(plotId);
-    const crop = getPlantedCrop(plotId);
-    if (!crop || !plot.cropId) {
-      setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
-      return;
-    }
-    if (plot.watered) {
-      setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
-      return;
-    }
-    if (isCropReady(plotId)) {
-      setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
-      return;
-    }
-    // Deduplikacja: nie dodawaj jeśli już w kolejce lub aktualnie podlewane
-    if (waterQueueRef.current.includes(plotId) || waterQueueActiveRef.current === plotId) return;
-    // Overlay pojawia się natychmiast przy kliknięciu (widoczny przez cały czas w kolejce)
-    if (process.env.NODE_ENV !== "production") console.debug("[water overlay] start", { plotId });
-    setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
-    waterQueueRef.current = [...waterQueueRef.current, plotId];
-    setWaterQueue([...waterQueueRef.current]);
-    if (!waterQueueProcessingRef.current) void processWaterQueue();
+    if (fieldQueueActiveRef.current === plotId) return;
+    if (fieldQueueRef.current.some(a => a.plotId === plotId)) return;
+    fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute }];
+    if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
 
-  async function processOneWaterPlot(plotId: number): Promise<void> {
-    // Fresh check — plot mógł stać się niepoprawny czekając w kolejce
-    const _fp = plotCropsRef.current[plotId];
-    if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
-      if (process.env.NODE_ENV !== "production") console.debug("[water overlay] skip (stale)", { plotId, fp: _fp });
-      // Czyść overlay — pole niepoprawne, nie będzie podlewane
-      setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
-      return;
-    }
-    // Ustaw overlay tylko jeśli jeszcze nie istnieje — unika restartu animacji przy polu w kolejce
-    if (!pendingFieldActions[plotId]) {
-      setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
-    }
-    // Odczekaj czas animacji
-    await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
-    // Wykonaj RPC (czyści pendingFieldActions wewnętrznie)
-    await handleWaterPlot(plotId, true);
-  }
-
-  async function processWaterQueue(): Promise<void> {
-    if (waterQueueProcessingRef.current) return;
-    waterQueueProcessingRef.current = true;
+  async function processFieldQueue(): Promise<void> {
+    if (fieldQueueProcessingRef.current) return;
+    fieldQueueProcessingRef.current = true;
     try {
-      while (waterQueueRef.current.length > 0) {
-        const plotId = waterQueueRef.current[0];
-        waterQueueRef.current = waterQueueRef.current.slice(1);
-        setWaterQueue([...waterQueueRef.current]);
-        waterQueueActiveRef.current = plotId;
-        await processOneWaterPlot(plotId);
-        waterQueueActiveRef.current = null;
+      while (fieldQueueRef.current.length > 0) {
+        const item = fieldQueueRef.current[0];
+        fieldQueueRef.current = fieldQueueRef.current.slice(1);
+        fieldQueueActiveRef.current = item.plotId;
+        await item.execute();
+        fieldQueueActiveRef.current = null;
       }
     } finally {
-      waterQueueProcessingRef.current = false;
-      waterQueueActiveRef.current = null;
+      fieldQueueProcessingRef.current = false;
+      fieldQueueActiveRef.current = null;
     }
   }
 
@@ -3187,8 +3158,30 @@ export default function Page() {
     if (!profile) return;
 
     if (!_skipTimer) {
-      // Delegate do kolejki — sekwencyjne podlewanie
-      enqueueWater(plotId);
+      const _pv = getPlotCrop(plotId);
+      const _cv = getPlantedCrop(plotId);
+      if (!_cv || !_pv.cropId) {
+        setMessage({ type: "info", title: "Brak uprawy", text: "Najpierw posadź roślinę na tym polu." });
+        return;
+      }
+      if (_pv.watered) {
+        setMessage({ type: "info", title: "Pole już podlane", text: "To pole zostało już podlane." });
+        return;
+      }
+      if (isCropReady(plotId)) {
+        setMessage({ type: "info", title: "Uprawa gotowa", text: "Ta uprawa jest już gotowa do zbioru." });
+        return;
+      }
+      enqueuePlotAction(plotId, "water", async () => {
+        const _fp = plotCropsRef.current[plotId];
+        if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+          setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+          return;
+        }
+        setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
+        await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
+        await handleWaterPlot(plotId, true);
+      });
       return;
     }
 
@@ -3234,43 +3227,36 @@ export default function Page() {
     }
 
     // ─── compostBonus restore + tutorial step 9 speedup (tylko podlewane pole) ───
-    // Fetch najświeższego plot_crops z DB — race condition guard przy szybkim podlewaniu.
-    // Speedup plantedAt stosujemy TYLKO dla aktualnie podlanego plotId (nie wszystkich tutorialPlotIds),
-    // żeby szybkie podlewanie kilku pól nie nadpisywało plantedAt pozostałych marchewek.
+    // Używa danych z odpowiedzi RPC jako bazy (już zatwierdzone w DB, bez dodatkowego fetcha).
+    // Speedup plantedAt stosujemy TYLKO dla aktualnie podlanego plotId (nie wszystkich tutorialPlotIds).
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
     const _tutorialStep9 = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
     if ((_needsCompostRestore || _tutorialStep9) && profile?.id) {
-      const { data: _freshRow } = await supabase
-        .from("profiles")
-        .select("plot_crops")
-        .eq("id", profile!.id)
-        .single();
-      const _freshPlots = parsePlotCrops(_freshRow?.plot_crops);
+      // Baza: dane z odpowiedzi RPC (już zapisane w DB przez SQL funkcję)
+      const _rpcRaw = extractRpcProfile(data) as { plot_crops?: unknown } | null;
+      const _rpcPlots = parsePlotCrops(_rpcRaw?.plot_crops);
       // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35)
       // → isCropReady zawsze używa 180000 × 0.35 = 63000ms, niezależnie od statystyk gracza
       const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
       const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
-      // Zbieramy tylko zmienione pola
       const _updatedPlots: Record<number, PlotCropState> = {};
-      // 1. compostBonus restore dla aktualnie podlewanego pola (jeśli serwer go zgubił)
+      // 1. compostBonus restore — jeśli RPC zgubił bonus kompostu
       if (_needsCompostRestore) {
-        const _curr = _freshPlots[plotId];
+        const _curr = _rpcPlots[plotId];
         if (_curr && !_curr.compostBonus) {
-          _updatedPlots[plotId] = { ..._curr, compostBonus: _preservedCompostBonus };
+          _updatedPlots[plotId] = { ..._curr, compostBonus: _preservedCompostBonus! };
         }
       }
-      // 2. Speedup tylko dla aktualnie podlanego plotId — marchewka + guide compost
-      if (_tutorialStep9) {
-        const _tPlot = _updatedPlots[plotId] ?? _freshPlots[plotId];
-        if (_tPlot?.cropId === "carrot" && _tPlot?.compostBonus?.type === "guide" && _tPlot?.plantedAt != null) {
-          _updatedPlots[plotId] = { ..._tPlot, plantedAt: _tutorialSpeedupAt };
+      // 2. Speedup dla tutorial step 9 — warunek na _preservedCompostBonus (pewniejszy niż odczyt z RPC)
+      if (_tutorialStep9 && _preservedCompostBonus?.type === "guide") {
+        const _tPlot = _updatedPlots[plotId] ?? _rpcPlots[plotId];
+        if (_tPlot?.cropId === "carrot" && _tPlot?.plantedAt != null) {
+          _updatedPlots[plotId] = { ..._tPlot, compostBonus: _preservedCompostBonus, plantedAt: _tutorialSpeedupAt };
         }
       }
       if (Object.keys(_updatedPlots).length > 0) {
-        // Lokalny stan UI — tylko zmienione pola
         setPlotCrops(prev => ({ ...prev, ..._updatedPlots }));
-        // Zapis do DB — świeży stan + nasze zmiany, await (nie void)
-        const _safeUpdPlots = { ..._freshPlots, ..._updatedPlots };
+        const _safeUpdPlots = { ..._rpcPlots, ..._updatedPlots };
         const { error: _writeErr } = await supabase.from("profiles").update({
           plot_crops: serializePlotCrops(_safeUpdPlots) as unknown as Record<string, unknown>,
         }).eq("id", profile!.id);
@@ -3342,8 +3328,8 @@ export default function Page() {
       return;
     }
 
-    // Blokada: na polu już trwa inna akcja
-    if (pendingFieldActions[plotId]) {
+    // Blokada: pole już jest aktywne lub w kolejce
+    if (fieldQueueActiveRef.current === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) {
       setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
     }
@@ -3354,7 +3340,7 @@ export default function Page() {
       return;
     }
 
-    // Optymistyczne odliczenie nasiona — natychmiast, zanim timer ruszy.
+    // Optymistyczne odliczenie nasiona — natychmiast, zanim akcja ruszy.
     // Blokuje race condition gdy gracz szybko klika różne pola.
     setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
     seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) - 1 };
@@ -3368,17 +3354,21 @@ export default function Page() {
     const _plantSpeedPct = getEquipBonusPct("% speed sadzenia", charEquipped);
     const _plantDurMs = Math.max(400, Math.round(BASE_PLANT_MS * (1 - Math.min(0.8, _plantSpeedPct / 100))));
 
-    // Ustaw timer postępu — RPC wykona się po zakończeniu
-    setPendingFieldActions(prev => ({
-      ...prev,
-      [plotId]: { kind: "plant", startMs: Date.now(), durationMs: _plantDurMs, seedId: effectiveSeedId },
-    }));
-
-    const _tid = setTimeout(() => {
-      fieldActionTimeoutsRef.current.delete(plotId);
-      void executePlantRpc(plotId, effectiveSeedId, _baseCropId, _seedQuality);
-    }, _plantDurMs);
-    fieldActionTimeoutsRef.current.set(plotId, _tid);
+    enqueuePlotAction(plotId, "plant", async () => {
+      const _fp = plotCropsRef.current[plotId];
+      if (_fp?.cropId) {
+        // Pole zajęte — zwróć nasiono
+        setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) + 1 }));
+        seedInventoryRef.current = { ...seedInventoryRef.current, [effectiveSeedId]: (seedInventoryRef.current[effectiveSeedId] ?? 0) + 1 };
+        return;
+      }
+      setPendingFieldActions(prev => ({
+        ...prev,
+        [plotId]: { kind: "plant", startMs: Date.now(), durationMs: _plantDurMs, seedId: effectiveSeedId },
+      }));
+      await new Promise<void>(resolve => setTimeout(resolve, _plantDurMs));
+      await executePlantRpc(plotId, effectiveSeedId, _baseCropId, _seedQuality);
+    });
   }
 
   // Akcja na polu podczas przeciągania — cicha wersja bez komunikatów błędów
@@ -5851,34 +5841,31 @@ export default function Page() {
       return;
     }
 
-    // ─── Pasek postępu zbioru ───
+    // ─── Kolejkowanie zbioru ───
     if (!_skipTimer) {
-      // Blokada: na polu już trwa inna akcja
-      if (pendingFieldActions[plotId]) {
-        setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
-        return;
-      }
-      // Czas zbioru z bonusem eq "% speed zbioru"
+      // Dedup — nie kolejkuj jeśli pole już jest aktywne lub w kolejce
+      if (fieldQueueActiveRef.current === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) return;
+      // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
       const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
       const _harvestDurMs = Math.max(400, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
-      // SNAPSHOT bonusów eq w momencie kliknięcia — używane po zakończeniu timera.
-      // Dzięki temu gracz nie może wyexploitować przebierania w trakcie akcji.
       const _harvestBonusesSnapshot = {
         extraHarvestPct: getEquipBonusPct("% extra harvest", charEquipped),
         bonusDropPct:    getEquipBonusPct("% bonus drop", charEquipped),
         expPct:          getEquipBonusPct("% EXP", charEquipped) + getEquipBonusPct("% EXP z upraw", charEquipped),
       };
-      setPendingFieldActions(prev => ({
-        ...prev,
-        [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs, bonusesSnapshot: _harvestBonusesSnapshot },
-      }));
-      const _tid = setTimeout(() => {
-        fieldActionTimeoutsRef.current.delete(plotId);
-        // Przekazujemy snapshot BEZPOŚREDNIO (closure-safe) — nie czytamy go z React state,
-        // bo setTimeout zamyka się nad starym stanem (sprzed setPendingFieldActions)
-        void handleHarvestPlot(plotId, true, _harvestBonusesSnapshot);
-      }, _harvestDurMs);
-      fieldActionTimeoutsRef.current.set(plotId, _tid);
+      enqueuePlotAction(plotId, "harvest", async () => {
+        const _fp = plotCropsRef.current[plotId];
+        if (!_fp?.cropId || !isCropReady(plotId)) {
+          setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+          return;
+        }
+        setPendingFieldActions(prev => ({
+          ...prev,
+          [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs, bonusesSnapshot: _harvestBonusesSnapshot },
+        }));
+        await new Promise<void>(resolve => setTimeout(resolve, _harvestDurMs));
+        await handleHarvestPlot(plotId, true, _harvestBonusesSnapshot);
+      });
       return;
     }
     // Timer dobiegł końca — sprawdź FRESH state (gracz mógł zmienić w międzyczasie)
@@ -6654,6 +6641,7 @@ export default function Page() {
           style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
+            if (showSettingsModal) return;
             if (!isOnPanMap || e.button !== 0) return;
             const tgt = e.target as HTMLElement;
             if (tgt.closest('[data-no-map-drag], button, [role="button"], a, input, textarea, select')) return;
@@ -6661,6 +6649,7 @@ export default function Page() {
             panDragRef.current = { active: true, startX: e.clientX, startY: e.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
           onMouseMove={(e) => {
+            if (showSettingsModal) { panDragRef.current.active = false; return; }
             if (!panDragRef.current.active || panDragRef.current.moved) return;
             const dx = e.clientX - panDragRef.current.startX;
             if (Math.abs(dx) > 4) {
