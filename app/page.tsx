@@ -6017,14 +6017,6 @@ export default function Page() {
     }
     let queued = 0;
     for (const plotId of unlockedPlots) {
-      // Pola kolejkowane przez Ogrodnika — podlej po sadzeniu (kolejka sekwencyjna gwarantuje porządek)
-      if (queuedPlantPlotIds.has(plotId)) {
-        if (!queuedWaterPlotIds.has(plotId)) {
-          void handleWaterPlot(plotId, false, true);
-          queued++;
-        }
-        continue;
-      }
       const plot = getPlotCrop(plotId);
       if (!plot.cropId || plot.watered || isCropReady(plotId)) continue;
       void handleWaterPlot(plotId);
