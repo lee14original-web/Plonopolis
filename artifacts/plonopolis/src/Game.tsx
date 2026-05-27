@@ -2153,7 +2153,7 @@ export default function Page() {
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
   const fieldQueueRef = React.useRef<Array<{ plotId: number; kind: string; execute: () => Promise<void> }>>([]);
-  const fieldQueueActiveRef = React.useRef<number | null>(null);
+  const fieldQueueActiveRef = React.useRef<{ plotId: number; kind: string } | null>(null);
   const fieldQueueProcessingRef = React.useRef(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
@@ -3131,8 +3131,8 @@ export default function Page() {
 
   function enqueuePlotAction(plotId: number, kind: string, execute: () => Promise<void>) {
     if (!profile) return;
-    if (fieldQueueActiveRef.current === plotId) return;
-    if (fieldQueueRef.current.some(a => a.plotId === plotId)) return;
+    if (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === kind) return;
+    if (fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === kind)) return;
     fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute }];
     if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
@@ -3144,7 +3144,7 @@ export default function Page() {
       while (fieldQueueRef.current.length > 0) {
         const item = fieldQueueRef.current[0];
         fieldQueueRef.current = fieldQueueRef.current.slice(1);
-        fieldQueueActiveRef.current = item.plotId;
+        fieldQueueActiveRef.current = { plotId: item.plotId, kind: item.kind };
         await item.execute();
         fieldQueueActiveRef.current = null;
       }
@@ -3328,8 +3328,11 @@ export default function Page() {
       return;
     }
 
-    // Blokada: pole już jest aktywne lub w kolejce
-    if (fieldQueueActiveRef.current === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) {
+    // Blokada: akcja sadzenia na tym polu już jest aktywna lub w kolejce
+    if (
+      (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "plant") ||
+      fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "plant")
+    ) {
       setMessage({ type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
     }
@@ -5843,8 +5846,11 @@ export default function Page() {
 
     // ─── Kolejkowanie zbioru ───
     if (!_skipTimer) {
-      // Dedup — nie kolejkuj jeśli pole już jest aktywne lub w kolejce
-      if (fieldQueueActiveRef.current === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) return;
+      // Dedup — nie kolejkuj jeśli akcja harvest na tym polu już jest aktywna lub w kolejce
+      if (
+        (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "harvest") ||
+        fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "harvest")
+      ) return;
       // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
       const _harvestSpeedPct = getEquipBonusPct("% speed zbioru", charEquipped);
       const _harvestDurMs = Math.max(400, Math.round(BASE_HARVEST_MS * (1 - Math.min(0.8, _harvestSpeedPct / 100))));
