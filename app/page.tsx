@@ -2490,6 +2490,7 @@ export default function Page() {
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldViewOpenedAtRef = React.useRef<number>(0);
   const farmPowerTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -3676,19 +3677,12 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (harvestLog.length === 0) { setHarvestCountdown(25); return; }
-    // Na kroku 12 tutoriala — brak auto-zamknięcia, brak odliczania
+    if (!isFieldViewOpen) { setHarvestLog([]); return; }
+  }, [isFieldViewOpen]);
+
+  useEffect(() => {
+    if (harvestLog.length === 0) { setHarvestCountdown(0); return; }
     if (tutorialStep === 12) { setHarvestCountdown(0); return; }
-    // Reset countdown to 25 whenever new harvest comes in
-    setHarvestCountdown(25);
-    // Interval: tick every second
-    const interval = setInterval(() => {
-      setHarvestCountdown(prev => {
-        if (prev <= 1) { clearInterval(interval); setHarvestLog([]); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [harvestLog, tutorialStep]);
 
@@ -6259,7 +6253,7 @@ export default function Page() {
         };
       });
       setHarvestLog(prev => [
-        ...prev.filter(e => _now2 - e.timestamp < 25000),
+        ...prev.filter(e => e.timestamp >= fieldViewOpenedAtRef.current),
         ..._logEvents,
       ]);
     }
@@ -7095,6 +7089,7 @@ export default function Page() {
     data-no-map-drag="true"
     onClick={() => {
       setHoveredPolaUprawne(false);
+      fieldViewOpenedAtRef.current = Date.now();
       setIsFieldViewOpen(true);
       setSelectedPlotId((prev) => prev ?? 1);
       if (tutorialStep === 1) void advanceTutorialStep(2);
@@ -14698,11 +14693,11 @@ export default function Page() {
               || _logCompostGrowthPct > 0 || _logCompostYield > 0;
 
             return (
-              <div className="fixed bottom-4 right-4 z-[88] w-[min(95vw,600px)] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden">
+              <div className="fixed bottom-4 right-4 z-[88] w-[min(95vw,600px)] rounded-[18px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm">
                 {/* Nagłówek */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.6)]">
                   <p className="text-sm font-black uppercase tracking-[0.15em] text-[#d8ba7a]">
-                    Ostatnie zbiory{tutorialStep !== 12 && harvestCountdown > 0 ? ` (${harvestCountdown}s)` : ""}
+                    Zbiory tej sesji
                   </p>
                   {tutorialStep === 12 ? (
                     <button
@@ -14732,7 +14727,7 @@ export default function Page() {
                         const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
                         return (
                           <div key={i} className="group relative">
-                            <div className="relative h-[76px] w-[76px] cursor-default overflow-hidden rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
+                            <div className="relative h-[76px] w-[76px] cursor-default rounded-xl border-2 transition-transform duration-150 group-hover:scale-110"
                               style={_isExpOnly
                                 ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
                                 : g.quality === "legendary"
