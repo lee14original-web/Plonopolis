@@ -10008,11 +10008,20 @@ export default function Page() {
                                               player_stats?: PlayerStatsMap; free_skill_points?: number;
                                             } | null;
                                             if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return; }
-                                            const newStats = response?.player_stats ?? { ...curStats, [def.key]: val + freeToUse + paidCount };
-                                            const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : curFsp;
+                                            // Zawsze oblicz lokalnie z curStats (unikamy race condition: game_save_avatar_data
+                                            // z wolnych punktów może nie zdążyć zacommitować przed odczytem game_buy_stat_points)
+                                            const newStats: PlayerStatsMap = { ...curStats, [def.key]: (curStats[def.key] as number) + paidCount };
+                                            const newFsp = curFsp;
                                             setPlayerStats(newStats);
                                             setFreeSkillPoints(newFsp);
                                             saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
+                                            // Zaktualizuj DB z poprawnymi danymi (nadpisuje ewentualnie stale dane z RPC)
+                                            void supabase.rpc("game_save_avatar_data", {
+                                              p_avatar_skin: avatarSkin,
+                                              p_player_stats: newStats as Record<string, number>,
+                                              p_free_skill_points: newFsp,
+                                              p_prev_level: prevLevelRef.current,
+                                            });
                                             await loadProfile(profile.id);
                                             const freeMsg = freeToUse > 0 ? `+${freeToUse} za darmo, ` : '';
                                             setMessage({ type: "success", title: "Statystyka ulepszona", text: `${freeMsg}+${response?.amount ?? paidCount} pkt za ${(response?.cost ?? paidCost).toLocaleString("pl-PL")} 💰.` });
