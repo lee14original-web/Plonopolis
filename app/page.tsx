@@ -2274,7 +2274,7 @@ export default function Page() {
     setSlotBoxCustom(v); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(SLOT_BOX_KEY, uid), JSON.stringify(v)); } catch { /* ignore */ }
   };
   const [barnNow, setBarnNow] = React.useState(Date.now());
-  const [panX, setPanX] = React.useState(0);
+  const [panX, setPanX] = React.useState(FARM_CENTER_PAN);
   const [panY, setPanY] = React.useState(0);
   const [isPanDragging, setIsPanDragging] = React.useState(false);
   const panDragRef = React.useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false });
