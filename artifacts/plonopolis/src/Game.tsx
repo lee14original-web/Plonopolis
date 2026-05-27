@@ -335,12 +335,12 @@ function mergeAvatarBonus(base: PlayerStatsMap, skin: number): PlayerStatsMap {
 // (poniżej w sekcji BALANS WZROSTU UPRAW). Inaczej UI panelu statów pokaże inny %
 // niż faktyczny efekt w `getEffectiveGrowthTimeMs`.
 const STATS_DEFS = [
-  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/ekwipunek/skill_wiedza.png",    desc: "Rośliny rosną szybciej", rate: 0.0033, unlockLevel: 1  },
-  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/ekwipunek/skill_zrecznosc.png", desc: "Podwójny zbiór",         rate: 0.004,  unlockLevel: 1  },
-  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/ekwipunek/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1  },
-  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/ekwipunek/skill_sadownik.png",  desc: "Zysk z drzew",           rate: 0.005,  unlockLevel: 10 },
-  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/ekwipunek/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3  },
-  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/ekwipunek/skill_szczescie.png", desc: "Jakość plonów, ekwipunek, ulepszenia", rate: 0.0025, unlockLevel: 1  },
+  { key: "wiedza",    label: "Wiedza",    icon: "📚", img: "/ekwipunek/skill_wiedza.png",    desc: "Rośliny rosną szybciej", rate: 0.0033, unlockLevel: 1,  eqLabel: " pkt Wiedzy"     },
+  { key: "zrecznosc", label: "Zręczność", icon: "🎯", img: "/ekwipunek/skill_zrecznosc.png", desc: "Podwójny zbiór",         rate: 0.004,  unlockLevel: 1,  eqLabel: " pkt Zrecznosci" },
+  { key: "zaradnosc", label: "Zaradność", icon: "💧", img: "/ekwipunek/skill_zaradnosc.png", desc: "Bonus podlewania",        rate: 0.004,  unlockLevel: 1,  eqLabel: " pkt Zaradnosci" },
+  { key: "sadownik",  label: "Sadownik",  icon: "🌳", img: "/ekwipunek/skill_sadownik.png",  desc: "Zysk z drzew + kompost", rate: 0.005,  unlockLevel: 10, eqLabel: " pkt Sadownika"  },
+  { key: "opieka",    label: "Opieka",    icon: "🐄", img: "/ekwipunek/skill_opieka.png",    desc: "Zdrowsze zwierzęta",     rate: 0.003,  unlockLevel: 3,  eqLabel: null               },
+  { key: "szczescie", label: "Szczęście", icon: "🍀", img: "/ekwipunek/skill_szczescie.png", desc: "Jakość plonów, ekwipunek, ulepszenia", rate: 0.0025, unlockLevel: 1, eqLabel: " pkt Szczescia"  },
 ];
 type StatKey = typeof STATS_DEFS[number]["key"];
 type PlayerStatsMap = Record<StatKey, number>;
@@ -9794,12 +9794,12 @@ export default function Page() {
                       <div className="flex-1">
                         {/* ─── Moc farmy + bonusy summary ─── */}
                         {(() => {
-                          const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza, WIEDZA_RATE));
-                          const _zaB = calcStatEffect(effectiveStats.zaradnosc, ZARADNOSC_RATE);
-                          const _zrB = calcStatEffect(effectiveStats.zrecznosc, 0.004);
-                          const _saB = calcStatEffect(effectiveStats.sadownik, 0.005);
+                          const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped), WIEDZA_RATE));
+                          const _zaB = calcStatEffect(effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped), ZARADNOSC_RATE);
+                          const _zrB = calcStatEffect(effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped), 0.004);
+                          const _saB = calcStatEffect(effectiveStats.sadownik + getEquipFlatBonus(" pkt Sadownika", charEquipped), 0.005);
                           const _opB = Math.min(90, effectiveStats.opieka * 0.3);
-                          const _shB = calcStatEffect(effectiveStats.szczescie, 0.0025);
+                          const _shB = calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025);
                           const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
                           const _statsPow = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3);
                           const _eqB = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => { if (!eq) return s; const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id); return s + (d?.unlockLevel ?? 1) * 8 + (eq.upg ?? 0) * (eq.upg ?? 0) * 4; }, 0);
@@ -9895,7 +9895,8 @@ export default function Page() {
                           {STATS_DEFS.map(def => {
                             const val = playerStats[def.key];
                             const _avBonus = (getAvatarBonus(avatarSkin)[def.key as keyof PlayerStatsMap] ?? 0) as number;
-                            const effVal = val + _avBonus;
+                            const _eqBonus = def.eqLabel ? getEquipFlatBonus(def.eqLabel, charEquipped) : 0;
+                            const effVal = val + _avBonus + _eqBonus;
                             const eff = calcStatEffect(effVal, def.rate);
                             const isLocked = displayLevel < def.unlockLevel;
                             const maxApplicable = Math.max(0, 100 - val);
@@ -9962,7 +9963,7 @@ export default function Page() {
                                           ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{_eqBonus} eq</span> : null}</span>
                                           {val < 100
                                             ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
