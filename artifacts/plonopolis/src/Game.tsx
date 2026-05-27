@@ -2209,6 +2209,9 @@ export default function Page() {
   const kompostBusyRef = React.useRef(false);
   // Chroni applyGuideCompostToPlot przed podwójnym kliknięciem (plotId w toku)
   const compostApplyingRef = React.useRef(new Set<number>());
+  // Serialized write chain — zapisy plot_crops z kompostem ustawiają się w kolejce
+  // Eliminuje race condition: wiele równoległych applyCompostToPlot nadpisywało się wzajemnie
+  const compostWriteChainRef = React.useRef<Promise<void>>(Promise.resolve());
   const saveKompostBatch = (batch: CompostBatch) => {
     const uid = profile?.id ?? "";
     const clean: CompostBatch = {
@@ -3535,6 +3538,7 @@ export default function Page() {
       // Przywróć bonusy kompostu dla INNYCH pól po applyProfileState
       // applyProfileState robi setPlotCrops(_loadedPlots) — serwer może nie zwrócić compostBonus dla pól których nie ruszał
       // UWAGA: aktualny plotId pomijamy — stan po RPC jest źródłem prawdy dla sadzonej działki
+      const _restoredPlotsForDb: Record<number, PlotCropState> = {};
       if (Object.keys(_allCompostSnapshot).length > 0) {
         setPlotCrops(prev => {
           let _changed = false;
@@ -3545,10 +3549,39 @@ export default function Page() {
             const _curr = _merged[_pid];
             if (_curr && !_curr.compostBonus) {
               _merged[_pid] = { ..._curr, compostBonus: _bonus };
+              _restoredPlotsForDb[_pid] = _merged[_pid];
               _changed = true;
             }
           }
           return _changed ? _merged : prev;
+        });
+      }
+      // Przywrócone komposty zapisz z powrotem do DB przez write chain
+      // (serwer mógł zwrócić plot_crops bez compostBonus dla innych pól — DB by je straciło przy odświeżeniu)
+      if (Object.keys(_restoredPlotsForDb).length > 0 && profile?.id) {
+        const _profileIdForRestore = profile.id;
+        const _restoredCopy = { ..._restoredPlotsForDb };
+        compostWriteChainRef.current = compostWriteChainRef.current.then(async () => {
+          const { data: _freshRow } = await supabase
+            .from("profiles")
+            .select("plot_crops")
+            .eq("id", _profileIdForRestore)
+            .single();
+          const _dbPlots = parsePlotCrops(_freshRow?.plot_crops);
+          let _needsWrite = false;
+          const _mergedDb = { ..._dbPlots };
+          for (const [_pid, _restoredPlot] of Object.entries(_restoredCopy)) {
+            const _n = Number(_pid);
+            if (!_mergedDb[_n]?.compostBonus) {
+              _mergedDb[_n] = { ..._mergedDb[_n], compostBonus: _restoredPlot.compostBonus };
+              _needsWrite = true;
+            }
+          }
+          if (_needsWrite) {
+            await supabase.from("profiles").update({
+              plot_crops: serializePlotCrops(_mergedDb) as unknown as Record<string,unknown>,
+            }).eq("id", _profileIdForRestore);
+          }
         });
       }
 
@@ -5574,18 +5607,24 @@ export default function Page() {
     seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - 1 };
     // Jeśli to ostatni kompost danego rodzaju — zdejmij zaznaczenie
     if (ranOut) setSelectedSeedId(prev => prev === compostKey ? null : prev);
-    // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
-    // Chroni przed nadpisaniem poprzednich pól gdy gracz szybko stosuje kompost na kilka pól.
-    const { data: _freshRowC } = await supabase
-      .from("profiles")
-      .select("plot_crops")
-      .eq("id", profile.id)
-      .single();
-    const _safePlotsC = { ...parsePlotCrops(_freshRowC?.plot_crops), [plotId]: nextPlot };
-    await supabase.from("profiles").update({
-      plot_crops: serializePlotCrops(_safePlotsC) as unknown as Record<string,unknown>,
-      seed_inventory: nextInv,
-    }).eq("id", profile.id);
+    // Persist — serialized write chain eliminuje race condition przy szybkim drag na wiele pól.
+    // Każdy zapis czeka aż poprzedni się skończy, dopiero wtedy czyta świeży DB i pisze.
+    // Przechwytujemy profileId i nextPlot/nextInv do closure zanim chain wystartuje.
+    const _profileId = profile.id;
+    const _nextPlot = nextPlot;
+    const _nextInv = nextInv;
+    compostWriteChainRef.current = compostWriteChainRef.current.then(async () => {
+      const { data: _freshRowC } = await supabase
+        .from("profiles")
+        .select("plot_crops")
+        .eq("id", _profileId)
+        .single();
+      const _safePlotsC = { ...parsePlotCrops(_freshRowC?.plot_crops), [plotId]: _nextPlot };
+      await supabase.from("profiles").update({
+        plot_crops: serializePlotCrops(_safePlotsC) as unknown as Record<string,unknown>,
+        seed_inventory: _nextInv,
+      }).eq("id", _profileId);
+    });
     // Notice
     setCompostNotice({ type: t, value, plotId });
     setTimeout(() => setCompostNotice(null), 5000);
