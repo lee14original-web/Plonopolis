@@ -1,0 +1,1292 @@
+Name	Arguments	Return type	Security	
+
+_animals_data_srv
+–
+
+TABLE(animal_id text, item_id text, prod_ms bigint, storage_max integer, max_slots integer)
+
+Invoker
+
+
+
+_fruit_quality_mult_srv
+p_quality text
+
+numeric
+
+Invoker
+
+
+
+_get_max_tree_slots_srv
+p_level integer
+
+integer
+
+Invoker
+
+
+
+_npc_animal_data
+–
+
+TABLE(item_id text, unlock_lvl integer, base_price numeric, qty_min integer, qty_max integer)
+
+Invoker
+
+
+
+_npc_animal_qty_range
+p_unlock integer, p_level integer
+
+TABLE(qmin integer, qmax integer)
+
+Invoker
+
+
+
+_npc_compost_data
+–
+
+TABLE(item_id text, base_price numeric, qty_min integer, qty_max integer)
+
+Invoker
+
+
+
+_npc_crop_qty_range
+p_quality text, p_unlock integer
+
+TABLE(qmin integer, qmax integer)
+
+Invoker
+
+
+
+_npc_crops_data
+–
+
+TABLE(crop_id text, unlock_lvl integer, base_price numeric)
+
+Invoker
+
+
+
+_npc_customer_types
+–
+
+TABLE(ctype text, weight_min numeric, weight_max numeric, mult numeric, items_min integer, items_max integer, expires_h integer, bonus_chance numeric, bonus_strength text, min_level integer)
+
+Invoker
+
+
+
+_npc_fruit_qty_range
+p_quality text, p_unlock integer
+
+TABLE(qmin integer, qmax integer)
+
+Invoker
+
+
+
+_npc_fruits_data
+–
+
+TABLE(fruit_id text, unlock_lvl integer, base_price numeric)
+
+Invoker
+
+
+
+_npc_lvl_band
+p_unlock integer
+
+text
+
+Invoker
+
+
+
+_npc_lvl_weight
+p_level integer, p_weight_min numeric, p_weight_max numeric
+
+numeric
+
+Invoker
+
+
+
+_npc_max_active
+–
+
+integer
+
+Invoker
+
+
+
+_npc_merge_items
+p_items jsonb
+
+jsonb
+
+Invoker
+
+
+
+_npc_pick_item
+p_level integer
+
+TABLE(item_id text, item_qty integer, item_value numeric)
+
+Invoker
+
+
+
+_npc_quality_mult
+p_q text
+
+numeric
+
+Invoker
+
+
+
+_npc_rand_int
+a integer, b integer
+
+integer
+
+Invoker
+
+
+
+_npc_roll_bonus
+p_level integer, p_strength text
+
+jsonb
+
+Invoker
+
+
+
+_npc_spawn_interval_minutes
+–
+
+integer
+
+Invoker
+
+
+
+_npc_weighted_pick_text
+p_items text[], p_weights numeric[]
+
+text
+
+Invoker
+
+
+
+_roll_fruit_quality_srv
+p_luck_pct numeric DEFAULT 0
+
+text
+
+Invoker
+
+
+
+_trees_data_srv
+–
+
+TABLE(tree_id text, fruit_id text, growth_time_ms bigint, drop_min integer, drop_max integer, price_per_fruit numeric)
+
+Invoker
+
+
+
+add_hive_bees
+p_user_id uuid, p_amount integer
+
+jsonb
+
+Definer
+
+
+
+admin_reset_tutorial_test_account
+p_login text
+
+void
+
+Definer
+
+
+
+audit_profile_updates
+–
+
+trigger	
+Definer
+
+
+
+audit_seed_inventory_changes
+–
+
+trigger	
+Definer
+
+
+
+buy_barn_animal
+p_user_id uuid, p_animal_id text
+
+jsonb
+
+Definer
+
+
+
+buy_barn_slot
+p_user_id uuid, p_animal_id text
+
+jsonb
+
+Definer
+
+
+
+buy_epic_avatar
+p_avatar_id integer
+
+jsonb
+
+Definer
+
+
+
+buy_hive
+p_user_id uuid
+
+jsonb
+
+Definer
+
+
+
+buy_hive_shop_item
+p_item_id text
+
+jsonb
+
+Definer
+
+
+
+buy_orchard_tree
+p_user_id uuid, p_tree_id text
+
+jsonb
+
+Definer
+
+
+
+buy_shop_seeds
+p_user_id uuid, p_items jsonb
+
+jsonb
+
+Definer
+
+
+
+check_registration_available
+p_login text, p_email text
+
+jsonb
+
+Definer
+
+
+
+citext
+character
+
+citext
+
+Invoker
+
+
+
+citext
+boolean
+
+citext
+
+Invoker
+
+
+
+citext
+inet
+
+citext
+
+Invoker
+
+
+
+citext_cmp
+citext, citext
+
+integer
+
+Invoker
+
+
+
+citext_eq
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_ge
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_gt
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_hash
+citext
+
+integer
+
+Invoker
+
+
+
+citext_hash_extended
+citext, bigint
+
+bigint
+
+Invoker
+
+
+
+citext_larger
+citext, citext
+
+citext
+
+Invoker
+
+
+
+citext_le
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_lt
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_ne
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_pattern_cmp
+citext, citext
+
+integer
+
+Invoker
+
+
+
+citext_pattern_ge
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_pattern_gt
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_pattern_le
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_pattern_lt
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+citext_smaller
+citext, citext
+
+citext
+
+Invoker
+
+
+
+citextin
+cstring
+
+citext
+
+Invoker
+
+
+
+citextout
+citext
+
+cstring
+
+Invoker
+
+
+
+citextrecv
+internal
+
+citext
+
+Invoker
+
+
+
+citextsend
+citext
+
+bytea
+
+Invoker
+
+
+
+collect_all_animals
+p_user_id uuid
+
+jsonb
+
+Definer
+
+
+
+collect_animal
+p_user_id uuid, p_animal_id text
+
+jsonb
+
+Definer
+
+
+
+collect_honey
+p_user_id uuid, p_honey_bonus_pct numeric DEFAULT 0, p_suit_save_pct numeric DEFAULT 0
+
+jsonb
+
+Definer
+
+
+
+complete_customer_order
+p_user_id uuid, p_order_id uuid
+
+jsonb
+
+Definer
+
+
+
+debug_npc_weights
+p_level integer
+
+TABLE(ctype text, min_level integer, allowed boolean, weight numeric, items_min integer, items_max integer, mult numeric, expires_h integer, bonus_chance numeric, bonus_strength text)
+
+Invoker
+
+
+
+dev_add_exp
+p_amount integer
+
+jsonb
+
+Definer
+
+
+
+dev_add_gold
+p_amount numeric
+
+jsonb
+
+Definer
+
+
+
+dev_add_test_items
+p_mode text, p_amount integer DEFAULT 10, p_avatar_ids integer[] DEFAULT NULL::integer[]
+
+jsonb
+
+Definer
+
+
+
+dev_reset_account
+–
+
+jsonb
+
+Definer
+
+
+
+feed_barn_animal
+p_user_id uuid, p_animal_id text, p_crop_key text
+
+jsonb
+
+Definer
+
+
+
+game_buy_stat_points
+p_stat_key text, p_amount integer
+
+jsonb
+
+Definer
+
+
+
+game_change_avatar_skin
+p_avatar_skin integer
+
+jsonb
+
+Definer
+
+
+
+game_change_map
+p_target_map text
+
+jsonb
+
+Definer
+
+
+
+game_get_my_profile
+–
+
+profiles
+
+Definer
+
+
+
+game_harvest_plot
+p_plot_id integer, p_effective_grow_ms bigint DEFAULT NULL::bigint, p_zrecznosc integer DEFAULT 0, p_planted_quality text DEFAULT 'good'::text, p_exp_mult_override integer DEFAULT 0, p_compost_yield_extra integer DEFAULT 0, p_extra_harvest_pct numeric DEFAULT 0, p_bonus_drop_pct numeric DEFAULT 0, p_szczescie integer DEFAULT 0, p_exp_bonus_pct numeric DEFAULT 0
+
+json
+
+Definer
+
+
+
+game_map_for_level
+p_level integer
+
+text
+
+Invoker
+
+
+
+game_plant_crop
+p_plot_id integer, p_crop_id text, p_seed_key text DEFAULT NULL::text, p_planted_quality text DEFAULT 'good'::text
+
+profiles
+
+Definer
+
+
+
+game_plot_unlock_cost
+p_plot_id integer
+
+bigint
+
+Invoker
+
+
+
+game_repair_plot_obstacles
+p_user_id uuid
+
+json
+
+Definer
+
+
+
+game_reset_player_stats
+–
+
+jsonb
+
+Definer
+
+
+
+game_reset_plot_obstacles
+p_user_id uuid
+
+void
+
+Definer
+
+
+
+game_roll_equipment_upgrade
+p_item_id text, p_current_upg integer, p_luck integer DEFAULT 0
+
+jsonb
+
+Definer
+
+
+
+game_save_avatar_data
+p_avatar_skin integer, p_player_stats jsonb, p_free_skill_points integer, p_prev_level integer
+
+void
+
+Definer
+
+
+
+game_save_house_data
+p_equipment_slots integer, p_equipment jsonb
+
+void
+
+Definer
+
+
+
+game_start_tutorial
+–
+
+jsonb
+
+Definer
+
+
+
+game_sync_skin
+p_skin integer
+
+void
+
+Definer
+
+
+
+game_unlock_plot
+p_plot_id integer
+
+json
+
+Definer
+
+
+
+game_water_plot
+p_plot_id integer
+
+profiles
+
+Definer
+
+
+
+game_xp_to_next_level
+p_level integer
+
+bigint
+
+Invoker
+
+
+
+generate_plot_obstacles
+–
+
+jsonb
+
+Invoker
+
+
+
+get_email_by_login
+p_login text
+
+text
+
+Definer
+
+
+
+get_player_ranking
+–
+
+TABLE(user_id uuid, player_name text, guild_name text, level integer, money numeric, missions_completed integer, farm_power integer, ranking_score double precision, avatar_skin integer, customer_orders_completed integer)
+
+Definer
+
+
+
+handle_new_user
+–
+
+trigger	
+Definer
+
+
+
+harvest_all_trees
+p_user_id uuid
+
+jsonb
+
+Definer
+
+
+
+harvest_tree
+p_user_id uuid, p_tree_id text
+
+jsonb
+
+Definer
+
+
+
+market_active_value_limit
+p_level integer
+
+numeric
+
+Invoker
+
+
+
+market_browse
+p_item_type text DEFAULT NULL::text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0
+
+jsonb
+
+Definer
+
+
+
+market_buy_offer
+p_offer_id uuid, p_quantity integer DEFAULT NULL::integer
+
+jsonb
+
+Definer
+
+
+
+market_buy_offer
+p_offer_id uuid
+
+jsonb
+
+Definer
+
+
+
+market_cancel_offer
+p_offer_id uuid
+
+jsonb
+
+Definer
+
+
+
+market_claim_all_returns
+–
+
+jsonb
+
+Definer
+
+
+
+market_create_offer
+p_item_type text, p_item_key text, p_item_name text, p_item_icon text, p_quantity integer, p_price_per_unit numeric, p_duration_hours integer DEFAULT 24
+
+jsonb
+
+Definer
+
+
+
+market_create_offer
+p_item_type text, p_item_key text, p_item_name text, p_item_icon text, p_quantity integer, p_price_per_unit numeric, p_duration_hours integer DEFAULT 24, p_unlock_level integer DEFAULT 1
+
+jsonb
+
+Definer
+
+
+
+market_daily_earn_limit
+p_level integer
+
+numeric
+
+Invoker
+
+
+
+market_expire_offers
+–
+
+integer
+
+Definer
+
+
+
+market_get_my_offers
+–
+
+jsonb
+
+Definer
+
+
+
+market_get_returns
+–
+
+jsonb
+
+Definer
+
+
+
+market_min_price
+p_item_type text, p_item_key text
+
+numeric
+
+Invoker
+
+
+
+normalize_unlocked_plots
+p_input jsonb
+
+jsonb
+
+Invoker
+
+
+
+protect_inventory_columns
+–
+
+trigger	
+Invoker
+
+
+
+regexp_match
+citext, citext, text
+
+text[]
+
+Invoker
+
+
+
+regexp_match
+citext, citext
+
+text[]
+
+Invoker
+
+
+
+regexp_matches
+citext, citext
+
+SETOF text[]
+
+Invoker
+
+
+
+regexp_matches
+citext, citext, text
+
+SETOF text[]
+
+Invoker
+
+
+
+regexp_replace
+citext, citext, text
+
+text
+
+Invoker
+
+
+
+regexp_replace
+citext, citext, text, text
+
+text
+
+Invoker
+
+
+
+regexp_split_to_array
+citext, citext
+
+text[]
+
+Invoker
+
+
+
+regexp_split_to_array
+citext, citext, text
+
+text[]
+
+Invoker
+
+
+
+regexp_split_to_table
+citext, citext
+
+SETOF text
+
+Invoker
+
+
+
+regexp_split_to_table
+citext, citext, text
+
+SETOF text
+
+Invoker
+
+
+
+replace
+citext, citext, citext
+
+text
+
+Invoker
+
+
+
+search_message_recipients
+p_query text, p_limit integer DEFAULT 8
+
+TABLE(id uuid, username text, avatar_skin integer)
+
+Definer
+
+
+
+sell_fruits
+p_user_id uuid
+
+jsonb
+
+Definer
+
+
+
+sell_honey
+p_user_id uuid, p_qty integer
+
+jsonb
+
+Definer
+
+
+
+send_game_message
+p_to_user_id uuid, p_from_user_id uuid, p_from_username text, p_subject text, p_body text
+
+void
+
+Definer
+
+
+
+send_game_message
+p_to_user_id uuid, p_from_user_id uuid, p_from_username text, p_subject text, p_body text, p_to_username text DEFAULT NULL::text
+
+void
+
+Definer
+
+
+
+send_system_message
+p_to_user_id uuid, p_from_user_id uuid DEFAULT NULL::uuid, p_from_username text DEFAULT 'System'::text, p_subject text DEFAULT ''::text, p_body text DEFAULT ''::text, p_to_username text DEFAULT NULL::text
+
+void
+
+Definer
+
+
+
+set_my_login_after_signup
+p_login text
+
+jsonb
+
+Definer
+
+
+
+spawn_customer_order
+p_user_id uuid
+
+uuid
+
+Definer
+
+
+
+split_part
+citext, citext, integer
+
+text
+
+Invoker
+
+
+
+strpos
+citext, citext
+
+integer
+
+Invoker
+
+
+
+sync_barn_items
+p_user_id uuid, p_items jsonb
+
+boolean
+
+Definer
+
+
+
+sync_barn_owned
+p_user_id uuid, p_animal_id text, p_new_owned integer, p_new_slots integer
+
+void
+
+Definer
+
+
+
+sync_fruit_inventory
+p_user_id uuid, p_items jsonb
+
+boolean
+
+Definer
+
+
+
+sync_orchard_owned
+p_user_id uuid, p_tree_id text, p_new_owned integer
+
+jsonb
+
+Definer
+
+
+
+texticlike
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+texticlike
+citext, text
+
+boolean
+
+Invoker
+
+
+
+texticnlike
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+texticnlike
+citext, text
+
+boolean
+
+Invoker
+
+
+
+texticregexeq
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+texticregexeq
+citext, text
+
+boolean
+
+Invoker
+
+
+
+texticregexne
+citext, citext
+
+boolean
+
+Invoker
+
+
+
+texticregexne
+citext, text
+
+boolean
+
+Invoker
+
+
+
+tick_customer_orders
+p_user_id uuid
+
+jsonb
+
+Definer
+
+
+
+translate
+citext, citext, text
+
+text
+
+Invoker
+
+
+
+trg_generate_plot_obstacles
+–
+
+trigger	
+Invoker
+
+
