@@ -1801,7 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1670, t: 1020, w: 190, h: 230 });
+  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 700, t: 300, w: 220, h: 280 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
@@ -13548,6 +13548,10 @@ export default function Page() {
                         <div className="rounded-xl border border-yellow-400/30 bg-yellow-950/30 p-2.5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-yellow-300">🌾 Kombajn</p>
                           <p className="font-mono text-xs text-yellow-100">l:<span className="font-black text-white">{fvKombajnPos.l}</span> t:<span className="font-black text-white">{fvKombajnPos.t}</span> w:<span className="font-black text-white">{fvKombajnPos.w}</span> h:<span className="font-black text-white">{fvKombajnPos.h}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-orange-400/50 bg-orange-950/40 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-orange-300">📋 Okno zbiorów</p>
+                          <p className="font-mono text-xs text-orange-100">l:<span className="font-black text-white">{fvHarvestLogPos.l}</span> t:<span className="font-black text-white">{fvHarvestLogPos.t}</span> w:<span className="font-black text-white">{fvHarvestLogPos.w}</span> h:<span className="font-black text-white">{fvHarvestLogPos.h}</span></p>
                         </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
