@@ -14697,7 +14697,7 @@ export default function Page() {
 
 
 
-          {!!profile?.id && isFieldViewOpen && harvestLog.length > 0 && (() => {
+          {!!profile?.id && harvestLog.length > 0 && (() => {
             const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
@@ -14737,7 +14737,7 @@ export default function Page() {
               <div
                 className="fixed z-[88] rounded-[14px] border border-[#8b6a3e] bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden"
                 style={{
-                  left: `calc(50vw + ${(fvKombajnPos.l - BASE_W / 2) * gameScale}px)`,
+                  right: 0,
                   top: `calc(50vh + ${(fvKombajnPos.t + fvKombajnPos.h + 6 - BASE_H / 2) * gameScale}px)`,
                   width: `${fvKombajnPos.w * gameScale}px`,
                   maxHeight: `${(BASE_H - fvKombajnPos.t - fvKombajnPos.h - 14) * gameScale}px`,
