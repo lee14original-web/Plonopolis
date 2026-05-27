@@ -1801,15 +1801,22 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState({ l: 1573, t: 853, w: 320, h: 401 });
+  const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState(() => {
+    const gs = typeof window !== "undefined" ? Math.min(window.innerWidth / 1920, window.innerHeight / 1280) : 0.5;
+    return {
+      l: Math.round((typeof window !== "undefined" ? window.innerWidth : 960) * 0.5 + (1573 - 960) * gs),
+      t: Math.round((typeof window !== "undefined" ? window.innerHeight : 540) * 0.5 + (853 - 640) * gs),
+      w: Math.round(320 * gs),
+      h: Math.round(401 * gs),
+    };
+  });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
-      const isFixed = d.btn === "harvestlog";
-      const gs = isFixed ? gameScaleRef.current : 1;
+      const gs = 1;
       const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : setFvHarvestLogPos;
       if (d.mode === "move") {
         setter({
@@ -14737,11 +14744,11 @@ export default function Page() {
               <div
                 className={`fixed z-[88] rounded-[14px] border bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden ${fvToolEditMode ? "cursor-move border-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]"}`}
                 style={{
-                  left: `calc(50vw + ${(fvHarvestLogPos.l - BASE_W / 2) * gameScale}px)`,
-                  top: `calc(50vh + ${(fvHarvestLogPos.t - BASE_H / 2) * gameScale}px)`,
-                  width: `${fvHarvestLogPos.w * gameScale}px`,
-                  height: fvToolEditMode ? `${fvHarvestLogPos.h * gameScale}px` : undefined,
-                  maxHeight: fvToolEditMode ? undefined : `${fvHarvestLogPos.h * gameScale}px`,
+                  left: `${fvHarvestLogPos.l}px`,
+                  top: `${fvHarvestLogPos.t}px`,
+                  width: `${fvHarvestLogPos.w}px`,
+                  height: fvToolEditMode ? `${fvHarvestLogPos.h}px` : undefined,
+                  maxHeight: fvToolEditMode ? undefined : `${fvHarvestLogPos.h}px`,
                 }}
                 onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "harvestlog", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvHarvestLogPos.l, startT: fvHarvestLogPos.t, startW: fvHarvestLogPos.w, startH: fvHarvestLogPos.h }; } : undefined}
               >
