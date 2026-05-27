@@ -3529,14 +3529,16 @@ export default function Page() {
         localStorage.setItem(_pqKey, _seedQuality ?? "good");
       }
 
-      // Przywróć bonusy kompostu dla WSZYSTKICH pól po applyProfileState
-      // applyProfileState robi setPlotCrops(_loadedPlots) — serwer może nie zwrócić compostBonus dla innych pól
+      // Przywróć bonusy kompostu dla INNYCH pól po applyProfileState
+      // applyProfileState robi setPlotCrops(_loadedPlots) — serwer może nie zwrócić compostBonus dla pól których nie ruszał
+      // UWAGA: aktualny plotId pomijamy — stan po RPC jest źródłem prawdy dla sadzonej działki
       if (Object.keys(_allCompostSnapshot).length > 0) {
         setPlotCrops(prev => {
           let _changed = false;
           const _merged = { ...prev };
           for (const [_sid, _bonus] of Object.entries(_allCompostSnapshot)) {
             const _pid = Number(_sid);
+            if (_pid === plotId) continue; // plant RPC jest źródłem prawdy dla tej działki
             const _curr = _merged[_pid];
             if (_curr && !_curr.compostBonus) {
               _merged[_pid] = { ..._curr, compostBonus: _bonus };
