@@ -3251,9 +3251,10 @@ export default function Page() {
       // Advance do step 10 obsługuje polling useEffect — czeka na faktyczną gotowość upraw
     }
 
-    // ─── compostBonus restore + tutorial step 9 speedup (tylko podlewane pole) ───
+    // ─── compostBonus restore + tutorial step 9 speedup ───
     // Używa danych z odpowiedzi RPC jako bazy (już zatwierdzone w DB, bez dodatkowego fetcha).
-    // Speedup plantedAt stosujemy TYLKO dla aktualnie podlanego plotId (nie wszystkich tutorialPlotIds).
+    // Speedup stosujemy dla WSZYSTKICH tutorialPlotIds — nie tylko aktualnie podlewanego.
+    // Naprawia race condition gdy applyProfileState zgubił compostBonus z poprzedniego podlania.
     const _needsCompostRestore = Boolean(_preservedCompostBonus);
     const _tutorialStep9 = tutorialStep === 9 && tutorialPlotIds.includes(plotId);
     if ((_needsCompostRestore || _tutorialStep9) && profile?.id) {
@@ -3265,18 +3266,23 @@ export default function Page() {
       const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
       const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
       const _updatedPlots: Record<number, PlotCropState> = {};
-      // 1. compostBonus restore — jeśli RPC zgubił bonus kompostu
+      // 1. compostBonus restore — jeśli RPC zgubił bonus kompostu dla aktualnego pola
       if (_needsCompostRestore) {
         const _curr = _rpcPlots[plotId];
         if (_curr && !_curr.compostBonus) {
           _updatedPlots[plotId] = { ..._curr, compostBonus: _preservedCompostBonus! };
         }
       }
-      // 2. Speedup dla tutorial step 9 — warunek na _preservedCompostBonus (pewniejszy niż odczyt z RPC)
-      if (_tutorialStep9 && _preservedCompostBonus?.type === "guide") {
-        const _tPlot = _updatedPlots[plotId] ?? _rpcPlots[plotId];
-        if (_tPlot?.cropId === "carrot" && _tPlot?.plantedAt != null) {
-          _updatedPlots[plotId] = { ..._tPlot, compostBonus: _preservedCompostBonus, plantedAt: _tutorialSpeedupAt };
+      // 2. Speedup dla tutorial step 9 — aplikuj do WSZYSTKICH pól tutoriala z marchewką
+      // (nie tylko aktualnie podlewane — inne mogły stracić compostBonus przez applyProfileState)
+      if (_tutorialStep9) {
+        for (const _tId of tutorialPlotIds) {
+          // Priorytet: _updatedPlots > RPC > lokalny ref (dla pól innych niż podlewane)
+          const _base = _updatedPlots[_tId] ?? _rpcPlots[_tId] ?? plotCropsRef.current[_tId];
+          if (_base?.cropId === "carrot" && _base?.plantedAt != null) {
+            const _bonus = _base.compostBonus ?? (_tId === plotId ? _preservedCompostBonus : null);
+            _updatedPlots[_tId] = { ..._base, ...(_bonus ? { compostBonus: _bonus } : {}), plantedAt: _tutorialSpeedupAt };
+          }
         }
       }
       if (Object.keys(_updatedPlots).length > 0) {
