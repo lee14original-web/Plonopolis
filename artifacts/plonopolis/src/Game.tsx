@@ -2178,9 +2178,16 @@ export default function Page() {
   const [tutorialHarvestedIds, setTutorialHarvestedIds] = React.useState<number[]>([]);
   const [tutorialPlantedIds, setTutorialPlantedIds] = React.useState<number[]>([]);
   const [tutorialPanelMinimized, setTutorialPanelMinimized] = React.useState<boolean>(false);
-  const fieldQueueRef = React.useRef<Array<{ plotId: number; kind: string; execute: () => Promise<void> }>>([]);
-  const fieldQueueActiveRef = React.useRef<{ plotId: number; kind: string } | null>(null);
-  const fieldQueueProcessingRef = React.useRef(false);
+  type FieldQueueItem = { plotId: number; kind: string; execute: () => Promise<void> };
+  const plantQueueRef     = React.useRef<FieldQueueItem[]>([]);
+  const waterQueueRef     = React.useRef<FieldQueueItem[]>([]);
+  const harvestQueueRef   = React.useRef<FieldQueueItem[]>([]);
+  const plantActiveRef    = React.useRef<number | null>(null);
+  const waterActiveRef    = React.useRef<number | null>(null);
+  const harvestActiveRef  = React.useRef<number | null>(null);
+  const plantProcessingRef   = React.useRef(false);
+  const waterProcessingRef   = React.useRef(false);
+  const harvestProcessingRef = React.useRef(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
@@ -3159,47 +3166,69 @@ export default function Page() {
   // ─── Ujednolicona kolejka akcji polowych — sekwencyjne przetwarzanie ───
 
   function enqueuePlotAction(plotId: number, kind: string, execute: () => Promise<void>) {
-    if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] enqueuePlotAction", { plotId, kind, active: fieldQueueActiveRef.current, queueLen: fieldQueueRef.current.length });
-    if (!profile) {
-      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT no-profile", { plotId, kind });
-      return;
-    }
-    if (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === kind) {
-      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT dedup-active", { plotId, kind });
-      return;
-    }
-    if (fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === kind)) {
-      if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] REJECT dedup-queue", { plotId, kind });
-      return;
-    }
-    if (process.env.NODE_ENV !== "production") console.debug("[fieldQueue] ACCEPT", { plotId, kind, newQueueLen: fieldQueueRef.current.length + 1 });
-    // Zawiń execute — dodaj do odpowiedniego queuedXxxPlotIds i usuń po zakończeniu
+    if (!profile) return;
     const _setQueued = kind === "harvest" ? setQueuedHarvestPlotIds : kind === "plant" ? setQueuedPlantPlotIds : kind === "water" ? setQueuedWaterPlotIds : null;
     const wrappedExecute = _setQueued
       ? async () => { try { await execute(); } finally { _setQueued(prev => { const s = new Set(prev); s.delete(plotId); return s; }); } }
       : execute;
-    fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute: wrappedExecute }];
-    if (_setQueued) {
-      _setQueued(prev => { const s = new Set(prev); s.add(plotId); return s; });
+    if (kind === "plant") {
+      if (plantActiveRef.current === plotId || plantQueueRef.current.some(a => a.plotId === plotId)) return;
+      plantQueueRef.current = [...plantQueueRef.current, { plotId, kind, execute: wrappedExecute }];
+      if (_setQueued) _setQueued(prev => { const s = new Set(prev); s.add(plotId); return s; });
+      if (!plantProcessingRef.current) void processPlantQueue();
+    } else if (kind === "water") {
+      if (waterActiveRef.current === plotId || waterQueueRef.current.some(a => a.plotId === plotId)) return;
+      waterQueueRef.current = [...waterQueueRef.current, { plotId, kind, execute: wrappedExecute }];
+      if (_setQueued) _setQueued(prev => { const s = new Set(prev); s.add(plotId); return s; });
+      if (!waterProcessingRef.current) void processWaterQueue();
+    } else if (kind === "harvest") {
+      if (harvestActiveRef.current === plotId || harvestQueueRef.current.some(a => a.plotId === plotId)) return;
+      harvestQueueRef.current = [...harvestQueueRef.current, { plotId, kind, execute: wrappedExecute }];
+      if (_setQueued) _setQueued(prev => { const s = new Set(prev); s.add(plotId); return s; });
+      if (!harvestProcessingRef.current) void processHarvestQueue();
     }
-    if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
 
-  async function processFieldQueue(): Promise<void> {
-    if (fieldQueueProcessingRef.current) return;
-    fieldQueueProcessingRef.current = true;
+  async function processPlantQueue(): Promise<void> {
+    if (plantProcessingRef.current) return;
+    plantProcessingRef.current = true;
     try {
-      while (fieldQueueRef.current.length > 0) {
-        const item = fieldQueueRef.current[0];
-        fieldQueueRef.current = fieldQueueRef.current.slice(1);
-        fieldQueueActiveRef.current = { plotId: item.plotId, kind: item.kind };
+      while (plantQueueRef.current.length > 0) {
+        const item = plantQueueRef.current[0];
+        plantQueueRef.current = plantQueueRef.current.slice(1);
+        plantActiveRef.current = item.plotId;
         await item.execute();
-        fieldQueueActiveRef.current = null;
+        plantActiveRef.current = null;
       }
-    } finally {
-      fieldQueueProcessingRef.current = false;
-      fieldQueueActiveRef.current = null;
-    }
+    } finally { plantProcessingRef.current = false; plantActiveRef.current = null; }
+  }
+
+  async function processWaterQueue(): Promise<void> {
+    if (waterProcessingRef.current) return;
+    waterProcessingRef.current = true;
+    try {
+      while (waterQueueRef.current.length > 0) {
+        const item = waterQueueRef.current[0];
+        waterQueueRef.current = waterQueueRef.current.slice(1);
+        waterActiveRef.current = item.plotId;
+        await item.execute();
+        waterActiveRef.current = null;
+      }
+    } finally { waterProcessingRef.current = false; waterActiveRef.current = null; }
+  }
+
+  async function processHarvestQueue(): Promise<void> {
+    if (harvestProcessingRef.current) return;
+    harvestProcessingRef.current = true;
+    try {
+      while (harvestQueueRef.current.length > 0) {
+        const item = harvestQueueRef.current[0];
+        harvestQueueRef.current = harvestQueueRef.current.slice(1);
+        harvestActiveRef.current = item.plotId;
+        await item.execute();
+        harvestActiveRef.current = null;
+      }
+    } finally { harvestProcessingRef.current = false; harvestActiveRef.current = null; }
   }
 
   async function handleWaterPlot(plotId: number, _skipTimer = false, _skipCropCheck = false) {
@@ -3371,8 +3400,8 @@ export default function Page() {
 
     // Blokada: akcja sadzenia na tym polu już jest aktywna lub w kolejce
     if (
-      (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "plant") ||
-      fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "plant")
+      plantActiveRef.current === plotId ||
+      plantQueueRef.current.some(a => a.plotId === plotId)
     ) {
       if (!_fromDrag) setMessage({ fieldOnly: true, type: "info", title: "Akcja w toku", text: "Poczekaj aż zakończy się obecna akcja na polu." });
       return;
@@ -3419,7 +3448,8 @@ export default function Page() {
     if (dragPlantedFieldsRef.current.has(plotId)) return;
     if (!isPlotUnlocked(plotId)) return;
     // Dedup przez ref (nie React state) — unika stale closure przy szybkim drag
-    if (fieldQueueActiveRef.current?.plotId === plotId || fieldQueueRef.current.some(a => a.plotId === plotId)) {
+    if (plantActiveRef.current === plotId || waterActiveRef.current === plotId || harvestActiveRef.current === plotId ||
+        plantQueueRef.current.some(a => a.plotId === plotId) || waterQueueRef.current.some(a => a.plotId === plotId) || harvestQueueRef.current.some(a => a.plotId === plotId)) {
       if (process.env.NODE_ENV !== "production") console.debug("[drag] skip — plotId in queue/active", { plotId });
       return;
     }
@@ -6066,8 +6096,8 @@ export default function Page() {
     if (!_skipTimer) {
       // Dedup — nie kolejkuj jeśli akcja harvest na tym polu już jest aktywna lub w kolejce
       if (
-        (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === "harvest") ||
-        fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === "harvest")
+        harvestActiveRef.current === plotId ||
+        harvestQueueRef.current.some(a => a.plotId === plotId)
       ) return;
       // Snapshot bonusów eq w momencie kliknięcia — anti-exploit (gracz nie może zmieniać ekwipunku w trakcie)
       const _harvestDurMs = BASE_HARVEST_MS;
