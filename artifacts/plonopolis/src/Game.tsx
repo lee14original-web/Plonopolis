@@ -1829,6 +1829,8 @@ export default function Page() {
   // Akcje polowe w toku (sadzenie/zbiór z paskiem postępu)
   const [pendingFieldActions, setPendingFieldActions] = useState<Record<number, PendingFieldAction>>({});
   const [, setPendingTick] = useState(0);
+  // Pola oczekujące w kolejce zbioru (zanim zacznie się animacja paska postępu)
+  const [queuedHarvestPlotIds, setQueuedHarvestPlotIds] = useState<Set<number>>(new Set());
   // Mapa plotId → setTimeout id (do anulowania przy unmount)
   const fieldActionTimeoutsRef = React.useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const sessionTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3133,7 +3135,14 @@ export default function Page() {
     if (!profile) return;
     if (fieldQueueActiveRef.current?.plotId === plotId && fieldQueueActiveRef.current?.kind === kind) return;
     if (fieldQueueRef.current.some(a => a.plotId === plotId && a.kind === kind)) return;
-    fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute }];
+    // Dla harvest: zawiń execute — dodaj do queuedHarvestPlotIds i usuń po zakończeniu
+    const wrappedExecute = kind === "harvest"
+      ? async () => { try { await execute(); } finally { setQueuedHarvestPlotIds(prev => { const s = new Set(prev); s.delete(plotId); return s; }); } }
+      : execute;
+    fieldQueueRef.current = [...fieldQueueRef.current, { plotId, kind, execute: wrappedExecute }];
+    if (kind === "harvest") {
+      setQueuedHarvestPlotIds(prev => new Set([...prev, plotId]));
+    }
     if (!fieldQueueProcessingRef.current) void processFieldQueue();
   }
 
@@ -13961,6 +13970,23 @@ export default function Page() {
                                   );
                                   return null;
                                 })()}
+
+                                {/* Overlay kolejki zbioru — widoczny gdy pole czeka w kolejce, zanim pasek postępu wystartuje */}
+                                {queuedHarvestPlotIds.has(plotId) && !pendingFieldActions[plotId] && (
+                                  <div className="pointer-events-none absolute inset-0 z-[15] rounded-xl" style={{
+                                    background: "rgba(251,146,60,0.18)",
+                                    boxShadow: "inset 0 0 0 2.5px rgba(251,146,60,0.75)",
+                                  }}>
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                                      <div className="text-[10px] font-black uppercase tracking-wider" style={{
+                                        color: "#fb923c",
+                                        textShadow: "0 0 4px rgba(0,0,0,0.95)",
+                                      }}>
+                                        Kolejka...
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* Pasek postępu sadzenia/zbioru */}
                                 {pendingFieldActions[plotId] && (() => {
