@@ -6861,7 +6861,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", background: "#000" }}>
+    <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#000" }}>
       <style>{`
         @keyframes plono-map-fade-out {
           0%   { opacity: 1; }
