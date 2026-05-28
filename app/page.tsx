@@ -3,9 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import { supabase } from "@/lib/supabase";
-import chwasty1Img from "@assets/chwasty1_1780004912610.png";
-import chwasty2Img from "@assets/chwasty2_1780004912611.png";
-import chwasty3Img from "@assets/chwasty3_1780004912612.png";
+import chwasty1Img from "./assets/chwasty1.png";
+import chwasty2Img from "./assets/chwasty2.png";
+import chwasty3Img from "./assets/chwasty3.png";
 
 type RankingPlayer = {
   user_id: string;
