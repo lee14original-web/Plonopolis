@@ -1811,7 +1811,7 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 1408, t: 696, w: 122, h: 0 });
+  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 155, t: 1006, w: 122, h: 0 });
   const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 960, t: 300, w: 80, h: 0 });
   const tutArrowDragRef = React.useRef<{ step: 12|13, startMX: number, startMY: number, startX: number, startY: number } | null>(null);
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
