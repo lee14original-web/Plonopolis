@@ -13920,11 +13920,12 @@ export default function Page() {
                                                 <span className="text-[13px] text-[#8b6a3e]/80">📚 EXP</span>
                                                 <span className="text-[14px] font-black text-sky-300">
                                                   {q === "legendary"
-                                                    ? `+${crop.expReward}–${crop.expReward * 40}`
+                                                    ? `+${crop.expReward * 10}–${crop.expReward * 20}`
                                                     : q === "epic"
                                                     ? `+${crop.expReward * 3}–${crop.expReward * 6}`
+                                                    : q === "rotten"
+                                                    ? `+0`
                                                     : `+${crop.expReward}`}
-                                                  {q === "legendary" && <span className="text-[11px] text-sky-400/50 ml-1">cap ×50</span>}
                                                 </span>
                                               </div>
 
@@ -14911,19 +14912,19 @@ export default function Page() {
                       {/* 4 ikony jakości marchewki — poglądowo */}
                       <div className="mb-5 flex gap-4 items-start">
                         {([
-                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",             label: "Popsuta",    badge: "⚠️", exp: 0,  chance: "~10%", border: "#9ca3af" },
-                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png",   label: "Zwykła",     badge: "✅", exp: 6,  chance: "~75%", border: "#d1d5db" },
-                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",               label: "Epicka",     badge: "⭐", exp: 18, chance: "~12%", border: "#22c55e" },
-                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",          label: "Legendarna", badge: "🌟", exp: 30, chance: "~3%",  border: "#f59e0b" },
-                        ] as { quality: string; sprite: string; label: string; badge: string; exp: number; chance: string; border: string }[]).map(q => (
+                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%", border: "#9ca3af" },
+                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~75%", border: "#d1d5db" },
+                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~12%", border: "#22c55e" },
+                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~3%",  border: "#f59e0b" },
+                        ] as { quality: string; sprite: string; label: string; expLabel: string; chance: string; border: string }[]).map(q => (
                           <div key={q.quality} className="group relative flex flex-col items-center gap-1 cursor-help">
                             <div className="w-[52px] h-[52px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
                               <img src={q.sprite} alt={q.label} className="w-9 h-9 object-contain" style={{ imageRendering: "pixelated" }} />
                             </div>
-                            <span className="text-[10px] font-bold text-[#dfcfab] whitespace-nowrap">{q.badge} {q.label}</span>
+                            <span className="text-[10px] font-bold text-[#dfcfab] whitespace-nowrap">{q.label}</span>
                             <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-0.5 min-w-[130px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl">
-                              <p className="text-[12px] font-black text-[#d8ba7a]">{q.badge} {q.label}</p>
-                              <p className="text-[11px] text-[#f9e7b2]">EXP: <span className="font-bold text-sky-300">+{q.exp}</span></p>
+                              <p className="text-[12px] font-black text-[#d8ba7a]">{q.label}</p>
+                              <p className="text-[11px] text-[#f9e7b2]">EXP: <span className="font-bold text-sky-300">{q.expLabel}</span></p>
                               <p className="text-[11px] text-[#8b6a3e]">Szansa: {q.chance}</p>
                             </div>
                           </div>
@@ -15406,12 +15407,12 @@ export default function Page() {
                 <p className="font-black text-amber-300">🌟 Zawsze wszystkie nagrody:</p>
                 <p>✅ {hoveredCrop.yieldAmount <= 2 ? "20–60" : "30–80"} zwykłych nasion</p>
                 <p>⭐ {hoveredCrop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich nasion</p>
-                <p>📚 EXP ×{hoveredCrop.yieldAmount <= 2 ? "10–20" : "12–25"}</p>
+                <p>📚 EXP: +{hoveredCrop.expReward * (hoveredCrop.yieldAmount <= 2 ? 10 : 12)}–{hoveredCrop.expReward * (hoveredCrop.yieldAmount <= 2 ? 20 : 25)}</p>
               </div>
             ) : hoveredSeedQuality === "epic" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(34,197,94,0.08)] p-2 text-[13px]">
                 <p className="font-black text-green-300">🎲 Każda sztuka losuje jakość osobno</p>
-                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt."} • ⭐ EXP ×3–6</p>
+                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt."} • EXP: +{hoveredCrop.expReward * 3}–{hoveredCrop.expReward * 6}</p>
               </div>
             ) : (
               <p className="mt-1">🌾 Zbiór: {`${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
@@ -16342,9 +16343,11 @@ export default function Page() {
                 style={{left:_p.l-_sz/2,top:_p.t-_ah/2}}
                 onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startX:_p.l,startY:_p.t};}}
               >
-                <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
-                  ✥ {_p.l},{_p.t}
-                </div>
+                {canUseTestTools && (
+                  <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
+                    ✥ {_p.l},{_p.t}
+                  </div>
+                )}
                 <div className="animate-bounce">
                   <svg width={_sz} height={_ah} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
