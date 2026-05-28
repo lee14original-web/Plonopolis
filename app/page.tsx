@@ -1815,7 +1815,7 @@ export default function Page() {
   const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 945, t: 654, w: 0, h: 0 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
-    if (!fvToolEditMode || !isFieldViewOpen) return;
+    if (!isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
@@ -14043,7 +14043,7 @@ export default function Page() {
 
                   {/* Ciągnik — bulk compost */}
                   {(() => {
-                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && tutorialStep <= 12 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
                     return (
                   <button
                     type="button"
@@ -14070,7 +14070,7 @@ export default function Page() {
 
                   {/* Ogrodnik — bulk plant */}
                   {(() => {
-                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && tutorialStep <= 12 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
                     return (
                   <button
                     type="button"
@@ -14097,7 +14097,7 @@ export default function Page() {
 
                   {/* Zraszacz — bulk water */}
                   {(() => {
-                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && tutorialStep <= 12 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
                     return (
                   <button
                     type="button"
@@ -14124,7 +14124,7 @@ export default function Page() {
 
                   {/* Kombajn — bulk harvest */}
                   {(() => {
-                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && tutorialStep <= 12 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
                     return (
                   <button
                     type="button"
@@ -14149,22 +14149,32 @@ export default function Page() {
                   );
                   })()}
 
-                  {/* Drag handle'y dla strzałek tutorialu (widoczne tylko w trybie edycji) */}
-                  {fvToolEditMode && (
-                    <>
-                      <div
-                        className="fixed z-[300] w-8 h-8 rounded-full bg-purple-600/90 border-2 border-purple-300 cursor-move flex items-center justify-center text-[13px] shadow-lg select-none"
-                        style={{ left: fvTutArrow12Pos.l - 16, top: fvTutArrow12Pos.t - 16 }}
-                        title="Strzałka krok 12 — przeciągnij aby ustawić"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar12", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow12Pos.l, startT: fvTutArrow12Pos.t, startW: 0, startH: 0 }; }}
-                      >🎯</div>
-                      <div
-                        className="fixed z-[300] w-8 h-8 rounded-full bg-violet-600/90 border-2 border-violet-300 cursor-move flex items-center justify-center text-[13px] shadow-lg select-none"
-                        style={{ left: fvTutArrow13Pos.l - 16, top: fvTutArrow13Pos.t - 16 }}
-                        title="Strzałka krok 13 — przeciągnij aby ustawić"
-                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar13", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow13Pos.l, startT: fvTutArrow13Pos.t, startW: 0, startH: 0 }; }}
-                      >🎯</div>
-                    </>
+                  {/* Drag handle'y dla strzałek tutorialu — widoczne podczas krok 12/13 oraz w trybie edycji */}
+                  {(tutorialStep === 12 || fvToolEditMode) && (
+                    <div
+                      className="fixed z-[350] flex flex-col items-center gap-0.5 cursor-move select-none"
+                      style={{ left: fvTutArrow12Pos.l - 28, top: fvTutArrow12Pos.t - 52 }}
+                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar12", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow12Pos.l, startT: fvTutArrow12Pos.t, startW: 0, startH: 0 }; }}
+                    >
+                      <div className="rounded-md bg-purple-900/95 border border-purple-400/80 px-2 py-0.5 shadow-lg pointer-events-none">
+                        <p className="font-mono text-[10px] text-purple-200 leading-none whitespace-nowrap">🎯 krok 12 · {fvTutArrow12Pos.l},{fvTutArrow12Pos.t}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-purple-600/90 border-2 border-purple-300 shadow-xl flex items-center justify-center text-[18px]">⊕</div>
+                      <div className="w-px h-3 bg-purple-400/70" />
+                    </div>
+                  )}
+                  {(tutorialStep === 13 || fvToolEditMode) && (
+                    <div
+                      className="fixed z-[350] flex flex-col items-center gap-0.5 cursor-move select-none"
+                      style={{ left: fvTutArrow13Pos.l - 28, top: fvTutArrow13Pos.t - 52 }}
+                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar13", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow13Pos.l, startT: fvTutArrow13Pos.t, startW: 0, startH: 0 }; }}
+                    >
+                      <div className="rounded-md bg-violet-900/95 border border-violet-400/80 px-2 py-0.5 shadow-lg pointer-events-none">
+                        <p className="font-mono text-[10px] text-violet-200 leading-none whitespace-nowrap">🎯 krok 13 · {fvTutArrow13Pos.l},{fvTutArrow13Pos.t}</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-violet-600/90 border-2 border-violet-300 shadow-xl flex items-center justify-center text-[18px]">⊕</div>
+                      <div className="w-px h-3 bg-violet-400/70" />
+                    </div>
                   )}
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
