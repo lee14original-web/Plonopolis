@@ -1811,8 +1811,8 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 960, t: 800, w: 0, h: 0 });
-  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 960, t: 800, w: 0, h: 0 });
+  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 155, t: 899, w: 0, h: 0 });
+  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 945, t: 654, w: 0, h: 0 });
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
