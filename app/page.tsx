@@ -16298,6 +16298,17 @@ export default function Page() {
                     <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
                       {_texts[tutorialStep]}
                     </p>
+                    {tutorialStep === 13 && (
+                      <button
+                        type="button"
+                        className="mt-4 w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-4 py-2.5 text-sm font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
+                        onClick={async () => {
+                          if (!profile?.id) return;
+                          await supabase.from("profiles").update({ tutorial_completed: true }).eq("id", profile.id);
+                          setProfile(p => p ? { ...p, tutorial_completed: true } : p);
+                        }}
+                      >Dalej</button>
+                    )}
                   </div>
                 </div>
               </div>
