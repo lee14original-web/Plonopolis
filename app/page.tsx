@@ -2505,6 +2505,7 @@ export default function Page() {
   const avatarHoverTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const [harvestCountdown, setHarvestCountdown] = React.useState(25);
+  const [isFvHarvestModalOpen, setIsFvHarvestModalOpen] = React.useState(false);
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3720,7 +3721,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (!isFieldViewOpen) { setHarvestLog([]); return; }
+    if (!isFieldViewOpen) { setHarvestLog([]); setIsFvHarvestModalOpen(false); return; }
   }, [isFieldViewOpen]);
 
   useEffect(() => {
@@ -13616,6 +13617,22 @@ export default function Page() {
                     )}
                   </button>
 
+                  {/* ─── Przycisk Zbiory (pod Zbierz) ─── */}
+                  <button
+                    type="button"
+                    onClick={() => { if (!fvToolEditMode) setIsFvHarvestModalOpen(prev => !prev); }}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "opacity-40 cursor-not-allowed" : isFvHarvestModalOpen ? "border-amber-400 bg-amber-900/60 shadow-[0_0_20px_rgba(251,191,36,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvZbierzPos.l, top: fvZbierzPos.t + fvZbierzPos.h + 10, width: fvZbierzPos.w, height: fvZbierzPos.h }}
+                  >
+                    <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-1">Zbiory</p>
+                    <span className="text-[38px] leading-none pointer-events-none">🌾</span>
+                    {harvestLog.length > 0 && !isFvHarvestModalOpen && (
+                      <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] rounded-full bg-amber-400 text-[10px] font-black text-black flex items-center justify-center px-1 leading-none">
+                        {harvestLog.length}
+                      </span>
+                    )}
+                  </button>
+
                   {/* ─── Przycisk Nasiona ─── */}
                   <button
                     type="button"
@@ -14703,7 +14720,8 @@ export default function Page() {
 
 
 
-          {!!profile?.id && isFieldViewOpen && (() => {
+          {/* ═══ MODAL — SESJA ZBIORÓW ═══ */}
+          {isFvHarvestModalOpen && isFieldViewOpen && (() => {
             const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
               (acc, e) => {
                 const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
@@ -14718,162 +14736,119 @@ export default function Page() {
             );
             const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
             const items = Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>;
-
-            const _logCompostExpPct = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "exp" ? (e.compostBonus?.value ?? 0) : 0), 0);
-            const _logCompostGrowthPct = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "growth" ? (e.compostBonus?.value ?? 0) : 0), 0);
-            const _logCompostYield = harvestLog.reduce((m, e) => Math.max(m, e.compostBonus?.type === "yield" ? (e.compostBonus?.value ?? 0) : 0), 0);
-
-            const _eqExpPct    = Math.round(getEquipBonusPct("% EXP z upraw", charEquipped) + getEquipBonusPct("% EXP", charEquipped));
-            const _eqWiedzaPkt = Math.round(getEquipFlatBonus(" pkt Wiedzy", charEquipped));
-            const _eqZrecznPkt = Math.round(getEquipFlatBonus(" pkt Zrecznosci", charEquipped));
-            const _eqSzescPkt  = Math.round(getEquipFlatBonus(" pkt Szczescia", charEquipped));
-            const _eqSadownPkt = Math.round(getEquipFlatBonus(" pkt Sadownika", charEquipped));
-            const _eqZaradPkt  = Math.round(getEquipFlatBonus(" pkt Zaradnosci", charEquipped));
-            const _stWiedza    = (effectiveStats.wiedza    ?? 0) + _eqWiedzaPkt;
-            const _stZrecznosc = (effectiveStats.zrecznosc ?? 0) + _eqZrecznPkt;
-            const _stZaradnosc = (effectiveStats.zaradnosc ?? 0) + _eqZaradPkt;
-            const _stSzczescie = (effectiveStats.szczescie ?? 0) + _eqSzescPkt;
-            const _stSadownik  = (effectiveStats.sadownik  ?? 0) + _eqSadownPkt;
-            const _hasAnyBonus = _stWiedza > 0 || _stZrecznosc > 0 || _stZaradnosc > 0 || _stSzczescie > 0
-              || _stSadownik > 0 || _eqExpPct > 0 || _logCompostExpPct > 0
-              || _logCompostGrowthPct > 0 || _logCompostYield > 0;
-
-            void _hasAnyBonus;
-
-            return ReactDOM.createPortal(
+            return (
               <div
-                className={`fixed z-[88] rounded-[14px] border bg-[rgba(24,14,6,0.97)] text-[#dfcfab] shadow-2xl backdrop-blur-sm overflow-hidden ${fvToolEditMode ? "cursor-move border-orange-400 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]"}`}
-                style={{
-                  left: `${fvHarvestLogPos.l}px`,
-                  top: `${fvHarvestLogPos.t}px`,
-                  width: `${fvHarvestLogPos.w}px`,
-                  height: fvToolEditMode ? `${fvHarvestLogPos.h}px` : undefined,
-                  maxHeight: fvToolEditMode ? undefined : `${fvHarvestLogPos.h}px`,
-                }}
-                onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "harvestlog", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvHarvestLogPos.l, startT: fvHarvestLogPos.t, startW: fvHarvestLogPos.w, startH: fvHarvestLogPos.h }; } : undefined}
+                className="absolute inset-0 z-[160] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                onClick={() => setIsFvHarvestModalOpen(false)}
               >
-                {/* Tryb edycji — overlay z koordynatami i resize */}
-                {fvToolEditMode && (
-                  <>
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 pointer-events-none">
-                      <p className="text-[9px] font-black text-orange-200 uppercase tracking-widest">Okno zbiorów</p>
-                      <p className="font-mono text-[9px] text-yellow-100">l:<span className="font-black text-white">{fvHarvestLogPos.l}</span> t:<span className="font-black text-white">{fvHarvestLogPos.t}</span></p>
-                      <p className="font-mono text-[9px] text-yellow-100">w:<span className="font-black text-white">{fvHarvestLogPos.w}</span> h:<span className="font-black text-white">{fvHarvestLogPos.h}</span></p>
+                <div
+                  className="relative w-[820px] max-h-[680px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.98)] shadow-2xl flex flex-col overflow-hidden"
+                  onClick={e => e.stopPropagation()}
+                >
+                  {/* Nagłówek */}
+                  <div className="flex items-center justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
+                    <div>
+                      <h2 className="text-2xl font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
+                      <p className="text-[11px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
                     </div>
-                    <div
-                      className="absolute bottom-0 right-0 z-20 h-4 w-4 cursor-se-resize bg-orange-400/80 rounded-tl-md"
-                      onMouseDown={(e) => { e.stopPropagation(); fvToolDragRef.current = { btn: "harvestlog", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: fvHarvestLogPos.l, startT: fvHarvestLogPos.t, startW: fvHarvestLogPos.w, startH: fvHarvestLogPos.h }; }}
-                    />
-                  </>
-                )}
-
-                {/* Nagłówek */}
-                {!fvToolEditMode && (
-                  <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.6)]">
-                    <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#d8ba7a]">Zbiory sesji</p>
-                    {tutorialStep === 12 ? (
-                      <button
-                        onClick={() => setMessage({ type: "info", title: "Przewodnik", text: "Najpierw kliknij Dalej w przewodniku poniżej." })}
-                        className="rounded-lg border border-[#8b6a3e]/30 bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[9px] font-bold text-[#8b6a3e] opacity-50 cursor-not-allowed"
-                      >✕</button>
-                    ) : (
-                      <button onClick={() => setHarvestLog([])} className="rounded-lg border border-[#8b6a3e]/40 bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[9px] font-bold text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/40 transition-colors">✕</button>
-                    )}
-                  </div>
-                )}
-
-                {/* Zebrano — ikony (max 35 = 5×7, siatka skalowana do szerokości panelu) */}
-                {!fvToolEditMode && (
-                  <div className="p-1.5">
-                    {items.length === 0
-                      ? <p className="text-center text-[9px] text-[#8b6a3e] py-3">brak zbiorów</p>
-                      : <div className="grid grid-cols-5 gap-1">
-                      {items.slice(0, 35).map((g, i) => {
-                        const _qd = CROP_QUALITY_DEFS[g.quality];
-                        const _cropDef = CROPS.find(c => c.id === g.cropId);
-                        const _sprite = g.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
-                                      : g.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
-                                      : g.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
-                                      : _cropDef?.spritePath;
-                        const _total = g.baseAmount + g.bonusAmount;
-                        const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
-                        return (
-                          <div key={i} className="group relative">
-                            <div className="relative w-full aspect-square cursor-default rounded-md border-2 transition-transform duration-150 group-hover:scale-110"
-                              style={_isExpOnly
-                                ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
-                                : g.quality === "legendary"
-                                  ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
-                                  : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
-                              {_isExpOnly
-                                ? <span className="flex h-full w-full flex-col items-center justify-center gap-0.5">
-                                    <span className="text-base leading-none">⭐</span>
-                                    <span className="text-[7px] font-black text-sky-300 leading-none">XP</span>
-                                  </span>
-                                : _sprite
-                                  ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-0.5" />
-                                  : <span className="flex h-full w-full items-center justify-center text-lg">🌾</span>
-                              }
-                              {g.quality === "legendary" && !_isExpOnly && (
-                                <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
-                                  <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
-                                </span>
-                              )}
-                              <span className="absolute left-0 top-0 text-[7px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
-                              <span className="absolute bottom-0 right-0 rounded bg-black/70 px-0.5 text-[7px] font-black text-white leading-tight">
-                                {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
-                              </span>
-                            </div>
-                            {/* Tooltip */}
-                            <div className="pointer-events-none absolute bottom-[calc(100%+4px)] right-0 z-[200] hidden w-36 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-2.5 text-xs shadow-2xl group-hover:block">
-                              <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
-                              <p className="mb-1" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
-                              {g.baseAmount > 0 && <p>Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
-                              {g.bonusAmount > 0 && <p>Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
-                              {_isExpOnly && <p className="text-amber-300">🌟 Bonus EXP</p>}
-                              <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-sky-300">EXP: +{g.baseExp}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    }
-                    {items.length > 35 && (
-                      <p className="mt-1 text-center text-[8px] text-[#8b6a3e]">+{items.length - 35} więcej</p>
-                    )}
-                  </div>
-                )}
-
-                {/* EXP za zbiory */}
-                {!fvToolEditMode && items.length > 0 && (
-                  <div className="mx-2 mb-2 rounded-xl border border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.5)] px-2.5 py-1.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-[#8b6a3e] leading-tight">EXP za zbiory</span>
-                      <span className="text-sm font-black text-sky-200 shrink-0">+{totalExp}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* ─── Blok przewodnika krok 12 ─── */}
-                {!fvToolEditMode && tutorialStep === 12 && (
-                  <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-3 py-3">
-                    <p className="mb-1.5 text-[9px] font-black uppercase tracking-widest text-[#d8ba7a]">Etap 1 — Krok 12/13</p>
-                    <p className="mb-3 text-[10px] text-[#f9e7b2] leading-snug">
-                      Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw.
-                    </p>
                     <button
                       type="button"
-                      data-tutorial-target="tutorial-dalej-btn"
-                      onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); }}
-                      className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-3 py-2 text-[10px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
-                    >
-                      Dalej
-                    </button>
+                      onClick={() => setIsFvHarvestModalOpen(false)}
+                      className="text-2xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none"
+                    >✕</button>
                   </div>
-                )}
 
-              </div>,
-              document.body
+                  {/* Treść */}
+                  <div className="overflow-y-auto flex-1 p-6">
+                    {items.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 gap-3">
+                        <span className="text-6xl opacity-30">🌾</span>
+                        <p className="text-[#8b6a3e] text-sm">Brak zbiorów w tej sesji</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-7 gap-2">
+                          {items.slice(0, 35).map((g, i) => {
+                            const _qd = CROP_QUALITY_DEFS[g.quality];
+                            const _cropDef = CROPS.find(c => c.id === g.cropId);
+                            const _sprite = g.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
+                                          : g.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
+                                          : g.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
+                                          : _cropDef?.spritePath;
+                            const _total = g.baseAmount + g.bonusAmount;
+                            const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
+                            return (
+                              <div key={i} className="group relative">
+                                <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 group-hover:scale-105"
+                                  style={_isExpOnly
+                                    ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
+                                    : g.quality === "legendary"
+                                      ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
+                                      : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
+                                  {_isExpOnly
+                                    ? <span className="flex h-full w-full flex-col items-center justify-center gap-1">
+                                        <span className="text-2xl leading-none">⭐</span>
+                                        <span className="text-[9px] font-black text-sky-300 leading-none">XP</span>
+                                      </span>
+                                    : _sprite
+                                      ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" />
+                                      : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
+                                  }
+                                  {g.quality === "legendary" && !_isExpOnly && (
+                                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                                      <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                    </span>
+                                  )}
+                                  <span className="absolute left-1 top-1 text-[10px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
+                                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[10px] font-black text-white leading-tight">
+                                    {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
+                                  </span>
+                                </div>
+                                {/* Tooltip */}
+                                <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[200] hidden w-44 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
+                                  <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
+                                  <p className="mb-1" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
+                                  {g.baseAmount > 0 && <p>Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
+                                  {g.bonusAmount > 0 && <p>Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
+                                  {_isExpOnly && <p className="text-amber-300">🌟 Bonus EXP</p>}
+                                  <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-sky-300">EXP: +{g.baseExp}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {items.length > 35 && (
+                          <p className="mt-3 text-center text-[11px] text-[#8b6a3e]">+{items.length - 35} więcej rodzajów</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Stopka z EXP */}
+                  {items.length > 0 && (
+                    <div className="px-7 py-4 border-t border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.6)] shrink-0 flex items-center justify-between">
+                      <span className="text-sm font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
+                      <span className="text-2xl font-black text-sky-200">+{totalExp}</span>
+                    </div>
+                  )}
+
+                  {/* Tutorial krok 12 */}
+                  {tutorialStep === 12 && (
+                    <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-7 py-5 shrink-0">
+                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-[#d8ba7a]">Etap 1 — Krok 12/13</p>
+                      <p className="mb-4 text-[11px] text-[#f9e7b2] leading-snug">
+                        Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw.
+                      </p>
+                      <button
+                        type="button"
+                        data-tutorial-target="tutorial-dalej-btn"
+                        onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); setIsFvHarvestModalOpen(false); }}
+                        className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-4 py-2.5 text-[11px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
+                      >Dalej</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             );
           })()}
 
