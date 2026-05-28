@@ -16241,7 +16241,7 @@ export default function Page() {
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
         {(()=>{
-          const _noArrow=[7,9,11];
+          const _noArrow=[7,9,11,13];
           const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
           if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
           type SA={x:number;y:number;size:number;rotation:number};
