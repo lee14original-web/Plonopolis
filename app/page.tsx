@@ -16343,8 +16343,13 @@ export default function Page() {
             8: {x:155.37, y:529.25, size:112, rotation:0},
             10:{x:152.35, y:718.63, size:118, rotation:0},
           };
-          // Krok 12: przeciągalna strzałka (kalibracja przez drag)
+          // Krok 12: dwie fazy — przed otwarciem modalu (→ Zbiory) i po otwarciu (→ panel sesji)
           if(tutorialStep===12){
+            // Faza 2: modal otwarty — statyczna strzałka w prawo przy panelu sesji
+            if(isFvHarvestModalOpen){
+              return arr({x:515,y:786,size:80,rotation:-90},"tut-arr-12-modal");
+            }
+            // Faza 1: modal zamknięty — przeciągalna strzałka na przycisk Zbiory
             const _p=fvTutArrow12Pos;
             const _sz=_p.w||80;
             const _ah=Math.round(_sz*62/48);
