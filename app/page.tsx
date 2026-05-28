@@ -5539,6 +5539,15 @@ export default function Page() {
     if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
     // Reset tutoriala w DB — czekamy przed przeładowaniem strony
     if (_login) { await supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
+    // Wyczyść localStorage dla tego gracza (ekwipunek, statystyki, stodoła, sad, kompost...)
+    // Dane są zapisane jako `klucz_${uid}` — clearPerSessionLocalStorage() tego nie oczyści
+    const _uid = profile.id;
+    const _lsResetKeys = [
+      "plonopolis_char_equipped", "plonopolis_item_upg_reg", "plonopolis_owned_eq", "plonopolis_extra_eq",
+      "plonopolis_kompost_charges", "plonopolis_kompost_batches", "plonopolis_slot_box", "plonopolis_settings",
+      "plonopolis_barn", "plonopolis_barn_items", "plonopolis_orchard", "plonopolis_fruit_inv",
+    ];
+    try { _lsResetKeys.forEach(k => { localStorage.removeItem(`${k}_${_uid}`); localStorage.removeItem(k); }); } catch { /* ignore */ }
     // Pełne przeładowanie strony — gwarantuje świeży stan (w tym okno przewodnika)
     window.location.reload();
   }
