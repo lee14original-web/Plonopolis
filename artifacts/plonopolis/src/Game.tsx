@@ -14905,9 +14905,30 @@ export default function Page() {
                   {tutorialStep === 12 && (
                     <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-7 py-5 shrink-0">
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-[#d8ba7a]">Etap 1 — Krok 12/13</p>
-                      <p className="mb-4 text-[11px] text-[#f9e7b2] leading-snug">
+                      <p className="mb-4 text-[17px] text-[#f9e7b2] leading-snug">
                         Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw.
                       </p>
+                      {/* 4 ikony jakości marchewki — poglądowo */}
+                      <div className="mb-5 flex gap-4 items-start">
+                        {([
+                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",             label: "Popsuta",    badge: "⚠️", exp: 0,  chance: "~10%", border: "#9ca3af" },
+                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png",   label: "Zwykła",     badge: "✅", exp: 6,  chance: "~75%", border: "#d1d5db" },
+                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",               label: "Epicka",     badge: "⭐", exp: 18, chance: "~12%", border: "#22c55e" },
+                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",          label: "Legendarna", badge: "🌟", exp: 30, chance: "~3%",  border: "#f59e0b" },
+                        ] as { quality: string; sprite: string; label: string; badge: string; exp: number; chance: string; border: string }[]).map(q => (
+                          <div key={q.quality} className="group relative flex flex-col items-center gap-1 cursor-help">
+                            <div className="w-[52px] h-[52px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
+                              <img src={q.sprite} alt={q.label} className="w-9 h-9 object-contain" style={{ imageRendering: "pixelated" }} />
+                            </div>
+                            <span className="text-[10px] font-bold text-[#dfcfab] whitespace-nowrap">{q.badge} {q.label}</span>
+                            <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-0.5 min-w-[130px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl">
+                              <p className="text-[12px] font-black text-[#d8ba7a]">{q.badge} {q.label}</p>
+                              <p className="text-[11px] text-[#f9e7b2]">EXP: <span className="font-bold text-sky-300">+{q.exp}</span></p>
+                              <p className="text-[11px] text-[#8b6a3e]">Szansa: {q.chance}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       <button
                         type="button"
                         data-tutorial-target="tutorial-dalej-btn"
@@ -16258,7 +16279,7 @@ export default function Page() {
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
         {(()=>{
-          const _noArrow=[7,9,11,13];
+          const _noArrow=[7,9,11];
           const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
           if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
           type SA={x:number;y:number;size:number;rotation:number};
@@ -16309,17 +16330,17 @@ export default function Page() {
             8: {x:155.37, y:529.25, size:112, rotation:0},
             10:{x:152.35, y:718.63, size:118, rotation:0},
           };
-          // Kroki 12 i 13: przeciągalne strzałki
-          if(tutorialStep===12||tutorialStep===13){
-            const _p=tutorialStep===12?fvTutArrow12Pos:fvTutArrow13Pos;
+          // Krok 12: przeciągalna strzałka (kalibracja przez drag)
+          if(tutorialStep===12){
+            const _p=fvTutArrow12Pos;
             const _sz=_p.w||80;
             const _ah=Math.round(_sz*62/48);
             return(
               <div
-                key={`tut-arr-${tutorialStep}`}
+                key="tut-arr-12"
                 className="fixed z-[95] cursor-move select-none"
                 style={{left:_p.l-_sz/2,top:_p.t-_ah/2}}
-                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:tutorialStep as 12|13,startMX:e.clientX,startMY:e.clientY,startX:_p.l,startY:_p.t};}}
+                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startX:_p.l,startY:_p.t};}}
               >
                 <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
                   ✥ {_p.l},{_p.t}
@@ -16332,6 +16353,8 @@ export default function Page() {
               </div>
             );
           }
+          // Krok 13: stała strzałka — x=948, y=287
+          if(tutorialStep===13){ return arr({x:948,y:287,size:80,rotation:0},"tut-arr-13"); }
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
 
