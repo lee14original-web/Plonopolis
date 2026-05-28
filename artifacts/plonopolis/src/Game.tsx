@@ -14748,13 +14748,13 @@ export default function Page() {
                   {/* Nagłówek */}
                   <div className="flex items-center justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
                     <div>
-                      <h2 className="text-2xl font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
-                      <p className="text-[11px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
+                      <h2 className="text-4xl font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
+                      <p className="text-[17px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsFvHarvestModalOpen(false)}
-                      className="text-2xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none"
+                      className="text-4xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none"
                     >✕</button>
                   </div>
 
@@ -14763,7 +14763,7 @@ export default function Page() {
                     {items.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <span className="text-6xl opacity-30">🌾</span>
-                        <p className="text-[#8b6a3e] text-sm">Brak zbiorów w tej sesji</p>
+                        <p className="text-[#8b6a3e] text-[21px]">Brak zbiorów w tej sesji</p>
                       </div>
                     ) : (
                       <>
@@ -14777,6 +14777,8 @@ export default function Page() {
                                           : _cropDef?.spritePath;
                             const _total = g.baseAmount + g.bonusAmount;
                             const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
+                            const _col = i % 7;
+                            const _tooltipPos = _col <= 2 ? "left-0" : _col >= 5 ? "right-0" : "left-1/2 -translate-x-1/2";
                             return (
                               <div key={i} className="group relative">
                                 <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 group-hover:scale-105"
@@ -14788,7 +14790,7 @@ export default function Page() {
                                   {_isExpOnly
                                     ? <span className="flex h-full w-full flex-col items-center justify-center gap-1">
                                         <span className="text-2xl leading-none">⭐</span>
-                                        <span className="text-[9px] font-black text-sky-300 leading-none">XP</span>
+                                        <span className="text-[13px] font-black text-sky-300 leading-none">XP</span>
                                       </span>
                                     : _sprite
                                       ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" />
@@ -14799,26 +14801,26 @@ export default function Page() {
                                       <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                     </span>
                                   )}
-                                  <span className="absolute left-1 top-1 text-[10px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
-                                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[10px] font-black text-white leading-tight">
+                                  <span className="absolute left-1 top-1 text-[15px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
+                                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">
                                     {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
                                   </span>
                                 </div>
-                                {/* Tooltip */}
-                                <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[200] hidden w-44 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 text-xs shadow-2xl group-hover:block">
-                                  <p className="mb-1 font-black text-[#f9e7b2]">{g.cropName}</p>
-                                  <p className="mb-1" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
-                                  {g.baseAmount > 0 && <p>Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
-                                  {g.bonusAmount > 0 && <p>Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
-                                  {_isExpOnly && <p className="text-amber-300">🌟 Bonus EXP</p>}
-                                  <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-sky-300">EXP: +{g.baseExp}</p>
+                                {/* Tooltip — zawsze nad ikoną, nie ucina lewej/prawej krawędzi */}
+                                <div className={`pointer-events-none absolute bottom-[calc(100%+8px)] ${_tooltipPos} z-[300] hidden w-52 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl group-hover:block`}>
+                                  <p className="mb-1 text-[17px] font-black text-[#f9e7b2]">{g.cropName}</p>
+                                  <p className="mb-1 text-[15px]" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
+                                  {g.baseAmount > 0 && <p className="text-[14px]">Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
+                                  {g.bonusAmount > 0 && <p className="text-[14px]">Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
+                                  {_isExpOnly && <p className="text-[14px] text-amber-300">🌟 Bonus EXP</p>}
+                                  <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-[14px] text-sky-300">EXP: +{g.baseExp}</p>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
                         {items.length > 35 && (
-                          <p className="mt-3 text-center text-[11px] text-[#8b6a3e]">+{items.length - 35} więcej rodzajów</p>
+                          <p className="mt-3 text-center text-[17px] text-[#8b6a3e]">+{items.length - 35} więcej rodzajów</p>
                         )}
                       </>
                     )}
@@ -14827,8 +14829,8 @@ export default function Page() {
                   {/* Stopka z EXP */}
                   {items.length > 0 && (
                     <div className="px-7 py-4 border-t border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.6)] shrink-0 flex items-center justify-between">
-                      <span className="text-sm font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
-                      <span className="text-2xl font-black text-sky-200">+{totalExp}</span>
+                      <span className="text-[21px] font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
+                      <span className="text-4xl font-black text-sky-200">+{totalExp}</span>
                     </div>
                   )}
 
