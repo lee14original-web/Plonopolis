@@ -1811,14 +1811,16 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
+  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 960, t: 800, w: 0, h: 0 });
+  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 960, t: 800, w: 0, h: 0 });
+  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
       const gs = 1;
-      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : d.btn === "zbiorybtn" ? setFvZbioryPos : setFvHarvestLogPos;
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : d.btn === "zbiorybtn" ? setFvZbioryPos : d.btn === "tutar12" ? setFvTutArrow12Pos : d.btn === "tutar13" ? setFvTutArrow13Pos : setFvHarvestLogPos;
       if (d.mode === "move") {
         setter({
           l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX) / gs)),
@@ -4028,7 +4030,17 @@ export default function Page() {
   // Tutorial strzałka — oblicza pozycję targetu, odpytuje co 400 ms
   useEffect(() => {
     const _active = !!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true;
-    if (!_active || tutorialStep < 1 || tutorialStep > 12) { setTutorialArrow(null); return; }
+    if (!_active || tutorialStep < 1 || tutorialStep > 13) { setTutorialArrow(null); return; }
+    // Kroki 12 i 13 używają edytowalnych pozycji (nie DOM querySelector)
+    if (tutorialStep === 12 || tutorialStep === 13) {
+      const _pos = tutorialStep === 12 ? fvTutArrow12Pos : fvTutArrow13Pos;
+      const recalcPos = () => {
+        setTutorialArrow({ cx: _pos.l, top: _pos.t - 15, bottom: _pos.t + 15, left: _pos.l - 60, right: _pos.l + 60, width: 120, height: 30 });
+      };
+      recalcPos();
+      const _iv = setInterval(recalcPos, 400);
+      return () => clearInterval(_iv);
+    }
     const _selectors: Partial<Record<number, string>> = {
       1:  '[data-tutorial-target="pola-uprawne"]',
       2:  '[data-tutorial-target="kompost-btn"]',
@@ -4038,7 +4050,6 @@ export default function Page() {
       6:  '[data-tutorial-target="carrot-good-item"]',
       8:  '[data-tutorial-target="konewka-btn"]',
       10: '[data-tutorial-target="zbierz-btn"]',
-      12: '[data-tutorial-target="tutorial-dalej-btn"]',
     };
     const recalc = () => {
       const sel = _selectors[tutorialStep];
@@ -4088,7 +4099,7 @@ export default function Page() {
     const _int = setInterval(recalc, 400);
     return () => { window.removeEventListener("resize", recalc); clearInterval(_int); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tutorialStep, isFieldViewOpen, fvCompostPickerOpen, fvSeedPickerOpen, profile?.id, profile?.tutorial_started, profile?.tutorial_completed, profile?.tutorial_skipped]);
+  }, [tutorialStep, isFieldViewOpen, fvCompostPickerOpen, fvSeedPickerOpen, profile?.id, profile?.tutorial_started, profile?.tutorial_completed, profile?.tutorial_skipped, fvTutArrow12Pos, fvTutArrow13Pos]);
 
   // Tick dla pasków postępu sadzenia/zbioru — działa tylko gdy są aktywne akcje
   useEffect(() => {
@@ -13563,6 +13574,15 @@ export default function Page() {
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-orange-300">🌾 Zbiory</p>
                           <p className="font-mono text-xs text-orange-100">l:<span className="font-black text-white">{fvZbioryPos.l}</span> t:<span className="font-black text-white">{fvZbioryPos.t}</span> w:<span className="font-black text-white">{fvZbioryPos.w}</span> h:<span className="font-black text-white">{fvZbioryPos.h}</span></p>
                         </div>
+                        <p className="mt-2 mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-purple-300/70">— Strzałki tutorialu —</p>
+                        <div className="rounded-xl border border-purple-400/30 bg-purple-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-purple-300">🎯 Strzałka krok 12</p>
+                          <p className="font-mono text-xs text-purple-100">l:<span className="font-black text-white">{fvTutArrow12Pos.l}</span> t:<span className="font-black text-white">{fvTutArrow12Pos.t}</span></p>
+                        </div>
+                        <div className="rounded-xl border border-purple-400/30 bg-purple-950/30 p-2.5">
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-purple-300">🎯 Strzałka krok 13</p>
+                          <p className="font-mono text-xs text-purple-100">l:<span className="font-black text-white">{fvTutArrow13Pos.l}</span> t:<span className="font-black text-white">{fvTutArrow13Pos.t}</span></p>
+                        </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
                     </div>
@@ -14022,11 +14042,14 @@ export default function Page() {
                   {/* ─── Prawa kolumna: narzędzia masowe ─── */}
 
                   {/* Ciągnik — bulk compost */}
+                  {(() => {
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    return (
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) handleBulkCompost(); }}
+                    onClick={() => { if (!fvToolEditMode && !_tutBlock) handleBulkCompost(); }}
                     onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "ciagnik", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvCiagnikPos.l, startT: fvCiagnikPos.t, startW: fvCiagnikPos.w, startH: fvCiagnikPos.h }; } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : _tutBlock ? "border-[#8b6a3e]/40 bg-[rgba(20,12,8,0.5)] opacity-40 cursor-not-allowed" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvCiagnikPos.l, top: fvCiagnikPos.t, width: fvCiagnikPos.w, height: fvCiagnikPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Ciągnik</p>
@@ -14042,13 +14065,18 @@ export default function Page() {
                       </div>
                     )}
                   </button>
+                  );
+                  })()}
 
                   {/* Ogrodnik — bulk plant */}
+                  {(() => {
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    return (
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) handleBulkPlant(); }}
+                    onClick={() => { if (!fvToolEditMode && !_tutBlock) handleBulkPlant(); }}
                     onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "ogrodnik", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvOgrodnikPos.l, startT: fvOgrodnikPos.t, startW: fvOgrodnikPos.w, startH: fvOgrodnikPos.h }; } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : _tutBlock ? "border-[#8b6a3e]/40 bg-[rgba(20,12,8,0.5)] opacity-40 cursor-not-allowed" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvOgrodnikPos.l, top: fvOgrodnikPos.t, width: fvOgrodnikPos.w, height: fvOgrodnikPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Ogrodnik</p>
@@ -14064,13 +14092,18 @@ export default function Page() {
                       </div>
                     )}
                   </button>
+                  );
+                  })()}
 
                   {/* Zraszacz — bulk water */}
+                  {(() => {
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    return (
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) handleBulkWater(); }}
+                    onClick={() => { if (!fvToolEditMode && !_tutBlock) handleBulkWater(); }}
                     onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "zraszacz", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvZraszaczPos.l, startT: fvZraszaczPos.t, startW: fvZraszaczPos.w, startH: fvZraszaczPos.h }; } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : _tutBlock ? "border-[#8b6a3e]/40 bg-[rgba(20,12,8,0.5)] opacity-40 cursor-not-allowed" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvZraszaczPos.l, top: fvZraszaczPos.t, width: fvZraszaczPos.w, height: fvZraszaczPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Zraszacz</p>
@@ -14086,13 +14119,18 @@ export default function Page() {
                       </div>
                     )}
                   </button>
+                  );
+                  })()}
 
                   {/* Kombajn — bulk harvest */}
+                  {(() => {
+                    const _tutBlock = !fvToolEditMode && tutorialStep >= 1 && !!profile?.tutorial_started && !profile?.tutorial_completed && !profile?.tutorial_skipped;
+                    return (
                   <button
                     type="button"
-                    onClick={() => { if (!fvToolEditMode) handleBulkHarvest(); }}
+                    onClick={() => { if (!fvToolEditMode && !_tutBlock) handleBulkHarvest(); }}
                     onMouseDown={fvToolEditMode ? (e) => { e.preventDefault(); fvToolDragRef.current = { btn: "kombajn", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvKombajnPos.l, startT: fvKombajnPos.t, startW: fvKombajnPos.w, startH: fvKombajnPos.h }; } : undefined}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : _tutBlock ? "border-[#8b6a3e]/40 bg-[rgba(20,12,8,0.5)] opacity-40 cursor-not-allowed" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
                     style={{ left: fvKombajnPos.l, top: fvKombajnPos.t, width: fvKombajnPos.w, height: fvKombajnPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-0.5">Kombajn</p>
@@ -14108,6 +14146,26 @@ export default function Page() {
                       </div>
                     )}
                   </button>
+                  );
+                  })()}
+
+                  {/* Drag handle'y dla strzałek tutorialu (widoczne tylko w trybie edycji) */}
+                  {fvToolEditMode && (
+                    <>
+                      <div
+                        className="fixed z-[300] w-8 h-8 rounded-full bg-purple-600/90 border-2 border-purple-300 cursor-move flex items-center justify-center text-[13px] shadow-lg select-none"
+                        style={{ left: fvTutArrow12Pos.l - 16, top: fvTutArrow12Pos.t - 16 }}
+                        title="Strzałka krok 12 — przeciągnij aby ustawić"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar12", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow12Pos.l, startT: fvTutArrow12Pos.t, startW: 0, startH: 0 }; }}
+                      >🎯</div>
+                      <div
+                        className="fixed z-[300] w-8 h-8 rounded-full bg-violet-600/90 border-2 border-violet-300 cursor-move flex items-center justify-center text-[13px] shadow-lg select-none"
+                        style={{ left: fvTutArrow13Pos.l - 16, top: fvTutArrow13Pos.t - 16 }}
+                        title="Strzałka krok 13 — przeciągnij aby ustawić"
+                        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar13", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow13Pos.l, startT: fvTutArrow13Pos.t, startW: 0, startH: 0 }; }}
+                      >🎯</div>
+                    </>
+                  )}
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
