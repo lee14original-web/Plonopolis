@@ -1801,7 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
-  const [fvZbioryPos, setFvZbioryPos] = React.useState({ l: 58, t: 1020, w: 190, h: 176 });
+  const [fvZbioryPos, setFvZbioryPos] = React.useState({ l: 58, t: 1038, w: 190, h: 176 });
   const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState(() => {
     const gs = typeof window !== "undefined" ? Math.min(window.innerWidth / 1920, window.innerHeight / 1280) : 0.5;
     return {
