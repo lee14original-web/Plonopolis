@@ -2524,6 +2524,7 @@ export default function Page() {
   const [harvestCountdown, setHarvestCountdown] = React.useState(25);
   const [isFvHarvestModalOpen, setIsFvHarvestModalOpen] = React.useState(false);
   const [fvHarvestTooltip, setFvHarvestTooltip] = React.useState<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary";cx:number;cy:number}|null>(null);
+  const [fvQualityTip, setFvQualityTip] = React.useState<{label:string;expLabel:string;chance:string;sx:number;sy:number}|null>(null);
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -14818,14 +14819,14 @@ export default function Page() {
                 onClick={() => setIsFvHarvestModalOpen(false)}
               >
                 <div
-                  className="relative w-[820px] max-h-[680px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.98)] shadow-2xl flex flex-col overflow-hidden"
+                  className="relative w-[620px] max-h-[760px] rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.98)] shadow-2xl flex flex-col overflow-hidden"
                   onClick={e => e.stopPropagation()}
                 >
                   {/* Nagłówek */}
                   <div className="flex items-center justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
                     <div>
-                      <h2 className="text-4xl font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
-                      <p className="text-[17px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
+                      <h2 className="text-[47px] font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
+                      <p className="text-[22px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
                     </div>
                     <button
                       type="button"
@@ -14897,7 +14898,7 @@ export default function Page() {
                   {/* Stopka z EXP */}
                   {items.length > 0 && (
                     <div className="px-7 py-4 border-t border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.6)] shrink-0 flex items-center justify-between">
-                      <span className="text-[21px] font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
+                      <span className="text-[27px] font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
                       <span className="text-4xl font-black text-sky-200">+{totalExp}</span>
                     </div>
                   )}
@@ -14906,27 +14907,26 @@ export default function Page() {
                   {tutorialStep === 12 && (
                     <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-7 py-5 shrink-0">
                       <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-[#d8ba7a]">Etap 1 — Krok 12/13</p>
-                      <p className="mb-4 text-[17px] text-[#f9e7b2] leading-snug">
+                      <p className="mb-4 text-[22px] text-[#f9e7b2] leading-snug">
                         Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw.
                       </p>
                       {/* 4 ikony jakości marchewki — poglądowo */}
-                      <div className="mb-5 flex gap-4 items-start">
+                      <div className="mb-5 flex gap-5 items-start">
                         {([
                           { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%", border: "#9ca3af" },
                           { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~75%", border: "#d1d5db" },
                           { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~12%", border: "#22c55e" },
                           { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~3%",  border: "#f59e0b" },
                         ] as { quality: string; sprite: string; label: string; expLabel: string; chance: string; border: string }[]).map(q => (
-                          <div key={q.quality} className="group relative flex flex-col items-center gap-1 cursor-help">
-                            <div className="w-[52px] h-[52px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
-                              <img src={q.sprite} alt={q.label} className="w-9 h-9 object-contain" style={{ imageRendering: "pixelated" }} />
+                          <div key={q.quality}
+                            className="flex flex-col items-center gap-1.5 cursor-help"
+                            onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvQualityTip({ label: q.label, expLabel: q.expLabel, chance: q.chance, sx: r.left + r.width / 2, sy: r.top }); }}
+                            onMouseLeave={() => setFvQualityTip(null)}
+                          >
+                            <div className="w-[80px] h-[80px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
+                              <img src={q.sprite} alt={q.label} className="w-14 h-14 object-contain" style={{ imageRendering: "pixelated" }} />
                             </div>
-                            <span className="text-[10px] font-bold text-[#dfcfab] whitespace-nowrap">{q.label}</span>
-                            <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-0.5 min-w-[130px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-3 py-2 shadow-2xl">
-                              <p className="text-[12px] font-black text-[#d8ba7a]">{q.label}</p>
-                              <p className="text-[11px] text-[#f9e7b2]">EXP: <span className="font-bold text-sky-300">{q.expLabel}</span></p>
-                              <p className="text-[11px] text-[#8b6a3e]">Szansa: {q.chance}</p>
-                            </div>
+                            <span className="text-[13px] font-bold text-[#dfcfab] whitespace-nowrap">{q.label}</span>
                           </div>
                         ))}
                       </div>
@@ -14964,6 +14964,18 @@ export default function Page() {
               </div>
             );
           })()}
+
+          {/* Fixed tooltip dla ikon jakości w tutorialu krok 12 — fixed ignoruje overflow-hidden */}
+          {fvQualityTip && (
+            <div
+              className="pointer-events-none fixed z-[9999] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-2.5 shadow-2xl"
+              style={{ left: fvQualityTip.sx, top: fvQualityTip.sy - 8, transform: "translateX(-50%) translateY(-100%)" }}
+            >
+              <p className="text-[15px] font-black text-[#d8ba7a] mb-0.5">{fvQualityTip.label}</p>
+              <p className="text-[13px] text-[#f9e7b2]">EXP: <span className="font-bold text-sky-300">{fvQualityTip.expLabel}</span></p>
+              <p className="text-[13px] text-[#8b6a3e]">Szansa: {fvQualityTip.chance}</p>
+            </div>
+          )}
 
           {/* ═══ POPUP POTWIERDZENIA WYLOGOWANIA (Esc na farmie) ═══ */}
           {showSettingsModal && (
@@ -16280,7 +16292,7 @@ export default function Page() {
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
         {(()=>{
-          const _noArrow=[7,9,11];
+          const _noArrow=[7,9,11,13];
           const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
           if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
           type SA={x:number;y:number;size:number;rotation:number};
