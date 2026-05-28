@@ -14565,7 +14565,7 @@ export default function Page() {
                                       return (
                                         <>
                                           <img src={CHWASTY_IMGS[plotId % 3]} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
-                                          <span className="relative z-10 text-[14px] font-black text-amber-300 leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{plotCost} PLN</span>
+                                          <span className="relative z-10 text-[16px] font-black text-amber-300 leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{plotCost} PLN</span>
                                         </>
                                       );
                                     }
