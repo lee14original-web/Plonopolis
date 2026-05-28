@@ -14185,6 +14185,10 @@ export default function Page() {
                       const _ready = Object.entries(plotCrops).filter(([id, p]) => p.cropId && isCropReady(Number(id))).length;
                       return (
                         <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-[#c9973a]/60 bg-[rgba(14,8,2,0.85)] px-5 py-2.5 shadow-[0_0_8px_rgba(201,151,58,0.15)]">
+                            <span className="text-[14px] uppercase tracking-wider text-[#a07030] font-bold leading-none">EXP</span>
+                            <span className="mt-1.5 text-2xl font-black text-[#f9e7b2] leading-none">{xpPercent.toFixed(2).replace('.', ',')}%</span>
+                          </div>
                           {([
                             { label: "Odblokowane", value: `${unlockedPlots.length}/100` },
                             { label: "Rośnie",      value: String(_growing) },
