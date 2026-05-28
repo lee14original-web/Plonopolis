@@ -2507,6 +2507,7 @@ export default function Page() {
   const [harvestLog, setHarvestLog] = React.useState<HarvestEvent[]>([]);
   const [harvestCountdown, setHarvestCountdown] = React.useState(25);
   const [isFvHarvestModalOpen, setIsFvHarvestModalOpen] = React.useState(false);
+  const [fvHarvestTooltip, setFvHarvestTooltip] = React.useState<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary";cx:number;cy:number}|null>(null);
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -14789,13 +14790,12 @@ export default function Page() {
                                           : _cropDef?.spritePath;
                             const _total = g.baseAmount + g.bonusAmount;
                             const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
-                            const _col = i % 7;
-                            const _row = Math.floor(i / 7);
-                            const _tooltipPos = _col <= 2 ? "left-0" : _col >= 5 ? "right-0" : "left-1/2 -translate-x-1/2";
-                            const _tooltipVert = _row === 0 ? "top-[calc(100%+8px)]" : "bottom-[calc(100%+8px)]";
                             return (
-                              <div key={i} className="group relative">
-                                <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 group-hover:scale-105"
+                              <div key={i} className="relative"
+                                onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvHarvestTooltip({ ...g, cx: r.left + r.width / 2, cy: r.top }); }}
+                                onMouseLeave={() => setFvHarvestTooltip(null)}
+                              >
+                                <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 hover:scale-105"
                                   style={_isExpOnly
                                     ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
                                     : g.quality === "legendary"
@@ -14819,15 +14819,6 @@ export default function Page() {
                                   <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">
                                     {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
                                   </span>
-                                </div>
-                                {/* Tooltip — wiersz 0: poniżej ikony; reszta: powyżej */}
-                                <div className={`pointer-events-none absolute ${_tooltipVert} ${_tooltipPos} z-[300] hidden w-52 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl group-hover:block`}>
-                                  <p className="mb-1 text-[17px] font-black text-[#f9e7b2]">{g.cropName}</p>
-                                  <p className="mb-1 text-[15px]" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
-                                  {g.baseAmount > 0 && <p className="text-[14px]">Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
-                                  {g.bonusAmount > 0 && <p className="text-[14px]">Bonus: <span className="font-bold text-yellow-300">+{g.bonusAmount} szt.</span></p>}
-                                  {_isExpOnly && <p className="text-[14px] text-amber-300">🌟 Bonus EXP</p>}
-                                  <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-[14px] text-sky-300">EXP: +{g.baseExp}</p>
                                 </div>
                               </div>
                             );
@@ -14864,6 +14855,28 @@ export default function Page() {
                     </div>
                   )}
                 </div>
+                {fvHarvestTooltip && (() => {
+                  const t = fvHarvestTooltip;
+                  const _qd = CROP_QUALITY_DEFS[t.quality];
+                  const _isExpOnly = t.quality === "legendary" && t.baseAmount === 0;
+                  const _cx = BASE_W / 2 + (t.cx - window.innerWidth / 2) / gameScale;
+                  const _cy = BASE_H / 2 + (t.cy - window.innerHeight / 2) / gameScale;
+                  const _tw = 224;
+                  const _left = Math.max(4, Math.min(Math.round(_cx - _tw / 2), BASE_W - _tw - 4));
+                  return (
+                    <div
+                      className="pointer-events-none absolute z-[400] rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl"
+                      style={{ left: _left, top: Math.round(_cy) - 8, width: _tw, transform: "translateY(-100%)" }}
+                    >
+                      <p className="mb-1 text-[17px] font-black text-[#f9e7b2]">{t.cropName}</p>
+                      <p className="mb-1 text-[15px]" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
+                      {t.baseAmount > 0 && <p className="text-[14px]">Zebrano: <span className="font-bold text-yellow-300">+{t.baseAmount} szt.</span></p>}
+                      {t.bonusAmount > 0 && <p className="text-[14px]">Bonus: <span className="font-bold text-yellow-300">+{t.bonusAmount} szt.</span></p>}
+                      {_isExpOnly && <p className="text-[14px] text-amber-300">🌟 Bonus EXP</p>}
+                      <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-[14px] text-sky-300">EXP: +{t.baseExp}</p>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
