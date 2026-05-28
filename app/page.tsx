@@ -14039,7 +14039,7 @@ export default function Page() {
                                     >
                                       <span className="text-2xl select-none">{def.icon}</span>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-[#f9e7b2] leading-tight">{tierLabel} {def.name}</p>
+                                        <p className="text-sm font-bold text-[#f9e7b2] leading-tight">{cType === "guide" ? def.name : `${tierLabel} ${def.name}`}</p>
                                         <p className="text-[11px] text-[#d8ba7a]">{bonusLabel}</p>
                                       </div>
                                       <p className="text-sm font-black text-lime-300 shrink-0">×{cnt}</p>
