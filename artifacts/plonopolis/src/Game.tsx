@@ -16175,7 +16175,7 @@ export default function Page() {
             })(),
             "Kliknij Zbierz.",
             `Zbierz gotowe marchewki — zebrałeś ${_t11}/3.`,
-            "Sprawdź panel Ostatnie zbiory po prawej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
+            "Sprawdź panel Ostatnie zbiory po lewej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
             "Świetnie! Etap 1 przewodnika ukończony.\n\nPRZEWODNIK W BUDOWIE — na razie tyle. Możesz zminimalizować to okno.",
           ];
 
