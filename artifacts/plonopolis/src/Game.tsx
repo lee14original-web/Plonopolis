@@ -3345,7 +3345,7 @@ export default function Page() {
       const _rpcPlots = parsePlotCrops(_rpcRaw?.plot_crops);
       // Guide compost (×0.25) zawsze spada poniżej GROWTH_GLOBAL_MIN_MULT (0.35)
       // → isCropReady zawsze używa 180000 × 0.35 = 63000ms, niezależnie od statystyk gracza
-      const _guideEffGrowth = Math.round(180_000 * GROWTH_GLOBAL_MIN_MULT);
+      const _guideEffGrowth = Math.round(15 * 60_000 * GROWTH_GLOBAL_MIN_MULT); // carrot growthTimeMs × global min mult
       const _tutorialSpeedupAt = Date.now() - (_guideEffGrowth - 7_000);
       const _updatedPlots: Record<number, PlotCropState> = {};
       // Baza dla aktualnego pola: RPC → lokalny ref (fallback gdy RPC zgubił dane)
