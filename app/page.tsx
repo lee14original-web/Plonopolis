@@ -5547,7 +5547,15 @@ export default function Page() {
       "plonopolis_kompost_charges", "plonopolis_kompost_batches", "plonopolis_slot_box", "plonopolis_settings",
       "plonopolis_barn", "plonopolis_barn_items", "plonopolis_orchard", "plonopolis_fruit_inv",
     ];
-    try { _lsResetKeys.forEach(k => { localStorage.removeItem(`${k}_${_uid}`); localStorage.removeItem(k); }); } catch { /* ignore */ }
+    const _lsResetUidKeys = [
+      `plonopolis_skin_${_uid}`, `plonopolis_stats_${_uid}`, `plonopolis_fsp_${_uid}`,
+      `plonopolis_prevlv_${_uid}`, `plonopolis_avatar_changes_${_uid}`, `plonopolis_avatar_last_change_${_uid}`,
+      `plonopolis_eqslots_${_uid}`, `plonopolis_eq_${_uid}`,
+    ];
+    try {
+      _lsResetKeys.forEach(k => { localStorage.removeItem(`${k}_${_uid}`); localStorage.removeItem(k); });
+      _lsResetUidKeys.forEach(k => localStorage.removeItem(k));
+    } catch { /* ignore */ }
     // Pełne przeładowanie strony — gwarantuje świeży stan (w tym okno przewodnika)
     window.location.reload();
   }
