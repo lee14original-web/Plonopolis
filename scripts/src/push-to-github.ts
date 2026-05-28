@@ -33,6 +33,7 @@ const NEW_IMAGE_FOLDERS: { local: string; github: string }[] = [
   { local: "artifacts/plonopolis/public/przedmioty", github: "public/przedmioty" },
   { local: "artifacts/plonopolis/public/ekwipunek",  github: "public/ekwipunek" },
   { local: "artifacts/plonopolis/public/zwierzeta",  github: "public/zwierzeta" },
+  { local: "artifacts/plonopolis/src/assets",        github: "src/assets" },
 ];
 
 // Foldery duze — tylko z --all
