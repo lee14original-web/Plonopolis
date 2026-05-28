@@ -3,9 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import { supabase } from "@/lib/supabase";
-import chwasty1Img from "./assets/chwasty1.png";
-import chwasty2Img from "./assets/chwasty2.png";
-import chwasty3Img from "./assets/chwasty3.png";
 
 type RankingPlayer = {
   user_id: string;
@@ -1447,7 +1444,7 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
 });
 
 // Typy i koszty przeszkód (pola 21–100)
-const CHWASTY_IMGS = [chwasty1Img, chwasty2Img, chwasty3Img] as const;
+const CHWASTY_IMGS = ["/przeszkody/chwasty1.png", "/przeszkody/chwasty2.png", "/przeszkody/chwasty3.png"] as const;
 
 const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string }> = {
   chwasty:  { name: "Chwasty",    icon: "🌿", color: "#86efac" },
