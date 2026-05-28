@@ -3,6 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import { supabase } from "@/lib/supabase";
+import chwasty1Img from "@assets/chwasty1_1780004912610.png";
+import chwasty2Img from "@assets/chwasty2_1780004912611.png";
+import chwasty3Img from "@assets/chwasty3_1780004912612.png";
 
 type RankingPlayer = {
   user_id: string;
@@ -1444,6 +1447,8 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
 });
 
 // Typy i koszty przeszkód (pola 21–100)
+const CHWASTY_IMGS = [chwasty1Img, chwasty2Img, chwasty3Img] as const;
+
 const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string }> = {
   chwasty:  { name: "Chwasty",    icon: "🌿", color: "#86efac" },
   kamienie: { name: "Kamienie",   icon: "🪨", color: "#d1d5db" },
@@ -14556,6 +14561,14 @@ export default function Page() {
                                   {(() => {
                                     const _ot = getPlotObstacleType(plotId);
                                     const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
+                                    if (_ot === "chwasty") {
+                                      return (
+                                        <>
+                                          <img src={CHWASTY_IMGS[plotId % 3]} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
+                                          <span className="relative z-10 text-[16px] font-black text-amber-300 leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{plotCost} PLN</span>
+                                        </>
+                                      );
+                                    }
                                     return _od ? (
                                       <>
                                         <span className="text-[21px] leading-none">{_od.icon}</span>
