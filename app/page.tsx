@@ -1801,6 +1801,7 @@ export default function Page() {
   const [fvOgrodnikPos, setFvOgrodnikPos] = React.useState({ l: 1670, t: 397, w: 192, h: 179 });
   const [fvZraszaczPos, setFvZraszaczPos] = React.useState({ l: 1670, t: 614, w: 192, h: 179 });
   const [fvKombajnPos,  setFvKombajnPos]  = React.useState({ l: 1670, t: 834, w: 190, h: 176 });
+  const [fvZbioryPos, setFvZbioryPos] = React.useState({ l: 58, t: 1020, w: 190, h: 176 });
   const [fvHarvestLogPos, setFvHarvestLogPos] = React.useState(() => {
     const gs = typeof window !== "undefined" ? Math.min(window.innerWidth / 1920, window.innerHeight / 1280) : 0.5;
     return {
@@ -1810,14 +1811,14 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
+  const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!fvToolEditMode || !isFieldViewOpen) return;
     const handleMove = (e: MouseEvent) => {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
       const gs = 1;
-      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : setFvHarvestLogPos;
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : d.btn === "zbiorybtn" ? setFvZbioryPos : setFvHarvestLogPos;
       if (d.mode === "move") {
         setter({
           l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX) / gs)),
@@ -13621,15 +13622,26 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => { if (!fvToolEditMode) setIsFvHarvestModalOpen(prev => !prev); }}
-                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "opacity-40 cursor-not-allowed" : isFvHarvestModalOpen ? "border-amber-400 bg-amber-900/60 shadow-[0_0_20px_rgba(251,191,36,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
-                    style={{ left: fvZbierzPos.l, top: fvZbierzPos.t + fvZbierzPos.h + 10, width: fvZbierzPos.w, height: fvZbierzPos.h }}
+                    onMouseDown={fvToolEditMode ? (e) => {
+                      e.preventDefault();
+                      const pos = fvZbioryPos;
+                      fvToolDragRef.current = { btn: "zbiorybtn", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h };
+                    } : undefined}
+                    className={`absolute z-[90] flex flex-col items-center justify-center rounded-xl border-2 transition-colors ${fvToolEditMode ? "cursor-move border-orange-400 bg-orange-950/60 shadow-[0_0_12px_rgba(251,146,60,0.6)]" : isFvHarvestModalOpen ? "border-amber-400 bg-amber-900/60 shadow-[0_0_20px_rgba(251,191,36,0.5)]" : "border-[#8b6a3e]/80 bg-[rgba(20,12,8,0.85)] hover:bg-[rgba(30,18,10,0.95)]"}`}
+                    style={{ left: fvZbioryPos.l, top: fvZbioryPos.t, width: fvZbioryPos.w, height: fvZbioryPos.h }}
                   >
                     <p className="text-[20px] font-black text-[#f9e7b2] pointer-events-none leading-none mb-1">Zbiory</p>
                     <span className="text-[38px] leading-none pointer-events-none">🌾</span>
-                    {harvestLog.length > 0 && !isFvHarvestModalOpen && (
+                    {harvestLog.length > 0 && !isFvHarvestModalOpen && !fvToolEditMode && (
                       <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] rounded-full bg-amber-400 text-[10px] font-black text-black flex items-center justify-center px-1 leading-none">
                         {harvestLog.length}
                       </span>
+                    )}
+                    {fvToolEditMode && (
+                      <div
+                        onMouseDown={(e) => { e.stopPropagation(); const pos = fvZbioryPos; fvToolDragRef.current = { btn: "zbiorybtn", mode: "resize", startMX: e.clientX, startMY: e.clientY, startL: pos.l, startT: pos.t, startW: pos.w, startH: pos.h }; }}
+                        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize bg-orange-400/80 rounded-tl"
+                      />
                     )}
                   </button>
 
