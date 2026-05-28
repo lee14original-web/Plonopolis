@@ -53,6 +53,7 @@ type Profile = {
   tutorial_completed?: boolean | null;
   tutorial_skipped?: boolean | null;
   tutorial_step?: number | null;
+  lada_starter_given?: boolean | null;
 };
 
 type CustomerOrderItem = { id: string; qty: number; value: number };
@@ -5070,7 +5071,17 @@ export default function Page() {
       setNewCustomerIds(activeBadgeIds(restoredMap));
       scheduleBadgeExpiry();
     }
-    void refreshCustomerOrders({ tick: true });
+    // Startowi klienci — tylko przy pierwszym wejściu do Lady
+    const runOpen = async () => {
+      if (!profile.lada_starter_given) {
+        const { data } = await supabase.rpc("game_give_starter_customers");
+        if ((data as { ok?: boolean } | null)?.ok) {
+          setProfile(p => p ? { ...p, lada_starter_given: true } : p);
+        }
+      }
+      void refreshCustomerOrders({ tick: true });
+    };
+    void runOpen();
     const tickT = setInterval(() => void refreshCustomerOrders({ tick: true }), 5 * 60 * 1000);
     const nowT = setInterval(() => setCustomerNow(Date.now()), 1000);
     return () => {
