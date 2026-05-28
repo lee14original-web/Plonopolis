@@ -14218,6 +14218,8 @@ export default function Page() {
                       className="absolute inset-0"
                       onMouseMove={(e) => {
                         if (!isDraggingPlantRef.current) return;
+                        // Podczas tutoriala wyłącz sweep-drag — tylko pojedyncze kliknięcia
+                        if (!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true) return;
                         const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
                         const btn = el?.closest('[data-plotid]') as HTMLElement | null;
                         const _pid = btn ? Number(btn.dataset.plotid) : 0;
@@ -14251,7 +14253,11 @@ export default function Page() {
                             onDragOver={(e)=>e.preventDefault()}
                             onDrop={(e)=>{ e.preventDefault(); if(draggedSeedId && isUnlocked){ if (isGuideCompostKey(draggedSeedId)) { void applyGuideCompostToPlot(plotId); } else if (isCompostKey(draggedSeedId)) { void applyCompostToPlot(plotId, draggedSeedId); } else if (tutorialStep === 7 && getPlotCrop(plotId).compostBonus?.type !== "guide") { setMessage({ type: "info", title: "Przewodnik", text: "W przewodniku posadź marchewkę na polu z Kompostem Przewodnika." }); } else { void handlePlantFromSelectedSeed(plotId, draggedSeedId); } setDraggedSeedId(null); }}}
                             onDragStart={(e) => e.preventDefault()}
-                            onMouseEnter={() => { tryApplyFieldAction(plotId); }}
+                            onMouseEnter={() => {
+                              // Podczas tutoriala wyłącz sweep-drag — tylko pojedyncze kliknięcia
+                              if (!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true) return;
+                              tryApplyFieldAction(plotId);
+                            }}
                             onMouseDown={(e) => {
                               if (e.button !== 0) return;
                               e.preventDefault();
