@@ -13559,8 +13559,8 @@ export default function Page() {
                           <p className="font-mono text-xs text-yellow-100">l:<span className="font-black text-white">{fvKombajnPos.l}</span> t:<span className="font-black text-white">{fvKombajnPos.t}</span> w:<span className="font-black text-white">{fvKombajnPos.w}</span> h:<span className="font-black text-white">{fvKombajnPos.h}</span></p>
                         </div>
                         <div className="rounded-xl border border-orange-400/50 bg-orange-950/40 p-2.5">
-                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-orange-300">📋 Okno zbiorów</p>
-                          <p className="font-mono text-xs text-orange-100">l:<span className="font-black text-white">{fvHarvestLogPos.l}</span> t:<span className="font-black text-white">{fvHarvestLogPos.t}</span> w:<span className="font-black text-white">{fvHarvestLogPos.w}</span> h:<span className="font-black text-white">{fvHarvestLogPos.h}</span></p>
+                          <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-orange-300">🌾 Zbiory</p>
+                          <p className="font-mono text-xs text-orange-100">l:<span className="font-black text-white">{fvZbioryPos.l}</span> t:<span className="font-black text-white">{fvZbioryPos.t}</span> w:<span className="font-black text-white">{fvZbioryPos.w}</span> h:<span className="font-black text-white">{fvZbioryPos.h}</span></p>
                         </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
