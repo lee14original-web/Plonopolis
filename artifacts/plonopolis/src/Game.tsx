@@ -1811,8 +1811,9 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 155, t: 899, w: 0, h: 0 });
-  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 945, t: 654, w: 0, h: 0 });
+  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 1408, t: 696, w: 122, h: 0 });
+  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 960, t: 300, w: 80, h: 0 });
+  const tutArrowDragRef = React.useRef<{ step: 12|13, startMX: number, startMY: number, startX: number, startY: number } | null>(null);
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!isFieldViewOpen) return;
@@ -1844,6 +1845,19 @@ export default function Page() {
       document.removeEventListener("mouseup", handleUp);
     };
   }, [fvToolEditMode, isFieldViewOpen]);
+  // Drag dla strzałek tutorialu kroków 12/13 — globalny handler
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      const d = tutArrowDragRef.current;
+      if (!d) return;
+      const setter = d.step === 12 ? setFvTutArrow12Pos : setFvTutArrow13Pos;
+      setter(prev => ({ ...prev, l: Math.round(d.startX + (e.clientX - d.startMX)), t: Math.round(d.startY + (e.clientY - d.startMY)) }));
+    };
+    const handleUp = () => { tutArrowDragRef.current = null; };
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleUp);
+    return () => { document.removeEventListener("mousemove", handleMove); document.removeEventListener("mouseup", handleUp); };
+  }, []);
   // Globalne mouseup — kończy drag-to-plant
   React.useEffect(() => {
     const onUp = () => {
@@ -4031,16 +4045,6 @@ export default function Page() {
   useEffect(() => {
     const _active = !!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true;
     if (!_active || tutorialStep < 1 || tutorialStep > 13) { setTutorialArrow(null); return; }
-    // Kroki 12 i 13 używają edytowalnych pozycji (nie DOM querySelector)
-    if (tutorialStep === 12 || tutorialStep === 13) {
-      const _pos = tutorialStep === 12 ? fvTutArrow12Pos : fvTutArrow13Pos;
-      const recalcPos = () => {
-        setTutorialArrow({ cx: _pos.l, top: _pos.t - 15, bottom: _pos.t + 15, left: _pos.l - 60, right: _pos.l + 60, width: 120, height: 30 });
-      };
-      recalcPos();
-      const _iv = setInterval(recalcPos, 400);
-      return () => clearInterval(_iv);
-    }
     const _selectors: Partial<Record<number, string>> = {
       1:  '[data-tutorial-target="pola-uprawne"]',
       2:  '[data-tutorial-target="kompost-btn"]',
@@ -14149,33 +14153,6 @@ export default function Page() {
                   );
                   })()}
 
-                  {/* Drag handle'y dla strzałek tutorialu — widoczne podczas krok 12/13 oraz w trybie edycji */}
-                  {(tutorialStep === 12 || fvToolEditMode) && (
-                    <div
-                      className="fixed z-[350] flex flex-col items-center gap-0.5 cursor-move select-none"
-                      style={{ left: fvTutArrow12Pos.l - 28, top: fvTutArrow12Pos.t - 52 }}
-                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar12", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow12Pos.l, startT: fvTutArrow12Pos.t, startW: 0, startH: 0 }; }}
-                    >
-                      <div className="rounded-md bg-purple-900/95 border border-purple-400/80 px-2 py-0.5 shadow-lg pointer-events-none">
-                        <p className="font-mono text-[10px] text-purple-200 leading-none whitespace-nowrap">🎯 krok 12 · {fvTutArrow12Pos.l},{fvTutArrow12Pos.t}</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-purple-600/90 border-2 border-purple-300 shadow-xl flex items-center justify-center text-[18px]">⊕</div>
-                      <div className="w-px h-3 bg-purple-400/70" />
-                    </div>
-                  )}
-                  {(tutorialStep === 13 || fvToolEditMode) && (
-                    <div
-                      className="fixed z-[350] flex flex-col items-center gap-0.5 cursor-move select-none"
-                      style={{ left: fvTutArrow13Pos.l - 28, top: fvTutArrow13Pos.t - 52 }}
-                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); fvToolDragRef.current = { btn: "tutar13", mode: "move", startMX: e.clientX, startMY: e.clientY, startL: fvTutArrow13Pos.l, startT: fvTutArrow13Pos.t, startW: 0, startH: 0 }; }}
-                    >
-                      <div className="rounded-md bg-violet-900/95 border border-violet-400/80 px-2 py-0.5 shadow-lg pointer-events-none">
-                        <p className="font-mono text-[10px] text-violet-200 leading-none whitespace-nowrap">🎯 krok 13 · {fvTutArrow13Pos.l},{fvTutArrow13Pos.t}</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-violet-600/90 border-2 border-violet-300 shadow-xl flex items-center justify-center text-[18px]">⊕</div>
-                      <div className="w-px h-3 bg-violet-400/70" />
-                    </div>
-                  )}
 
                   <div className="mb-4 pr-28 flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -16264,7 +16241,7 @@ export default function Page() {
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
         {(()=>{
-          const _noArrow=[7,9,11,13];
+          const _noArrow=[7,9,11];
           const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
           if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
           type SA={x:number;y:number;size:number;rotation:number};
@@ -16306,7 +16283,7 @@ export default function Page() {
               {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
-          // Kroki 2–12: stałe pozycje z final config
+          // Kroki 2–11: stałe pozycje z final config
           const cfgN:Record<number,SA>={
             2: {x:153.37, y:132.50, size:108, rotation:0},
             3: {x:1090.00,y:587.14, size:80,  rotation:0},
@@ -16314,8 +16291,30 @@ export default function Page() {
             6: {x:852.61, y:643.44, size:122, rotation:90},
             8: {x:155.37, y:529.25, size:112, rotation:0},
             10:{x:152.35, y:718.63, size:118, rotation:0},
-            12:{x:1408.33,y:696.10, size:122, rotation:0},
           };
+          // Kroki 12 i 13: przeciągalne strzałki
+          if(tutorialStep===12||tutorialStep===13){
+            const _p=tutorialStep===12?fvTutArrow12Pos:fvTutArrow13Pos;
+            const _sz=_p.w||80;
+            const _ah=Math.round(_sz*62/48);
+            return(
+              <div
+                key={`tut-arr-${tutorialStep}`}
+                className="fixed z-[95] cursor-move select-none"
+                style={{left:_p.l-_sz/2,top:_p.t-_ah/2}}
+                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:tutorialStep as 12|13,startMX:e.clientX,startMY:e.clientY,startX:_p.l,startY:_p.t};}}
+              >
+                <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
+                  ✥ {_p.l},{_p.t}
+                </div>
+                <div className="animate-bounce">
+                  <svg width={_sz} height={_ah} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            );
+          }
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
 
