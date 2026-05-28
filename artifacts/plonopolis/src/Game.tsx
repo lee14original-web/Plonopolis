@@ -14933,10 +14933,10 @@ export default function Page() {
                       {/* 4 ikony jakości marchewki — poglądowo */}
                       <div className="mb-5 flex gap-5 items-start">
                         {([
-                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%", border: "#9ca3af" },
-                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~75%", border: "#d1d5db" },
-                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~12%", border: "#22c55e" },
-                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~3%",  border: "#f59e0b" },
+                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%",   border: "#9ca3af" },
+                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~87,5%", border: "#d1d5db" },
+                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~2%",    border: "#22c55e" },
+                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~0,5%",  border: "#f59e0b" },
                         ] as { quality: string; sprite: string; label: string; expLabel: string; chance: string; border: string }[]).map(q => (
                           <div key={q.quality}
                             className="flex flex-col items-center gap-1.5 cursor-help"
@@ -15188,7 +15188,8 @@ export default function Page() {
           <p className="mb-1">Szansa na podwójny zbiór <span className="font-bold text-yellow-300">(+{calcStatEffect(effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped), 0.004).toFixed(1)}%)</span></p>
           <p className="text-[16px] text-[#8b6a3e] mb-2">Zręczność: {effectiveStats.zrecznosc} stat + {getEquipFlatBonus(" pkt Zrecznosci", charEquipped)} pkt z eq</p>
           <p className="mb-1">Szansa na bonusowy drop <span className="font-bold text-green-300">(+{calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025).toFixed(1)}%)</span></p>
-          <p className="text-[16px] text-[#8b6a3e]">Szczęście: {effectiveStats.szczescie} stat + {getEquipFlatBonus(" pkt Szczescia", charEquipped)} pkt z eq</p>
+          <p className="text-[16px] text-[#8b6a3e] mb-2">Szczęście: {effectiveStats.szczescie} stat + {getEquipFlatBonus(" pkt Szczescia", charEquipped)} pkt z eq</p>
+          <p className="text-[15px] text-yellow-200/70">🍀 Szczęście zmniejsza szansę na popsute plony i zwiększa szansę na epickie oraz legendarne.</p>
         </div>
       )}
     {/* Tooltip Ul — zablokowany */}
