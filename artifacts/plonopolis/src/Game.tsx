@@ -14790,7 +14790,9 @@ export default function Page() {
                             const _total = g.baseAmount + g.bonusAmount;
                             const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
                             const _col = i % 7;
+                            const _row = Math.floor(i / 7);
                             const _tooltipPos = _col <= 2 ? "left-0" : _col >= 5 ? "right-0" : "left-1/2 -translate-x-1/2";
+                            const _tooltipVert = _row === 0 ? "top-[calc(100%+8px)]" : "bottom-[calc(100%+8px)]";
                             return (
                               <div key={i} className="group relative">
                                 <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 group-hover:scale-105"
@@ -14818,8 +14820,8 @@ export default function Page() {
                                     {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
                                   </span>
                                 </div>
-                                {/* Tooltip — zawsze nad ikoną, nie ucina lewej/prawej krawędzi */}
-                                <div className={`pointer-events-none absolute bottom-[calc(100%+8px)] ${_tooltipPos} z-[300] hidden w-52 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl group-hover:block`}>
+                                {/* Tooltip — wiersz 0: poniżej ikony; reszta: powyżej */}
+                                <div className={`pointer-events-none absolute ${_tooltipVert} ${_tooltipPos} z-[300] hidden w-52 rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl group-hover:block`}>
                                   <p className="mb-1 text-[17px] font-black text-[#f9e7b2]">{g.cropName}</p>
                                   <p className="mb-1 text-[15px]" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
                                   {g.baseAmount > 0 && <p className="text-[14px]">Zebrano: <span className="font-bold text-yellow-300">+{g.baseAmount} szt.</span></p>}
