@@ -240,6 +240,7 @@ const EPIC_SKINS: { path: string; name: string; cost: Record<string,number> }[] 
 ];
 const EPIC_SKIN_START = 20; // indeksy 20–24
 const ALL_SKINS = [...SKINS_MALE, ...SKINS_FEMALE, ...EPIC_SKINS.map(s => s.path)];
+const NON_EPIC_SKINS = [...SKINS_MALE, ...SKINS_FEMALE];
 
 // ─── BONUSY STARTOWE AVATARÓW ────────────────────────────────────────────────
 const AVATAR_BONUSES: Record<number, Partial<PlayerStatsMap>> = {
@@ -12129,27 +12130,36 @@ export default function Page() {
                                                  'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
                                   }`}
                                 >
-                                  {/* Portret + nazwa */}
-                                  <div className="flex items-start gap-2.5 mb-2">
-                                    {/* Kafelek z portretem — podmień na <img> gdy będą assety */}
-                                    <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl bg-black/30 border border-amber-800/30 text-3xl leading-none">
-                                      {cd.icon}
-                                    </div>
-                                    <div className="min-w-0 flex-1 pt-0.5">
-                                      <p className="text-base font-black text-[#f9e7b2] leading-tight truncate">{cd.name}</p>
-                                      <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                                    </div>
-                                  </div>
-                                  {/* Nagrody — wyśrodkowane, bez ikon */}
-                                  <div className="flex items-center justify-center gap-3 text-sm font-bold mb-1">
-                                    <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                    <span className="text-blue-300">{o.rewards.exp} EXP</span>
-                                    {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
-                                  </div>
-                                  {/* Czas — wyśrodkowany na dole, bez ikony */}
-                                  <p className={`text-xs font-bold text-center ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                    {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                  </p>
+                                  {/* Nowy układ: avatar/ikona po lewej, treść wyśrodkowana po prawej */}
+                                  {(() => {
+                                    const _useAvatar = o.customer_type === 'Gość' || o.customer_type === 'neighbor' || o.customer_type === 'village_guest';
+                                    const _avatarPath = _useAvatar ? (() => {
+                                      let _h = 0; for (let _i = 0; _i < o.id.length; _i++) _h = (_h * 31 + o.id.charCodeAt(_i)) >>> 0;
+                                      return NON_EPIC_SKINS[_h % NON_EPIC_SKINS.length];
+                                    })() : null;
+                                    return (
+                                      <div className="flex gap-3 items-center">
+                                        <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                                          {_avatarPath
+                                            ? <img src={_avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                            : <span className="text-4xl leading-none">{cd.icon}</span>
+                                          }
+                                        </div>
+                                        <div className="flex-1 flex flex-col items-center text-center gap-0.5">
+                                          <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
+                                          <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                          <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
+                                            <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                            <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                            {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
+                                          </div>
+                                          <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                            {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                   {/* badge: Nowy / ostrzeżenie / gotowe */}
                                   {!expired && (
                                     isNew ? (
