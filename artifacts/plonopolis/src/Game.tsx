@@ -1460,6 +1460,24 @@ const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string 
   kret:     { name: "Kret",       icon: "🐾", color: "#a8a29e" },
 };
 
+// Koszty usunięcia przeszkód obliczane lokalnie (nigdy nie zależą od wartości z bazy).
+// Format: [koszt dla pola 21, koszt dla pola 100] — interpolacja liniowa, zaokrąglona do 5.
+const OBSTACLE_COST_RANGE: Record<string, [number, number]> = {
+  chwasty:   [20,   80],
+  kret:      [35,  130],
+  maly_pien: [55,  190],
+  kamienie:  [75,  260],
+  duzy_pien: [110, 420],
+};
+
+function calcObstacleCost(plotId: number, type: string): number {
+  const range = OBSTACLE_COST_RANGE[type];
+  if (!range) return 20;
+  const t = Math.max(0, Math.min(1, (plotId - 21) / 79)); // 0 = plot 21, 1 = plot 100
+  const raw = range[0] + t * (range[1] - range[0]);
+  return Math.round(raw / 5) * 5; // zaokrąglij do 5
+}
+
 const XP_TABLE: Record<number, number> = {
   // lvl 1-7: szybki start (30-90 min do lvl 3 z podstawowymi uprawami)
   1:           12,
@@ -2551,8 +2569,10 @@ export default function Page() {
   function getPlotUnlockCost(plotId: number) {
     // Koszty startowych pól 1–20: darmowe (zawsze odblokowane)
     if (plotId <= 20) return 0;
-    // Pola 21–100: koszt z losowych przeszkód (załadowany z Supabase)
-    return plotObstacles[String(plotId)]?.cost ?? 0;
+    // Pola 21–100: koszt obliczany lokalnie wg typu przeszkody (niezależny od wartości w bazie)
+    const obstacle = plotObstacles[String(plotId)];
+    if (!obstacle) return 0;
+    return calcObstacleCost(plotId, obstacle.type);
   }
 
   function getPlotObstacleType(plotId: number): string | null {
