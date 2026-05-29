@@ -1456,26 +1456,21 @@ const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string 
   chwasty:  { name: "Chwasty",    icon: "🌿", color: "#86efac" },
   kamienie: { name: "Kamienie",   icon: "🪨", color: "#d1d5db" },
   maly_pien:{ name: "Mały pień",  icon: "🪵", color: "#d97706" },
-  duzy_pien:{ name: "Duży pień",  icon: "🌲", color: "#a16207" },
+  duzy_pien:{ name: "Drzewo",     icon: "🌲", color: "#a16207" },
   kret:     { name: "Kret",       icon: "🐾", color: "#a8a29e" },
 };
 
-// Koszty usunięcia przeszkód obliczane lokalnie (nigdy nie zależą od wartości z bazy).
-// Format: [koszt dla pola 21, koszt dla pola 100] — interpolacja liniowa, zaokrąglona do 5.
-const OBSTACLE_COST_RANGE: Record<string, [number, number]> = {
-  chwasty:   [20,   80],
-  kret:      [35,  130],
-  maly_pien: [55,  190],
-  kamienie:  [75,  260],
-  duzy_pien: [110, 420],
+// Stałe koszty usunięcia przeszkód — obliczane lokalnie, niezależne od wartości w bazie.
+const OBSTACLE_FIXED_COSTS: Record<string, number> = {
+  chwasty:   15,
+  kamienie:  50,
+  maly_pien: 150,
+  duzy_pien: 250,
+  kret:      500,
 };
 
-function calcObstacleCost(plotId: number, type: string): number {
-  const range = OBSTACLE_COST_RANGE[type];
-  if (!range) return 20;
-  const t = Math.max(0, Math.min(1, (plotId - 21) / 79)); // 0 = plot 21, 1 = plot 100
-  const raw = range[0] + t * (range[1] - range[0]);
-  return Math.round(raw / 5) * 5; // zaokrąglij do 5
+function calcObstacleCost(_plotId: number, type: string): number {
+  return OBSTACLE_FIXED_COSTS[type] ?? 20;
 }
 
 const XP_TABLE: Record<number, number> = {
