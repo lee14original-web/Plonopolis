@@ -12090,17 +12090,26 @@ export default function Page() {
                             {totalOrders} {totalOrders === 1 ? 'aktywny klient' : totalOrders < 5 ? 'aktywnych klientów' : 'aktywnych klientów'}
                           </p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                            {[...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
-                              .sort((a, b) => {
-                                const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
-                                if (gDiff !== 0) return gDiff;
-                                const eDiff = b.o.rewards.exp - a.o.rewards.exp;
-                                if (eDiff !== 0) return eDiff;
-                                const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
-                                if (iDiff !== 0) return iDiff;
-                                return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
-                              })
-                              .map(({ o, originalIndex }) => {
+                            {(() => {
+                              // Unikalne avatary: brak powtórzeń — przetasowanie NON_EPIC_SKINS seeded
+                              const _avatarTypes = new Set(['Gość', 'neighbor', 'village_guest']);
+                              const _sorted = [...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
+                                .sort((a, b) => {
+                                  const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
+                                  if (gDiff !== 0) return gDiff;
+                                  const eDiff = b.o.rewards.exp - a.o.rewards.exp;
+                                  if (eDiff !== 0) return eDiff;
+                                  const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
+                                  if (iDiff !== 0) return iDiff;
+                                  return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
+                                });
+                              const _eligibleIds = _sorted.filter(({ o }) => _avatarTypes.has(o.customer_type)).map(({ o }) => o.id);
+                              let _seed = _eligibleIds.reduce((h, id) => { let s = h; for (let i = 0; i < id.length; i++) s = (s * 31 + id.charCodeAt(i)) >>> 0; return s; }, 1) || 1;
+                              const _rng = () => { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 0x100000000; };
+                              const _shuf = [...NON_EPIC_SKINS];
+                              for (let i = _shuf.length - 1; i > 0; i--) { const j = Math.floor(_rng() * (i + 1)); [_shuf[i], _shuf[j]] = [_shuf[j], _shuf[i]]; }
+                              const _avatarMap = new Map<string, string>(_eligibleIds.map((id, idx) => [id, _shuf[idx]]));
+                              return _sorted.map(({ o, originalIndex }) => {
                               const cd = getCustomerDisplay(o.customer_type);
                               const tl = Math.max(0, new Date(o.expires_at).getTime() - customerNow);
                               const ml = Math.floor(tl / 60000);
@@ -12115,6 +12124,7 @@ export default function Page() {
                               const isWarning = usedPct !== null ? usedPct >= 0.75 : tl < 3_600_000;
                               const isCritical = usedPct !== null ? usedPct >= 0.90 : tl < 600_000;
                               const isNew = newCustomerIds.has(o.id);
+                              const _avatarPath = _avatarMap.get(o.id) ?? null;
                               return (
                                 <button
                                   key={o.id}
@@ -12130,36 +12140,27 @@ export default function Page() {
                                                  'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
                                   }`}
                                 >
-                                  {/* Nowy układ: avatar/ikona po lewej, treść wyśrodkowana po prawej */}
-                                  {(() => {
-                                    const _useAvatar = o.customer_type === 'Gość' || o.customer_type === 'neighbor' || o.customer_type === 'village_guest';
-                                    const _avatarPath = _useAvatar ? (() => {
-                                      let _h = 0; for (let _i = 0; _i < o.id.length; _i++) _h = (_h * 31 + o.id.charCodeAt(_i)) >>> 0;
-                                      return NON_EPIC_SKINS[_h % NON_EPIC_SKINS.length];
-                                    })() : null;
-                                    return (
-                                      <div className="flex gap-3 items-center">
-                                        <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
-                                          {_avatarPath
-                                            ? <img src={_avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
-                                            : <span className="text-4xl leading-none">{cd.icon}</span>
-                                          }
-                                        </div>
-                                        <div className="flex-1 flex flex-col items-center text-center gap-0.5">
-                                          <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
-                                          <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                                          <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
-                                            <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                            <span className="text-blue-300">{o.rewards.exp} EXP</span>
-                                            {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
-                                          </div>
-                                          <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                            {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                          </p>
-                                        </div>
+                                  {/* Avatar po lewej (powiększony, lekko w prawo), treść wyśrodkowana */}
+                                  <div className="flex gap-3 items-center">
+                                    <div className="flex-shrink-0 ml-2 w-24 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                                      {_avatarPath
+                                        ? <img src={_avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                        : <span className="text-5xl leading-none">{cd.icon}</span>
+                                      }
+                                    </div>
+                                    <div className="flex-1 flex flex-col items-center text-center gap-0.5">
+                                      <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
+                                      <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                      <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
+                                        <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                        <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                        {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
                                       </div>
-                                    );
-                                  })()}
+                                      <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                        {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                      </p>
+                                    </div>
+                                  </div>
                                   {/* badge: Nowy / ostrzeżenie / gotowe */}
                                   {!expired && (
                                     isNew ? (
@@ -12174,7 +12175,8 @@ export default function Page() {
                                   )}
                                 </button>
                               );
-                            })}
+                              });
+                            })()}
                           </div>
                         </div>
                       ) : order && customer && (
