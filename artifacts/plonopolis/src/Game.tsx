@@ -1446,7 +1446,11 @@ const FIELD_VIEW_PLOTS: FieldViewPlotLayout[] = Array.from({ length: 100 }, (_, 
 });
 
 // Typy i koszty przeszkód (pola 21–100)
-const CHWASTY_IMGS = ["/przeszkody/chwasty1.png", "/przeszkody/chwasty2.png", "/przeszkody/chwasty3.png"] as const;
+const CHWASTY_IMGS   = ["/przeszkody/chwasty1.png",  "/przeszkody/chwasty2.png",  "/przeszkody/chwasty3.png"]  as const;
+const KRET_IMGS      = ["/przeszkody/kret1.png",     "/przeszkody/kret2.png",     "/przeszkody/kret3.png"]     as const;
+const PIEN_IMGS      = ["/przeszkody/pien1.png",     "/przeszkody/pien2.png",     "/przeszkody/pien3.png"]     as const;
+const DRZEWO_IMGS    = ["/przeszkody/drzewo1.png",   "/przeszkody/drzewo2.png",   "/przeszkody/drzewo3.png"]   as const;
+const KAMIENIE_IMGS  = ["/przeszkody/kamienie1.png", "/przeszkody/kamienie2.png", "/przeszkody/kamienie3.png"] as const;
 
 const OBSTACLE_DEFS: Record<string, { name: string; icon: string; color: string }> = {
   chwasty:  { name: "Chwasty",    icon: "🌿", color: "#86efac" },
@@ -14585,10 +14589,18 @@ export default function Page() {
                                   {(() => {
                                     const _ot = getPlotObstacleType(plotId);
                                     const _od = _ot ? OBSTACLE_DEFS[_ot] : null;
-                                    if (_ot === "chwasty") {
+                                    const _obstacleImgMap: Record<string, readonly string[]> = {
+                                      chwasty:   CHWASTY_IMGS,
+                                      kret:      KRET_IMGS,
+                                      maly_pien: PIEN_IMGS,
+                                      duzy_pien: DRZEWO_IMGS,
+                                      kamienie:  KAMIENIE_IMGS,
+                                    };
+                                    const _imgs = _ot ? _obstacleImgMap[_ot] : null;
+                                    if (_imgs) {
                                       return (
                                         <>
-                                          <img src={CHWASTY_IMGS[plotId % 3]} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
+                                          <img src={_imgs[plotId % 3]} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" />
                                           <span className="relative z-10 text-[16px] font-black text-amber-300 leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">{plotCost} PLN</span>
                                         </>
                                       );
