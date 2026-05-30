@@ -15080,6 +15080,7 @@ export default function Page() {
                           Szansa Zręczności:{" "}
                           <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
                         </p>
+                        <p className="mt-0.5 text-[11px] text-[#8b6a3e]/50 italic">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
                       </div>
                     </div>
                   );
