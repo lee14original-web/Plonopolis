@@ -15010,6 +15010,10 @@ export default function Page() {
                   const _timeStr     = _effMin >= 60
                     ? `${Math.floor(_effMin / 60)}h${_effMin % 60 > 0 ? ` ${_effMin % 60}min` : ""}`
                     : `${_effMin} min`;
+                  const _baseMin     = _cropDef2 ? Math.round(_cropDef2.growthTimeMs / 60_000) : 0;
+                  const _baseTimeStr = _baseMin >= 60
+                    ? `${Math.floor(_baseMin / 60)}h${_baseMin % 60 > 0 ? ` ${_baseMin % 60}min` : ""}`
+                    : `${_baseMin} min`;
 
                   const _zrEff    = effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
                   const _zrChance = calcStatEffect(_zrEff, 0.004);
@@ -15027,8 +15031,8 @@ export default function Page() {
                           t.quality === "rotten"
                             ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
                             : <p className="text-[#8b6a3e]">
-                                Czas z Twoimi bonusami:{" "}
-                                <span className="font-bold text-[#dfcfab]">{_timeStr}</span>
+                                Czas bazowy:{" "}
+                                <span className="font-bold text-[#dfcfab]">{_baseTimeStr}</span>
                               </p>
                         )}
                         <p className="text-[#8b6a3e]">
