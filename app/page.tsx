@@ -15012,22 +15012,76 @@ export default function Page() {
                 {fvHarvestTooltip && (() => {
                   const t = fvHarvestTooltip;
                   const _qd = CROP_QUALITY_DEFS[t.quality];
-                  const _isExpOnly = t.quality === "legendary" && t.baseAmount === 0;
                   const _cx = BASE_W / 2 + (t.cx - window.innerWidth / 2) / gameScale;
                   const _cy = BASE_H / 2 + (t.cy - window.innerHeight / 2) / gameScale;
-                  const _tw = 224;
+                  const _tw = 268;
                   const _left = Math.max(4, Math.min(Math.round(_cx - _tw / 2), BASE_W - _tw - 4));
+
+                  const _cropDef2 = CROPS.find(c => c.id === t.cropId);
+                  const _expR = _cropDef2?.expReward ?? 0;
+                  const _yieldAmt = _cropDef2?.yieldAmount ?? 1;
+                  const _dropMin = 1;
+                  const _dropMax = _yieldAmt + 1;
+
+                  const _expDisplay =
+                    t.quality === "rotten"    ? "+0 EXP"
+                    : t.quality === "good"    ? `+${_expR} EXP`
+                    : t.quality === "epic"    ? `+${_expR * 3}–${_expR * 6} EXP`
+                    : /* legendary */           `+${_expR * 10}–${_expR * 20} EXP`;
+
+                  const _wiedzaEff2  = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+                  const _wiedzaMult2 = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEff2, WIEDZA_RATE) / 100);
+                  const _hiveMult2   = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
+                  const _effMs       = _cropDef2
+                    ? Math.round(_cropDef2.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult2 * _hiveMult2))
+                    : 0;
+                  const _effMin      = Math.round(_effMs / 60_000);
+                  const _timeStr     = _effMin >= 60
+                    ? `${Math.floor(_effMin / 60)}h${_effMin % 60 > 0 ? ` ${_effMin % 60}min` : ""}`
+                    : `${_effMin} min`;
+
+                  const _zrEff    = effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
+                  const _zrChance = calcStatEffect(_zrEff, 0.004);
+
                   return (
                     <div
                       className="pointer-events-none absolute z-[400] rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl"
                       style={{ left: _left, top: Math.round(_cy) - 8, width: _tw, transform: "translateY(-100%)" }}
                     >
-                      <p className="mb-1 text-[17px] font-black text-[#f9e7b2]">{t.cropName}</p>
-                      <p className="mb-1 text-[15px]" style={{ color: _qd.borderColor }}>{_qd.badge} {_qd.label}</p>
-                      {t.baseAmount > 0 && <p className="text-[14px]">Zebrano: <span className="font-bold text-yellow-300">+{t.baseAmount} szt.</span></p>}
-                      {t.bonusAmount > 0 && <p className="text-[14px]">Bonus: <span className="font-bold text-yellow-300">+{t.bonusAmount} szt.</span></p>}
-                      {_isExpOnly && <p className="text-[14px] text-amber-300">🌟 Bonus EXP</p>}
-                      <p className="mt-1 border-t border-[#8b6a3e]/40 pt-1 text-[14px] text-sky-300">EXP: +{t.baseExp}</p>
+                      <p className="mb-0.5 text-[16px] font-black text-[#f9e7b2]">
+                        {t.cropName} <span style={{ color: _qd.borderColor }}>{_qd.label.toLowerCase()}</span>
+                      </p>
+                      <div className="mt-1.5 flex flex-col gap-1 text-[13px]">
+                        {_cropDef2 && (
+                          <p className="text-[#8b6a3e]">
+                            Czas z Twoimi bonusami:{" "}
+                            <span className="font-bold text-[#dfcfab]">{_timeStr}</span>
+                          </p>
+                        )}
+                        <p className="text-[#8b6a3e]">
+                          Doświadczenie:{" "}
+                          <span className="font-bold text-sky-300">{_expDisplay}</span>
+                        </p>
+                        {_cropDef2 && (
+                          <p className="text-[#8b6a3e]">
+                            Drop:{" "}
+                            <span className="font-bold text-yellow-300">{_dropMin}–{_dropMax} szt.</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[12px]">
+                        {_cropDef2 && (
+                          <p className="text-[#8b6a3e]/80">
+                            Jeśli Zręczność zadziała:{" "}
+                            <span className="font-bold text-yellow-300">{_dropMin * 2}–{_dropMax * 2} szt.</span>
+                          </p>
+                        )}
+                        <p className="text-[#8b6a3e]/80">
+                          Szansa Zręczności:{" "}
+                          <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-[#8b6a3e]/50 italic">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
+                      </div>
                     </div>
                   );
                 })()}
