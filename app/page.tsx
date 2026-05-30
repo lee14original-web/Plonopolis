@@ -13915,81 +13915,48 @@ export default function Page() {
                                           const _fmt = (ms: number) => { const t = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(t/3600); const m = Math.floor((t%3600)/60); const s = t%60; return h > 0 ? `${h}h ${m}min ${s}s` : m > 0 ? `${m}min ${s}s` : `${s}s`; };
                                           const _savedPct = Math.round(((_baseMs - _effMs) / _baseMs) * 100);
                                           const _showBonus = _wiedzaPct > 0 || _hivePct > 0;
-                                          // Plony i EXP zależne od jakości
-                                          const _yieldRange = crop.yieldAmount <= 2 ? "1–3 szt." : "2–5 szt.";
-                                          const yieldText = q === "legendary" ? (crop.yieldAmount <= 2 ? "20–60 zw. + 5–12 epic." : "30–80 zw. + 8–18 epic.") : q === "epic" ? (crop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt.") : q === "rotten" ? `${_yieldRange} 🟫` : _yieldRange;
-                                          const expText = q === "legendary" ? (crop.yieldAmount <= 2 ? `${crop.expReward * 10}–${crop.expReward * 20}` : `${crop.expReward * 12}–${crop.expReward * 25}`) : q === "epic" ? `${crop.expReward * 3}–${crop.expReward * 6}` : `${crop.expReward}`;
+                                          // Zręczność
+                                          const _zrEff2 = (effectiveStats.zrecznosc ?? 0) + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
+                                          const _zrChance2 = calcStatEffect(_zrEff2, 0.004);
+                                          const _dropMin2 = 1;
+                                          const _dropMax2 = crop.yieldAmount + 1;
+                                          const _qualLabel = q === "rotten" ? "popsuta" : q === "epic" ? "epicka" : q === "legendary" ? "legendarna" : "zwykła";
+                                          const _expDisplay2 =
+                                            q === "rotten"    ? "+0 EXP"
+                                            : q === "epic"    ? `+${crop.expReward * 3}–${crop.expReward * 6} EXP`
+                                            : q === "legendary" ? `+${crop.expReward * 10}–${crop.expReward * 20} EXP`
+                                            : `+${crop.expReward} EXP`;
                                           const tipNode = (
                                             <>
                                               {/* ── HEADER ── */}
-                                              <div className="flex items-start justify-between gap-2 mb-2.5">
-                                                <div>
-                                                  <p className="text-[18px] font-black leading-tight" style={{ color: tipColor }}>{crop.name}</p>
-                                                  <p className="text-[13px] font-bold opacity-75 mt-0.5" style={{ color: tipColor }}>{qLabel}</p>
-                                                </div>
-                                                <span className="text-[13px] font-bold text-[#f9e7b2] bg-black/40 rounded-lg px-2 py-1 whitespace-nowrap mt-0.5">🎒 {cnt}</span>
+                                              <div className="flex items-start justify-between gap-2 mb-2">
+                                                <p className="text-[22px] font-black text-[#f9e7b2] leading-tight">
+                                                  {crop.name} <span style={{ color: tipColor }}>{_qualLabel}</span>
+                                                </p>
+                                                <span className="text-[15px] font-bold text-[#f9e7b2] bg-black/40 rounded-lg px-2 py-1 whitespace-nowrap mt-0.5">🎒 {cnt}</span>
                                               </div>
 
-                                              {/* ── CZAS WZROSTU ── */}
-                                              <div className="mb-2">
-                                                <div className="flex items-center gap-2">
-                                                  <span className="text-[15px] font-black text-emerald-300">🕒 {_fmt(_effMs)}</span>
-                                                </div>
-                                                {_waterTotalPct > 0 && (
-                                                  <p className="text-[12px] text-cyan-300 mt-0.5">💧 Po podlaniu: <span className="font-bold">{_fmt(_withWaterMs)}</span></p>
-                                                )}
+                                              {/* ── BODY ── */}
+                                              <div className="flex flex-col gap-1 text-[18px]">
+                                                {q === "rotten"
+                                                  ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
+                                                  : <>
+                                                      <p className="text-[#8b6a3e]">Czas z Twoimi bonusami: <span className="font-bold text-[#dfcfab]">{_fmt(_effMs)}</span></p>
+                                                      {_waterTotalPct > 0 && (
+                                                        <p className="text-[#8b6a3e]">Po podlaniu: <span className="font-bold text-cyan-300">{_fmt(_withWaterMs)}</span></p>
+                                                      )}
+                                                    </>
+                                                }
+                                                <p className="text-[#8b6a3e]">Doświadczenie: <span className="font-bold text-sky-300">{_expDisplay2}</span></p>
+                                                <p className="text-[#8b6a3e]">Drop: <span className="font-bold text-yellow-300">{_dropMin2}–{_dropMax2} szt.</span></p>
                                               </div>
 
-                                              {/* ── NAGRODY (legendary) ── */}
-                                              {q === "legendary" && (
-                                                <div className="rounded-lg border px-3 py-2 mb-2" style={{ borderColor: `${tipColor}55`, background: `${tipColor}0f` }}>
-                                                  <p className="text-[12px] font-bold mb-1.5 opacity-60" style={{ color: tipColor }}>🎁 Nagrody (zawsze wszystkie)</p>
-                                                  <p className="text-[14px] font-black text-[#dfcfab]">🤎 {crop.yieldAmount <= 2 ? "20–60" : "30–80"} zwykłych</p>
-                                                  <p className="text-[14px] font-black text-purple-300">💜 {crop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich</p>
-                                                  <p className="text-[14px] font-black text-amber-300">⭐ EXP ×{crop.yieldAmount <= 2 ? "10–20" : "12–25"}</p>
-                                                </div>
-                                              )}
-
-                                              {/* ── PLON (nie-legendary) ── */}
-                                              {q !== "legendary" && (
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                  <span className="text-[13px] text-[#8b6a3e]/80">🌾 Plon</span>
-                                                  <span className="text-[14px] font-black text-white">
-                                                    {q === "epic" ? (crop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt.") : q === "rotten" ? `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt. 🟫` : `${crop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}
-                                                  </span>
-                                                </div>
-                                              )}
-
-                                              {/* ── EXP ── */}
-                                              <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[13px] text-[#8b6a3e]/80">📚 EXP</span>
-                                                <span className="text-[14px] font-black text-sky-300">
-                                                  {q === "legendary"
-                                                    ? `+${crop.expReward * 10}–${crop.expReward * 20}`
-                                                    : q === "epic"
-                                                    ? `+${crop.expReward * 3}–${crop.expReward * 6}`
-                                                    : q === "rotten"
-                                                    ? `+0`
-                                                    : `+${crop.expReward}`}
-                                                </span>
+                                              {/* ── FOOTER (Zręczność) ── */}
+                                              <div className="mt-2 border-t border-white/10 pt-1.5 flex flex-col gap-0.5 text-[17px]">
+                                                <p className="text-[#8b6a3e]">Jeśli Zręczność zadziała: <span className="font-bold text-yellow-300">{_dropMin2 * 2}–{_dropMax2 * 2} szt.</span></p>
+                                                <p className="text-[#8b6a3e]">Szansa Zręczności: <span className="font-bold text-amber-300">{_zrChance2.toFixed(1)}%</span></p>
+                                                <p className="mt-0.5 text-[15px] text-[#8b6a3e]">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
                                               </div>
-
-                                              {/* ── OPIS JAKOŚCI (epic/rotten) ── */}
-                                              {q === "epic" && (
-                                                <p className="text-[12px] text-purple-300/80 mb-2">🎲 Każda z {crop.yieldAmount <= 2 ? "10–22" : "14–30"} sztuk losuje jakość osobno + EXP ×3–6</p>
-                                              )}
-                                              {q === "rotten" && (
-                                                <p className="text-[12px] text-[#9ca3af]/70 mb-2">⚠️ Obniżony plon przy zbiorze</p>
-                                              )}
-
-                                              {/* ── BONUSY (jedna linia ikon) ── */}
-                                              {_showBonus && (
-                                                <div className="flex gap-3 text-[12px] text-[#8b6a3e]/60 mt-0.5 border-t border-white/5 pt-1.5">
-                                                  {_wiedzaPct > 0 && <span>🧠 −{_wiedzaPct.toFixed(1)}%</span>}
-                                                  {_hivePct > 0 && <span>🍯 −{_hivePct.toFixed(1)}%</span>}
-                                                  
-                                                </div>
-                                              )}
                                             </>
                                           );
                                           setSeedPickerTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tipColor });
