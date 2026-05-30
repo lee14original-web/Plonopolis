@@ -13920,12 +13920,12 @@ export default function Page() {
                                           const _zrChance2 = calcStatEffect(_zrEff2, 0.004);
                                           const _isSmall2 = crop.yieldAmount <= 2;
                                           const _dropStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "20–60 zw. + 5–12 ep." : "30–80 zw. + 8–18 ep.")
+                                            ? (_isSmall2 ? "20–60 szt." : "30–80 szt.")
                                             : q === "epic"
                                             ? (_isSmall2 ? "10–22 szt." : "14–30 szt.")
                                             : `1–${crop.yieldAmount + 1} szt.`;
                                           const _dropZrStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "40–120 zw. + 10–24 ep." : "60–160 zw. + 16–36 ep.")
+                                            ? (_isSmall2 ? "40–120 szt." : "60–160 szt.")
                                             : q === "epic"
                                             ? (_isSmall2 ? "20–44 szt." : "28–60 szt.")
                                             : `2–${(crop.yieldAmount + 1) * 2} szt.`;
@@ -13948,9 +13948,6 @@ export default function Page() {
                                                   ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
                                                   : <>
                                                       <p className="text-[#8b6a3e]">Czas z Twoimi bonusami: <span className="font-bold text-[#dfcfab]">{_fmt(_effMs)}</span></p>
-                                                      {_waterTotalPct > 0 && (
-                                                        <p className="text-[#8b6a3e]">Po podlaniu: <span className="font-bold text-cyan-300">{_fmt(_withWaterMs)}</span></p>
-                                                      )}
                                                     </>
                                                 }
                                                 <p className="text-[#8b6a3e]">Doświadczenie: <span className="font-bold text-sky-300">{_expDisplay2}</span></p>
@@ -15002,12 +14999,12 @@ export default function Page() {
                   const _yieldAmt = _cropDef2?.yieldAmount ?? 1;
                   const _isSmall = _yieldAmt <= 2;
                   const _dropStr = t.quality === "legendary"
-                    ? (_isSmall ? "20–60 zw. + 5–12 ep." : "30–80 zw. + 8–18 ep.")
+                    ? (_isSmall ? "20–60 szt." : "30–80 szt.")
                     : t.quality === "epic"
                     ? (_isSmall ? "10–22 szt." : "14–30 szt.")
                     : `1–${_yieldAmt + 1} szt.`;
                   const _dropZrStr = t.quality === "legendary"
-                    ? (_isSmall ? "40–120 zw. + 10–24 ep." : "60–160 zw. + 16–36 ep.")
+                    ? (_isSmall ? "40–120 szt." : "60–160 szt.")
                     : t.quality === "epic"
                     ? (_isSmall ? "20–44 szt." : "28–60 szt.")
                     : `2–${(_yieldAmt + 1) * 2} szt.`;
