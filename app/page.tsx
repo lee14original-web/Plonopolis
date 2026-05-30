@@ -13920,15 +13920,15 @@ export default function Page() {
                                           const _zrChance2 = calcStatEffect(_zrEff2, 0.004);
                                           const _isSmall2 = crop.yieldAmount <= 2;
                                           const _dropStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "20–60 szt." : "30–80 szt.")
+                                            ? (_isSmall2 ? "20–60 szt." : "40–120 szt.")
                                             : q === "epic"
-                                            ? (_isSmall2 ? "10–22 szt." : "14–30 szt.")
-                                            : `1–${crop.yieldAmount + 1} szt.`;
+                                            ? (_isSmall2 ? "10–22 szt." : "20–44 szt.")
+                                            : (_isSmall2 ? "1–3 szt." : "2–6 szt.");
                                           const _dropZrStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "40–120 szt." : "60–160 szt.")
+                                            ? (_isSmall2 ? "40–120 szt." : "80–240 szt.")
                                             : q === "epic"
-                                            ? (_isSmall2 ? "20–44 szt." : "28–60 szt.")
-                                            : `2–${(crop.yieldAmount + 1) * 2} szt.`;
+                                            ? (_isSmall2 ? "20–44 szt." : "40–88 szt.")
+                                            : (_isSmall2 ? "2–6 szt." : "4–12 szt.");
                                           const _qualLabel = q === "rotten" ? "popsuta" : q === "epic" ? "epicka" : q === "legendary" ? "legendarna" : "zwykła";
                                           const _expDisplay2 =
                                             q === "rotten"    ? "+0 EXP"
@@ -14999,15 +14999,15 @@ export default function Page() {
                   const _yieldAmt = _cropDef2?.yieldAmount ?? 1;
                   const _isSmall = _yieldAmt <= 2;
                   const _dropStr = t.quality === "legendary"
-                    ? (_isSmall ? "20–60 szt." : "30–80 szt.")
+                    ? (_isSmall ? "20–60 szt." : "40–120 szt.")
                     : t.quality === "epic"
-                    ? (_isSmall ? "10–22 szt." : "14–30 szt.")
-                    : `1–${_yieldAmt + 1} szt.`;
+                    ? (_isSmall ? "10–22 szt." : "20–44 szt.")
+                    : (_isSmall ? "1–3 szt." : "2–6 szt.");
                   const _dropZrStr = t.quality === "legendary"
-                    ? (_isSmall ? "40–120 szt." : "60–160 szt.")
+                    ? (_isSmall ? "40–120 szt." : "80–240 szt.")
                     : t.quality === "epic"
-                    ? (_isSmall ? "20–44 szt." : "28–60 szt.")
-                    : `2–${(_yieldAmt + 1) * 2} szt.`;
+                    ? (_isSmall ? "20–44 szt." : "40–88 szt.")
+                    : (_isSmall ? "2–6 szt." : "4–12 szt.");
 
                   const _expDisplay =
                     t.quality === "rotten"    ? "+0 EXP"
@@ -15474,7 +15474,7 @@ export default function Page() {
             {hoveredSeedQuality === "rotten" && <span className="ml-1 text-[14px] font-black text-white">⚠️ Popsuta</span>}
           </p>
           <p className="mb-1 text-[14px] text-[#8b6a3e]">
-            {hoveredSeedQuality === "legendary" ? "Legendarne nasiono — zawsze daje zwykłe + epickie plony i duży bonus EXP!" : hoveredSeedQuality === "epic" ? `Epickie nasiono — każda z ${hoveredCrop.yieldAmount <= 2 ? "10–22" : "14–30"} sztuk losuje jakość osobno + EXP ×3–6` : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
+            {hoveredSeedQuality === "legendary" ? `Legendarne nasiono — każda z ${hoveredCrop.yieldAmount <= 2 ? "20–60" : "40–120"} sztuk losuje jakość osobno + EXP ×10–20!` : hoveredSeedQuality === "epic" ? `Epickie nasiono — każda z ${hoveredCrop.yieldAmount <= 2 ? "10–22" : "20–44"} sztuk losuje jakość osobno + EXP ×3–6` : hoveredSeedQuality === "rotten" ? "Zepsute — nie można zasadzić, nadaje się jedynie jako kompost lub do zadań specjalnych." : "Zwykłe nasiono"}
           </p>
           {hoveredSeedQuality !== "rotten" && <>
             {(() => {
@@ -15533,18 +15533,17 @@ export default function Page() {
             })()}
             {hoveredSeedQuality === "legendary" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(245,158,11,0.08)] p-2 text-[13px]">
-                <p className="font-black text-amber-300">🌟 Zawsze wszystkie nagrody:</p>
-                <p>✅ {hoveredCrop.yieldAmount <= 2 ? "20–60" : "30–80"} zwykłych nasion</p>
-                <p>⭐ {hoveredCrop.yieldAmount <= 2 ? "5–12" : "8–18"} epickich nasion</p>
-                <p>📚 EXP: +{hoveredCrop.expReward * (hoveredCrop.yieldAmount <= 2 ? 10 : 12)}–{hoveredCrop.expReward * (hoveredCrop.yieldAmount <= 2 ? 20 : 25)}</p>
+                <p className="font-black text-amber-300">🌟 Każda sztuka losuje jakość osobno:</p>
+                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "20–60" : "40–120"} szt. (losowa jakość)</p>
+                <p>📚 EXP: +{hoveredCrop.expReward * 10}–{hoveredCrop.expReward * 20}</p>
               </div>
             ) : hoveredSeedQuality === "epic" ? (
               <div className="mt-1 space-y-0.5 rounded-lg bg-[rgba(34,197,94,0.08)] p-2 text-[13px]">
                 <p className="font-black text-green-300">🎲 Każda sztuka losuje jakość osobno</p>
-                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "14–30 szt."} • EXP: +{hoveredCrop.expReward * 3}–{hoveredCrop.expReward * 6}</p>
+                <p>🌾 {hoveredCrop.yieldAmount <= 2 ? "10–22 szt." : "20–44 szt."} • EXP: +{hoveredCrop.expReward * 3}–{hoveredCrop.expReward * 6}</p>
               </div>
             ) : (
-              <p className="mt-1">🌾 Zbiór: {`${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–5"} szt.`}</p>
+              <p className="mt-1">🌾 Zbiór: {`${hoveredCrop.yieldAmount <= 2 ? "1–3" : "2–6"} szt. (losowa jakość każdej sztuki)`}</p>
             )}
             {hoveredSeedQuality !== "legendary" && hoveredSeedQuality !== "epic" && (
               <p className="mt-1">⭐ EXP: +{hoveredCrop.expReward}</p>
