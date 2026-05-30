@@ -15010,7 +15010,7 @@ export default function Page() {
                     : (_isSmall ? "2–6 szt." : "4–12 szt.");
 
                   const _expDisplay =
-                    t.quality === "rotten"    ? "+0 EXP"
+                    t.quality === "rotten"    ? "nie sadzi się"
                     : t.quality === "good"    ? `+${_expR} EXP`
                     : t.quality === "epic"    ? `+${_expR * 3}–${_expR * 6} EXP`
                     : /* legendary */           `+${_expR * 10}–${_expR * 20} EXP`;
@@ -15051,14 +15051,17 @@ export default function Page() {
                               </p>
                         )}
                         <p className="text-[#8b6a3e]">
-                          Doświadczenie:{" "}
+                          EXP przy sadzeniu:{" "}
                           <span className="font-bold text-sky-300">{_expDisplay}</span>
                         </p>
                         {_cropDef2 && (
-                          <p className="text-[#8b6a3e]">
-                            Drop:{" "}
-                            <span className="font-bold text-yellow-300">{_dropStr}</span>
-                          </p>
+                          <>
+                            <p className="text-[#8b6a3e]">
+                              Drop przy sadzeniu:{" "}
+                              <span className="font-bold text-yellow-300">{_dropStr}</span>
+                            </p>
+                            <p className="text-[13px] text-[#8b6a3e]/70">każda sztuka losuje jakość osobno</p>
+                          </>
                         )}
                       </div>
                       <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[17px]">
@@ -15072,7 +15075,7 @@ export default function Page() {
                           Szansa Zręczności:{" "}
                           <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
                         </p>
-                        <p className="mt-0.5 text-[15px] text-[#8b6a3e]">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
+                        <p className="mt-0.5 text-[15px] text-[#8b6a3e]">EXP zależy od zasadzonego nasiona, nie od jakości tej sztuki.</p>
                       </div>
                     </div>
                   );
