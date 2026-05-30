@@ -13929,12 +13929,9 @@ export default function Page() {
                                           const tipNode = (
                                             <>
                                               {/* ── HEADER ── */}
-                                              <div className="flex items-start justify-between gap-2 mb-2">
-                                                <p className="text-[22px] font-black text-[#f9e7b2] leading-tight">
-                                                  {crop.name} <span style={{ color: tipColor }}>{_qualLabel}</span>
-                                                </p>
-                                                <span className="text-[15px] font-bold text-[#f9e7b2] bg-black/40 rounded-lg px-2 py-1 whitespace-nowrap mt-0.5">🎒 {cnt}</span>
-                                              </div>
+                                              <p className="text-[22px] font-black text-[#f9e7b2] leading-tight mb-2">
+                                                {crop.name} <span style={{ color: tipColor }}>{_qualLabel}</span>
+                                              </p>
 
                                               {/* ── BODY ── */}
                                               <div className="flex flex-col gap-1 text-[18px]">
