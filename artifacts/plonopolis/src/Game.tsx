@@ -13918,8 +13918,17 @@ export default function Page() {
                                           // Zręczność
                                           const _zrEff2 = (effectiveStats.zrecznosc ?? 0) + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
                                           const _zrChance2 = calcStatEffect(_zrEff2, 0.004);
-                                          const _dropMin2 = 1;
-                                          const _dropMax2 = crop.yieldAmount + 1;
+                                          const _isSmall2 = crop.yieldAmount <= 2;
+                                          const _dropStr2 = q === "legendary"
+                                            ? (_isSmall2 ? "20–60 zw. + 5–12 ep." : "30–80 zw. + 8–18 ep.")
+                                            : q === "epic"
+                                            ? (_isSmall2 ? "10–22 szt." : "14–30 szt.")
+                                            : `1–${crop.yieldAmount + 1} szt.`;
+                                          const _dropZrStr2 = q === "legendary"
+                                            ? (_isSmall2 ? "40–120 zw. + 10–24 ep." : "60–160 zw. + 16–36 ep.")
+                                            : q === "epic"
+                                            ? (_isSmall2 ? "20–44 szt." : "28–60 szt.")
+                                            : `2–${(crop.yieldAmount + 1) * 2} szt.`;
                                           const _qualLabel = q === "rotten" ? "popsuta" : q === "epic" ? "epicka" : q === "legendary" ? "legendarna" : "zwykła";
                                           const _expDisplay2 =
                                             q === "rotten"    ? "+0 EXP"
@@ -13945,12 +13954,12 @@ export default function Page() {
                                                     </>
                                                 }
                                                 <p className="text-[#8b6a3e]">Doświadczenie: <span className="font-bold text-sky-300">{_expDisplay2}</span></p>
-                                                <p className="text-[#8b6a3e]">Drop: <span className="font-bold text-yellow-300">{_dropMin2}–{_dropMax2} szt.</span></p>
+                                                <p className="text-[#8b6a3e]">Drop: <span className="font-bold text-yellow-300">{_dropStr2}</span></p>
                                               </div>
 
                                               {/* ── FOOTER (Zręczność) ── */}
                                               <div className="mt-2 border-t border-white/10 pt-1.5 flex flex-col gap-0.5 text-[17px]">
-                                                <p className="text-[#8b6a3e]">Jeśli Zręczność zadziała: <span className="font-bold text-yellow-300">{_dropMin2 * 2}–{_dropMax2 * 2} szt.</span></p>
+                                                <p className="text-[#8b6a3e]">Jeśli Zręczność zadziała: <span className="font-bold text-yellow-300">{_dropZrStr2}</span></p>
                                                 <p className="text-[#8b6a3e]">Szansa Zręczności: <span className="font-bold text-amber-300">{_zrChance2.toFixed(1)}%</span></p>
                                                 <p className="mt-0.5 text-[15px] text-[#8b6a3e]">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
                                               </div>
@@ -14991,8 +15000,17 @@ export default function Page() {
                   const _cropDef2 = CROPS.find(c => c.id === t.cropId);
                   const _expR = _cropDef2?.expReward ?? 0;
                   const _yieldAmt = _cropDef2?.yieldAmount ?? 1;
-                  const _dropMin = 1;
-                  const _dropMax = _yieldAmt + 1;
+                  const _isSmall = _yieldAmt <= 2;
+                  const _dropStr = t.quality === "legendary"
+                    ? (_isSmall ? "20–60 zw. + 5–12 ep." : "30–80 zw. + 8–18 ep.")
+                    : t.quality === "epic"
+                    ? (_isSmall ? "10–22 szt." : "14–30 szt.")
+                    : `1–${_yieldAmt + 1} szt.`;
+                  const _dropZrStr = t.quality === "legendary"
+                    ? (_isSmall ? "40–120 zw. + 10–24 ep." : "60–160 zw. + 16–36 ep.")
+                    : t.quality === "epic"
+                    ? (_isSmall ? "20–44 szt." : "28–60 szt.")
+                    : `2–${(_yieldAmt + 1) * 2} szt.`;
 
                   const _expDisplay =
                     t.quality === "rotten"    ? "+0 EXP"
@@ -15042,7 +15060,7 @@ export default function Page() {
                         {_cropDef2 && (
                           <p className="text-[#8b6a3e]">
                             Drop:{" "}
-                            <span className="font-bold text-yellow-300">{_dropMin}–{_dropMax} szt.</span>
+                            <span className="font-bold text-yellow-300">{_dropStr}</span>
                           </p>
                         )}
                       </div>
@@ -15050,7 +15068,7 @@ export default function Page() {
                         {_cropDef2 && (
                           <p className="text-[#8b6a3e]">
                             Jeśli Zręczność zadziała:{" "}
-                            <span className="font-bold text-yellow-300">{_dropMin * 2}–{_dropMax * 2} szt.</span>
+                            <span className="font-bold text-yellow-300">{_dropZrStr}</span>
                           </p>
                         )}
                         <p className="text-[#8b6a3e]">
