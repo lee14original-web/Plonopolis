@@ -139,12 +139,12 @@ begin
   end if;
 
   -- ── Progi jakości (Szczęście) ─────────────────────────────────────────────
-  -- Bazowo (0 Szczęścia): 10% popsuta | 85% zwykła | 4% epicka | 1% legendarna
-  -- Przy 100 Szczęścia:   5% popsuta  | 74% zwykła | 15% epicka | 6% legendarna
+  -- Bazowo (0 Szczęścia):  10%   popsuta | 87.5% zwykła | 2%  epicka | 0.5% legendarna
+  -- Przy 100 Szczęścia:     5%   popsuta | 89%   zwykła | 5%  epicka | 1%   legendarna
   v_luck_eff         := least(100.0, greatest(0.0, p_szczescie::numeric));
-  v_rotten_thresh    := greatest(0.05, 0.10 - v_luck_eff * 0.0005);
-  v_epic_chance      := least(0.15,   0.04 + v_luck_eff * 0.0011);
-  v_legendary_chance := least(0.06,   0.01 + v_luck_eff * 0.0005);
+  v_rotten_thresh    := greatest(0.05,  0.10  - v_luck_eff * 0.0005);
+  v_epic_chance      := least(0.05,    0.02  + v_luck_eff * 0.0003);
+  v_legendary_chance := least(0.01,    0.005 + v_luck_eff * 0.00005);
   v_good_chance      := 1.0 - v_rotten_thresh - v_epic_chance - v_legendary_chance;
 
   -- ── Yield bazowy i per-item quality rolls ─────────────────────────────────
