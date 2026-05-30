@@ -14882,7 +14882,14 @@ export default function Page() {
               }, {}
             );
             const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
-            const items = Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>;
+            const _QUAL_ORDER: Record<string, number> = { rotten: 0, good: 1, epic: 2, legendary: 3 };
+            const items = (Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>).sort((a, b) => {
+              const qDiff = (_QUAL_ORDER[a.quality] ?? 0) - (_QUAL_ORDER[b.quality] ?? 0);
+              if (qDiff !== 0) return qDiff;
+              const lvA = CROPS.find(c => c.id === a.cropId)?.unlockLevel ?? 999;
+              const lvB = CROPS.find(c => c.id === b.cropId)?.unlockLevel ?? 999;
+              return lvA - lvB;
+            });
             return (
               <div
                 className="absolute inset-0 z-[160] flex items-center justify-center bg-black/70 backdrop-blur-sm"
@@ -14949,7 +14956,7 @@ export default function Page() {
                                       <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
                                     </span>
                                   )}
-                                  <span className="absolute left-1 top-1 text-[15px] leading-none drop-shadow">{_isExpOnly ? "✨" : _qd.badge}</span>
+                                  {_isExpOnly && <span className="absolute left-1 top-1 text-[15px] leading-none drop-shadow">✨</span>}
                                   <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">
                                     {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
                                   </span>
@@ -15014,7 +15021,7 @@ export default function Page() {
                   const _qd = CROP_QUALITY_DEFS[t.quality];
                   const _cx = BASE_W / 2 + (t.cx - window.innerWidth / 2) / gameScale;
                   const _cy = BASE_H / 2 + (t.cy - window.innerHeight / 2) / gameScale;
-                  const _tw = 268;
+                  const _tw = 340;
                   const _left = Math.max(4, Math.min(Math.round(_cx - _tw / 2), BASE_W - _tw - 4));
 
                   const _cropDef2 = CROPS.find(c => c.id === t.cropId);
@@ -15048,15 +15055,17 @@ export default function Page() {
                       className="pointer-events-none absolute z-[400] rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl"
                       style={{ left: _left, top: Math.round(_cy) - 8, width: _tw, transform: "translateY(-100%)" }}
                     >
-                      <p className="mb-0.5 text-[16px] font-black text-[#f9e7b2]">
+                      <p className="mb-0.5 text-[22px] font-black text-[#f9e7b2]">
                         {t.cropName} <span style={{ color: _qd.borderColor }}>{_qd.label.toLowerCase()}</span>
                       </p>
-                      <div className="mt-1.5 flex flex-col gap-1 text-[13px]">
+                      <div className="mt-1.5 flex flex-col gap-1 text-[18px]">
                         {_cropDef2 && (
-                          <p className="text-[#8b6a3e]">
-                            Czas z Twoimi bonusami:{" "}
-                            <span className="font-bold text-[#dfcfab]">{_timeStr}</span>
-                          </p>
+                          t.quality === "rotten"
+                            ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
+                            : <p className="text-[#8b6a3e]">
+                                Czas z Twoimi bonusami:{" "}
+                                <span className="font-bold text-[#dfcfab]">{_timeStr}</span>
+                              </p>
                         )}
                         <p className="text-[#8b6a3e]">
                           Doświadczenie:{" "}
@@ -15069,18 +15078,18 @@ export default function Page() {
                           </p>
                         )}
                       </div>
-                      <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[12px]">
+                      <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[17px]">
                         {_cropDef2 && (
-                          <p className="text-[#8b6a3e]/80">
+                          <p className="text-[#8b6a3e]">
                             Jeśli Zręczność zadziała:{" "}
                             <span className="font-bold text-yellow-300">{_dropMin * 2}–{_dropMax * 2} szt.</span>
                           </p>
                         )}
-                        <p className="text-[#8b6a3e]/80">
+                        <p className="text-[#8b6a3e]">
                           Szansa Zręczności:{" "}
                           <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
                         </p>
-                        <p className="mt-0.5 text-[11px] text-[#8b6a3e]/50 italic">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
+                        <p className="mt-0.5 text-[15px] text-[#8b6a3e]">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
                       </div>
                     </div>
                   );
