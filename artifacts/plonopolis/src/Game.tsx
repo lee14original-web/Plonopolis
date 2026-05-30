@@ -2546,6 +2546,12 @@ export default function Page() {
   const [isFvHarvestModalOpen, setIsFvHarvestModalOpen] = React.useState(false);
   const [fvHarvestTooltip, setFvHarvestTooltip] = React.useState<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary";cx:number;cy:number}|null>(null);
   const [fvQualityTip, setFvQualityTip] = React.useState<{label:string;expLabel:string;chance:string;sx:number;sy:number}|null>(null);
+  const [isDailyHarvestView, setIsDailyHarvestView] = React.useState(false);
+  const [dailyHarvestData, setDailyHarvestData] = React.useState<{
+    items: Array<{ crop_id: string; quality: "rotten"|"good"|"epic"|"legendary"; amount: number }>;
+    total_exp: number;
+  } | null>(null);
+  const [isDailyHarvestLoading, setIsDailyHarvestLoading] = React.useState(false);
   const harvestEventIdRef = React.useRef(0);
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3772,6 +3778,10 @@ export default function Page() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [harvestLog, tutorialStep]);
 
+  useEffect(() => {
+    if (!isFvHarvestModalOpen) { setIsDailyHarvestView(false); setDailyHarvestData(null); }
+  }, [isFvHarvestModalOpen]);
+
   // ─── Farm music (zapamiętuje pozycję przy zmianie mapy) ───
   useEffect(() => {
     const isFarmMap = (FARM_MUSIC_MAPS as string[]).indexOf(currentMap) !== -1;
@@ -3982,6 +3992,16 @@ export default function Page() {
   }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
+
+  const fetchDailyHarvest = React.useCallback(async () => {
+    setIsDailyHarvestLoading(true);
+    setDailyHarvestData(null);
+    const { data, error } = await supabase.rpc("get_today_harvest_summary");
+    setIsDailyHarvestLoading(false);
+    if (!error && data) {
+      setDailyHarvestData(data as { items: Array<{ crop_id: string; quality: "rotten"|"good"|"epic"|"legendary"; amount: number }>; total_exp: number });
+    }
+  }, []);
 
 
   function toGameCoords(clientX: number, clientY: number) {
@@ -14870,21 +14890,82 @@ export default function Page() {
                   onClick={e => e.stopPropagation()}
                 >
                   {/* Nagłówek */}
-                  <div className="flex items-center justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
+                  <div className="flex items-start justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
                     <div>
                       <h2 className="text-[47px] font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
-                      <p className="text-[22px] text-[#8b6a3e] mt-0.5">Historia zbiorów z bieżącej sesji w polu uprawnym</p>
+                      <p className="text-[22px] text-[#8b6a3e] mt-0.5">
+                        {isDailyHarvestView ? "Zebrane plony z dzisiejszego dnia" : "Historia zbiorów z bieżącej sesji w polu uprawnym"}
+                      </p>
+                      <div className="mt-2.5 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsDailyHarvestView(false)}
+                          className={`rounded-lg px-3.5 py-1 text-[15px] font-bold border transition-colors ${!isDailyHarvestView ? "border-[#8b6a3e] bg-[#8b6a3e]/40 text-[#f9e7b2]" : "border-[#8b6a3e]/30 text-[#8b6a3e] hover:text-[#dfcfab]"}`}
+                        >Bieżąca sesja</button>
+                        <button
+                          type="button"
+                          onClick={() => { setIsDailyHarvestView(true); void fetchDailyHarvest(); }}
+                          className={`rounded-lg px-3.5 py-1 text-[15px] font-bold border transition-colors ${isDailyHarvestView ? "border-[#d8ba7a] bg-[#d8ba7a]/20 text-[#f9e7b2]" : "border-[#8b6a3e]/30 text-[#8b6a3e] hover:text-[#dfcfab]"}`}
+                        >Zbiory dzisiaj</button>
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsFvHarvestModalOpen(false)}
-                      className="text-4xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none"
+                      className="text-4xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none mt-1"
                     >✕</button>
                   </div>
 
                   {/* Treść */}
                   <div className="overflow-y-auto flex-1 p-6">
-                    {items.length === 0 ? (
+                    {isDailyHarvestView ? (
+                      isDailyHarvestLoading ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3">
+                          <span className="text-6xl opacity-30 animate-pulse">🌾</span>
+                          <p className="text-[#8b6a3e] text-[21px]">Ładowanie...</p>
+                        </div>
+                      ) : !dailyHarvestData || dailyHarvestData.items.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 gap-3">
+                          <span className="text-6xl opacity-30">🌾</span>
+                          <p className="text-[#8b6a3e] text-[21px]">Nie zebrałeś jeszcze żadnych plonów dzisiaj.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-7 gap-2">
+                            {dailyHarvestData.items.slice(0, 35).map((it, i) => {
+                              const _qd = CROP_QUALITY_DEFS[it.quality];
+                              const _cropDef = CROPS.find(c => c.id === it.crop_id);
+                              const _sprite = it.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
+                                            : it.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
+                                            : it.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
+                                            : _cropDef?.spritePath;
+                              return (
+                                <div key={i} className="relative">
+                                  <div className="relative w-full aspect-square rounded-xl border-2"
+                                    style={it.quality === "legendary"
+                                      ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
+                                      : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
+                                    {_sprite
+                                      ? <img src={_sprite} alt={_cropDef?.name ?? it.crop_id} className="h-full w-full object-contain p-1" />
+                                      : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
+                                    }
+                                    {it.quality === "legendary" && (
+                                      <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                                        <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
+                                      </span>
+                                    )}
+                                    <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">×{it.amount}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {dailyHarvestData.items.length > 35 && (
+                            <p className="mt-3 text-center text-[17px] text-[#8b6a3e]">+{dailyHarvestData.items.length - 35} więcej rodzajów</p>
+                          )}
+                        </>
+                      )
+                    ) : items.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-16 gap-3">
                         <span className="text-6xl opacity-30">🌾</span>
                         <p className="text-[#8b6a3e] text-[21px]">Brak zbiorów w tej sesji</p>
@@ -14943,10 +15024,17 @@ export default function Page() {
                   </div>
 
                   {/* Stopka z EXP */}
-                  {items.length > 0 && (
+                  {(isDailyHarvestView
+                    ? (dailyHarvestData != null && dailyHarvestData.total_exp > 0)
+                    : items.length > 0
+                  ) && (
                     <div className="px-7 py-4 border-t border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.6)] shrink-0 flex items-center justify-between">
-                      <span className="text-[27px] font-black uppercase tracking-widest text-[#8b6a3e]">EXP za zbiory</span>
-                      <span className="text-4xl font-black text-sky-200">+{totalExp}</span>
+                      <span className="text-[27px] font-black uppercase tracking-widest text-[#8b6a3e]">
+                        {isDailyHarvestView ? "EXP za dzisiaj" : "EXP za zbiory"}
+                      </span>
+                      <span className="text-4xl font-black text-sky-200">
+                        +{isDailyHarvestView ? (dailyHarvestData?.total_exp ?? 0) : totalExp}
+                      </span>
                     </div>
                   )}
 
