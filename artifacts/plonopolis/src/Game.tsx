@@ -2386,6 +2386,10 @@ export default function Page() {
   const isProfileLoadedRef = React.useRef(false);
   const mapCrossfadeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapCrossfade, setMapCrossfade] = React.useState<{ from: string; to: string } | null>(null);
+  const [showFarmSlider, setShowFarmSlider] = React.useState<{ from: string; to: string } | null>(null);
+  const [sliderX, setSliderX] = React.useState(50);
+  const sliderDragRef = React.useRef(false);
+  const sliderContainerRef = React.useRef<HTMLDivElement>(null);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
   const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
@@ -4489,6 +4493,8 @@ export default function Page() {
     // Uruchom crossfade
     if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
     setMapCrossfade({ from: prev, to: currentMap });
+    setSliderX(50);
+    setShowFarmSlider({ from: prev, to: currentMap });
     mapCrossfadeTimerRef.current = setTimeout(() => setMapCrossfade(null), 13000);
 
     return () => {
@@ -7112,23 +7118,88 @@ export default function Page() {
             />
           )}
         </div>
-        {/* Banner "Ranczo się rozwija..." */}
-        {mapCrossfade && mapCrossfade.to === backgroundMap && (
-          <div
-            className="pointer-events-none absolute"
-            style={{ bottom: "7%", left: "50%", transform: "translateX(-50%)", zIndex: 10,
-              animation: "plono-map-banner 12s ease-in-out forwards" }}
-          >
-            <div style={{
-              background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.65) 15%, rgba(0,0,0,0.65) 85%, transparent)",
-              padding: "14px 72px", borderRadius: 16,
-              fontSize: 36, fontWeight: 700, color: "#f9e7b2",
-              letterSpacing: "0.05em", textShadow: "0 2px 10px #000c",
-            }}>
-              Ranczo się rozwija...
+        {/* Before/after slider modal — awans rancza */}
+        {showFarmSlider && isOnFarmMap && (() => {
+          const { from, to } = showFarmSlider;
+          const SW = 1100;
+          const SH = 580;
+          return (
+            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/85 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-5" style={{ width: SW + 48 }}>
+                {/* Nagłówek */}
+                <div className="text-center">
+                  <h2 className="text-4xl font-black text-[#f9e7b2] drop-shadow-lg">Ranczo się rozwija!</h2>
+                  <p className="mt-1 text-base text-[#d8ba7a]">Przeciągnij suwak, aby zobaczyć zmiany.</p>
+                </div>
+
+                {/* Kontener slidera */}
+                <div
+                  ref={sliderContainerRef}
+                  className="relative overflow-hidden rounded-2xl border-2 border-[#8b6a3e] shadow-2xl select-none"
+                  style={{ width: SW, height: SH, cursor: "ew-resize" }}
+                  onPointerMove={e => {
+                    if (!sliderDragRef.current || !sliderContainerRef.current) return;
+                    const rect = sliderContainerRef.current.getBoundingClientRect();
+                    const pct = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+                    setSliderX(pct);
+                  }}
+                  onPointerUp={() => { sliderDragRef.current = false; }}
+                  onPointerLeave={() => { sliderDragRef.current = false; }}
+                >
+                  {/* Nowa mapa — dolna warstwa (pełna szerokość) */}
+                  <img
+                    src={`/mapy/${to}.png`}
+                    alt="Nowe ranczo"
+                    draggable={false}
+                    className="pointer-events-none absolute inset-0"
+                    style={{ width: SW, height: SH, objectFit: "cover", objectPosition: "left top", imageRendering: "pixelated" }}
+                  />
+
+                  {/* Stara mapa — przycinana do sliderX% */}
+                  <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderX}%` }}>
+                    <img
+                      src={`/mapy/${from}.png`}
+                      alt="Stare ranczo"
+                      draggable={false}
+                      className="pointer-events-none absolute"
+                      style={{ left: 0, top: 0, width: SW, height: SH, objectFit: "cover", objectPosition: "left top", imageRendering: "pixelated" }}
+                    />
+                  </div>
+
+                  {/* Separator z uchwytem */}
+                  <div
+                    className="absolute top-0 bottom-0 z-20 flex items-center justify-center"
+                    style={{ left: `${sliderX}%`, transform: "translateX(-50%)", width: 48, cursor: "ew-resize" }}
+                    onPointerDown={e => { sliderDragRef.current = true; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+                  >
+                    <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[3px] shadow-[0_0_12px_rgba(244,207,120,0.8)]" style={{ background: "#f4cf78" }} />
+                    <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#f4cf78] bg-[rgba(20,12,5,0.95)] shadow-[0_0_16px_rgba(244,207,120,0.6)] text-[#f4cf78] font-black text-base select-none">
+                      ⟺
+                    </div>
+                  </div>
+
+                  {/* Etykieta Przed */}
+                  <span className="pointer-events-none absolute left-4 top-3 z-30 rounded-full border border-[#d4a64f]/60 bg-[rgba(60,30,10,0.90)] px-3 py-1 text-sm font-black uppercase tracking-widest text-[#f4cf78]">
+                    Przed
+                  </span>
+                  {/* Etykieta Po */}
+                  <span className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[#7ecb5e]/60 bg-[rgba(20,50,15,0.90)] px-3 py-1 text-sm font-black uppercase tracking-widest text-[#7ecb5e]">
+                    Po
+                  </span>
+                </div>
+
+                {/* Przycisk zamknięcia */}
+                <button
+                  type="button"
+                  onClick={() => setShowFarmSlider(null)}
+                  className="rounded-2xl border border-[#f4cf78]/70 bg-[rgba(212,166,79,0.15)] px-12 py-3 text-lg font-black text-[#f9e7b2] shadow-lg transition hover:border-[#f4cf78] hover:bg-[rgba(212,166,79,0.30)]"
+                >
+                  Super, przejdź dalej
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
