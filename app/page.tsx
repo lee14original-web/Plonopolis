@@ -13949,6 +13949,7 @@ export default function Page() {
                                   const crop = CROPS.find(c => c.id === baseCropId);
                                   if (!crop) return null;
                                   const sprite = q === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : q === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : q === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
+                                  const qColor = q === "legendary" ? "#fbbf24" : q === "epic" ? "#a78bfa" : q === "good" ? "#6ee7b7" : "#8b6a3e";
                                   const isSel = selectedSeedId === seedId;
                                   return (
                                     <div key={seedId} className={`flex flex-col items-center gap-1${tutorialStep === 6 && seedId === "carrot_good" ? " outline outline-2 outline-amber-400 rounded-xl shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`} data-tutorial-target={tutorialStep === 6 && seedId === "carrot_good" ? "carrot-good-item" : undefined}>
