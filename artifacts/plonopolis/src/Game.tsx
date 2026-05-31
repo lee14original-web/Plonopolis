@@ -8505,7 +8505,7 @@ export default function Page() {
                                 <span>{srv.name}</span>
                                 {srv.active
                                   ? <span className="rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
-                                  : <span className="rounded-full bg-[#2a1a0a]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7a5535]">🔒 Wkrótce</span>
+                                  : <span className="rounded-full bg-[#2a1a0a]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7a5535]">Wkrótce</span>
                                 }
                               </button>
                             ))}
