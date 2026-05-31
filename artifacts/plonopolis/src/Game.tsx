@@ -8481,7 +8481,10 @@ export default function Page() {
 
                         {/* Dropdown overlay */}
                         {serverDropdownOpen && (
-                          <div className="absolute left-0 right-0 top-full z-[200] mt-1 overflow-hidden rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,7,0.98)] shadow-2xl">
+                          <div
+                            className="absolute left-0 right-0 top-full z-[200] mt-1 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,7,0.98)] shadow-2xl"
+                            style={{ maxHeight: "248px", overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "#8b6a3e #1a0e07" }}
+                          >
                             {([
                               { id: "testy", name: "Testy", active: true },
                               { id: "zielona_dolina", name: "Zielona Dolina", active: false },
