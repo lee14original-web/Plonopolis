@@ -3139,6 +3139,10 @@ export default function Page() {
     const wiedzaBonus = calcStatEffect(wiedzaEffective, WIEDZA_RATE) / 100;
     const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
+    // Zamrożony mult stat (wiedza×ul) z momentu sadzenia — upgrade po sadzeniu nie skraca rosnących upraw
+    const _fsmKey = profile?.id ? `plonopolis_fsm_${profile.id}_${plotId}` : null;
+    const _frozenRaw = _fsmKey && typeof window !== "undefined" ? localStorage.getItem(_fsmKey) : null;
+    const statMult = _frozenRaw !== null ? parseFloat(_frozenRaw) : wiedzaMult * hiveMult;
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost ze Sadownika)
     const sadownikEff = effectiveStats.sadownik + getEquipFlatBonus(" pkt Sadownika", charEquipped);
     const compostBoost = 1 + calcStatEffect(sadownikEff, 0.005) / 100;
@@ -3155,9 +3159,9 @@ export default function Page() {
       const waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
       const totalWaterReduction = WATER_BASE + zaradnoscBonus + waterEqPct; // addytywny, bez capa
       const waterMult = Math.max(WATER_MULT_MIN, 1 - totalWaterReduction);
-      totalMult = waterMult * wiedzaMult * hiveMult * compostMult;
+      totalMult = waterMult * statMult * compostMult;
     } else {
-      totalMult = wiedzaMult * hiveMult * compostMult;
+      totalMult = statMult * compostMult;
     }
     // Globalne minimum: nawet z full buildem nie schodzimy poniżej GROWTH_GLOBAL_MIN_MULT bazowego czasu
     return Math.round(crop.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, totalMult));
@@ -3647,6 +3651,11 @@ export default function Page() {
       if (typeof window !== "undefined" && profile?.id) {
         const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
         localStorage.setItem(_pqKey, _seedQuality ?? "good");
+        // Zamrożony mult statystyk (wiedza×ul) — upgrade po sadzeniu nie skraca rosnących upraw
+        const _wiedzaEff2 = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+        const _wiedzaMult2 = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEff2, WIEDZA_RATE) / 100);
+        const _hiveMult2 = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
+        localStorage.setItem(`plonopolis_fsm_${profile.id}_${plotId}`, String(_wiedzaMult2 * _hiveMult2));
       }
 
       // Przywróć bonusy kompostu dla INNYCH pól po applyProfileState
@@ -6276,6 +6285,11 @@ export default function Page() {
     if (error) {
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
+    }
+
+    // Usuń zamrożony mult statystyk — pole wyczyszczone po zbiorze
+    if (typeof window !== "undefined" && profile?.id) {
+      localStorage.removeItem(`plonopolis_fsm_${profile.id}_${plotId}`);
     }
 
     // Nowy format RPC: { profile: {...}, zrecznosc_triggered: bool }
