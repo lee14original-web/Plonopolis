@@ -12404,7 +12404,7 @@ export default function Page() {
                                         const isCenter = offset === 0;
                                         // skale dla 5 widocznych (±2), reszta ukryta
                                         const scale = isCenter ? 1 : absOff === 1 ? 0.70 : absOff === 2 ? 0.50 : 0.36;
-                                        const opacity = isCenter ? 1 : absOff === 1 ? 0.64 : absOff === 2 ? 0.38 : 0;
+                                        const opacity = isCenter ? 1 : absOff === 1 ? 0.64 : absOff === 2 ? 0.46 : 0;
                                         const tx = offset * 206;
                                         const ry = isCenter ? 0 : offset < 0 ? 24 : -24;
                                         // ramka avatara
