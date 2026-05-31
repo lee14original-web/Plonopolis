@@ -8423,10 +8423,9 @@ export default function Page() {
               <>
                 <div style={{ position: "absolute", left: loginPanelPos.left, top: loginPanelPos.top, width: loginPanelPos.width }}>
                 <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
-                  <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-5 py-3 text-[#f9e7b2]">
+                  <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-5 py-4 text-[#f9e7b2]">
                     <p className="text-base uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
-                    <h1 className="mt-1 text-5xl font-black tracking-wide">Plonopolis</h1>
-                    <p className="mt-1 text-lg text-[#f2ddb0]">
+                    <p className="mt-2 text-lg text-[#f2ddb0]">
                       Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
                     </p>
                   </div>
