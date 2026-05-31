@@ -15149,7 +15149,7 @@ export default function Page() {
                             {_cropDef2 && (
                               <>
                                 <p className="text-[#8b6a3e]">
-                                  Drop przy sadzeniu:{" "}
+                                  Drop po zbiorze:{" "}
                                   <span className="font-bold text-yellow-300">{_dropStr}</span>
                                 </p>
                                 <p className="text-[13px] text-[#8b6a3e]/70">każda sztuka losuje jakość osobno</p>
