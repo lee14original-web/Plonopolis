@@ -4752,13 +4752,13 @@ export default function Page() {
 
   function getCustomerDisplay(type: string): { name: string; icon: string } {
     if (type === 'neighbor')              return { name: 'Sąsiad',                  icon: '🧑‍🌾' };
-    if (type === 'village_guest')         return { name: 'Gość ze wsi',             icon: '🧓' };
+    if (type === 'village_guest')         return { name: 'Gospodyni',               icon: '🧺' };
     if (type === 'small_market')          return { name: 'Mały targ',               icon: '🏪' };
     if (type === 'village_shop')          return { name: 'Sklep wiejski',           icon: '🏬' };
-    if (type === 'restaurant')            return { name: 'Restauracja',             icon: '🍽️' };
-    if (type === 'wholesaler')            return { name: 'Hurtownia',               icon: '🏢' };
-    if (type === 'market_chain')          return { name: 'Sieć handlowa',           icon: '🏛️' };
-    if (type === 'distribution_center')   return { name: 'Centrum dystrybucji',     icon: '🏗️' };
+    if (type === 'restaurant')            return { name: 'Karczma',                 icon: '🍽️' };
+    if (type === 'wholesaler')            return { name: 'Hurtownik',               icon: '🚚' };
+    if (type === 'market_chain')          return { name: 'Kupcy miejscy',           icon: '🏛️' };
+    if (type === 'distribution_center')   return { name: 'Centrum skupu',           icon: '🏗️' };
     if (type === 'international_contract')return { name: 'Kontrakt międzynarodowy', icon: '🌍' };
     return { name: type, icon: '👤' };
   }
@@ -12246,13 +12246,13 @@ export default function Page() {
                               </div>
                               {[
                                 { i:'🧑‍🌾', n:'Sąsiad',                   lvl:'1',  it:'1',      t:'12h', e:'0,03%' },
-                                { i:'🧓',   n:'Gość ze wsi',             lvl:'1',  it:'1–2',    t:'16h', e:'0,05%' },
+                                { i:'🧺',   n:'Gospodyni',               lvl:'1',  it:'1–2',    t:'16h', e:'0,05%' },
                                 { i:'🏪',   n:'Mały targ',               lvl:'3',  it:'2–3',    t:'20h', e:'0,08%' },
                                 { i:'🏬',   n:'Sklep wiejski',           lvl:'5',  it:'3–4',    t:'24h', e:'0,12%' },
-                                { i:'🍽️',  n:'Restauracja',             lvl:'8',  it:'4–5',    t:'30h', e:'0,18%' },
-                                { i:'🏢',   n:'Hurtownia',               lvl:'12', it:'5–6',    t:'36h', e:'0,27%' },
-                                { i:'🏛️',  n:'Sieć handlowa',           lvl:'16', it:'6–8',    t:'42h', e:'0,38%' },
-                                { i:'🏗️',  n:'Centrum dystrybucji',     lvl:'20', it:'7–9',    t:'48h', e:'0,50%' },
+                                { i:'🍽️',  n:'Karczma',                 lvl:'8',  it:'4–5',    t:'30h', e:'0,18%' },
+                                { i:'🚚',   n:'Hurtownik',               lvl:'12', it:'5–6',    t:'36h', e:'0,27%' },
+                                { i:'🏛️',  n:'Kupcy miejscy',           lvl:'16', it:'6–8',    t:'42h', e:'0,38%' },
+                                { i:'🏗️',  n:'Centrum skupu',           lvl:'20', it:'7–9',    t:'48h', e:'0,50%' },
                                 { i:'🌍',   n:'Kontrakt między.',        lvl:'25', it:'8–10',   t:'48h', e:'0,70%' },
                               ].map(c => (
                                 <div key={c.n} className="grid grid-cols-[1fr_50px_60px_50px_68px] gap-x-2 items-center rounded-lg border border-amber-700/30 bg-black/25 px-3 py-2">
@@ -12509,7 +12509,14 @@ export default function Page() {
                                               {/* ✓ Gotowe — pasek na dole avatara */}
                                               {canDo && !expired && (
                                                 <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
-                                                  <span className="text-lg font-black text-emerald-100 bg-emerald-700/93 rounded-full px-4 py-1 border border-emerald-400/70">✓ Gotowe</span>
+                                                  <span
+                                                    className="text-lg font-black text-white rounded-full px-4 py-1 animate-pulse"
+                                                    style={{
+                                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                                      border: '1px solid rgba(167,243,208,0.9)',
+                                                      boxShadow: '0 0 14px rgba(52,211,153,0.7), 0 2px 6px rgba(0,0,0,0.5)',
+                                                    }}
+                                                  >✓ Gotowe</span>
                                                 </div>
                                               )}
                                               {/* Nowy! */}
