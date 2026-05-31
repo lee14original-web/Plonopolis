@@ -14302,6 +14302,10 @@ export default function Page() {
 
                     <div
                       className="absolute inset-0"
+                      onClick={(e) => {
+                        const btn = (e.target as HTMLElement).closest('[data-plotid]');
+                        if (!btn) { setSelectedTool(null); setSelectedSeedId(null); }
+                      }}
                       onMouseMove={(e) => {
                         if (!isDraggingPlantRef.current) return;
                         // Podczas tutoriala wyłącz sweep-drag — tylko pojedyncze kliknięcia
