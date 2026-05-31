@@ -2087,6 +2087,8 @@ export default function Page() {
   const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
   const [ladaView, setLadaView] = React.useState<"list" | "carousel">("list");
   const [carouselIdx, setCarouselIdx] = React.useState(0);
+  const carouselDragRef = React.useRef<{ startX: number; hasSwiped: boolean; pointerId: number } | null>(null);
+  const carouselHasDraggedRef = React.useRef(false);
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
@@ -12138,7 +12140,7 @@ export default function Page() {
 
               return (<>
                 <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                  <div className="relative flex w-[min(97vw,1240px)] max-h-[90vh] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden">
+                  <div className={`relative flex ${ladaView === 'carousel' && ladaDetailIdx === null ? 'w-[min(97vw,1440px)] max-h-[95vh]' : 'w-[min(97vw,1240px)] max-h-[90vh]'} flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden`}>
                     <button
                       type="button"
                       onClick={() => setShowLadaInfo(v => !v)}
@@ -12203,7 +12205,7 @@ export default function Page() {
                       );
                     })()}
 
-                    <div className="flex-1 overflow-y-auto p-5">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
                       {showLadaInfo ? (
                         <div className="space-y-5 text-[#dfcfab]">
 
@@ -12386,49 +12388,90 @@ export default function Page() {
 
                               {ladaView === 'carousel' ? (
                                 <>
-                                  {/* ── WIDOK KARUZELA — avatar slider 3D ── */}
-                                  <div className="flex items-center gap-1">
+                                  {/* ── WIDOK KARUZELA — duży avatar slider 3D ── */}
+                                  <div
+                                    className="flex items-center gap-2"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                  >
                                     {/* Strzałka lewa */}
                                     <button type="button"
                                       onClick={() => setCarouselIdx(ci => Math.max(0, ci - 1))}
                                       disabled={safeCarouselIdx === 0}
-                                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-3xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                                     >‹</button>
 
-                                    {/* Scena karuzeli */}
-                                    <div className="relative flex-1 overflow-visible" style={{ height: 272, perspective: 1100 }}>
+                                    {/* Scena karuzeli — drag do nawigacji */}
+                                    <div
+                                      className="relative flex-1 overflow-visible"
+                                      style={{ height: 390, perspective: 1100, touchAction: 'none', userSelect: 'none', cursor: 'grab' }}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        carouselHasDraggedRef.current = false;
+                                        carouselDragRef.current = { startX: e.clientX, hasSwiped: false, pointerId: e.pointerId };
+                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                      }}
+                                      onPointerMove={(e) => {
+                                        e.stopPropagation();
+                                        const drag = carouselDragRef.current;
+                                        if (!drag || drag.hasSwiped) return;
+                                        const dx = e.clientX - drag.startX;
+                                        if (Math.abs(dx) > 40) {
+                                          drag.hasSwiped = true;
+                                          carouselHasDraggedRef.current = true;
+                                          if (dx < 0) setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1));
+                                          else setCarouselIdx(ci => Math.max(0, ci - 1));
+                                        }
+                                      }}
+                                      onPointerUp={(e) => {
+                                        e.stopPropagation();
+                                        try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+                                        carouselDragRef.current = null;
+                                        setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
+                                      }}
+                                      onPointerCancel={(e) => {
+                                        e.stopPropagation();
+                                        carouselDragRef.current = null;
+                                        setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
+                                      }}
+                                    >
                                       {_sorted.map(({ o, originalIndex }, i) => {
                                         const { cd, tl, ml, sl, expired, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
                                         const offset = i - safeCarouselIdx;
                                         const absOff = Math.abs(offset);
                                         const isCenter = offset === 0;
-                                        // skale dla 5 widocznych (±2), reszta ukryta
                                         const scale = isCenter ? 1 : absOff === 1 ? 0.70 : absOff === 2 ? 0.50 : 0.36;
                                         const opacity = isCenter ? 1 : absOff === 1 ? 0.64 : absOff === 2 ? 0.46 : 0;
-                                        const tx = offset * 206;
+                                        const tx = offset * 280;
                                         const ry = isCenter ? 0 : offset < 0 ? 24 : -24;
-                                        // ramka avatara
                                         const ringCls = isNew
-                                          ? 'border-[3px] border-emerald-400 shadow-[0_0_22px_rgba(52,211,153,0.45)]'
+                                          ? 'border-[4px] border-emerald-400 shadow-[0_0_32px_rgba(52,211,153,0.5)]'
                                           : expired
                                           ? 'border-2 border-red-600/60'
                                           : isCritical
-                                          ? 'border-2 border-red-500/80'
+                                          ? 'border-[3px] border-red-500/80'
                                           : isWarning
-                                          ? 'border-2 border-orange-500/70'
+                                          ? 'border-[3px] border-orange-500/70'
                                           : canDo
-                                          ? 'border-2 border-emerald-500/70 shadow-[0_0_14px_rgba(52,211,153,0.25)]'
+                                          ? 'border-[3px] border-emerald-500/70 shadow-[0_0_20px_rgba(52,211,153,0.3)]'
                                           : 'border border-amber-700/50';
                                         return (
                                           <div
                                             key={o.id}
-                                            onClick={() => isCenter ? setLadaDetailIdx(originalIndex) : setCarouselIdx(i)}
+                                            onClick={() => {
+                                              if (carouselHasDraggedRef.current) return;
+                                              if (isCenter) setLadaDetailIdx(originalIndex);
+                                              else setCarouselIdx(i);
+                                            }}
                                             style={{
                                               position: 'absolute',
                                               top: '50%',
                                               left: '50%',
-                                              width: 172,
-                                              marginLeft: -86,
+                                              width: 268,
+                                              marginLeft: -134,
                                               transform: `translateX(${tx}px) translateY(-50%) rotateY(${ry}deg) scale(${scale})`,
                                               transformOrigin: 'center center',
                                               transition: 'transform 0.38s cubic-bezier(.4,0,.2,1), opacity 0.38s ease',
@@ -12440,47 +12483,48 @@ export default function Page() {
                                             className="select-none"
                                           >
                                             {/* Blok avatara */}
-                                            <div className={`relative w-full rounded-2xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '1 / 1' }}>
+                                            <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '1 / 1' }}>
                                               {avatarPath
                                                 ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
                                                 : <div className="w-full h-full flex items-center justify-center">
-                                                    <span className="text-6xl leading-none">{cd.icon}</span>
+                                                    <span className="text-9xl leading-none">{cd.icon}</span>
                                                   </div>
                                               }
                                               {/* ✓ Gotowe — pasek na dole avatara */}
                                               {canDo && !expired && (
-                                                <div className="absolute bottom-0 inset-x-0 flex justify-center pb-1.5">
-                                                  <span className="text-[11px] font-black text-emerald-100 bg-emerald-700/92 rounded-full px-2.5 py-0.5 border border-emerald-400/70">✓ Gotowe</span>
+                                                <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
+                                                  <span className="text-sm font-black text-emerald-100 bg-emerald-700/93 rounded-full px-4 py-1 border border-emerald-400/70">✓ Gotowe</span>
                                                 </div>
                                               )}
                                               {/* Nowy! */}
                                               {isNew && (
-                                                <span className="absolute top-1.5 left-1.5 text-[10px] font-black text-emerald-200 bg-emerald-700/90 rounded-full px-2 py-0.5 border border-emerald-400/70 animate-bounce">Nowy!</span>
+                                                <span className="absolute top-2.5 left-2.5 text-xs font-black text-emerald-200 bg-emerald-700/90 rounded-full px-2.5 py-0.5 border border-emerald-400/70 animate-bounce">Nowy!</span>
                                               )}
-                                              {/* Wygasło / ⚠ */}
+                                              {/* Wygasło overlay */}
                                               {expired && (
-                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                  <span className="text-xs font-black text-red-300">Wygasło</span>
+                                                <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                                                  <span className="text-sm font-black text-red-300">Wygasło</span>
                                                 </div>
                                               )}
+                                              {/* ⚠ krytyczny czas */}
                                               {isCritical && !expired && !isNew && (
-                                                <span className="absolute top-1.5 right-1.5 text-[10px] font-black text-red-200 bg-red-800/90 rounded-full px-1.5 py-0.5 border border-red-500/70 animate-pulse">⚠</span>
+                                                <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/90 rounded-full px-2 py-0.5 border border-red-500/70 animate-pulse">⚠</span>
                                               )}
                                             </div>
 
                                             {/* Informacje pod avatarem */}
-                                            <div className="mt-2 text-center px-0.5">
-                                              <p className="text-[13px] font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
-                                              <div className="flex items-center justify-center gap-2 text-[11px] font-bold mt-0.5 flex-wrap">
+                                            <div className="mt-3 text-center px-1">
+                                              <p className="text-base font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
+                                              <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1 flex-wrap">
                                                 <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
                                                 <span className="text-blue-300">{o.rewards.exp} EXP</span>
                                                 {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+🎁</span>}
                                               </div>
-                                              <p className={`text-[11px] font-bold mt-0.5 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                              <p className={`text-sm font-bold mt-1 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
                                                 {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                               </p>
                                               {isCenter && !expired && (
-                                                <p className="text-[9px] text-amber-500/55 font-medium mt-0.5">Kliknij → szczegóły</p>
+                                                <p className="text-xs text-amber-500/60 font-medium mt-1">Kliknij → szczegóły</p>
                                               )}
                                             </div>
                                           </div>
@@ -12492,22 +12536,22 @@ export default function Page() {
                                     <button type="button"
                                       onClick={() => setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1))}
                                       disabled={safeCarouselIdx >= _sorted.length - 1}
-                                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-3xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                                     >›</button>
                                   </div>
 
                                   {/* Dots (≤8) lub licznik (>8) */}
                                   {_sorted.length > 1 && (
                                     _sorted.length <= 8 ? (
-                                      <div className="flex justify-center gap-1.5">
+                                      <div className="flex justify-center gap-2 pt-1">
                                         {_sorted.map((_, di) => (
                                           <button key={di} type="button" onClick={() => setCarouselIdx(di)}
-                                            className={`h-1.5 rounded-full transition-all ${di === safeCarouselIdx ? 'w-5 bg-amber-400' : 'w-1.5 bg-amber-800/50 hover:bg-amber-600/60'}`}
+                                            className={`h-2 rounded-full transition-all ${di === safeCarouselIdx ? 'w-6 bg-amber-400' : 'w-2 bg-amber-800/50 hover:bg-amber-600/60'}`}
                                           />
                                         ))}
                                       </div>
                                     ) : (
-                                      <p className="text-center text-xs text-[#8b6a3e] font-bold tracking-wide">
+                                      <p className="text-center text-sm text-[#8b6a3e] font-bold tracking-wide pt-1">
                                         {safeCarouselIdx + 1} / {_sorted.length}
                                       </p>
                                     )
