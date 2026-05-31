@@ -8423,19 +8423,19 @@ export default function Page() {
               <>
                 <div style={{ position: "absolute", left: loginPanelPos.left, top: loginPanelPos.top, width: loginPanelPos.width }}>
                 <section className="overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.88)] shadow-2xl backdrop-blur-sm">
-                  <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-6 py-5 text-[#f9e7b2]">
-                    <p className="text-xs uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
-                    <h1 className="mt-2 text-4xl font-black tracking-wide">Plonopolis</h1>
-                    <p className="mt-2 text-sm text-[#f2ddb0]">
+                  <div className="border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.95),rgba(76,48,23,0.95))] px-5 py-3 text-[#f9e7b2]">
+                    <p className="text-base uppercase tracking-[0.35em] opacity-80">Przeglądarkowa gra farmerska</p>
+                    <h1 className="mt-1 text-5xl font-black tracking-wide">Plonopolis</h1>
+                    <p className="mt-1 text-lg text-[#f2ddb0]">
                       Zaloguj się do swojego gospodarstwa albo utwórz nowe konto.
                     </p>
                   </div>
 
-                  <div className="p-6 md:p-8">
-                    <div className="mb-6 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
+                  <div className="p-4 md:p-5">
+                    <div className="mb-3 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                       <button
                         onClick={() => setTab("login")}
-                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        className={`rounded-xl px-4 py-2 text-lg font-bold transition ${
                           tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
@@ -8443,7 +8443,7 @@ export default function Page() {
                       </button>
                       <button
                         onClick={() => setTab("register")}
-                        className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+                        className={`rounded-xl px-4 py-2 text-lg font-bold transition ${
                           tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
@@ -8452,8 +8452,8 @@ export default function Page() {
                     </div>
 
                     {/* Wybór serwera */}
-                    <div className="mb-6">
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-[#d8ba7a]">Wybierz serwer</p>
+                    <div className="mb-3">
+                      <p className="mb-1.5 text-base font-semibold uppercase tracking-[0.25em] text-[#d8ba7a]">Wybierz serwer</p>
                       <div className="grid grid-cols-3 gap-2">
                         {([
                           { id: "testy", name: "Testy", active: true },
@@ -8468,7 +8468,7 @@ export default function Page() {
                             type="button"
                             disabled={!srv.active}
                             onClick={() => srv.active && setSelectedServer(srv.id)}
-                            className={`relative flex flex-col items-center justify-center rounded-xl border px-2 py-2.5 text-center text-xs font-bold transition
+                            className={`relative flex flex-col items-center justify-center rounded-xl border px-1 py-1 text-center text-base font-bold transition
                               ${srv.active
                                 ? selectedServer === srv.id
                                   ? "border-[#f4cf78] bg-[rgba(212,166,79,0.22)] text-[#f9e7b2] shadow-[0_0_8px_rgba(244,207,120,0.4)]"
@@ -8478,10 +8478,10 @@ export default function Page() {
                           >
                             <span className="leading-tight">{srv.name}</span>
                             {!srv.active && (
-                              <span className="mt-1 rounded-full bg-[#3a2010]/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#7a5535]">Wkrótce</span>
+                              <span className="mt-0.5 rounded-full bg-[#3a2010]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7a5535]">Wkrótce</span>
                             )}
                             {srv.active && selectedServer === srv.id && (
-                              <span className="mt-1 rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
+                              <span className="mt-0.5 rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
                             )}
                           </button>
                         ))}
@@ -8489,79 +8489,79 @@ export default function Page() {
                     </div>
 
                     {tab === "login" ? (
-                      <form onSubmit={handleLogin} className="space-y-5 text-[#f3e6c8]">
+                      <form onSubmit={handleLogin} className="space-y-3 text-[#f3e6c8]">
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Email</label>
+                          <label className="mb-1 block text-lg font-semibold">Email</label>
                           <input
                             type="email"
                             placeholder="adres@email.pl"
                             autoComplete="email"
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                          <label className="mb-1 block text-lg font-semibold">Hasło</label>
                           <input
                             type="password"
                             placeholder="Wpisz hasło"
                             autoComplete="current-password"
                             value={loginForm.password}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
 
                         <button
                           type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
                         >
                           Zaloguj i wczytaj sesję
                         </button>
                       </form>
                     ) : (
-                      <form onSubmit={handleRegister} className="space-y-5 text-[#f3e6c8]">
+                      <form onSubmit={handleRegister} className="space-y-3 text-[#f3e6c8]">
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Login</label>
+                          <label className="mb-1 block text-lg font-semibold">Login</label>
                           <input
                             type="text"
                             placeholder="Unikalny login"
                             autoComplete="username"
                             value={registerForm.login}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-2 block text-sm font-semibold">Email</label>
+                          <label className="mb-1 block text-lg font-semibold">Email</label>
                           <input
                             type="email"
                             placeholder="twoj@email.pl"
                             autoComplete="email"
                             value={registerForm.email}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                           />
                         </div>
 
-                        <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-3 md:grid-cols-2">
                           <div>
-                            <label className="mb-2 block text-sm font-semibold">Hasło</label>
+                            <label className="mb-1 block text-lg font-semibold">Hasło</label>
                             <input
                               type="password"
                               placeholder="Minimum 6 znaków"
                               autoComplete="new-password"
                               value={registerForm.password}
                               onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                             />
                           </div>
 
                           <div>
-                            <label className="mb-2 block text-sm font-semibold">Powtórz hasło</label>
+                            <label className="mb-1 block text-lg font-semibold">Powtórz hasło</label>
                             <input
                               type="password"
                               placeholder="Powtórz hasło"
@@ -8573,14 +8573,14 @@ export default function Page() {
                                   confirmPassword: e.target.value,
                                 }))
                               }
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
                             />
                           </div>
                         </div>
 
                         <button
                           type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-3 text-base font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
                         >
                           Utwórz konto
                         </button>
