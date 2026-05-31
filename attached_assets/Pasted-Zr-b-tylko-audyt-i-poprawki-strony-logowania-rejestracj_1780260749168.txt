@@ -1,0 +1,57 @@
+Zrób tylko audyt i poprawki strony logowania/rejestracji.
+
+Cele wizualne:
+1. Usuń czarne paski po lewej i prawej stronie ekranu logowania.
+2. Tło farmy ma wypełniać cały ekran:
+- width: 100vw
+- height: 100vh
+- background-size: cover
+- background-position: center
+3. Jeśli trzeba, dodaj delikatny overlay/gradient, żeby panel logowania był czytelny.
+4. Nie zmieniaj głównej grafiki tła.
+
+Logowanie/rejestracja — wybór serwera:
+1. Dodaj wybór serwera na ekranie logowania i rejestracji.
+2. Dostępny aktywny serwer:
+- Testy
+
+3. Dodaj też kilka zablokowanych serwerów jako wizualne placeholdery:
+- Zielona Dolina
+- Słoneczne Pola
+- Złote Żniwa
+- Miodowy Zakątek
+- Kraina Sadów
+
+4. Tylko serwer „Testy” ma być możliwy do wybrania i wejścia.
+5. Pozostałe serwery mają być widoczne, ale zablokowane, np. z tekstem:
+„Wkrótce”
+albo
+„Niedostępny”
+
+Logika przyszłościowa:
+1. Aktualne konta zostają na serwerze „Testy”.
+2. Gdy powstanie pierwszy prawdziwy serwer, nic z serwera testowego nie przechodzi na nowy serwer.
+3. W przyszłości jedyną rzeczą wspólną między serwerami mają być odblokowane avatary.
+4. Na razie avatarów nie przenoś i nie twórz nowej pełnej architektury multi-server, tylko przygotuj UI i bezpieczny placeholder.
+
+Ważne logowanie:
+1. Mail i nick są globalnie przypisane do konta gracza.
+2. Gracz nie powinien tworzyć osobnego konta na każdy serwer.
+3. W przyszłości gracz ma logować się nickiem i hasłem, wybierać serwer i mieć osobny profil/postęp na danym serwerze.
+4. Na razie aktywny jest tylko serwer „Testy”, więc nie przebudowuj całej bazy bez pytania.
+
+Audyt:
+Sprawdź stronę logowania i rejestracji pod kątem:
+- błędów UI,
+- responsywności,
+- walidacji pól,
+- przełączania logowanie/rejestracja,
+- komunikatów błędów,
+- bezpieczeństwa podstawowego flow,
+- czy wybór serwera nie psuje obecnego logowania.
+
+Nie zmieniaj jeszcze DB schema bez pokazania pełnego SQL.
+Nie ruszaj gry po zalogowaniu.
+Nie zmieniaj tutoriala, mapy, profili, ekonomii ani Supabase auth.
+
+Typecheck, pokaż diff i listę znalezionych problemów. Nie pushuj.
