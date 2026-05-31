@@ -12428,7 +12428,7 @@ export default function Page() {
                                         if (!carouselHasDraggedRef.current) return;
                                         // Krokowe przesunięcie: co 200px = 1 klient, względem pozycji z pointerDown
                                         // clamp: max 1 zmiana indeksu na event → płynniejsze, ale przy długim drag nadal przechodzi dalej
-                                        const steps = Math.trunc(drag.totalMoved / 200);
+                                        const steps = Math.trunc(drag.totalMoved / 240);
                                         const rawIdx = drag.baseIdx - steps;
                                         const newIdx = Math.max(0, Math.min(_sorted.length - 1, rawIdx));
                                         setCarouselIdx(prev => {
@@ -12495,6 +12495,9 @@ export default function Page() {
                                             }}
                                             className="select-none"
                                           >
+                                            {/* Nazwa klienta NAD avatarem */}
+                                            <p className="text-xl font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
+
                                             {/* Blok avatara */}
                                             <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '1 / 1' }}>
                                               {avatarPath
@@ -12506,39 +12509,35 @@ export default function Page() {
                                               {/* ✓ Gotowe — pasek na dole avatara */}
                                               {canDo && !expired && (
                                                 <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
-                                                  <span className="text-sm font-black text-emerald-100 bg-emerald-700/93 rounded-full px-4 py-1 border border-emerald-400/70">✓ Gotowe</span>
+                                                  <span className="text-lg font-black text-emerald-100 bg-emerald-700/93 rounded-full px-4 py-1 border border-emerald-400/70">✓ Gotowe</span>
                                                 </div>
                                               )}
                                               {/* Nowy! */}
                                               {isNew && (
-                                                <span className="absolute top-2.5 left-2.5 text-xs font-black text-emerald-200 bg-emerald-700/90 rounded-full px-2.5 py-0.5 border border-emerald-400/70 animate-bounce">Nowy!</span>
+                                                <span className="absolute top-2.5 left-2.5 text-base font-black text-emerald-200 bg-emerald-700/90 rounded-full px-3 py-1 border border-emerald-400/70 animate-bounce">Nowy!</span>
                                               )}
                                               {/* Wygasło overlay */}
                                               {expired && (
                                                 <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                                                  <span className="text-sm font-black text-red-300">Wygasło</span>
+                                                  <span className="text-lg font-black text-red-300">Wygasło</span>
                                                 </div>
                                               )}
                                               {/* ⚠ krytyczny czas */}
                                               {isCritical && !expired && !isNew && (
-                                                <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/90 rounded-full px-2 py-0.5 border border-red-500/70 animate-pulse">⚠</span>
+                                                <span className="absolute top-2.5 right-2.5 text-sm font-black text-red-200 bg-red-800/90 rounded-full px-2.5 py-1 border border-red-500/70 animate-pulse">⚠</span>
                                               )}
                                             </div>
 
-                                            {/* Informacje pod avatarem */}
+                                            {/* Nagrody + timer pod avatarem */}
                                             <div className="mt-3 text-center px-1">
-                                              <p className="text-base font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
-                                              <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1 flex-wrap">
+                                              <div className="flex items-center justify-center gap-3 text-lg font-bold flex-wrap">
                                                 <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
                                                 <span className="text-blue-300">{o.rewards.exp} EXP</span>
                                                 {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+🎁</span>}
                                               </div>
-                                              <p className={`text-sm font-bold mt-1 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                              <p className={`text-lg font-bold mt-1 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
                                                 {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                               </p>
-                                              {isCenter && !expired && (
-                                                <p className="text-xs text-amber-500/60 font-medium mt-1">Kliknij → szczegóły</p>
-                                              )}
                                             </div>
                                           </div>
                                         );
@@ -12564,7 +12563,7 @@ export default function Page() {
                                         ))}
                                       </div>
                                     ) : (
-                                      <p className="text-center text-sm text-[#8b6a3e] font-bold tracking-wide pt-1">
+                                      <p className="text-center text-base text-[#8b6a3e] font-bold tracking-wide pt-1">
                                         {safeCarouselIdx + 1} / {_sorted.length}
                                       </p>
                                     )
