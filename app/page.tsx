@@ -12328,16 +12328,14 @@ export default function Page() {
                         (() => {
                           // Sortowanie + avatary — wspólne dla obu widoków
                           const _avatarTypes = new Set(['Gość', 'neighbor', 'village_guest']);
+                          const _difficulty = (o: typeof customerOrders[number]) => {
+                            const merged = mergeOrderItems(o.items);
+                            const itemCount = merged.length;
+                            const totalQty = merged.reduce((s, it) => s + it.qty, 0);
+                            return itemCount * 1000 + totalQty * 10 + Number(o.rewards.gold) * 0.01 + o.rewards.exp * 0.05;
+                          };
                           const _sorted = [...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
-                            .sort((a, b) => {
-                              const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
-                              if (gDiff !== 0) return gDiff;
-                              const eDiff = b.o.rewards.exp - a.o.rewards.exp;
-                              if (eDiff !== 0) return eDiff;
-                              const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
-                              if (iDiff !== 0) return iDiff;
-                              return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
-                            });
+                            .sort((a, b) => _difficulty(a.o) - _difficulty(b.o));
                           const _eligibleIds = _sorted.filter(({ o }) => _avatarTypes.has(o.customer_type)).map(({ o }) => o.id);
                           let _seed = _eligibleIds.reduce((h, id) => { let s = h; for (let ci = 0; ci < id.length; ci++) s = (s * 31 + id.charCodeAt(ci)) >>> 0; return s; }, 1) || 1;
                           const _rng = () => { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 0x100000000; };
@@ -12510,7 +12508,7 @@ export default function Page() {
                                               {canDo && !expired && (
                                                 <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
                                                   <span
-                                                    className="text-lg font-black text-white rounded-full px-4 py-1 animate-pulse"
+                                                    className="text-lg font-black text-white rounded-full px-4 py-1"
                                                     style={{
                                                       background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                                                       border: '1px solid rgba(167,243,208,0.9)',
