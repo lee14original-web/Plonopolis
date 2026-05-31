@@ -5215,6 +5215,21 @@ export default function Page() {
     return error;
   }
 
+  function translateAuthError(msg: string): string {
+    const m = msg.toLowerCase();
+    if (m.includes("invalid login credentials") || m.includes("invalid credentials")) return "Nieprawidłowy adres e-mail lub hasło.";
+    if (m.includes("email not confirmed")) return "Adres e-mail nie został jeszcze potwierdzony. Sprawdź swoją skrzynkę pocztową.";
+    if (m.includes("already registered") || m.includes("user already registered")) return "Konto z tym adresem e-mail już istnieje.";
+    if (m.includes("password should be at least")) return "Hasło musi mieć co najmniej 6 znaków.";
+    if (m.includes("unable to validate email") || m.includes("invalid email")) return "Podaj poprawny adres e-mail.";
+    if (m.includes("fetch") || m.includes("network") || m.includes("failed to fetch")) return "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.";
+    if (m.includes("too many requests") || m.includes("rate limit")) return "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.";
+    if (m.includes("email address") && m.includes("invalid")) return "Podaj poprawny adres e-mail.";
+    if (m.includes("signup is disabled")) return "Rejestracja jest tymczasowo wyłączona.";
+    if (m.includes("user not found")) return "Nie znaleziono konta o podanym adresie e-mail.";
+    return msg;
+  }
+
   function isEmailValid(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   }
@@ -5326,7 +5341,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Błąd rejestracji",
-        text: signUpError.message,
+        text: translateAuthError(signUpError.message),
       });
       return;
     }
@@ -5420,7 +5435,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Błędne logowanie",
-        text: error.message,
+        text: translateAuthError(error.message),
       });
       return;
     }
@@ -8480,6 +8495,7 @@ export default function Page() {
                           <input
                             type="email"
                             placeholder="adres@email.pl"
+                            autoComplete="email"
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -8491,6 +8507,7 @@ export default function Page() {
                           <input
                             type="password"
                             placeholder="Wpisz hasło"
+                            autoComplete="current-password"
                             value={loginForm.password}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -8511,6 +8528,7 @@ export default function Page() {
                           <input
                             type="text"
                             placeholder="Unikalny login"
+                            autoComplete="username"
                             value={registerForm.login}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -8522,6 +8540,7 @@ export default function Page() {
                           <input
                             type="email"
                             placeholder="twoj@email.pl"
+                            autoComplete="email"
                             value={registerForm.email}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
                             className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -8534,6 +8553,7 @@ export default function Page() {
                             <input
                               type="password"
                               placeholder="Minimum 6 znaków"
+                              autoComplete="new-password"
                               value={registerForm.password}
                               onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
                               className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-3 text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
@@ -8545,6 +8565,7 @@ export default function Page() {
                             <input
                               type="password"
                               placeholder="Powtórz hasło"
+                              autoComplete="new-password"
                               value={registerForm.confirmPassword}
                               onChange={(e) =>
                                 setRegisterForm((prev) => ({
