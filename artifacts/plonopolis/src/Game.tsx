@@ -2087,6 +2087,8 @@ export default function Page() {
   const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
   const [ladaView, setLadaView] = React.useState<"list" | "carousel">("list");
   const [carouselIdx, setCarouselIdx] = React.useState(0);
+  const carouselDragRef = React.useRef<{ startX: number; hasSwiped: boolean; pointerId: number } | null>(null);
+  const carouselHasDraggedRef = React.useRef(false);
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
@@ -12387,16 +12389,55 @@ export default function Page() {
                               {ladaView === 'carousel' ? (
                                 <>
                                   {/* ── WIDOK KARUZELA — avatar slider 3D ── */}
-                                  <div className="flex items-center gap-1">
+                                  <div
+                                    className="flex items-center gap-1"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                  >
                                     {/* Strzałka lewa */}
                                     <button type="button"
                                       onClick={() => setCarouselIdx(ci => Math.max(0, ci - 1))}
                                       disabled={safeCarouselIdx === 0}
+                                      onMouseDown={(e) => e.stopPropagation()}
                                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                                     >‹</button>
 
-                                    {/* Scena karuzeli */}
-                                    <div className="relative flex-1 overflow-visible" style={{ height: 272, perspective: 1100 }}>
+                                    {/* Scena karuzeli — drag do nawigacji */}
+                                    <div
+                                      className="relative flex-1 overflow-visible"
+                                      style={{ height: 272, perspective: 1100, touchAction: 'none', userSelect: 'none', cursor: 'grab' }}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onTouchStart={(e) => e.stopPropagation()}
+                                      onPointerDown={(e) => {
+                                        e.stopPropagation();
+                                        carouselHasDraggedRef.current = false;
+                                        carouselDragRef.current = { startX: e.clientX, hasSwiped: false, pointerId: e.pointerId };
+                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                      }}
+                                      onPointerMove={(e) => {
+                                        e.stopPropagation();
+                                        const drag = carouselDragRef.current;
+                                        if (!drag || drag.hasSwiped) return;
+                                        const dx = e.clientX - drag.startX;
+                                        if (Math.abs(dx) > 40) {
+                                          drag.hasSwiped = true;
+                                          carouselHasDraggedRef.current = true;
+                                          if (dx < 0) setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1));
+                                          else setCarouselIdx(ci => Math.max(0, ci - 1));
+                                        }
+                                      }}
+                                      onPointerUp={(e) => {
+                                        e.stopPropagation();
+                                        try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+                                        carouselDragRef.current = null;
+                                        setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
+                                      }}
+                                      onPointerCancel={(e) => {
+                                        e.stopPropagation();
+                                        carouselDragRef.current = null;
+                                        setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
+                                      }}
+                                    >
                                       {_sorted.map(({ o, originalIndex }, i) => {
                                         const { cd, tl, ml, sl, expired, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
                                         const offset = i - safeCarouselIdx;
@@ -12422,7 +12463,11 @@ export default function Page() {
                                         return (
                                           <div
                                             key={o.id}
-                                            onClick={() => isCenter ? setLadaDetailIdx(originalIndex) : setCarouselIdx(i)}
+                                            onClick={() => {
+                                              if (carouselHasDraggedRef.current) return;
+                                              if (isCenter) setLadaDetailIdx(originalIndex);
+                                              else setCarouselIdx(i);
+                                            }}
                                             style={{
                                               position: 'absolute',
                                               top: '50%',
