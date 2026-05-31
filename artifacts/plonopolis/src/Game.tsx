@@ -14946,7 +14946,9 @@ export default function Page() {
                                             : it.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
                                             : _cropDef?.spritePath;
                               return (
-                                <div key={i} className="relative">
+                                <div key={i} className="relative"
+                                  onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvHarvestTooltip({ cropId: it.crop_id, cropName: _cropDef?.name ?? it.crop_id, baseAmount: it.amount, bonusAmount: 0, bonusSource: null, baseExp: _cropDef?.expReward ?? 0, quality: it.quality, cx: r.left + r.width / 2, cy: r.top }); }}
+                                  onMouseLeave={() => setFvHarvestTooltip(null)}>
                                   <div className="relative w-full aspect-square rounded-xl border-2"
                                     style={it.quality === "legendary"
                                       ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
