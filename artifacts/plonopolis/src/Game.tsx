@@ -12398,14 +12398,14 @@ export default function Page() {
                                     >‹</button>
 
                                     {/* Karuzela 3D */}
-                                    <div className="relative flex flex-1 items-center justify-center overflow-visible" style={{ height: 270, perspective: 900 }}>
+                                    <div className="relative flex-1 overflow-visible" style={{ height: 196, perspective: 900 }}>
                                       {top3.map(({ o, originalIndex }, i) => {
                                         const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
                                         const offset = i - safeCarouselIdx;
                                         const isCenter = offset === 0;
-                                        const tx = offset * 262;
-                                        const ry = offset === 0 ? 0 : offset < 0 ? 28 : -28;
-                                        const scale = isCenter ? 1 : 0.77;
+                                        const tx = offset * 256;
+                                        const ry = offset === 0 ? 0 : offset < 0 ? 26 : -26;
+                                        const scale = isCenter ? 1 : 0.78;
                                         const opacity = isCenter ? 1 : 0.48;
                                         const borderCls = isNew ? 'border-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
                                           expired ? 'border-red-600/50' :
@@ -12423,27 +12423,30 @@ export default function Page() {
                                             onClick={() => isCenter ? setLadaDetailIdx(originalIndex) : setCarouselIdx(i)}
                                             style={{
                                               position: 'absolute',
-                                              width: 238,
-                                              transform: `translateX(${tx}px) rotateY(${ry}deg) scale(${scale})`,
+                                              top: '50%',
+                                              left: '50%',
+                                              width: 232,
+                                              marginLeft: -116,
+                                              transform: `translateX(${tx}px) translateY(-50%) rotateY(${ry}deg) scale(${scale})`,
                                               transformOrigin: 'center center',
                                               transition: 'transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s ease',
                                               opacity,
                                               zIndex: isCenter ? 10 : 5,
                                               cursor: 'pointer',
                                             }}
-                                            className={`relative rounded-2xl border p-4 flex flex-col gap-2 select-none ${borderCls} ${bgCls}`}
+                                            className={`relative rounded-2xl border p-3 flex flex-col gap-1.5 select-none ${borderCls} ${bgCls}`}
                                           >
                                             {/* Avatar + nazwa */}
-                                            <div className="flex items-center gap-3">
-                                              <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
                                                 {avatarPath
                                                   ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
-                                                  : <span className="text-3xl leading-none">{cd.icon}</span>
+                                                  : <span className="text-2xl leading-none">{cd.icon}</span>
                                                 }
                                               </div>
                                               <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-black text-[#f9e7b2] leading-tight truncate">{cd.name}</p>
-                                                <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                                <p className="text-[11px] text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
                                               </div>
                                             </div>
                                             {/* Nagrody */}
@@ -12456,9 +12459,9 @@ export default function Page() {
                                             <p className={`text-xs font-bold text-center ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
                                               {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
                                             </p>
-                                            {/* Hint dla środkowej */}
+                                            {/* Hint tylko dla środkowej */}
                                             {isCenter && !expired && (
-                                              <p className="text-[10px] text-center text-amber-500/60 font-medium">Kliknij, aby zobaczyć szczegóły</p>
+                                              <p className="text-[10px] text-center text-amber-500/55 font-medium leading-tight">Kliknij → szczegóły</p>
                                             )}
                                             {/* Badges */}
                                             {!expired && isNew && <span className="absolute top-2 right-2 text-xs font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>}
