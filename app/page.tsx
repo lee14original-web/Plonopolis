@@ -166,6 +166,7 @@ type PlotCropState = {
   watered: boolean;
   plantedQuality?: string | null;
   compostBonus?: CompostBonus | null;
+  frozenStatMult?: number | null;
 };
 
 type SeedInventory = Record<string, number>;
@@ -1594,6 +1595,8 @@ function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
         watered: Boolean(item?.watered),
         plantedQuality: typeof item?.plantedQuality === "string" ? item.plantedQuality : null,
         compostBonus: _compostBonus,
+        frozenStatMult: typeof (item as { frozenStatMult?: unknown })?.frozenStatMult === "number"
+          ? (item as { frozenStatMult: number }).frozenStatMult : null,
       },
     ] as const);
   }
@@ -1614,6 +1617,7 @@ function serializePlotCrops(value: Record<number, PlotCropState>) {
           watered: Boolean(plot.watered),
           plantedQuality: plot.plantedQuality ?? null,
           compostBonus: plot.compostBonus ?? null,
+          frozenStatMult: plot.frozenStatMult ?? null,
         },
       ])
   );
@@ -3140,9 +3144,12 @@ export default function Page() {
     const wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - wiedzaBonus);
     const hiveMult = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
     // Zamrożony mult stat (wiedza×ul) z momentu sadzenia — upgrade po sadzeniu nie skraca rosnących upraw
+    // Źródło prawdy: frozenStatMult w DB (JSONB). Fallback: localStorage (dla starych pól bez DB-wartości).
     const _fsmKey = profile?.id ? `plonopolis_fsm_${profile.id}_${plotId}` : null;
     const _frozenRaw = _fsmKey && typeof window !== "undefined" ? localStorage.getItem(_fsmKey) : null;
-    const statMult = _frozenRaw !== null ? parseFloat(_frozenRaw) : wiedzaMult * hiveMult;
+    const statMult = (plot.frozenStatMult != null)
+      ? plot.frozenStatMult
+      : (_frozenRaw !== null ? parseFloat(_frozenRaw) : wiedzaMult * hiveMult);
     // Bonus kompostu Wzrostu: -5/10/15% czasu wzrostu (× boost ze Sadownika)
     const sadownikEff = effectiveStats.sadownik + getEquipFlatBonus(" pkt Sadownika", charEquipped);
     const compostBoost = 1 + calcStatEffect(sadownikEff, 0.005) / 100;
@@ -3607,11 +3614,17 @@ export default function Page() {
         if (_p.compostBonus) _allCompostSnapshot[Number(_id)] = _p.compostBonus;
       }
 
+      const _wiedzaEffPlant = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+      const _wiedzaMultPlant = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEffPlant, WIEDZA_RATE) / 100);
+      const _hiveMultPlant = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
+      const _frozenStatMult = _wiedzaMultPlant * _hiveMultPlant;
+
       const { data, error } = await supabase.rpc("game_plant_crop", {
         p_plot_id: plotId,
         p_crop_id: _baseCropId,
         p_seed_key: effectiveSeedId,
         p_planted_quality: _seedQuality ?? "good",
+        p_frozen_stat_mult: _frozenStatMult,
       });
       if (error) {
         _restoreSeed();
@@ -3651,11 +3664,8 @@ export default function Page() {
       if (typeof window !== "undefined" && profile?.id) {
         const _pqKey = `plonopolis_pq_${profile.id}_${plotId}`;
         localStorage.setItem(_pqKey, _seedQuality ?? "good");
-        // Zamrożony mult statystyk (wiedza×ul) — upgrade po sadzeniu nie skraca rosnących upraw
-        const _wiedzaEff2 = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
-        const _wiedzaMult2 = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEff2, WIEDZA_RATE) / 100);
-        const _hiveMult2 = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
-        localStorage.setItem(`plonopolis_fsm_${profile.id}_${plotId}`, String(_wiedzaMult2 * _hiveMult2));
+        // Zamrożony mult statystyk — localStorage jako fallback gdy DB nie zwróci frozenStatMult
+        localStorage.setItem(`plonopolis_fsm_${profile.id}_${plotId}`, String(_frozenStatMult));
       }
 
       // Przywróć bonusy kompostu dla INNYCH pól po applyProfileState
