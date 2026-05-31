@@ -2087,7 +2087,7 @@ export default function Page() {
   const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
   const [ladaView, setLadaView] = React.useState<"list" | "carousel">("list");
   const [carouselIdx, setCarouselIdx] = React.useState(0);
-  const carouselDragRef = React.useRef<{ startX: number; hasSwiped: boolean; pointerId: number } | null>(null);
+  const carouselDragRef = React.useRef<{ startX: number; baseIdx: number; totalMoved: number; pointerId: number } | null>(null);
   const carouselHasDraggedRef = React.useRef(false);
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
@@ -12411,29 +12411,36 @@ export default function Page() {
                                       onPointerDown={(e) => {
                                         e.stopPropagation();
                                         carouselHasDraggedRef.current = false;
-                                        carouselDragRef.current = { startX: e.clientX, hasSwiped: false, pointerId: e.pointerId };
-                                        e.currentTarget.setPointerCapture(e.pointerId);
+                                        // Nie rób setPointerCapture tu — zrobimy to dopiero gdy wiemy, że to drag (>8px).
+                                        // Dzięki temu click na karcie odpali normalnie przy małym ruchu.
+                                        carouselDragRef.current = { startX: e.clientX, baseIdx: safeCarouselIdx, totalMoved: 0, pointerId: e.pointerId };
                                       }}
                                       onPointerMove={(e) => {
                                         e.stopPropagation();
                                         const drag = carouselDragRef.current;
-                                        if (!drag || drag.hasSwiped) return;
-                                        const dx = e.clientX - drag.startX;
-                                        if (Math.abs(dx) > 40) {
-                                          drag.hasSwiped = true;
+                                        if (!drag) return;
+                                        drag.totalMoved = e.clientX - drag.startX;
+                                        // Po przekroczeniu progu 8px: to drag — przechwyć pointer i zablokuj click
+                                        if (Math.abs(drag.totalMoved) > 8 && !carouselHasDraggedRef.current) {
                                           carouselHasDraggedRef.current = true;
-                                          if (dx < 0) setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1));
-                                          else setCarouselIdx(ci => Math.max(0, ci - 1));
+                                          try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
                                         }
+                                        if (!carouselHasDraggedRef.current) return;
+                                        // Krokowe przesunięcie: co 120px = 1 klient, względem pozycji z pointerDown
+                                        const steps = Math.trunc(drag.totalMoved / 120);
+                                        const newIdx = Math.max(0, Math.min(_sorted.length - 1, drag.baseIdx - steps));
+                                        setCarouselIdx(newIdx);
                                       }}
                                       onPointerUp={(e) => {
                                         e.stopPropagation();
                                         try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
                                         carouselDragRef.current = null;
+                                        // 60 ms okno — blokuje click który przeglądarka może jeszcze wysłać po capture
                                         setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
                                       }}
                                       onPointerCancel={(e) => {
                                         e.stopPropagation();
+                                        try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
                                         carouselDragRef.current = null;
                                         setTimeout(() => { carouselHasDraggedRef.current = false; }, 60);
                                       }}
