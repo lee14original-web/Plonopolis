@@ -12509,7 +12509,14 @@ export default function Page() {
                                               {/* ✓ Gotowe — pasek na dole avatara */}
                                               {canDo && !expired && (
                                                 <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
-                                                  <span className="text-lg font-black text-emerald-100 bg-emerald-700/93 rounded-full px-4 py-1 border border-emerald-400/70">✓ Gotowe</span>
+                                                  <span
+                                                    className="text-lg font-black text-white rounded-full px-4 py-1 animate-pulse"
+                                                    style={{
+                                                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                                                      border: '1px solid rgba(167,243,208,0.9)',
+                                                      boxShadow: '0 0 14px rgba(52,211,153,0.7), 0 2px 6px rgba(0,0,0,0.5)',
+                                                    }}
+                                                  >✓ Gotowe</span>
                                                 </div>
                                               )}
                                               {/* Nowy! */}
