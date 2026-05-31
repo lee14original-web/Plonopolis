@@ -12508,7 +12508,7 @@ export default function Page() {
                                               {canDo && !expired && (
                                                 <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2.5">
                                                   <span
-                                                    className="text-lg font-black text-white rounded-full px-4 py-1 animate-pulse"
+                                                    className="text-lg font-black text-white rounded-full px-4 py-1"
                                                     style={{
                                                       background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
                                                       border: '1px solid rgba(167,243,208,0.9)',
