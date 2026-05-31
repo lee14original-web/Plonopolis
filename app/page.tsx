@@ -1747,6 +1747,18 @@ function ttStyle(mx: number, my: number, tipW = 288, tipH = 230): React.CSSPrope
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [selectedServer, setSelectedServer] = useState<string>("testy");
+  const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
+  const serverDropdownRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!serverDropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (serverDropdownRef.current && !serverDropdownRef.current.contains(e.target as Node)) {
+        setServerDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [serverDropdownOpen]);
   const [ready, setReady] = useState(false);
   const [sessionTimeLeft, setSessionTimeLeft] = useState<number | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
@@ -8453,37 +8465,52 @@ export default function Page() {
                     {/* Wybór serwera */}
                     <div className="mb-3">
                       <p className="mb-1.5 text-base font-semibold uppercase tracking-[0.25em] text-[#d8ba7a]">Wybierz serwer</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {([
-                          { id: "testy", name: "Testy", active: true },
-                          { id: "zielona_dolina", name: "Zielona Dolina", active: false },
-                          { id: "sloneczne_pola", name: "Słoneczne Pola", active: false },
-                          { id: "zlote_zniwa", name: "Złote Żniwa", active: false },
-                          { id: "miodowy_zakatek", name: "Miodowy Zakątek", active: false },
-                          { id: "kraina_sadow", name: "Kraina Sadów", active: false },
-                        ] as { id: string; name: string; active: boolean }[]).map((srv) => (
-                          <button
-                            key={srv.id}
-                            type="button"
-                            disabled={!srv.active}
-                            onClick={() => srv.active && setSelectedServer(srv.id)}
-                            className={`relative flex flex-col items-center justify-center rounded-xl border px-1 py-1 text-center text-base font-bold transition
-                              ${srv.active
-                                ? selectedServer === srv.id
-                                  ? "border-[#f4cf78] bg-[rgba(212,166,79,0.22)] text-[#f9e7b2] shadow-[0_0_8px_rgba(244,207,120,0.4)]"
-                                  : "border-[#8b6a3e]/70 bg-[rgba(20,12,8,0.5)] text-[#d8ba7a] hover:border-[#d4a64f]/60 hover:bg-[rgba(40,25,10,0.7)]"
-                                : "cursor-not-allowed border-[#4a3020]/50 bg-[rgba(10,6,3,0.4)] text-[#6b5038] opacity-70"
-                              }`}
-                          >
-                            <span className="leading-tight">{srv.name}</span>
-                            {!srv.active && (
-                              <span className="mt-0.5 rounded-full bg-[#3a2010]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7a5535]">Wkrótce</span>
-                            )}
-                            {srv.active && selectedServer === srv.id && (
-                              <span className="mt-0.5 rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
-                            )}
-                          </button>
-                        ))}
+                      <div ref={serverDropdownRef} className="relative">
+                        {/* Trigger */}
+                        <button
+                          type="button"
+                          onClick={() => setServerDropdownOpen(o => !o)}
+                          className="flex w-full items-center justify-between rounded-xl border border-[#f4cf78] bg-[rgba(212,166,79,0.15)] px-4 py-2.5 text-left text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(212,166,79,0.25)] shadow-[0_0_8px_rgba(244,207,120,0.25)]"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>{selectedServer === "testy" ? "Testy" : selectedServer}</span>
+                            <span className="rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
+                          </span>
+                          <span className="text-[#d8ba7a] text-lg">{serverDropdownOpen ? "▲" : "▼"}</span>
+                        </button>
+
+                        {/* Dropdown overlay */}
+                        {serverDropdownOpen && (
+                          <div className="absolute left-0 right-0 top-full z-[200] mt-1 overflow-hidden rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,7,0.98)] shadow-2xl">
+                            {([
+                              { id: "testy", name: "Testy", active: true },
+                              { id: "zielona_dolina", name: "Zielona Dolina", active: false },
+                              { id: "sloneczne_pola", name: "Słoneczne Pola", active: false },
+                              { id: "zlote_zniwa", name: "Złote Żniwa", active: false },
+                              { id: "miodowy_zakatek", name: "Miodowy Zakątek", active: false },
+                              { id: "kraina_sadow", name: "Kraina Sadów", active: false },
+                            ] as { id: string; name: string; active: boolean }[]).map((srv, i, arr) => (
+                              <button
+                                key={srv.id}
+                                type="button"
+                                disabled={!srv.active}
+                                onClick={() => { if (srv.active) { setSelectedServer(srv.id); setServerDropdownOpen(false); } }}
+                                className={`flex w-full items-center justify-between px-4 py-2.5 text-base font-bold transition
+                                  ${i < arr.length - 1 ? "border-b border-[#3a2410]/60" : ""}
+                                  ${srv.active
+                                    ? "cursor-pointer text-[#f9e7b2] hover:bg-[rgba(212,166,79,0.15)]"
+                                    : "cursor-not-allowed text-[#5a3e28] opacity-60"
+                                  }`}
+                              >
+                                <span>{srv.name}</span>
+                                {srv.active
+                                  ? <span className="rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
+                                  : <span className="rounded-full bg-[#2a1a0a]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7a5535]">Wkrótce</span>
+                                }
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
