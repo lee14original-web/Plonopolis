@@ -12426,10 +12426,16 @@ export default function Page() {
                                           try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
                                         }
                                         if (!carouselHasDraggedRef.current) return;
-                                        // Krokowe przesunięcie: co 120px = 1 klient, względem pozycji z pointerDown
-                                        const steps = Math.trunc(drag.totalMoved / 120);
-                                        const newIdx = Math.max(0, Math.min(_sorted.length - 1, drag.baseIdx - steps));
-                                        setCarouselIdx(newIdx);
+                                        // Krokowe przesunięcie: co 200px = 1 klient, względem pozycji z pointerDown
+                                        // clamp: max 1 zmiana indeksu na event → płynniejsze, ale przy długim drag nadal przechodzi dalej
+                                        const steps = Math.trunc(drag.totalMoved / 200);
+                                        const rawIdx = drag.baseIdx - steps;
+                                        const newIdx = Math.max(0, Math.min(_sorted.length - 1, rawIdx));
+                                        setCarouselIdx(prev => {
+                                          const delta = newIdx - prev;
+                                          if (delta === 0) return prev;
+                                          return prev + Math.sign(delta);
+                                        });
                                       }}
                                       onPointerUp={(e) => {
                                         e.stopPropagation();
