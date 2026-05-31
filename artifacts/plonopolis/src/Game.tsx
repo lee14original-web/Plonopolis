@@ -12428,7 +12428,7 @@ export default function Page() {
                                         if (!carouselHasDraggedRef.current) return;
                                         // Krokowe przesunięcie: co 200px = 1 klient, względem pozycji z pointerDown
                                         // clamp: max 1 zmiana indeksu na event → płynniejsze, ale przy długim drag nadal przechodzi dalej
-                                        const steps = Math.trunc(drag.totalMoved / 200);
+                                        const steps = Math.trunc(drag.totalMoved / 240);
                                         const rawIdx = drag.baseIdx - steps;
                                         const newIdx = Math.max(0, Math.min(_sorted.length - 1, rawIdx));
                                         setCarouselIdx(prev => {
