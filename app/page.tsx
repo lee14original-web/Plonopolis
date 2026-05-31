@@ -15129,42 +15129,48 @@ export default function Page() {
                       <p className="mb-0.5 text-[22px] font-black text-[#f9e7b2]">
                         {t.cropName} <span style={{ color: _qd.borderColor }}>{_qd.label.toLowerCase()}</span>
                       </p>
-                      <div className="mt-1.5 flex flex-col gap-1 text-[18px]">
-                        {_cropDef2 && (
-                          t.quality === "rotten"
-                            ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
-                            : <p className="text-[#8b6a3e]">
+                      {t.quality === "rotten" ? (
+                        <div className="mt-1.5 text-[18px]">
+                          <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mt-1.5 flex flex-col gap-1 text-[18px]">
+                            {_cropDef2 && (
+                              <p className="text-[#8b6a3e]">
                                 Czas bazowy:{" "}
                                 <span className="font-bold text-[#dfcfab]">{_baseTimeStr}</span>
                               </p>
-                        )}
-                        <p className="text-[#8b6a3e]">
-                          EXP przy sadzeniu:{" "}
-                          <span className="font-bold text-sky-300">{_expDisplay}</span>
-                        </p>
-                        {_cropDef2 && (
-                          <>
+                            )}
                             <p className="text-[#8b6a3e]">
-                              Drop przy sadzeniu:{" "}
-                              <span className="font-bold text-yellow-300">{_dropStr}</span>
+                              EXP po zbiorze:{" "}
+                              <span className="font-bold text-sky-300">{_expDisplay}</span>
                             </p>
-                            <p className="text-[13px] text-[#8b6a3e]/70">każda sztuka losuje jakość osobno</p>
-                          </>
-                        )}
-                      </div>
-                      <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[17px]">
-                        {_cropDef2 && (
-                          <p className="text-[#8b6a3e]">
-                            Jeśli Zręczność zadziała:{" "}
-                            <span className="font-bold text-yellow-300">{_dropZrStr}</span>
-                          </p>
-                        )}
-                        <p className="text-[#8b6a3e]">
-                          Szansa Zręczności:{" "}
-                          <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
-                        </p>
-                        <p className="mt-0.5 text-[15px] text-[#8b6a3e]">EXP zależy od zasadzonego nasiona, nie od jakości tej sztuki.</p>
-                      </div>
+                            {_cropDef2 && (
+                              <>
+                                <p className="text-[#8b6a3e]">
+                                  Drop przy sadzeniu:{" "}
+                                  <span className="font-bold text-yellow-300">{_dropStr}</span>
+                                </p>
+                                <p className="text-[13px] text-[#8b6a3e]/70">każda sztuka losuje jakość osobno</p>
+                              </>
+                            )}
+                          </div>
+                          <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[17px]">
+                            {_cropDef2 && (
+                              <p className="text-[#8b6a3e]">
+                                Jeśli Zręczność zadziała:{" "}
+                                <span className="font-bold text-yellow-300">{_dropZrStr}</span>
+                              </p>
+                            )}
+                            <p className="text-[#8b6a3e]">
+                              Szansa Zręczności:{" "}
+                              <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
+                            </p>
+                            <p className="mt-0.5 text-[15px] text-[#8b6a3e]">EXP zależy od zasadzonego nasiona, nie od jakości tej sztuki.</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })()}
