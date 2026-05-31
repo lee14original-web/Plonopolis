@@ -1820,6 +1820,13 @@ export default function Page() {
   const [fvNasonaPos, setFvNasonaPos] = React.useState({ l: 58, t: 397, w: 192, h: 179 });
   const [fvKompostPos, setFvKompostPos] = React.useState({ l: 58, t: 184, w: 192, h: 179 });
   const [fvSeedPickerOpen, setFvSeedPickerOpen] = React.useState(false);
+  const [seedQualityFilter, setSeedQualityFilter] = React.useState<"good"|"epic"|"legendary">(() => {
+    if (typeof window !== "undefined") {
+      const v = localStorage.getItem("plonopolis_seed_filter");
+      if (v === "epic" || v === "legendary") return v;
+    }
+    return "good";
+  });
   const [fvCompostPickerOpen, setFvCompostPickerOpen] = React.useState(false);
   // ─── Prawa kolumna: narzędzia masowe (premium) ───
   const [fvCiagnikPos,  setFvCiagnikPos]  = React.useState({ l: 1670, t: 184, w: 192, h: 179 });
@@ -13902,9 +13909,23 @@ export default function Page() {
                         className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[760px] max-w-[95vw] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
                         onClick={e => e.stopPropagation()}
                       >
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz uprawę</p>
-                        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">🌱 Nasiona w plecaku</h3>
-                        {(["legendary","epic","good",null] as (string|null)[]).map(quality => {
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-xl font-black text-[#f9e7b2]">Nasiona w plecaku</h3>
+                          <div className="flex gap-1.5">
+                            {(["good","epic","legendary"] as const).map(q => {
+                              const label = q === "good" ? "Zwykłe" : q === "epic" ? "Epickie" : "Legendarne";
+                              const activeColor = q === "good" ? "border-[#6ee7b7] bg-[#6ee7b7]/20 text-[#6ee7b7]" : q === "epic" ? "border-[#a78bfa] bg-[#a78bfa]/20 text-[#a78bfa]" : "border-[#fbbf24] bg-[#fbbf24]/20 text-[#fbbf24]";
+                              const inactiveColor = "border-[#8b6a3e]/40 text-[#8b6a3e] hover:text-[#dfcfab]";
+                              return (
+                                <button key={q} type="button"
+                                  className={`rounded-lg px-3 py-1 text-[13px] font-bold border transition-colors ${seedQualityFilter === q ? activeColor : inactiveColor}`}
+                                  onClick={() => { setSeedQualityFilter(q); localStorage.setItem("plonopolis_seed_filter", q); }}
+                                >{label}</button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        {(["legendary","epic","good",null] as (string|null)[]).filter(quality => quality === seedQualityFilter).map(quality => {
                           const entries = Object.entries(seedInventory)
                             .filter(([k, cnt]) => !isCompostKey(k) && !isGuideCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality)
                             .sort(([aId], [bId]) => {
@@ -13914,12 +13935,14 @@ export default function Page() {
                               const bLv = CROPS.find(c => c.id === bC)?.unlockLevel ?? 999;
                               return aLv - bLv;
                             });
-                          if (entries.length === 0) return null;
-                          const qLabel = quality === "legendary" ? "✨ Legendarne" : quality === "epic" ? "🟣 Epickie" : quality === "good" ? "🟢 Zwykłe" : "📦 Pozostałe";
-                          const qColor = quality === "legendary" ? "#fbbf24" : quality === "epic" ? "#a78bfa" : quality === "good" ? "#6ee7b7" : "#8b6a3e";
+                          if (entries.length === 0) return (
+                            <div key={quality ?? "base"} className="flex flex-col items-center justify-center py-14 gap-2">
+                              <span className="text-5xl opacity-20">🌱</span>
+                              <p className="text-[#8b6a3e] text-[18px]">Brak nasion tej kategorii.</p>
+                            </div>
+                          );
                           return (
                             <div key={quality ?? "base"} className="mb-4">
-                              <p className="text-xs font-black mb-2 uppercase tracking-wider" style={{ color: qColor }}>{qLabel}</p>
                               <div className="grid grid-cols-5 gap-3">
                                 {entries.map(([seedId, cnt]) => {
                                   const { baseCropId, quality: q } = parseQualityKey(seedId);
