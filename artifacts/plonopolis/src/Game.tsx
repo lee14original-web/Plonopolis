@@ -8468,7 +8468,7 @@ export default function Page() {
                             type="button"
                             disabled={!srv.active}
                             onClick={() => srv.active && setSelectedServer(srv.id)}
-                            className={`relative flex flex-col items-center justify-center rounded-xl border px-2 py-1.5 text-center text-sm font-bold transition
+                            className={`relative flex flex-col items-center justify-center rounded-xl border px-1 py-1 text-center text-base font-bold transition
                               ${srv.active
                                 ? selectedServer === srv.id
                                   ? "border-[#f4cf78] bg-[rgba(212,166,79,0.22)] text-[#f9e7b2] shadow-[0_0_8px_rgba(244,207,120,0.4)]"
