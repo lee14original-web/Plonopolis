@@ -7121,22 +7121,26 @@ export default function Page() {
         {/* Before/after slider modal — awans rancza */}
         {showFarmSlider && isOnFarmMap && (() => {
           const { from, to } = showFarmSlider;
-          const SW = 1100;
-          const SH = 580;
           return (
-            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/85 backdrop-blur-sm">
-              <div className="flex flex-col items-center gap-5" style={{ width: SW + 48 }}>
+            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/65 backdrop-blur-sm">
+              <div className="flex w-full flex-col items-center gap-5 px-4">
                 {/* Nagłówek */}
                 <div className="text-center">
                   <h2 className="text-4xl font-black text-[#f9e7b2] drop-shadow-lg">Ranczo się rozwija!</h2>
                   <p className="mt-1 text-base text-[#d8ba7a]">Przeciągnij suwak, aby zobaczyć zmiany.</p>
                 </div>
 
-                {/* Kontener slidera */}
+                {/* Kontener slidera — responsywny, proporcja 16:9 */}
                 <div
                   ref={sliderContainerRef}
                   className="relative overflow-hidden rounded-2xl border-2 border-[#8b6a3e] shadow-2xl select-none"
-                  style={{ width: SW, height: SH, cursor: "ew-resize" }}
+                  style={{
+                    width: "100%",
+                    maxWidth: "min(92vw, calc(72vh * 16 / 9))",
+                    aspectRatio: "16 / 9",
+                    background: "rgba(40,24,12,0.95)",
+                    cursor: "ew-resize",
+                  }}
                   onPointerMove={e => {
                     if (!sliderDragRef.current || !sliderContainerRef.current) return;
                     const rect = sliderContainerRef.current.getBoundingClientRect();
@@ -7146,23 +7150,26 @@ export default function Page() {
                   onPointerUp={() => { sliderDragRef.current = false; }}
                   onPointerLeave={() => { sliderDragRef.current = false; }}
                 >
-                  {/* Nowa mapa — dolna warstwa (pełna szerokość) */}
+                  {/* Nowa mapa — dolna warstwa, pełna */}
                   <img
                     src={`/mapy/${to}.png`}
                     alt="Nowe ranczo"
                     draggable={false}
-                    className="pointer-events-none absolute inset-0"
-                    style={{ width: SW, height: SH, objectFit: "cover", objectPosition: "left top", imageRendering: "pixelated" }}
+                    className="pointer-events-none absolute inset-0 w-full h-full"
+                    style={{ objectFit: "contain", objectPosition: "center", imageRendering: "pixelated" }}
                   />
 
-                  {/* Stara mapa — przycinana do sliderX% */}
-                  <div className="absolute inset-0 overflow-hidden" style={{ width: `${sliderX}%` }}>
+                  {/* Stara mapa — clipping przez clip-path */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ clipPath: `inset(0 ${100 - sliderX}% 0 0)` }}
+                  >
                     <img
                       src={`/mapy/${from}.png`}
                       alt="Stare ranczo"
                       draggable={false}
-                      className="pointer-events-none absolute"
-                      style={{ left: 0, top: 0, width: SW, height: SH, objectFit: "cover", objectPosition: "left top", imageRendering: "pixelated" }}
+                      className="pointer-events-none w-full h-full"
+                      style={{ objectFit: "contain", objectPosition: "center", imageRendering: "pixelated" }}
                     />
                   </div>
 
