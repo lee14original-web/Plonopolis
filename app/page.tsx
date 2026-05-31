@@ -12363,9 +12363,7 @@ export default function Page() {
                             return { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath };
                           };
 
-                          const top3 = _sorted.slice(0, 3);
-                          const rest = _sorted.slice(3);
-                          const safeCarouselIdx = Math.min(carouselIdx, Math.max(0, top3.length - 1));
+                          const safeCarouselIdx = Math.min(carouselIdx, Math.max(0, _sorted.length - 1));
 
                           return (
                             <div className="space-y-3">
@@ -12388,35 +12386,39 @@ export default function Page() {
 
                               {ladaView === 'carousel' ? (
                                 <>
-                                  {/* ── WIDOK KARUZELA ── */}
-                                  <div className="flex items-center gap-2">
+                                  {/* ── WIDOK KARUZELA — avatar slider 3D ── */}
+                                  <div className="flex items-center gap-1">
                                     {/* Strzałka lewa */}
                                     <button type="button"
-                                      onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
+                                      onClick={() => setCarouselIdx(ci => Math.max(0, ci - 1))}
                                       disabled={safeCarouselIdx === 0}
-                                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-lg font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                                     >‹</button>
 
-                                    {/* Karuzela 3D */}
-                                    <div className="relative flex-1 overflow-visible" style={{ height: 196, perspective: 900 }}>
-                                      {top3.map(({ o, originalIndex }, i) => {
-                                        const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
+                                    {/* Scena karuzeli */}
+                                    <div className="relative flex-1 overflow-visible" style={{ height: 272, perspective: 1100 }}>
+                                      {_sorted.map(({ o, originalIndex }, i) => {
+                                        const { cd, tl, ml, sl, expired, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
                                         const offset = i - safeCarouselIdx;
+                                        const absOff = Math.abs(offset);
                                         const isCenter = offset === 0;
-                                        const tx = offset * 256;
-                                        const ry = offset === 0 ? 0 : offset < 0 ? 26 : -26;
-                                        const scale = isCenter ? 1 : 0.78;
-                                        const opacity = isCenter ? 1 : 0.48;
-                                        const borderCls = isNew ? 'border-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
-                                          expired ? 'border-red-600/50' :
-                                          isCritical ? 'border-red-500/70' :
-                                          isWarning ? 'border-orange-500/60' :
-                                          canDo ? 'border-emerald-500/60' : 'border-amber-600/40';
-                                        const bgCls = isNew ? 'bg-emerald-950/20' :
-                                          expired ? 'bg-red-950/15 opacity-70' :
-                                          isCritical ? 'bg-red-950/15' :
-                                          isWarning ? 'bg-orange-950/10' :
-                                          canDo ? 'bg-emerald-950/15' : 'bg-black/30';
+                                        // skale dla 5 widocznych (±2), reszta ukryta
+                                        const scale = isCenter ? 1 : absOff === 1 ? 0.70 : absOff === 2 ? 0.50 : 0.36;
+                                        const opacity = isCenter ? 1 : absOff === 1 ? 0.64 : absOff === 2 ? 0.46 : 0;
+                                        const tx = offset * 206;
+                                        const ry = isCenter ? 0 : offset < 0 ? 24 : -24;
+                                        // ramka avatara
+                                        const ringCls = isNew
+                                          ? 'border-[3px] border-emerald-400 shadow-[0_0_22px_rgba(52,211,153,0.45)]'
+                                          : expired
+                                          ? 'border-2 border-red-600/60'
+                                          : isCritical
+                                          ? 'border-2 border-red-500/80'
+                                          : isWarning
+                                          ? 'border-2 border-orange-500/70'
+                                          : canDo
+                                          ? 'border-2 border-emerald-500/70 shadow-[0_0_14px_rgba(52,211,153,0.25)]'
+                                          : 'border border-amber-700/50';
                                         return (
                                           <div
                                             key={o.id}
@@ -12425,48 +12427,62 @@ export default function Page() {
                                               position: 'absolute',
                                               top: '50%',
                                               left: '50%',
-                                              width: 232,
-                                              marginLeft: -116,
+                                              width: 172,
+                                              marginLeft: -86,
                                               transform: `translateX(${tx}px) translateY(-50%) rotateY(${ry}deg) scale(${scale})`,
                                               transformOrigin: 'center center',
-                                              transition: 'transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s ease',
+                                              transition: 'transform 0.38s cubic-bezier(.4,0,.2,1), opacity 0.38s ease',
                                               opacity,
-                                              zIndex: isCenter ? 10 : 5,
-                                              cursor: 'pointer',
+                                              zIndex: 10 - absOff,
+                                              cursor: absOff > 2 ? 'default' : 'pointer',
+                                              pointerEvents: absOff > 2 ? 'none' : 'auto',
                                             }}
-                                            className={`relative rounded-2xl border p-3 flex flex-col gap-1.5 select-none ${borderCls} ${bgCls}`}
+                                            className="select-none"
                                           >
-                                            {/* Avatar + nazwa */}
-                                            <div className="flex items-center gap-2">
-                                              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
-                                                {avatarPath
-                                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
-                                                  : <span className="text-2xl leading-none">{cd.icon}</span>
-                                                }
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-black text-[#f9e7b2] leading-tight truncate">{cd.name}</p>
-                                                <p className="text-[11px] text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                                              </div>
+                                            {/* Blok avatara */}
+                                            <div className={`relative w-full rounded-2xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '1 / 1' }}>
+                                              {avatarPath
+                                                ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                                : <div className="w-full h-full flex items-center justify-center">
+                                                    <span className="text-6xl leading-none">{cd.icon}</span>
+                                                  </div>
+                                              }
+                                              {/* ✓ Gotowe — pasek na dole avatara */}
+                                              {canDo && !expired && (
+                                                <div className="absolute bottom-0 inset-x-0 flex justify-center pb-1.5">
+                                                  <span className="text-[11px] font-black text-emerald-100 bg-emerald-700/92 rounded-full px-2.5 py-0.5 border border-emerald-400/70">✓ Gotowe</span>
+                                                </div>
+                                              )}
+                                              {/* Nowy! */}
+                                              {isNew && (
+                                                <span className="absolute top-1.5 left-1.5 text-[10px] font-black text-emerald-200 bg-emerald-700/90 rounded-full px-2 py-0.5 border border-emerald-400/70 animate-bounce">Nowy!</span>
+                                              )}
+                                              {/* Wygasło / ⚠ */}
+                                              {expired && (
+                                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                  <span className="text-xs font-black text-red-300">Wygasło</span>
+                                                </div>
+                                              )}
+                                              {isCritical && !expired && !isNew && (
+                                                <span className="absolute top-1.5 right-1.5 text-[10px] font-black text-red-200 bg-red-800/90 rounded-full px-1.5 py-0.5 border border-red-500/70 animate-pulse">⚠</span>
+                                              )}
                                             </div>
-                                            {/* Nagrody */}
-                                            <div className="flex items-center justify-center gap-2 text-xs font-bold flex-wrap">
-                                              <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                              <span className="text-blue-300">{o.rewards.exp} EXP</span>
-                                              {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
+
+                                            {/* Informacje pod avatarem */}
+                                            <div className="mt-2 text-center px-0.5">
+                                              <p className="text-[13px] font-black text-[#f9e7b2] truncate leading-tight">{cd.name}</p>
+                                              <div className="flex items-center justify-center gap-2 text-[11px] font-bold mt-0.5 flex-wrap">
+                                                <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                                <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                                {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+🎁</span>}
+                                              </div>
+                                              <p className={`text-[11px] font-bold mt-0.5 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                                {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                              </p>
+                                              {isCenter && !expired && (
+                                                <p className="text-[9px] text-amber-500/55 font-medium mt-0.5">Kliknij → szczegóły</p>
+                                              )}
                                             </div>
-                                            {/* Timer */}
-                                            <p className={`text-xs font-bold text-center ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                              {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                            </p>
-                                            {/* Hint tylko dla środkowej */}
-                                            {isCenter && !expired && (
-                                              <p className="text-[10px] text-center text-amber-500/55 font-medium leading-tight">Kliknij → szczegóły</p>
-                                            )}
-                                            {/* Badges */}
-                                            {!expired && isNew && <span className="absolute top-2 right-2 text-xs font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>}
-                                            {!expired && isCritical && !isNew && <span className="absolute top-2 right-2 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>}
-                                            {!expired && canDo && !isCritical && !isNew && <span className="absolute top-2 right-2 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>}
                                           </div>
                                         );
                                       })}
@@ -12474,53 +12490,27 @@ export default function Page() {
 
                                     {/* Strzałka prawa */}
                                     <button type="button"
-                                      onClick={() => setCarouselIdx(i => Math.min(top3.length - 1, i + 1))}
-                                      disabled={safeCarouselIdx >= top3.length - 1}
-                                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-lg font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                      onClick={() => setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1))}
+                                      disabled={safeCarouselIdx >= _sorted.length - 1}
+                                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                                     >›</button>
                                   </div>
 
-                                  {/* Dots */}
-                                  {top3.length > 1 && (
-                                    <div className="flex justify-center gap-2">
-                                      {top3.map((_, i) => (
-                                        <button key={i} type="button" onClick={() => setCarouselIdx(i)}
-                                          className={`h-2 rounded-full transition-all ${i === safeCarouselIdx ? 'w-6 bg-amber-400' : 'w-2 bg-amber-800/50 hover:bg-amber-600/60'}`}
-                                        />
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Pozostali klienci (jeśli > 3) */}
-                                  {rest.length > 0 && (
-                                    <div className="mt-1">
-                                      <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e] mb-1.5 font-bold px-1">Pozostali klienci</p>
-                                      <div className="space-y-1">
-                                        {rest.map(({ o, originalIndex }) => {
-                                          const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical } = _cardData(o);
-                                          return (
-                                            <button key={o.id} type="button" onClick={() => setLadaDetailIdx(originalIndex)}
-                                              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition hover:brightness-110 ${
-                                                expired ? 'border-red-600/40 bg-red-950/10 opacity-60' :
-                                                isCritical ? 'border-red-500/60 bg-red-950/10' :
-                                                isWarning ? 'border-orange-500/50 bg-orange-950/10' :
-                                                canDo ? 'border-emerald-500/50 bg-emerald-950/10' :
-                                                'border-amber-600/30 bg-black/20'
-                                              }`}
-                                            >
-                                              <span className="text-lg leading-none shrink-0">{cd.icon}</span>
-                                              <span className="flex-1 min-w-0 text-sm font-bold text-[#f9e7b2] truncate">{cd.name}</span>
-                                              <span className="text-xs font-bold text-yellow-300 shrink-0">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                              <span className="text-xs font-bold text-blue-300 shrink-0">{o.rewards.exp} EXP</span>
-                                              <span className={`text-xs font-bold shrink-0 ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                                {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                              </span>
-                                              <span className="text-xs text-[#8b6a3e] shrink-0">→</span>
-                                            </button>
-                                          );
-                                        })}
+                                  {/* Dots (≤8) lub licznik (>8) */}
+                                  {_sorted.length > 1 && (
+                                    _sorted.length <= 8 ? (
+                                      <div className="flex justify-center gap-1.5">
+                                        {_sorted.map((_, di) => (
+                                          <button key={di} type="button" onClick={() => setCarouselIdx(di)}
+                                            className={`h-1.5 rounded-full transition-all ${di === safeCarouselIdx ? 'w-5 bg-amber-400' : 'w-1.5 bg-amber-800/50 hover:bg-amber-600/60'}`}
+                                          />
+                                        ))}
                                       </div>
-                                    </div>
+                                    ) : (
+                                      <p className="text-center text-xs text-[#8b6a3e] font-bold tracking-wide">
+                                        {safeCarouselIdx + 1} / {_sorted.length}
+                                      </p>
+                                    )
                                   )}
                                 </>
                               ) : (
