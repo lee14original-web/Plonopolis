@@ -14932,7 +14932,13 @@ export default function Page() {
                       ) : (
                         <>
                           <div className="grid grid-cols-7 gap-2">
-                            {dailyHarvestData.items.slice(0, 35).map((it, i) => {
+                            {[...dailyHarvestData.items].sort((a, b) => {
+                              const qOrder = { rotten: 0, good: 1, epic: 2, legendary: 3 } as Record<string, number>;
+                              if (qOrder[a.quality] !== qOrder[b.quality]) return qOrder[a.quality] - qOrder[b.quality];
+                              const aLvl = CROPS.find(c => c.id === a.crop_id)?.unlockLevel ?? 0;
+                              const bLvl = CROPS.find(c => c.id === b.crop_id)?.unlockLevel ?? 0;
+                              return aLvl - bLvl;
+                            }).slice(0, 35).map((it, i) => {
                               const _qd = CROP_QUALITY_DEFS[it.quality];
                               const _cropDef = CROPS.find(c => c.id === it.crop_id);
                               const _sprite = it.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
