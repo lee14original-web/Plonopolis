@@ -2085,6 +2085,8 @@ export default function Page() {
   const [currentCustomerIdx, setCurrentCustomerIdx] = React.useState(0);
   const [ladaDetailIdx, setLadaDetailIdx] = React.useState<number | null>(null);
   const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
+  const [ladaView, setLadaView] = React.useState<"list" | "carousel">("list");
+  const [carouselIdx, setCarouselIdx] = React.useState(0);
   const [customerSelling, setCustomerSelling] = React.useState<string | null>(null);
   const [customerLoading, setCustomerLoading] = React.useState(false);
   const [customerNow, setCustomerNow] = React.useState(Date.now());
@@ -12321,100 +12323,265 @@ export default function Page() {
                         </div>
                       ) : ladaDetailIdx === null ? (
                         /* ── WIDOK WSZYSTKICH KLIENTÓW ── */
-                        <div className="space-y-3">
-                          <p className="text-sm text-center text-amber-400 uppercase tracking-widest font-black">
-                            {totalOrders} {totalOrders === 1 ? 'aktywny klient' : totalOrders < 5 ? 'aktywnych klientów' : 'aktywnych klientów'}
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                            {(() => {
-                              // Unikalne avatary: brak powtórzeń — przetasowanie NON_EPIC_SKINS seeded
-                              const _avatarTypes = new Set(['Gość', 'neighbor', 'village_guest']);
-                              const _sorted = [...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
-                                .sort((a, b) => {
-                                  const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
-                                  if (gDiff !== 0) return gDiff;
-                                  const eDiff = b.o.rewards.exp - a.o.rewards.exp;
-                                  if (eDiff !== 0) return eDiff;
-                                  const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
-                                  if (iDiff !== 0) return iDiff;
-                                  return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
-                                });
-                              const _eligibleIds = _sorted.filter(({ o }) => _avatarTypes.has(o.customer_type)).map(({ o }) => o.id);
-                              let _seed = _eligibleIds.reduce((h, id) => { let s = h; for (let i = 0; i < id.length; i++) s = (s * 31 + id.charCodeAt(i)) >>> 0; return s; }, 1) || 1;
-                              const _rng = () => { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 0x100000000; };
-                              const _shuf = [...NON_EPIC_SKINS];
-                              for (let i = _shuf.length - 1; i > 0; i--) { const j = Math.floor(_rng() * (i + 1)); [_shuf[i], _shuf[j]] = [_shuf[j], _shuf[i]]; }
-                              const _avatarMap = new Map<string, string>(_eligibleIds.map((id, idx) => [id, _shuf[idx]]));
-                              return _sorted.map(({ o, originalIndex }) => {
-                              const cd = getCustomerDisplay(o.customer_type);
-                              const tl = Math.max(0, new Date(o.expires_at).getTime() - customerNow);
-                              const ml = Math.floor(tl / 60000);
-                              const sl = Math.floor((tl % 60000) / 1000);
-                              const expired = tl <= 0;
-                              const mi = mergeOrderItems(o.items);
-                              const canDo = mi.every(it => haveFor(it.id) >= it.qty);
-                              const createdMs = o.created_at ? new Date(o.created_at).getTime() : null;
-                              const expiresMs = new Date(o.expires_at).getTime();
-                              const totalDur = createdMs ? expiresMs - createdMs : null;
-                              const usedPct = (totalDur && totalDur > 0) ? (customerNow - createdMs!) / totalDur : null;
-                              const isWarning = usedPct !== null ? usedPct >= 0.75 : tl < 3_600_000;
-                              const isCritical = usedPct !== null ? usedPct >= 0.90 : tl < 600_000;
-                              const isNew = newCustomerIds.has(o.id);
-                              const _avatarPath = _avatarMap.get(o.id) ?? null;
-                              return (
-                                <button
-                                  key={o.id}
-                                  onClick={() => setLadaDetailIdx(originalIndex)}
-                                  onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
-                                  onMouseLeave={() => setLadaCardHoverIdx(null)}
-                                  className={`relative text-left rounded-xl border p-4 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
-                                    isNew      ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
-                                    expired    ? 'border-red-600/50 bg-red-950/15 opacity-70' :
-                                    isCritical ? 'border-red-500/70 bg-red-950/15 hover:border-red-400/80' :
-                                    isWarning  ? 'border-orange-500/60 bg-orange-950/10 hover:border-orange-400/80' :
-                                    canDo      ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
-                                                 'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
-                                  }`}
-                                >
-                                  {/* Avatar po lewej (powiększony, lekko w prawo), treść wyśrodkowana */}
-                                  <div className="flex gap-3 items-center">
-                                    <div className="flex-shrink-0 ml-2 w-24 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
-                                      {_avatarPath
-                                        ? <img src={_avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
-                                        : <span className="text-5xl leading-none">{cd.icon}</span>
-                                      }
+                        (() => {
+                          // Sortowanie + avatary — wspólne dla obu widoków
+                          const _avatarTypes = new Set(['Gość', 'neighbor', 'village_guest']);
+                          const _sorted = [...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
+                            .sort((a, b) => {
+                              const gDiff = Number(b.o.rewards.gold) - Number(a.o.rewards.gold);
+                              if (gDiff !== 0) return gDiff;
+                              const eDiff = b.o.rewards.exp - a.o.rewards.exp;
+                              if (eDiff !== 0) return eDiff;
+                              const iDiff = mergeOrderItems(b.o.items).length - mergeOrderItems(a.o.items).length;
+                              if (iDiff !== 0) return iDiff;
+                              return new Date(a.o.expires_at).getTime() - new Date(b.o.expires_at).getTime();
+                            });
+                          const _eligibleIds = _sorted.filter(({ o }) => _avatarTypes.has(o.customer_type)).map(({ o }) => o.id);
+                          let _seed = _eligibleIds.reduce((h, id) => { let s = h; for (let ci = 0; ci < id.length; ci++) s = (s * 31 + id.charCodeAt(ci)) >>> 0; return s; }, 1) || 1;
+                          const _rng = () => { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 0x100000000; };
+                          const _shuf = [...NON_EPIC_SKINS];
+                          for (let i = _shuf.length - 1; i > 0; i--) { const j = Math.floor(_rng() * (i + 1)); [_shuf[i], _shuf[j]] = [_shuf[j], _shuf[i]]; }
+                          const _avatarMap = new Map<string, string>(_eligibleIds.map((id, idx) => [id, _shuf[idx]]));
+
+                          // Helper: dane pojedynczej karty
+                          const _cardData = (o: CustomerOrder) => {
+                            const cd = getCustomerDisplay(o.customer_type);
+                            const tl = Math.max(0, new Date(o.expires_at).getTime() - customerNow);
+                            const ml = Math.floor(tl / 60000);
+                            const sl = Math.floor((tl % 60000) / 1000);
+                            const expired = tl <= 0;
+                            const mi = mergeOrderItems(o.items);
+                            const canDo = mi.every(it => haveFor(it.id) >= it.qty);
+                            const createdMs = o.created_at ? new Date(o.created_at).getTime() : null;
+                            const expiresMs = new Date(o.expires_at).getTime();
+                            const totalDur = createdMs ? expiresMs - createdMs : null;
+                            const usedPct = (totalDur && totalDur > 0) ? (customerNow - createdMs!) / totalDur : null;
+                            const isWarning = usedPct !== null ? usedPct >= 0.75 : tl < 3_600_000;
+                            const isCritical = usedPct !== null ? usedPct >= 0.90 : tl < 600_000;
+                            const isNew = newCustomerIds.has(o.id);
+                            const avatarPath = _avatarMap.get(o.id) ?? null;
+                            return { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath };
+                          };
+
+                          const top3 = _sorted.slice(0, 3);
+                          const rest = _sorted.slice(3);
+                          const safeCarouselIdx = Math.min(carouselIdx, Math.max(0, top3.length - 1));
+
+                          return (
+                            <div className="space-y-3">
+                              {/* Nagłówek + toggle widoku */}
+                              <div className="flex items-center justify-between px-1">
+                                <p className="text-sm text-amber-400 uppercase tracking-widest font-black">
+                                  {totalOrders} {totalOrders === 1 ? 'aktywny klient' : 'aktywnych klientów'}
+                                </p>
+                                <div className="flex overflow-hidden rounded-xl border border-[#8b6a3e]/60 text-xs font-black">
+                                  <button type="button" onClick={() => setLadaView('list')}
+                                    className={`px-3 py-1.5 transition ${ladaView === 'list' ? 'bg-[rgba(212,166,79,0.22)] text-[#f9e7b2]' : 'text-[#8b6a3e] hover:text-[#d8ba7a]'}`}>
+                                    Lista
+                                  </button>
+                                  <button type="button" onClick={() => { setLadaView('carousel'); setCarouselIdx(0); }}
+                                    className={`px-3 py-1.5 transition border-l border-[#8b6a3e]/60 ${ladaView === 'carousel' ? 'bg-[rgba(212,166,79,0.22)] text-[#f9e7b2]' : 'text-[#8b6a3e] hover:text-[#d8ba7a]'}`}>
+                                    Karuzela
+                                  </button>
+                                </div>
+                              </div>
+
+                              {ladaView === 'carousel' ? (
+                                <>
+                                  {/* ── WIDOK KARUZELA ── */}
+                                  <div className="flex items-center gap-2">
+                                    {/* Strzałka lewa */}
+                                    <button type="button"
+                                      onClick={() => setCarouselIdx(i => Math.max(0, i - 1))}
+                                      disabled={safeCarouselIdx === 0}
+                                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-lg font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                    >‹</button>
+
+                                    {/* Karuzela 3D */}
+                                    <div className="relative flex-1 overflow-visible" style={{ height: 196, perspective: 900 }}>
+                                      {top3.map(({ o, originalIndex }, i) => {
+                                        const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
+                                        const offset = i - safeCarouselIdx;
+                                        const isCenter = offset === 0;
+                                        const tx = offset * 256;
+                                        const ry = offset === 0 ? 0 : offset < 0 ? 26 : -26;
+                                        const scale = isCenter ? 1 : 0.78;
+                                        const opacity = isCenter ? 1 : 0.48;
+                                        const borderCls = isNew ? 'border-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
+                                          expired ? 'border-red-600/50' :
+                                          isCritical ? 'border-red-500/70' :
+                                          isWarning ? 'border-orange-500/60' :
+                                          canDo ? 'border-emerald-500/60' : 'border-amber-600/40';
+                                        const bgCls = isNew ? 'bg-emerald-950/20' :
+                                          expired ? 'bg-red-950/15 opacity-70' :
+                                          isCritical ? 'bg-red-950/15' :
+                                          isWarning ? 'bg-orange-950/10' :
+                                          canDo ? 'bg-emerald-950/15' : 'bg-black/30';
+                                        return (
+                                          <div
+                                            key={o.id}
+                                            onClick={() => isCenter ? setLadaDetailIdx(originalIndex) : setCarouselIdx(i)}
+                                            style={{
+                                              position: 'absolute',
+                                              top: '50%',
+                                              left: '50%',
+                                              width: 232,
+                                              marginLeft: -116,
+                                              transform: `translateX(${tx}px) translateY(-50%) rotateY(${ry}deg) scale(${scale})`,
+                                              transformOrigin: 'center center',
+                                              transition: 'transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.35s ease',
+                                              opacity,
+                                              zIndex: isCenter ? 10 : 5,
+                                              cursor: 'pointer',
+                                            }}
+                                            className={`relative rounded-2xl border p-3 flex flex-col gap-1.5 select-none ${borderCls} ${bgCls}`}
+                                          >
+                                            {/* Avatar + nazwa */}
+                                            <div className="flex items-center gap-2">
+                                              <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                                                {avatarPath
+                                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                                  : <span className="text-2xl leading-none">{cd.icon}</span>
+                                                }
+                                              </div>
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-black text-[#f9e7b2] leading-tight truncate">{cd.name}</p>
+                                                <p className="text-[11px] text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                              </div>
+                                            </div>
+                                            {/* Nagrody */}
+                                            <div className="flex items-center justify-center gap-2 text-xs font-bold flex-wrap">
+                                              <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                              <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                              {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
+                                            </div>
+                                            {/* Timer */}
+                                            <p className={`text-xs font-bold text-center ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                              {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                            </p>
+                                            {/* Hint tylko dla środkowej */}
+                                            {isCenter && !expired && (
+                                              <p className="text-[10px] text-center text-amber-500/55 font-medium leading-tight">Kliknij → szczegóły</p>
+                                            )}
+                                            {/* Badges */}
+                                            {!expired && isNew && <span className="absolute top-2 right-2 text-xs font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>}
+                                            {!expired && isCritical && !isNew && <span className="absolute top-2 right-2 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>}
+                                            {!expired && canDo && !isCritical && !isNew && <span className="absolute top-2 right-2 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
-                                    <div className="flex-1 flex flex-col items-center text-center gap-0.5">
-                                      <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
-                                      <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                                      <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
-                                        <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                        <span className="text-blue-300">{o.rewards.exp} EXP</span>
-                                        {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
-                                      </div>
-                                      <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                        {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                      </p>
-                                    </div>
+
+                                    {/* Strzałka prawa */}
+                                    <button type="button"
+                                      onClick={() => setCarouselIdx(i => Math.min(top3.length - 1, i + 1))}
+                                      disabled={safeCarouselIdx >= top3.length - 1}
+                                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-lg font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                                    >›</button>
                                   </div>
-                                  {/* badge: Nowy / ostrzeżenie / gotowe */}
-                                  {!expired && (
-                                    isNew ? (
-                                      <span className="absolute top-2.5 right-2.5 text-sm font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2.5 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>
-                                    ) : isCritical ? (
-                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>
-                                    ) : isWarning ? (
-                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-orange-200 bg-orange-800/60 rounded-full px-1.5 py-0.5 border border-orange-500/50">!</span>
-                                    ) : canDo ? (
-                                      <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
-                                    ) : null
+
+                                  {/* Dots */}
+                                  {top3.length > 1 && (
+                                    <div className="flex justify-center gap-2">
+                                      {top3.map((_, i) => (
+                                        <button key={i} type="button" onClick={() => setCarouselIdx(i)}
+                                          className={`h-2 rounded-full transition-all ${i === safeCarouselIdx ? 'w-6 bg-amber-400' : 'w-2 bg-amber-800/50 hover:bg-amber-600/60'}`}
+                                        />
+                                      ))}
+                                    </div>
                                   )}
-                                </button>
-                              );
-                              });
-                            })()}
-                          </div>
-                        </div>
+
+                                  {/* Pozostali klienci (jeśli > 3) */}
+                                  {rest.length > 0 && (
+                                    <div className="mt-1">
+                                      <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e] mb-1.5 font-bold px-1">Pozostali klienci</p>
+                                      <div className="space-y-1">
+                                        {rest.map(({ o, originalIndex }) => {
+                                          const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical } = _cardData(o);
+                                          return (
+                                            <button key={o.id} type="button" onClick={() => setLadaDetailIdx(originalIndex)}
+                                              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition hover:brightness-110 ${
+                                                expired ? 'border-red-600/40 bg-red-950/10 opacity-60' :
+                                                isCritical ? 'border-red-500/60 bg-red-950/10' :
+                                                isWarning ? 'border-orange-500/50 bg-orange-950/10' :
+                                                canDo ? 'border-emerald-500/50 bg-emerald-950/10' :
+                                                'border-amber-600/30 bg-black/20'
+                                              }`}
+                                            >
+                                              <span className="text-lg leading-none shrink-0">{cd.icon}</span>
+                                              <span className="flex-1 min-w-0 text-sm font-bold text-[#f9e7b2] truncate">{cd.name}</span>
+                                              <span className="text-xs font-bold text-yellow-300 shrink-0">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                              <span className="text-xs font-bold text-blue-300 shrink-0">{o.rewards.exp} EXP</span>
+                                              <span className={`text-xs font-bold shrink-0 ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                                {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                              </span>
+                                              <span className="text-xs text-[#8b6a3e] shrink-0">→</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                /* ── WIDOK LISTA (bez zmian) ── */
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                                  {_sorted.map(({ o, originalIndex }) => {
+                                    const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
+                                    return (
+                                      <button
+                                        key={o.id}
+                                        onClick={() => setLadaDetailIdx(originalIndex)}
+                                        onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
+                                        onMouseLeave={() => setLadaCardHoverIdx(null)}
+                                        className={`relative text-left rounded-xl border p-4 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
+                                          isNew      ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
+                                          expired    ? 'border-red-600/50 bg-red-950/15 opacity-70' :
+                                          isCritical ? 'border-red-500/70 bg-red-950/15 hover:border-red-400/80' :
+                                          isWarning  ? 'border-orange-500/60 bg-orange-950/10 hover:border-orange-400/80' :
+                                          canDo      ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
+                                                       'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
+                                        }`}
+                                      >
+                                        <div className="flex gap-3 items-center">
+                                          <div className="flex-shrink-0 ml-2 w-24 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                                            {avatarPath
+                                              ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                              : <span className="text-5xl leading-none">{cd.icon}</span>
+                                            }
+                                          </div>
+                                          <div className="flex-1 flex flex-col items-center text-center gap-0.5">
+                                            <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
+                                            <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
+                                            <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
+                                              <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
+                                              <span className="text-blue-300">{o.rewards.exp} EXP</span>
+                                              {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
+                                            </div>
+                                            <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
+                                              {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        {!expired && (
+                                          isNew ? (
+                                            <span className="absolute top-2.5 right-2.5 text-sm font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2.5 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>
+                                          ) : isCritical ? (
+                                            <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>
+                                          ) : isWarning ? (
+                                            <span className="absolute top-2.5 right-2.5 text-xs font-black text-orange-200 bg-orange-800/60 rounded-full px-1.5 py-0.5 border border-orange-500/50">!</span>
+                                          ) : canDo ? (
+                                            <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
+                                          ) : null
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
                       ) : order && customer && (
                         <div className="space-y-4">
                           {/* Nagłówek widoku szczegółów */}
