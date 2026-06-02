@@ -7128,22 +7128,22 @@ export default function Page() {
           }}
         >
         {/* Tło mapy — przesuwa się wraz z panowaniem */}
+        {/* A2: div ma finalne wymiary FARM_RENDERED_W×BASE_H bez scale(); browser robi downscale 4096→3413 bilinear */}
         <div style={{
           position: "absolute", top: 0, left: 0,
-          width: isOnPanMap ? `${FARM_IMG_W}px` : "100%",
-          height: isOnPanMap ? `${FARM_IMG_H}px` : "100%",
-          transform: isOnPanMap ? `translateX(${panX}px) scale(${FARM_SCALE})` : undefined,
-          transformOrigin: isOnPanMap ? "top left" : undefined,
-          willChange: isOnPanMap ? "transform" : undefined,
+          width: isOnPanMap ? `${FARM_RENDERED_W}px` : "100%",
+          height: isOnPanMap ? `${BASE_H}px` : "100%",
+          transform: isOnPanMap ? `translateX(${panX}px)` : undefined,
         }}>
+          {/* A1+A2: brak imageRendering:pixelated — bilinear filtering; wymiary finalne zamiast źródłowych */}
           <img
             src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
             alt="Mapa gry"
             className="pointer-events-none absolute inset-0 h-full w-full select-none"
             draggable={false}
-            style={isOnPanMap ? {imageRendering:"pixelated", width: FARM_IMG_W, height: FARM_IMG_H} : {}}
+            style={isOnPanMap ? {width: FARM_RENDERED_W, height: BASE_H} : {}}
           />
-          {/* Crossfade: stara mapa zanika po level-upie */}
+          {/* Crossfade: stara mapa zanika po level-upie — ten sam sizing co główna */}
           {mapCrossfade && mapCrossfade.to === backgroundMap && (
             <img
               key={mapCrossfade.from}
@@ -7153,8 +7153,7 @@ export default function Page() {
               className="pointer-events-none absolute inset-0 select-none"
               draggable={false}
               style={{
-                imageRendering: "pixelated",
-                width: FARM_IMG_W, height: FARM_IMG_H,
+                width: FARM_RENDERED_W, height: BASE_H,
                 zIndex: 2,
                 animation: "plono-map-fade-out 12s ease-in-out forwards",
               }}
