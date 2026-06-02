@@ -1948,6 +1948,7 @@ export default function Page() {
   const [isBackpackOpen, setIsBackpackOpen] = useState(true);
   const [isMapLoading, setIsMapLoading] = useState(false);
   const [mousePos, setMousePos] = React.useState({x:0, y:0});
+  const [mouseScreenPos, setMouseScreenPos] = React.useState({x:0, y:0});
   const [draggedSeedId, setDraggedSeedId] = React.useState<string|null>(null);
   const [isFieldViewCollapsed, setIsFieldViewCollapsed] = React.useState(false);
   const [showRankingPanel, setShowRankingPanel] = useState(false);
@@ -7046,7 +7047,7 @@ export default function Page() {
         <main
           className="overflow-hidden"
           style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2, zIndex: 1 }}
-          onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); }}
+          onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); setMouseScreenPos({ x: e.clientX, y: e.clientY }); }}
         >
         <div
           ref={mapContainerRef}
@@ -11834,7 +11835,7 @@ export default function Page() {
           {cardTip && (
             <div
               className="pointer-events-none fixed z-[9999] flex flex-col items-center"
-              style={{ left: mousePos.x, top: mousePos.y - 14, transform: "translate(-50%, -100%)" }}>
+              style={{ left: mouseScreenPos.x, top: mouseScreenPos.y - 14, transform: "translate(-50%, -100%)" }}>
               <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-5 py-[13px] text-center shadow-2xl max-w-[370px]">
                 {cardTip}
               </div>
@@ -12788,7 +12789,7 @@ export default function Page() {
                   return (
                     <div
                       className="pointer-events-none fixed z-[9999] flex flex-col items-center"
-                      style={{ left: mousePos.x, top: mousePos.y - 14, transform: 'translate(-50%, -100%)' }}
+                      style={{ left: mouseScreenPos.x, top: mouseScreenPos.y - 14, transform: 'translate(-50%, -100%)' }}
                     >
                       <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-5 py-4 shadow-2xl min-w-[300px] max-w-[420px]">
                         <p className="font-black text-[#f9e7b2] text-lg mb-0.5">{cd.icon} {cd.name}</p>
@@ -13064,7 +13065,7 @@ export default function Page() {
               {hovered && (
                 <div
                   className="pointer-events-none fixed z-[500] w-[380px] rounded-xl border border-amber-500/80 bg-[rgba(20,12,5,0.98)] p-4 shadow-2xl backdrop-blur-sm"
-                  style={ttStyle(mousePos.x, mousePos.y, 400, 180)}
+                  style={ttStyle(mouseScreenPos.x, mouseScreenPos.y, 400, 180)}
                 >
                   {renderTooltip(hovered)}
                 </div>
@@ -13836,7 +13837,7 @@ export default function Page() {
             const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
             return (
               <div className="pointer-events-none fixed z-[9999] w-80 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-5 shadow-2xl backdrop-blur-sm"
-                style={ttStyle(mousePos.x, mousePos.y, 320, 300)}>
+                style={ttStyle(mouseScreenPos.x, mouseScreenPos.y, 320, 300)}>
                 {/* Podgląd skina */}
                 <div className="mb-3 flex justify-center">
                   <div className="relative h-32 w-32 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
@@ -13907,7 +13908,7 @@ export default function Page() {
             const badgeBg = isFemale ? "bg-pink-900/40 border-pink-600/30 text-pink-200" : "bg-amber-900/40 border-amber-600/30 text-amber-200";
             return (
               <div className={`pointer-events-none fixed z-[9999] w-64 rounded-[18px] border ${borderColor} bg-[rgba(18,10,2,0.98)] px-4 py-3 text-center shadow-2xl backdrop-blur-sm`}
-                style={ttStyle(mousePos.x, mousePos.y, 272, 180)}>
+                style={ttStyle(mouseScreenPos.x, mouseScreenPos.y, 272, 180)}>
                 {_meta && <p className={`text-[18px] font-black ${nameColor} mb-2`}>{_meta.name}</p>}
                 <div className="flex flex-wrap justify-center gap-1.5">
                   {_e.map(([k,v]) => <span key={k} className={`rounded border px-2 py-0.5 text-[15px] font-bold ${badgeBg}`}>+{v} {_sl[k]??k}</span>)}
@@ -15818,7 +15819,7 @@ export default function Page() {
       {hoveredSickle && (
         <div
           className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={ttStyle(mousePos.x, mousePos.y, 300, 270)}
+          style={ttStyle(mouseScreenPos.x, mouseScreenPos.y, 300, 270)}
         >
           <p className="mb-1 font-black text-yellow-300">Sierp — Zbierz</p>
           <p className="mb-3 text-[18px] text-[#8b6a3e]">Bonusy aktywne przy zbiorze dojrzałej uprawy</p>
@@ -15831,7 +15832,7 @@ export default function Page() {
       )}
     {/* Tooltip Ul — zablokowany */}
       {hoveredHiveLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-yellow-300">Ul — zablokowany</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-yellow-300">{HIVE_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
@@ -15839,7 +15840,7 @@ export default function Page() {
       )}
     {/* Tooltip Stodoła — zablokowana */}
       {hoveredBarnLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-amber-400">Stodoła — zablokowana</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-amber-400">{BARN_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
@@ -15847,7 +15848,7 @@ export default function Page() {
       )}
     {/* Tooltip Sad — zablokowany */}
       {hoveredSadLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-green-400">Sad — zablokowany</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-green-400">{SAD_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie po odblokowaniu.</p>
@@ -15855,7 +15856,7 @@ export default function Page() {
       )}
     {/* Tooltip Stodoła (odblokowana) */}
       {hoveredStodola && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-amber-400">Stodoła</p>
           <p className="mb-1 text-[18px]">Hoduj zwierzęta i zbieraj ich produkty.</p>
           <p className="text-[16px] text-[#8b6a3e]">Kury, świnie, krowy i inne — każde zwierzę daje inne surowce.</p>
@@ -15863,7 +15864,7 @@ export default function Page() {
       )}
     {/* Tooltip Ul (odblokowany) */}
       {hoveredUl && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-yellow-300">Ul</p>
           <p className="mb-1 text-[18px]">Hoduj pszczoły i produkuj miód.</p>
           <p className="text-[16px] text-[#8b6a3e]">Miód sprzedasz klientom przy Ladzie lub w Targu w mieście.</p>
@@ -15871,7 +15872,7 @@ export default function Page() {
       )}
     {/* Tooltip Sad (odblokowany) */}
       {hoveredSad && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-green-400">Sad</p>
           <p className="mb-1 text-[18px]">Uprawiaj drzewa owocowe i zbieraj owoce.</p>
           <p className="text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
@@ -15879,7 +15880,7 @@ export default function Page() {
       )}
     {/* Tooltip Lada — zablokowana */}
       {hoveredLadaLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-orange-300">Lada dla klientów — zablokowana</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-orange-300">{LADA_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: obsługuj klientów i zdobywaj złoto, EXP oraz bonusy.</p>
@@ -15887,7 +15888,7 @@ export default function Page() {
       )}
     {/* Tooltip Lada dla klientów */}
       {hoveredLada && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 text-xl font-black text-orange-300">Lada dla klientów</p>
           <p className="mb-1 text-[19px]">Obsługuj klientów i sprzedawaj miód.</p>
           <p className="text-[17px] text-[#8b6a3e]">Klienci przychodzą regularnie — odpowiadaj na zamówienia i sprzedawaj im swoje produkty.</p>
@@ -15895,7 +15896,7 @@ export default function Page() {
       )}
     {/* Tooltip Dom */}
       {hoveredDom && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-rose-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-rose-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-rose-300">Dom gracza</p>
           <p className="mb-1 text-[18px]">Twój profil, statystyki i ekwipunek.</p>
           <p className="text-[16px] text-[#8b6a3e]">Znajdziesz tu poziom, EXP, PLN oraz zarządzanie postacią.</p>
@@ -15903,7 +15904,7 @@ export default function Page() {
       )}
     {/* Tooltip Kompostownik — zablokowany */}
       {hoveredKompostLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-teal-300">Kompostownik — zablokowany</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-teal-300">{KOMPOST_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: przerabiaj resztki i zgniłe plony na kompost.</p>
@@ -15911,7 +15912,7 @@ export default function Page() {
       )}
     {/* Tooltip Kompostownik */}
       {hoveredKompostownik && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-teal-300">Kompostownik</p>
           <p className="mb-1 text-[18px]">Przetwarzaj odpadki w kompost.</p>
           <p className="mb-1 text-[16px] text-[#8b6a3e]">Kompost przyspiesza wzrost upraw i zwiększa plony na polu.</p>
@@ -15920,14 +15921,14 @@ export default function Page() {
       )}
     {/* Tooltip Pola uprawne */}
       {hoveredPolaUprawne && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-lime-400">Pola uprawne</p>
           <p className="text-[18px]">Sadź, podlewaj i zbieraj plony.</p>
         </div>
       )}
     {/* Tooltip Do miasta — zablokowane */}
       {hoveredCityLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-sky-300">Miasto — zablokowane</p>
           <p className="mb-1">Wymaga: <span className="font-bold text-sky-300">{CITY_UNLOCK_LVL} poziom gracza</span></p>
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: odwiedzisz sklep, targ, bank i ranking.</p>
@@ -15935,7 +15936,7 @@ export default function Page() {
       )}
     {/* Tooltip Do miasta */}
       {hoveredDoMiasta && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-sky-300">Do miasta</p>
           <p className="mb-1 text-[18px]">Przejdź do centrum Plonopolis.</p>
           <p className="text-[16px] text-[#8b6a3e]">W mieście znajdziesz Sklep, Targ, Bank i Ratusz.</p>
@@ -15943,42 +15944,42 @@ export default function Page() {
       )}
     {/* Tooltips — Miasto */}
       {hoveredNaFarme && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-lime-400">Na farmę</p>
           <p className="mb-1 text-[18px]">Wróć do swojej farmy.</p>
           <p className="text-[16px] text-[#8b6a3e]">Siej, podlewaj i zbieraj plony na polach uprawnych.</p>
         </div>
       )}
       {hoveredSklep && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-amber-300">Sklep</p>
           <p className="mb-1 text-[18px]">Kup nasiona, drzewa i zwierzęta.</p>
           <p className="text-[16px] text-[#8b6a3e]">Szeroki asortyment nasion każdej jakości, sadzonki drzew owocowych i ekwipunek.</p>
         </div>
       )}
       {hoveredTarg && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-orange-300">Targ</p>
           <p className="mb-1 text-[18px]">Sprzedaj swoje plony i owoce.</p>
           <p className="text-[16px] text-[#8b6a3e]">Ceny na targu zmieniają się dynamicznie — sprawdzaj regularnie, by sprzedawać drożej.</p>
         </div>
       )}
       {hoveredBank && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-yellow-300">Bank</p>
           <p className="mb-1 text-[18px]">Zarządzaj swoimi finansami.</p>
           <p className="text-[16px] text-[#8b6a3e]">Lokaty i pożyczki — pomnażaj oszczędności lub finansuj rozwój farmy.</p>
         </div>
       )}
       {hoveredRatusz && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-purple-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-purple-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-purple-300">Ratusz</p>
           <p className="mb-1 text-[18px]">Rankingi i osiągnięcia graczy.</p>
           <p className="text-[16px] text-[#8b6a3e]">Sprawdź tablicę wyników i porównaj swoje postępy z innymi farmerami Plonopolis.</p>
         </div>
       )}
       {hoveredLiga && currentMap === "city" && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
+        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}>
           <p className="mb-2 font-black text-green-300">Liga Farmerów</p>
           <p className="mb-1 text-[18px]">Rywalizuj z innymi farmerami.</p>
           <p className="text-[16px] text-[#8b6a3e]">Sezony, nagrody i rankingi ligowe — pokaż, że jesteś najlepszym farmerem w Plonopolis.</p>
@@ -15988,7 +15989,7 @@ export default function Page() {
       {hoveredWateringCan && (
         <div
           className="pointer-events-none fixed z-[10000] w-72 rounded-[18px] border border-cyan-500 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={ttStyle(mousePos.x, mousePos.y, 300, 270)}
+          style={ttStyle(mouseScreenPos.x, mouseScreenPos.y, 300, 270)}
         >
           <p className="mb-1 font-black text-cyan-300">Konewka</p>
           <p className="mb-2 text-[18px] text-[#8b6a3e]">Skraca czas wzrostu — min 5% zawsze, rośnie z Zaradnością i pkt Zaradności z ekwipunku (addytywnie, bez limitu)</p>
@@ -16005,7 +16006,7 @@ export default function Page() {
       {hoveredCrop && (
         <div
           className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-[#8b6a3e] bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm"
-          style={ttStyle(mousePos.x, mousePos.y)}
+          style={ttStyle(mouseScreenPos.x, mouseScreenPos.y)}
         >
           <p className="mb-1 font-black text-[#f9e7b2]">
             {hoveredCrop.name}
