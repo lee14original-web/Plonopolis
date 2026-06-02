@@ -17037,15 +17037,17 @@ export default function Page() {
             }
             // Faza 1: modal zamknięty — przeciągalna strzałka na przycisk Zbiory
             const _p=fvTutArrow12Pos;
-            const _l=_p.lPct*window.innerWidth/100;
-            const _t=_p.tPct*window.innerHeight/100;
             const _sz=_p.w||80;
             const _ah=Math.round(_sz*62/48);
+            const _rawL=_p.lPct*window.innerWidth/100-_sz/2;
+            const _rawT=_p.tPct*window.innerHeight/100-_ah/2;
+            const _cl=Math.max(24,Math.min(window.innerWidth-24,_rawL));
+            const _ct=Math.max(24,Math.min(window.innerHeight-24,_rawT));
             return(
               <div
                 key="tut-arr-12"
                 className="fixed z-[95] cursor-move select-none"
-                style={{left:_l-_sz/2,top:_t-_ah/2}}
+                style={{left:_cl,top:_ct}}
                 onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startLPct:_p.lPct,startTPct:_p.tPct};}}
               >
                 {canUseTestTools && (
@@ -17062,7 +17064,13 @@ export default function Page() {
             );
           }
           // Krok 13: stała strzałka — x=948, y=287
-          if(tutorialStep===13){ return arr({x:fvTutArrow13Pos.lPct*window.innerWidth/100,y:fvTutArrow13Pos.tPct*window.innerHeight/100,size:fvTutArrow13Pos.w||80,rotation:0},"tut-arr-13"); }
+          if(tutorialStep===13){
+            const _13sz=fvTutArrow13Pos.w||80;
+            const _13h=Math.round(_13sz*62/48);
+            const _13x=Math.max(24+_13sz/2,Math.min(window.innerWidth-24-_13sz/2,fvTutArrow13Pos.lPct*window.innerWidth/100));
+            const _13y=Math.max(24+_13h/2,Math.min(window.innerHeight-24-_13h/2,fvTutArrow13Pos.tPct*window.innerHeight/100));
+            return arr({x:_13x,y:_13y,size:_13sz,rotation:0},"tut-arr-13");
+          }
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
 
