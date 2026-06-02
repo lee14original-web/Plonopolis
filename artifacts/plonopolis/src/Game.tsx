@@ -1856,9 +1856,9 @@ export default function Page() {
       h: Math.round(401 * gs),
     };
   });
-  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ l: 155, t: 1006, w: 122, h: 0 });
-  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ l: 960, t: 300, w: 80, h: 0 });
-  const tutArrowDragRef = React.useRef<{ step: 12|13, startMX: number, startMY: number, startX: number, startY: number } | null>(null);
+  const [fvTutArrow12Pos, setFvTutArrow12Pos] = React.useState({ lPct: 8.1, tPct: 93.1, w: 122, h: 0 });
+  const [fvTutArrow13Pos, setFvTutArrow13Pos] = React.useState({ lPct: 50.0, tPct: 27.8, w: 80, h: 0 });
+  const tutArrowDragRef = React.useRef<{ step: 12|13, startMX: number, startMY: number, startLPct: number, startTPct: number } | null>(null);
   const fvToolDragRef = React.useRef<{ btn: "konewka"|"zbierz"|"nasiona"|"kompost"|"ciagnik"|"ogrodnik"|"zraszacz"|"kombajn"|"harvestlog"|"zbiorybtn"|"tutar12"|"tutar13", mode: "move"|"resize", startMX: number, startMY: number, startL: number, startT: number, startW: number, startH: number } | null>(null);
   React.useEffect(() => {
     if (!isFieldViewOpen) return;
@@ -1866,7 +1866,24 @@ export default function Page() {
       if (!fvToolDragRef.current) return;
       const d = fvToolDragRef.current;
       const gs = 1;
-      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : d.btn === "zbiorybtn" ? setFvZbioryPos : d.btn === "tutar12" ? setFvTutArrow12Pos : d.btn === "tutar13" ? setFvTutArrow13Pos : setFvHarvestLogPos;
+      if (d.btn === "tutar12" || d.btn === "tutar13") {
+        const pSetter = d.btn === "tutar12" ? setFvTutArrow12Pos : setFvTutArrow13Pos;
+        if (d.mode === "move") {
+          pSetter(prev => ({
+            ...prev,
+            lPct: parseFloat(Math.max(0, Math.min(100, d.startL + (e.clientX - d.startMX) / window.innerWidth * 100)).toFixed(2)),
+            tPct: parseFloat(Math.max(0, Math.min(100, d.startT + (e.clientY - d.startMY) / window.innerHeight * 100)).toFixed(2)),
+          }));
+        } else {
+          pSetter(prev => ({
+            ...prev,
+            w: Math.round(Math.max(40, d.startW + (e.clientX - d.startMX) / gs)),
+            h: Math.round(Math.max(40, d.startH + (e.clientY - d.startMY) / gs)),
+          }));
+        }
+        return;
+      }
+      const setter = d.btn === "konewka" ? setFvKonewkaPos : d.btn === "zbierz" ? setFvZbierzPos : d.btn === "nasiona" ? setFvNasonaPos : d.btn === "kompost" ? setFvKompostPos : d.btn === "ciagnik" ? setFvCiagnikPos : d.btn === "ogrodnik" ? setFvOgrodnikPos : d.btn === "zraszacz" ? setFvZraszaczPos : d.btn === "kombajn" ? setFvKombajnPos : d.btn === "zbiorybtn" ? setFvZbioryPos : setFvHarvestLogPos;
       if (d.mode === "move") {
         setter({
           l: Math.round(Math.max(0, d.startL + (e.clientX - d.startMX) / gs)),
@@ -1896,7 +1913,7 @@ export default function Page() {
       const d = tutArrowDragRef.current;
       if (!d) return;
       const setter = d.step === 12 ? setFvTutArrow12Pos : setFvTutArrow13Pos;
-      setter(prev => ({ ...prev, l: Math.round(d.startX + (e.clientX - d.startMX)), t: Math.round(d.startY + (e.clientY - d.startMY)) }));
+      setter(prev => ({ ...prev, lPct: parseFloat(Math.max(0, Math.min(100, d.startLPct + (e.clientX - d.startMX) / window.innerWidth * 100)).toFixed(2)), tPct: parseFloat(Math.max(0, Math.min(100, d.startTPct + (e.clientY - d.startMY) / window.innerHeight * 100)).toFixed(2)) }));
     };
     const handleUp = () => { tutArrowDragRef.current = null; };
     document.addEventListener("mousemove", handleMove);
@@ -14079,11 +14096,11 @@ export default function Page() {
                         <p className="mt-2 mb-1 text-[9px] font-black uppercase tracking-[0.15em] text-purple-300/70">— Strzałki tutorialu —</p>
                         <div className="rounded-xl border border-purple-400/30 bg-purple-950/30 p-2.5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-purple-300">🎯 Strzałka krok 12</p>
-                          <p className="font-mono text-xs text-purple-100">l:<span className="font-black text-white">{fvTutArrow12Pos.l}</span> t:<span className="font-black text-white">{fvTutArrow12Pos.t}</span></p>
+                          <p className="font-mono text-xs text-purple-100">lPct:<span className="font-black text-white">{fvTutArrow12Pos.lPct.toFixed(1)}</span>% tPct:<span className="font-black text-white">{fvTutArrow12Pos.tPct.toFixed(1)}</span>%</p>
                         </div>
                         <div className="rounded-xl border border-purple-400/30 bg-purple-950/30 p-2.5">
                           <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-purple-300">🎯 Strzałka krok 13</p>
-                          <p className="font-mono text-xs text-purple-100">l:<span className="font-black text-white">{fvTutArrow13Pos.l}</span> t:<span className="font-black text-white">{fvTutArrow13Pos.t}</span></p>
+                          <p className="font-mono text-xs text-purple-100">lPct:<span className="font-black text-white">{fvTutArrow13Pos.lPct.toFixed(1)}</span>% tPct:<span className="font-black text-white">{fvTutArrow13Pos.tPct.toFixed(1)}</span>%</p>
                         </div>
                       </div>
                       <p className="mt-3 text-[9px] text-[#6b7280] text-center">Przeciągnij przycisk aby przesunąć · róg aby zmienić rozmiar</p>
@@ -17020,18 +17037,20 @@ export default function Page() {
             }
             // Faza 1: modal zamknięty — przeciągalna strzałka na przycisk Zbiory
             const _p=fvTutArrow12Pos;
+            const _l=_p.lPct*window.innerWidth/100;
+            const _t=_p.tPct*window.innerHeight/100;
             const _sz=_p.w||80;
             const _ah=Math.round(_sz*62/48);
             return(
               <div
                 key="tut-arr-12"
                 className="fixed z-[95] cursor-move select-none"
-                style={{left:_p.l-_sz/2,top:_p.t-_ah/2}}
-                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startX:_p.l,startY:_p.t};}}
+                style={{left:_l-_sz/2,top:_t-_ah/2}}
+                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startLPct:_p.lPct,startTPct:_p.tPct};}}
               >
                 {canUseTestTools && (
                   <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
-                    ✥ {_p.l},{_p.t}
+                    ✥ {_p.lPct.toFixed(1)}%,{_p.tPct.toFixed(1)}%
                   </div>
                 )}
                 <div className="animate-bounce">
@@ -17043,7 +17062,7 @@ export default function Page() {
             );
           }
           // Krok 13: stała strzałka — x=948, y=287
-          if(tutorialStep===13){ return arr({x:948,y:287,size:80,rotation:0},"tut-arr-13"); }
+          if(tutorialStep===13){ return arr({x:fvTutArrow13Pos.lPct*window.innerWidth/100,y:fvTutArrow13Pos.tPct*window.innerHeight/100,size:fvTutArrow13Pos.w||80,rotation:0},"tut-arr-13"); }
           const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
         })()}
 
