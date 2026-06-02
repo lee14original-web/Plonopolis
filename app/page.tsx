@@ -1955,9 +1955,19 @@ export default function Page() {
   const dragPlantedFieldsRef = React.useRef<Set<number>>(new Set());
   const dragEndedRef = React.useRef(false);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [gameScale, setGameScale] = useState(() =>
-    typeof window !== "undefined" ? Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H) : 1
-  );
+  const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
+    if (typeof window === "undefined") return 1;
+    const v = parseFloat(localStorage.getItem("plonopolis_zoom") ?? "1");
+    return isNaN(v) ? 1 : Math.max(0.80, Math.min(1.30, v));
+  });
+  const userZoomFactorRef = React.useRef(userZoomFactor);
+  const [gameScale, setGameScale] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    const v = parseFloat(localStorage.getItem("plonopolis_zoom") ?? "1");
+    const zoom = isNaN(v) ? 1 : Math.max(0.80, Math.min(1.30, v));
+    return Math.max(0.40, Math.min(1.60, raw * zoom));
+  });
   const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
@@ -4057,6 +4067,16 @@ export default function Page() {
   }, [profile?.id, avatarSkin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
+  useEffect(() => { userZoomFactorRef.current = userZoomFactor; }, [userZoomFactor]);
+  useEffect(() => {
+    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    const s = Math.max(0.40, Math.min(1.60, raw * userZoomFactor));
+    setGameScale(s);
+    gameScaleRef.current = s;
+  }, [userZoomFactor]);
+  useEffect(() => {
+    try { localStorage.setItem("plonopolis_zoom", String(userZoomFactor)); } catch { /* ignore */ }
+  }, [userZoomFactor]);
 
   const fetchDailyHarvest = React.useCallback(async () => {
     setIsDailyHarvestLoading(true);
@@ -4081,7 +4101,8 @@ export default function Page() {
     const checkScreen = () => {
       const isSmall = window.innerWidth < 1024;
       setIsDesktop(!isSmall);
-      const s = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      const s = Math.max(0.40, Math.min(1.60, raw * userZoomFactorRef.current));
       setGameScale(s);
       gameScaleRef.current = s;
     };
@@ -15724,6 +15745,34 @@ export default function Page() {
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* ─── Rozmiar gry ─── */}
+                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🔍 Rozmiar gry</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setUserZoomFactor(prev => Math.max(0.80, Math.round((prev - 0.05) * 100) / 100))}
+                      disabled={userZoomFactor <= 0.80}
+                      className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >−</button>
+                    <span className="flex-1 text-center text-lg font-black tabular-nums text-[#f9e7b2]">{Math.round(userZoomFactor * 100)}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setUserZoomFactor(prev => Math.min(1.30, Math.round((prev + 0.05) * 100) / 100))}
+                      disabled={userZoomFactor >= 1.30}
+                      className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >+</button>
+                  </div>
+                  <p className="mt-2 text-xs text-[#8b6a3e]">Zmienia rozmiar świata gry. Panel i okna dialogowe zostają bez zmian.</p>
+                  {userZoomFactor !== 1.00 && (
+                    <button
+                      type="button"
+                      onClick={() => setUserZoomFactor(1.00)}
+                      className="mt-2 w-full rounded-lg border border-[#8b6a3e]/30 bg-black/10 py-1.5 text-xs font-bold text-[#8b6a3e] transition hover:text-[#dfcfab] hover:border-[#8b6a3e]/60"
+                    >Domyślny (100%)</button>
+                  )}
                 </div>
 
                 {/* ─── Inne ─── */}
