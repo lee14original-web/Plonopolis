@@ -17082,33 +17082,10 @@ export default function Page() {
             if(isFvHarvestModalOpen){
               return arr({x:515,y:786,size:80,rotation:-90},"tut-arr-12-modal");
             }
-            // Faza 1: modal zamknięty — przeciągalna strzałka na przycisk Zbiory
-            const _p=fvTutArrow12Pos;
-            const _sz=_p.w||80;
+            // Faza 1: modal zamknięty — strzałka na przycisk Zbiory (pozycja z fvZbioryPos)
+            const _sz=fvTutArrow12Pos.w||80;
             const _ah=Math.round(_sz*62/48);
-            const _rawL=_p.lPct*window.innerWidth/100-_sz/2;
-            const _rawT=_p.tPct*window.innerHeight/100-_ah/2;
-            const _cl=Math.max(24,Math.min(window.innerWidth-24,_rawL));
-            const _ct=Math.max(24,Math.min(window.innerHeight-24,_rawT));
-            return(
-              <div
-                key="tut-arr-12"
-                className="fixed z-[95] cursor-move select-none"
-                style={{left:_cl,top:_ct}}
-                onMouseDown={(e)=>{e.preventDefault();tutArrowDragRef.current={step:12,startMX:e.clientX,startMY:e.clientY,startLPct:_p.lPct,startTPct:_p.tPct};}}
-              >
-                {canUseTestTools && (
-                  <div style={{position:"absolute",top:-20,left:0,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",borderRadius:4,padding:"1px 5px",whiteSpace:"nowrap",pointerEvents:"none"}}>
-                    ✥ {_p.lPct.toFixed(1)}%,{_p.tPct.toFixed(1)}%
-                  </div>
-                )}
-                <div className="animate-bounce">
-                  <svg width={_sz} height={_ah} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </div>
-            );
+            return arr({x:fvZbioryPos.l+fvZbioryPos.w/2,y:fvZbioryPos.t-_ah/2-16,size:_sz,rotation:0},"tut-arr-12");
           }
           // Krok 13: stała strzałka — x=948, y=287
           if(tutorialStep===13){
