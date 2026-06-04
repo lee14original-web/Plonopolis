@@ -311,7 +311,7 @@ function getItemTierLabel(unlockLevel: number): string {
   if (unlockLevel <= 9)  return "T3";
   if (unlockLevel <= 12) return "T4";
   if (unlockLevel <= 15) return "T5";
-  if (unlockLevel <= 18) return "T6"
+  if (unlockLevel <= 18) return "T6";
   if (unlockLevel <= 21) return "T7";
   if (unlockLevel <= 25) return "T8";
   return "T9";
