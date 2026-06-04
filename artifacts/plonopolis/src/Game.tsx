@@ -504,6 +504,7 @@ function getEquipBonusPct(label: string, charEq: Record<string,{id:string;upg:nu
 }
 // ─── Aggregator FLAT bonusów (np. "+5 pkt Wiedzy") ───
 // Zwraca SUMĘ wartości flat dla danej etykiety np. " pkt Wiedzy" → 5
+// Formuła: base + upg (addytywna) — zgodna z upgBonusStr i tooltipem przedmiotu.
 function getEquipFlatBonus(label: string, charEq: Record<string,{id:string;upg:number}|null>): number {
   let total = 0;
   (["dlonie","nogi","glowa"] as const).forEach(slot => {
@@ -514,7 +515,7 @@ function getEquipFlatBonus(label: string, charEq: Record<string,{id:string;upg:n
     const upg = eq.upg ?? 0;
     item.bonuses.forEach(b => {
       if (b.label === label && b.flat) {
-        total += b.base * (1 + 0.15 * upg);
+        total += b.base + upg;
       }
     });
   });
