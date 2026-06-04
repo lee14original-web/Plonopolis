@@ -5187,7 +5187,8 @@ export default function Page() {
         text: "",
       });
     }
-    void refreshCustomerOrders();
+    const wasAtMax = customerOrders.length >= LADA_MAX_CUSTOMERS;
+    void refreshCustomerOrders(wasAtMax ? { tick: true } : undefined);
   }
 
   React.useEffect(() => {
