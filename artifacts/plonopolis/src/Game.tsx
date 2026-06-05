@@ -13783,7 +13783,7 @@ export default function Page() {
                           <button key={i} onClick={() => handleAvatarSelect(i)}
                             onMouseEnter={() => setHoveredNormalSkin(i)}
                             onMouseLeave={() => setHoveredNormalSkin(null)}
-                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            className={`relative flex aspect-[2/3] w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
                             <img src={src} alt={`Postac ${i+1}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                           </button>
                         );
@@ -13807,7 +13807,7 @@ export default function Page() {
                           <button key={_idx} onClick={() => handleAvatarSelect(_idx)}
                             onMouseEnter={() => setHoveredNormalSkin(_idx)}
                             onMouseLeave={() => setHoveredNormalSkin(null)}
-                            className={`relative flex h-56 w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
+                            className={`relative flex aspect-[2/3] w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
                             <img src={src} alt={`Postac ${i+11}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                           </button>
                         );
@@ -13843,7 +13843,7 @@ export default function Page() {
                               : isUnlocked ? "border-green-500/70 bg-green-950/20 hover:border-green-400"
                               : "border-[#8b6a3e]/40 bg-black/30 hover:border-green-600/50"
                             }`}
-                            style={{ minHeight: "220px" }}>
+                            style={{ aspectRatio: "2/3" }}>
                             {/* Obrazek — szary jeśli zablokowany */}
                             <img
                               src={es.path} alt={es.name}
