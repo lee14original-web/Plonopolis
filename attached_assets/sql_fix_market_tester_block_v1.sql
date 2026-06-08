@@ -1,12 +1,13 @@
 -- ============================================================
--- BLOKADA TARGU DLA KONTA tester
--- Wgraj oba bloki w Supabase SQL Editor (np. Dashboard → SQL Editor → New query).
--- Każdy blok to osobny CREATE OR REPLACE — możesz je wgrać razem.
+-- BLOKADA TARGU DLA KONTA tester (role = 'tester')
+-- Wgraj w Supabase SQL Editor (Dashboard → SQL Editor → New query → Run).
+-- Oba bloki możesz wgrać razem w jednym uruchomieniu.
 -- ============================================================
 
+
 -- ────────────────────────────────────────────────────────────
--- 1. market_create_offer — dodaje blokadę dla role = 'tester'
---    (wersja z scalaniem identycznych ofert)
+-- 1. market_create_offer — pełna funkcja z blokadą testera
+--    Blokada sprawdza profiles.role = 'tester' (nie login).
 -- ────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.market_create_offer(
   p_item_type      text,
@@ -36,7 +37,6 @@ DECLARE
   v_earned_date    date;
   v_today_warsaw   date;
   v_min_price      numeric := 1;
-  v_ext_fee_pct    numeric := 0.05;
   v_listing_fee    numeric := 0;
   v_existing_id    uuid;
   v_new_id         uuid;
@@ -47,7 +47,7 @@ BEGIN
     RETURN jsonb_build_object('error', 'Nie jesteś zalogowany.');
   END IF;
 
-  -- ── Blokada dla konta tester ─────────────────────────────────────────────
+  -- ── Blokada dla roli tester ──────────────────────────────────────────────
   SELECT role INTO v_role FROM profiles WHERE id = v_uid;
   IF v_role = 'tester' THEN
     RETURN jsonb_build_object('error', 'Targ jest zablokowany dla tego konta.');
@@ -183,7 +183,8 @@ BEGIN
   IF v_listing_fee > 0 THEN
     UPDATE profiles SET money = money - v_listing_fee WHERE id = v_uid AND money >= v_listing_fee;
     IF NOT FOUND THEN
-      RETURN jsonb_build_object('error', 'Za mało złota na opłatę ' || p_duration_hours || 'h (' || v_listing_fee || ' zł).');
+      RETURN jsonb_build_object('error',
+        'Za mało złota na opłatę ' || p_duration_hours || 'h (' || v_listing_fee || ' zł).');
     END IF;
   END IF;
 
@@ -207,79 +208,66 @@ $$;
 
 
 -- ────────────────────────────────────────────────────────────
--- 2. market_buy_offer — dodaje blokadę dla role = 'tester'
+-- 2. market_buy_offer — dynamiczny patch blokady testera
 --
---    INSTRUKCJA: poniższy blok dodaje sprawdzenie na POCZĄTKU
---    istniejącej funkcji market_buy_offer. Ponieważ pełna treść
---    tej funkcji żyje w Supabase i nie jest wersjonowana lokalnie,
---    podajemy gotowy fragment do wklejenia PO linii autoryzacji
---    (po "IF v_uid IS NULL THEN ... END IF;"):
+--    Ten blok DO automatycznie:
+--    a) pobiera obecną definicję market_buy_offer z Supabase,
+--    b) wstrzykuje blokadę po pierwszym END IF (auth check),
+--    c) wywołuje CREATE OR REPLACE z patchowaną funkcją.
 --
---    Możesz też wgrać cały skrypt poniżej jeśli chcesz zastąpić
---    funkcję wersją z zabezpieczeniem — ale wymaga to, żeby
---    ciało funkcji było aktualne. Najszybsze rozwiązanie:
---    w Supabase → Database → Functions → market_buy_offer → Edit
---    i wklej ten blok po sprawdzeniu v_uid:
---
---      DECLARE v_role text;
---      ...
---      SELECT role INTO v_role FROM profiles WHERE id = v_uid;
---      IF v_role = 'tester' THEN
---        RETURN jsonb_build_object('error', 'Targ jest zablokowany dla tego konta.');
---      END IF;
---
---    Alternatywnie: poniższy skrypt pobiera definicję funkcji
---    i wypisuje ją z wbudowanym patchem — uruchom w SQL Editorze:
+--    Nie wymaga ręcznej edycji. Jeśli blokada już istnieje,
+--    skrypt wypisze NOTICE i nie wykona żadnych zmian.
 -- ────────────────────────────────────────────────────────────
-
 DO $$
 DECLARE
-  v_src   text;
-  v_patched text;
-  v_check text := E'  -- \u2500\u2500 Blokada dla konta tester \u2500\u2500\n  DECLARE v_tester_role text;\n  SELECT role INTO v_tester_role FROM profiles WHERE id = auth.uid();\n  IF v_tester_role = ''tester'' THEN\n    RETURN jsonb_build_object(''error'', ''Targ jest zablokowany dla tego konta.'');\n  END IF;\n';
+  v_def        text;
+  v_marker     text := 'END IF;';
+  v_inject     text := E'END IF;\n\n  -- blokada tester (role)\n  IF (SELECT role FROM profiles WHERE id = auth.uid()) = ''tester'' THEN\n    RETURN jsonb_build_object(''error'', ''Targ jest zablokowany dla tego konta.'');\n  END IF;';
+  v_pos        integer;
 BEGIN
-  -- Wypisz obecną definicję market_buy_offer żeby móc ją edytować
+  -- Pobierz definicję
   SELECT pg_get_functiondef(oid)
-  INTO   v_src
+  INTO   v_def
   FROM   pg_proc
   WHERE  proname = 'market_buy_offer'
   LIMIT  1;
 
-  IF v_src IS NULL THEN
-    RAISE NOTICE 'Nie znaleziono funkcji market_buy_offer — sprawdź nazwę.';
-  ELSE
-    RAISE NOTICE 'Definicja market_buy_offer: %', v_src;
-    RAISE NOTICE '--- Skopiuj definicję i dodaj blokadę testera po sprawdzeniu v_uid ---';
+  IF v_def IS NULL THEN
+    RAISE EXCEPTION 'Funkcja market_buy_offer nie istnieje w tej bazie!';
   END IF;
+
+  -- Idempotentność: nie patchuj dwa razy
+  IF v_def LIKE '%blokada tester%' THEN
+    RAISE NOTICE 'market_buy_offer: blokada testera już istnieje — pomijam.';
+    RETURN;
+  END IF;
+
+  -- Wstrzyknij blokadę po pierwszym END IF; (auth check)
+  v_pos := position(v_marker IN v_def);
+  IF v_pos = 0 THEN
+    RAISE EXCEPTION 'Nie znaleziono END IF w market_buy_offer — skontaktuj się z deweloperem.';
+  END IF;
+
+  v_def :=
+    left(v_def, v_pos - 1)
+    || v_inject
+    || right(v_def, -(v_pos - 1 + length(v_marker)));
+
+  EXECUTE v_def;
+
+  RAISE NOTICE 'market_buy_offer: blokada testera dodana pomyślnie.';
 END;
 $$;
 
+
 -- ────────────────────────────────────────────────────────────
--- GOTOWY SNIPPET do wklejenia w ciało market_buy_offer
--- (po bloku "IF v_uid IS NULL THEN RETURN ... END IF;"):
--- ────────────────────────────────────────────────────────────
---
---   DECLARE
---     v_role text;
---
---   ...reszta DECLARE...
---
---   BEGIN
---     IF v_uid IS NULL THEN RETURN jsonb_build_object('error','Nie jesteś zalogowany.'); END IF;
---
---     -- ── Blokada dla konta tester ──────────────────────────────────────
---     SELECT role INTO v_role FROM profiles WHERE id = v_uid;
---     IF v_role = 'tester' THEN
---       RETURN jsonb_build_object('error', 'Targ jest zablokowany dla tego konta.');
---     END IF;
---
---     ... (reszta funkcji bez zmian)
---
--- ────────────────────────────────────────────────────────────
--- WERYFIKACJA: po wgraniu sprawdź czy blokada działa:
+-- WERYFIKACJA (opcjonalne — uruchom oddzielnie po wgraniu)
 -- ────────────────────────────────────────────────────────────
 --
--- SELECT market_create_offer(
---   'crop','wheat','Pszenica','🌾',1,1,24,1
--- );
--- (wywołane jako tester powinno zwrócić {"error":"Targ jest zablokowany dla tego konta."})
+-- Sprawdź że blokada jest w obu funkcjach:
+-- SELECT proname, prosrc
+-- FROM   pg_proc
+-- WHERE  proname IN ('market_create_offer','market_buy_offer')
+--   AND  prosrc LIKE '%blokada tester%';
+--
+-- Powinny pojawić się 2 wiersze.
