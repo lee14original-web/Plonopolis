@@ -2957,6 +2957,7 @@ export default function Page() {
   const currentMap = profile?.current_map ?? getMapForLevel(profile?.level);
   const canUseTestTools = ["tester", "admin", "owner"].includes(profile?.role ?? "");
   const canEditHitboxes = ["tester", "admin", "owner"].includes(profile?.role ?? "");
+  const isTester = profile?.role === 'tester';
   const isOnFarmMap = !!profile && currentMap.startsWith("farm");
   const isOnCityMap = !!profile && currentMap === "city";
   const isOnPanMap = isOnFarmMap || isOnCityMap;
@@ -6660,6 +6661,7 @@ export default function Page() {
   }
   async function handleCreateOffer() {
     if (!profile || !coItemKey) return;
+    if (isTester) { setMessage({ type: "error", title: "Targ zablokowany", text: "Targ jest zablokowany dla tego konta." }); return; }
     const minP = marketMinPrice(coItemType, coItemKey, coItemType === "equipment" ? getItemUpg(coItemKey) : undefined);
     if (coPrice < minP) { setMessage({ type: "error", title: "Zbyt niska cena", text: `Minimalna cena: ${minP} zł/szt.` }); return; }
     if (coQty <= 0) { setMessage({ type: "error", title: "Błąd", text: "Ilość musi być dodatnia." }); return; }
@@ -6685,6 +6687,7 @@ export default function Page() {
   }
   async function handleBuyOffer(offerId: string, qty: number) {
     if (!profile) return;
+    if (isTester) { setMessage({ type: "error", title: "Targ zablokowany", text: "Targ jest zablokowany dla tego konta." }); return; }
     setBuyingOfferId(offerId);
     const { data, error } = await supabase.rpc("market_buy_offer", { p_offer_id: offerId, p_quantity: qty });
     setBuyingOfferId(null);
@@ -16356,6 +16359,11 @@ export default function Page() {
                     ))}
                   </div>
 
+                  {isTester && (
+                    <div className="mb-3 rounded-xl border border-red-500/60 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-300">
+                      Targ jest zablokowany dla tego konta.
+                    </div>
+                  )}
                   {marketLoading && <p className="py-10 text-center text-base font-bold text-[#f0d48a]">Wczytuję oferty...</p>}
                   {!marketLoading && filteredMarketBrowse.length === 0 && (
                     <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/60 p-10 text-center text-base font-bold text-[#f0d48a]">
@@ -16405,9 +16413,10 @@ export default function Page() {
                                   </div>
                                 )}
                                 <div className="flex flex-col items-end gap-0.5">
-                                  <button type="button" disabled={buyingOfferId === offer.id}
+                                  <button type="button" disabled={buyingOfferId === offer.id || isTester}
                                     onClick={() => void handleBuyOffer(offer.id, buyQty)}
                                     className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2 text-sm font-black text-[#2f1b0c] shadow hover:brightness-110 transition disabled:opacity-50"
+                                    title={isTester ? "Targ jest zablokowany dla tego konta." : undefined}
                                   >{buyingOfferId === offer.id ? "..." : "Kup"}</button>
                                   <p className="text-xs font-bold text-[#ffe082]">{buyTotal.toLocaleString("pl-PL")} zł</p>
                                 </div>
@@ -16451,10 +16460,15 @@ export default function Page() {
                 const earnedDateOk = profile?.market_earned_date === todayPl;
                 const earnedToday  = earnedDateOk ? (profile?.market_earned_today ?? 0) : 0;
                 const dailyBlocked = dailyLimit !== null && earnedToday >= dailyLimit;
-                const canAddOffer  = activeOffers.length < maxOffers && !dailyBlocked;
+                const canAddOffer  = activeOffers.length < maxOffers && !dailyBlocked && !isTester;
                 const fmtK = (n: number) => n >= 1000 ? `${(n/1000).toLocaleString("pl-PL", {maximumFractionDigits:0})}k` : n.toLocaleString("pl-PL");
                 return (
                   <div>
+                    {isTester && (
+                      <div className="mb-4 rounded-xl border border-red-500/60 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-300">
+                        Targ jest zablokowany dla tego konta.
+                      </div>
+                    )}
                     {/* ── MMO HUD: karty limitów ── */}
                     {(() => {
                       const slotPct   = Math.min(100, (activeOffers.length / maxOffers) * 100);
