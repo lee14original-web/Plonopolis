@@ -2,7 +2,7 @@
  * Wysyla zmiany na GitHub w JEDNYM commicie (Git Tree API).
  *
  * Flagi:
- *   (brak)      — tylko app/page.tsx (Game.tsx)
+ *   (brak)      — app/page.tsx (Game.tsx) + app/game/** (wszystkie moduły)
  *   --images    — tylko nowe/zmienione foldery obrazkow (max ~50 plikow)
  *   --all       — wszystkie pliki (uwaga: limit GitHub ~200 blobów na tree)
  *   --sql       — pliki attached_assets/*.sql → sql/ w repo GitHub
@@ -12,8 +12,8 @@
  *   pnpm --filter @workspace/scripts run push-to-github -- --images
  *   pnpm --filter @workspace/scripts run push-to-github -- --sql
  */
-import { readFile, readdir } from "fs/promises";
-import { resolve } from "path";
+import { readFile, readdir, stat } from "fs/promises";
+import { resolve, join } from "path";
 import { existsSync } from "fs";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -97,6 +97,28 @@ async function pushCommit(files: { githubPath: string; localPath: string }[], ba
   return newCommit.sha as string;
 }
 
+/** Rekurencyjnie zbiera wszystkie pliki z katalogu lokalnego,
+ *  mapując je na sciezki GitHub (localBase → githubBase). */
+async function collectDirFiles(
+  localBase: string,
+  githubBase: string,
+): Promise<{ githubPath: string; localPath: string }[]> {
+  const entries = await readdir(localBase);
+  const result: { githubPath: string; localPath: string }[] = [];
+  for (const entry of entries) {
+    const localFull = join(localBase, entry);
+    const githubFull = `${githubBase}/${entry}`;
+    const s = await stat(localFull);
+    if (s.isDirectory()) {
+      const sub = await collectDirFiles(localFull, githubFull);
+      result.push(...sub);
+    } else {
+      result.push({ githubPath: githubFull, localPath: localFull });
+    }
+  }
+  return result;
+}
+
 async function main() {
   const now = new Date().toISOString().slice(0, 16).replace("T", " ");
 
@@ -154,13 +176,23 @@ async function main() {
     return;
   }
 
-  // Zawsze na koncu: Game.tsx → app/page.tsx
-  console.log(`Wysylam app/page.tsx...`);
-  headSha = await pushCommit(
-    [{ githubPath: "app/page.tsx", localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx") }],
-    headSha,
-    `sync z Replita [${now}]`,
-  );
+  // ── Domyślny tryb: app/page.tsx + app/game/** ─────────────────────────────
+  const gameLocalDir  = resolve(ROOT, "artifacts/plonopolis/src/game");
+  const gameFiles: { githubPath: string; localPath: string }[] = [];
+
+  if (existsSync(gameLocalDir)) {
+    const collected = await collectDirFiles(gameLocalDir, "app/game");
+    gameFiles.push(...collected);
+    console.log(`Moduły game/: ${gameFiles.length} plików`);
+  }
+
+  const allCodeFiles = [
+    { githubPath: "app/page.tsx", localPath: resolve(ROOT, "artifacts/plonopolis/src/Game.tsx") },
+    ...gameFiles,
+  ];
+
+  console.log(`Wysylam app/page.tsx + ${gameFiles.length} modułów game/ (łącznie ${allCodeFiles.length} plików)...`);
+  headSha = await pushCommit(allCodeFiles, headSha, `sync z Replita [${now}]`);
 
   // Zaktualizuj ref gałęzi
   await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: headSha });
