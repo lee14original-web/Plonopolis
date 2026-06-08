@@ -1,0 +1,80 @@
+Zrób dokładny audyt modularizacji projektu Plonopolis.
+
+Cel:
+Chcę uporządkować kod, żeby nie było jednego ogromnego pliku po 16–17 tys. linii i innych małych plików z powiązaną logiką. Kod ma być schludnie podzielony na segmenty/moduły, żeby dalsza praca była szybsza, tańsza i bezpieczniejsza.
+
+Główne źródło prawdy:
+artifacts/plonopolis/src/Game.tsx
+
+Ważne:
+app/page.tsx jest generowany/kopiowany z Game.tsx przez push-to-github.ts, więc refactor zaczynamy od Game.tsx i struktury w artifacts/plonopolis/src.
+
+Na razie NIC nie zmieniaj w kodzie.
+Zrób tylko audyt i plan.
+
+Sprawdź:
+1. ile linii ma Game.tsx,
+2. jakie sekcje logiki są w nim wymieszane,
+3. czy są duplikaty kodu,
+4. które helpery/typy/stałe można bezpiecznie wynieść,
+5. które komponenty/modale można wynieść do osobnych plików,
+6. które rzeczy są ryzykowne i zostawić na później.
+
+Podziel plan na bezpieczne etapy:
+
+Etap 1 — zero logic change:
+- wyniesienie typów,
+- stałych,
+- helperów formatowania,
+- helperów UI,
+- map configów,
+- crop/item/customer configów,
+- bez zmiany działania gry.
+
+Etap 2 — małe komponenty:
+- przyciski,
+- badge,
+- tooltipy,
+- modal wrapper,
+- panel header,
+- małe elementy UI bez logiki biznesowej.
+
+Etap 3 — większe funkcje/feature:
+- Lada dla klientów,
+- Targ,
+- Ustawienia,
+- Stodoła,
+- Ul,
+- Sad,
+- Field View,
+- Tutorial,
+ale tylko po wcześniejszym wydzieleniu typów i helperów.
+
+Zaproponuj strukturę folderów, np.:
+src/game/types/
+src/game/constants/
+src/game/utils/
+src/game/components/
+src/game/modals/
+src/game/features/market/
+src/game/features/customers/
+src/game/features/tutorial/
+src/game/features/field/
+src/game/features/map/
+src/game/features/settings/
+src/game/features/barn/
+src/game/features/hive/
+src/game/features/orchard/
+
+W audycie podaj:
+1. dokładną proponowaną strukturę plików,
+2. co przenieść jako pierwsze,
+3. które importy trzeba będzie zmienić,
+4. które etapy są najbezpieczniejsze,
+5. których rzeczy NIE ruszać na początku,
+6. jak testować po każdym etapie,
+7. jak robić małe commity,
+8. jak uniknąć zmiany logiki podczas refactoru.
+
+Nie zmieniaj SQL, DB, ekonomii, tutorial logic, map assetów, hitboxów, nagród ani zachowania gry.
+Nie pushuj.
