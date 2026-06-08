@@ -51,8 +51,11 @@ import { isCompostKey, isGuideCompostKey, compostTypeFromKey, compostValueFromKe
 import { clearPerSessionLocalStorage, lsKey, lsLoadMigrate, loadAvatarDataLS, saveAvatarDataLS } from "./game/utils/storage";
 import { todayStr, emptyDP, loadDP, saveDP } from "./game/utils/daily-progress";
 import { computeFarmPower } from "./game/utils/farm-power";
-import { ttStyle } from "./game/utils/ui";
+import { ttStyle, getLigaTier, compostTierColor, fmtK, fmtFull } from "./game/utils/ui";
+import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
+import { SettingsModal } from "./game/features/settings/SettingsModal";
+import { LogoutConfirmModal } from "./game/features/settings/LogoutConfirmModal";
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
 const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
@@ -6697,15 +6700,6 @@ export default function Page() {
                     const sorted = [...rankingData].sort((a,b) => (b.farm_power??0)-(a.farm_power??0));
                     const myRank = sorted.findIndex(p => p.user_id === profile?.id);
                     const total = sorted.length;
-                    function getLigaTier(rank: number, tot: number): {name:string;color:string;icon:string;bg:string;border:string} {
-                      if (tot === 0 || rank < 0) return {name:"Liga Drewna",color:"#9ca3af",icon:"🌿",bg:"rgba(20,20,20,0.7)",border:"#374151"};
-                      if (rank === 0) return {name:"Liga Mistrzów",color:"#f97316",icon:"🏆",bg:"rgba(50,20,5,0.85)",border:"#f97316"};
-                      const pct = rank / tot;
-                      if (pct <= 0.10) return {name:"Liga Złota",color:"#f2ca69",icon:"🥇",bg:"rgba(45,30,0,0.85)",border:"#f2ca69"};
-                      if (pct <= 0.30) return {name:"Liga Srebrna",color:"#94a3b8",icon:"🥈",bg:"rgba(25,30,40,0.85)",border:"#94a3b8"};
-                      if (pct <= 0.60) return {name:"Liga Brązowa",color:"#c9952f",icon:"🥉",bg:"rgba(40,22,5,0.85)",border:"#c9952f"};
-                      return {name:"Liga Drewna",color:"#9ca3af",icon:"🌿",bg:"rgba(20,20,20,0.7)",border:"#374151"};
-                    }
                     const myTier = getLigaTier(myRank, total);
                     const TABS = [{id:"ranking",label:"🏆 Ranking"},{id:"wyzwanie",label:"⚔️ Wyzwanie"},{id:"nagrody",label:"🎁 Ligi & Nagrody"}] as const;
                     return (
@@ -7325,7 +7319,7 @@ export default function Page() {
                                         const def = COMPOST_DEFS[t];
                                         const value = compostValueFromKey(cid);
                                         const tierIdx = def.bonusValues.indexOf(value);
-                                        const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa";
+                                        const tierColor = compostTierColor(tierIdx);
                                         const isSel = selectedSeedId === cid;
                                         return (
                                           <div key={cid}
@@ -9525,7 +9519,7 @@ export default function Page() {
                                 {hasSuit && (<div className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.65)] cursor-default" onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-[#f9e7b2]">Strój pszczelarza</p><p className="text-[11px] text-amber-300 mt-0.5">{hiveData.suit_durability} zbiorów pozostało</p></>)} onMouseLeave={() => setCardTip(null)}><img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="h-10 w-10 object-contain" style={{imageRendering:"pixelated"}} /><p className="mt-0.5 text-center text-[9px] font-bold text-[#dfcfab] leading-tight px-1">Strój</p><div className="mt-0.5 h-1 w-10 rounded-full bg-black/40 overflow-hidden"><div className="h-full rounded-full" style={{ width:`${hiveData.suit_durability}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} /></div></div>)}
                                 {compostKeys.sort((a,b) => { const ta = compostTypeFromKey(a) ?? "growth"; const tb = compostTypeFromKey(b) ?? "growth"; const order: Record<CompostType, number> = { growth:0, yield:1, exp:2, guide:3 }; if (order[ta] !== order[tb]) return order[ta] - order[tb]; return compostValueFromKey(a) - compostValueFromKey(b); }).map(cid => {
                                   const cnt = seedInventory[cid]; const t = compostTypeFromKey(cid)!; const def = COMPOST_DEFS[t]; const value = compostValueFromKey(cid);
-                                  const tierIdx = def.bonusValues.indexOf(value); const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa"; const isSel = selectedSeedId === cid;
+                                  const tierIdx = def.bonusValues.indexOf(value); const tierColor = compostTierColor(tierIdx); const isSel = selectedSeedId === cid;
                                   return (
                                     <div key={cid} draggable onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
                                       onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
@@ -10094,7 +10088,7 @@ export default function Page() {
                                 }
                                 const def = COMPOST_DEFS[r.compostType];
                                 const tierIdx = def.bonusValues.indexOf(r.value);
-                                const tierColor = tierIdx === 0 ? "#9ca3af" : tierIdx === 1 ? "#22c55e" : "#a78bfa";
+                                const tierColor = compostTierColor(tierIdx);
                                 const tipNode = (
                                   <>
                                     <p className="text-[17px] font-black text-emerald-200">{def.icon} {def.name}</p>
@@ -14015,149 +14009,21 @@ export default function Page() {
 
           {/* ═══ POPUP POTWIERDZENIA WYLOGOWANIA (Esc na farmie) ═══ */}
           {showSettingsModal && (
-            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSettingsModal(false)}>
-              <div className="relative w-full max-w-[560px] max-h-[calc(100vh-40px)] overflow-y-auto rounded-[24px] border border-[#8b6a3e]/60 bg-[rgba(20,12,6,0.98)] p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <button onClick={() => setShowSettingsModal(false)} className="absolute right-4 top-4 text-xl text-[#8b6a3e] transition hover:text-[#f9e7b2]">✕</button>
-                <p className="mb-1 text-center text-3xl">⚙️</p>
-                <h3 className="mb-5 text-center text-xl font-black text-[#f9e7b2]">Ustawienia</h3>
-
-                {/* ─── Muzyka ─── */}
-                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🎵 Muzyka</p>
-                  <label className="flex cursor-pointer items-center justify-between gap-3">
-                    <span className="text-sm text-[#dfcfab]">Muzyka włączona</span>
-                    <button
-                      type="button"
-                      onClick={() => saveGameSettings({ ...gameSettings, musicEnabled: !gameSettings.musicEnabled })}
-                      className={`relative h-6 w-11 rounded-full border transition ${gameSettings.musicEnabled ? "border-amber-500/60 bg-amber-600/40" : "border-[#8b6a3e]/40 bg-black/30"}`}
-                    >
-                      <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${gameSettings.musicEnabled ? "left-5 bg-amber-400" : "left-0.5 bg-[#8b6a3e]"}`} />
-                    </button>
-                  </label>
-                  <div className="mt-3 flex items-center gap-3">
-                    <span className="w-5 text-center text-base">{!gameSettings.musicEnabled ? "🔇" : gameSettings.musicVolume < 0.15 ? "🔈" : gameSettings.musicVolume < 0.6 ? "🔉" : "🔊"}</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={Math.round(gameSettings.musicVolume * 100)}
-                      onChange={e => {
-                        const v = parseInt(e.target.value) / 100;
-                        saveGameSettings({ ...gameSettings, musicVolume: v, musicEnabled: v > 0 });
-                      }}
-                      className="flex-1 cursor-pointer accent-[#d8ba7a]"
-                    />
-                    <span className="w-9 text-right text-xs font-bold tabular-nums text-[#d8ba7a]">{Math.round(gameSettings.musicVolume * 100)}%</span>
-                  </div>
-                </div>
-
-                {/* ─── Dźwięki ─── */}
-                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🔊 Dźwięki</p>
-                  <label className="flex cursor-pointer items-center justify-between gap-3">
-                    <span className="text-sm text-[#dfcfab]">Efekty dźwiękowe</span>
-                    <button
-                      type="button"
-                      onClick={() => saveGameSettings({ ...gameSettings, soundEnabled: !gameSettings.soundEnabled })}
-                      className={`relative h-6 w-11 rounded-full border transition ${gameSettings.soundEnabled ? "border-amber-500/60 bg-amber-600/40" : "border-[#8b6a3e]/40 bg-black/30"}`}
-                    >
-                      <span className={`absolute top-0.5 h-5 w-5 rounded-full transition-all ${gameSettings.soundEnabled ? "left-5 bg-amber-400" : "left-0.5 bg-[#8b6a3e]"}`} />
-                    </button>
-                  </label>
-                </div>
-
-                {/* ─── Grafika ─── */}
-                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🖼️ Grafika</p>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-[#dfcfab]">Jakość grafiki</span>
-                    <div className="flex gap-1.5">
-                      {(["low","medium","high"] as GraphicsQuality[]).map(q => (
-                        <button
-                          key={q}
-                          type="button"
-                          onClick={() => saveGameSettings({ ...gameSettings, graphicsQuality: q })}
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition ${gameSettings.graphicsQuality === q ? "border-amber-500/70 bg-amber-600/30 text-amber-300" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-[#8b6a3e]/70 hover:text-[#dfcfab]"}`}
-                        >
-                          {q === "low" ? "Niska" : q === "medium" ? "Średnia" : "Wysoka"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* ─── Rozmiar gry ─── */}
-                <div className="mb-4 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">🔍 Rozmiar gry</p>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setUserZoomFactor(prev => Math.max(0.80, Math.round((prev - 0.05) * 100) / 100))}
-                      disabled={userZoomFactor <= 0.80}
-                      className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >−</button>
-                    <span className="flex-1 text-center text-lg font-black tabular-nums text-[#f9e7b2]">{Math.round(userZoomFactor * 100)}%</span>
-                    <button
-                      type="button"
-                      onClick={() => setUserZoomFactor(prev => Math.min(1.30, Math.round((prev + 0.05) * 100) / 100))}
-                      disabled={userZoomFactor >= 1.30}
-                      className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >+</button>
-                  </div>
-                  <p className="mt-2 text-xs text-[#8b6a3e]">Zmienia rozmiar świata gry. Panel i okna dialogowe zostają bez zmian.</p>
-                  {userZoomFactor !== 1.00 && (
-                    <button
-                      type="button"
-                      onClick={() => setUserZoomFactor(1.00)}
-                      className="mt-2 w-full rounded-lg border border-[#8b6a3e]/30 bg-black/10 py-1.5 text-xs font-bold text-[#8b6a3e] transition hover:text-[#dfcfab] hover:border-[#8b6a3e]/60"
-                    >Domyślny (100%)</button>
-                  )}
-                </div>
-
-                {/* ─── Inne ─── */}
-                <div className="mb-5 rounded-xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#d8ba7a]">⚙️ Inne</p>
-                  <p className="mb-3 text-xs text-[#8b6a3e]">Więcej opcji pojawi się w kolejnych aktualizacjach.</p>
-                  <button
-                    onClick={() => { setShowSettingsModal(false); setShowLogoutConfirm(true); }}
-                    className="w-full rounded-xl border border-red-500/40 bg-red-950/30 py-2.5 text-sm font-bold text-red-300 transition hover:bg-red-950/50 hover:border-red-400/60"
-                  >
-                    🚪 Wyloguj
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="w-full rounded-2xl border border-[#8b6a3e]/60 bg-black/30 py-3 text-base font-bold text-[#dfcfab] transition hover:bg-white/5"
-                >
-                  Zamknij
-                </button>
-              </div>
-            </div>
+            <SettingsModal
+              gameSettings={gameSettings}
+              saveGameSettings={saveGameSettings}
+              onClose={() => setShowSettingsModal(false)}
+              onOpenLogout={() => { setShowSettingsModal(false); setShowLogoutConfirm(true); }}
+              userZoomFactor={userZoomFactor}
+              setUserZoomFactor={setUserZoomFactor}
+            />
           )}
 
           {showLogoutConfirm && (
-            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)}>
-              <div className="relative w-full max-w-[380px] rounded-[24px] border border-red-500/40 bg-[rgba(20,5,5,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <button onClick={() => setShowLogoutConfirm(false)} className="absolute right-4 top-4 text-[#8b6a3e] hover:text-red-400 transition">✕</button>
-                <p className="mb-1 text-center text-3xl">🚪</p>
-                <h3 className="mb-2 text-center text-xl font-black text-[#f9e7b2]">Wylogowanie</h3>
-                <p className="mb-7 text-center text-base text-[#dfcfab]">Czy na pewno chcesz się wylogować?</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowLogoutConfirm(false)}
-                    className="flex-1 rounded-2xl border border-[#8b6a3e]/60 bg-black/30 py-3 text-base font-bold text-[#dfcfab] transition hover:bg-white/5">
-                    Nie, zostań
-                  </button>
-                  <button
-                    onClick={() => { setShowLogoutConfirm(false); void handleLogout(); }}
-                    className="flex-1 rounded-2xl border border-red-500/60 bg-red-900/30 py-3 text-base font-bold text-red-300 transition hover:bg-red-900/50">
-                    Tak, wyloguj
-                  </button>
-                </div>
-              </div>
-            </div>
+            <LogoutConfirmModal
+              onClose={() => setShowLogoutConfirm(false)}
+              onConfirm={() => { setShowLogoutConfirm(false); void handleLogout(); }}
+            />
           )}
 
         </div>
@@ -14787,7 +14653,6 @@ export default function Page() {
                 const earnedToday  = earnedDateOk ? (profile?.market_earned_today ?? 0) : 0;
                 const dailyBlocked = dailyLimit !== null && earnedToday >= dailyLimit;
                 const canAddOffer  = activeOffers.length < maxOffers && !dailyBlocked && !isTester;
-                const fmtK = (n: number) => n >= 1000 ? `${(n/1000).toLocaleString("pl-PL", {maximumFractionDigits:0})}k` : n.toLocaleString("pl-PL");
                 return (
                   <div>
                     {isTester && (
@@ -14803,7 +14668,6 @@ export default function Page() {
                       const slotCrit  = slotPct  >= 92;
                       const valCrit   = valPct   >= 92;
                       const earnCrit  = earnPct  >= 92;
-                      const fmtFull   = (n: number) => n.toLocaleString("pl-PL");
                       // Czas do resetu o polnocy Warsaw
                       const nowWaw    = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Warsaw" }));
                       const midnight  = new Date(nowWaw); midnight.setHours(24, 0, 0, 0);
