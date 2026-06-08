@@ -1,0 +1,53 @@
+import type { PlotCropState } from "./farm";
+
+export type RankingPlayer = {
+  user_id: string;
+  player_name: string;
+  guild_name: string;
+  level: number;
+  money: number;
+  missions_completed: number;
+  farm_power?: number;
+  ranking_score?: number;
+  avatar_skin?: number | null;
+  customer_orders_completed?: number;
+};
+
+export type Profile = {
+  id: string;
+  login: string;
+  email: string;
+  created_at?: string;
+  level?: number | null;
+  xp?: number | null;
+  xp_to_next_level?: number | null;
+  money?: number | null;
+  location?: string | null;
+  current_map?: string | null;
+  last_played_at?: string | null;
+  unlocked_plots?: number[] | null;
+  plot_crops?: Record<string, PlotCropState> | null;
+  seed_inventory?: Record<string, number> | null;
+  avatar_skin?: number | null;
+  player_stats?: Record<string, number> | null;
+  free_skill_points?: number | null;
+  prev_level?: number | null;
+  equipment_slots?: number | null;
+  equipment?: string[] | null;
+  blocked_users?: string[] | null;
+  unlocked_epic_avatars?: number[] | null;
+  hive_data?: Record<string, unknown> | null;
+  barn_items?: Record<string, number> | null;
+  fruit_inventory?: Record<string, number> | null;
+  market_earned_today?: number | null;
+  market_earned_date?: string | null;
+  plot_obstacles?: Record<string, { type: string; cost: number }> | null;
+  orchard_state?: Record<string, { owned: number; prodStart: number }> | null;
+  barn_state?: Record<string, { owned: number; slots: number; prodStart: number }> | null;
+  role?: "player" | "tester" | "moderator" | "admin" | "owner" | string | null;
+  tutorial_started?: boolean | null;
+  tutorial_completed?: boolean | null;
+  tutorial_skipped?: boolean | null;
+  tutorial_step?: number | null;
+  lada_starter_given?: boolean | null;
+};

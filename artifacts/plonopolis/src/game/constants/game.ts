@@ -1,0 +1,14 @@
+export const DEFAULT_LEVEL = 1;
+export const DEFAULT_XP = 0;
+export const DEFAULT_XP_TO_NEXT_LEVEL = 12;
+export const DEFAULT_MONEY = 10;
+export const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 godziny hard-timeout
+export const DEFAULT_LOCATION = "Startowa Polana";
+export const DEFAULT_MAP = "farm1";
+export const MAX_LEVEL = 50;
+export const MAX_FIELDS = 100;
+export const FARM_UPGRADE_LEVELS = [5, 10, 15, 20, 25, 30] as const;
+export const FARM_MUSIC_MAPS = ["farm1", "farm5", "farm10", "farm15", "farm20", "farm25", "farm30"];
+export const FARM_MAP_ORDER  = ["farm1", "farm5", "farm10", "farm15", "farm20", "farm25", "farm30"];
+export const CITY_MUSIC_MAPS = ["city", "city_shop", "city_market", "city_bank", "city_townhall", "city_liga"];
+export const LADA_MAX_CUSTOMERS = 12;

@@ -1,0 +1,1 @@
+- [Game.tsx modularization](game-modularization.md) — etap 1A zakończony: typy/stałe/utils wydzielone do game/{types,constants,utils,components}; typecheck czyste.

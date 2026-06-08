@@ -1,0 +1,83 @@
+Zrób Etap 1A modularizacji Game.tsx — tylko zero logic change.
+
+Źródło prawdy:
+artifacts/plonopolis/src/Game.tsx
+
+Cel:
+Zmniejszyć chaos w Game.tsx, ale bez zmiany działania gry.
+
+Zrób tylko bezpieczne przeniesienie rzeczy zdefiniowanych poza komponentem Game:
+
+1. Utwórz strukturę:
+artifacts/plonopolis/src/game/types/
+artifacts/plonopolis/src/game/constants/
+artifacts/plonopolis/src/game/utils/
+artifacts/plonopolis/src/game/components/
+
+2. Przenieś typy/interfejsy z początku Game.tsx do:
+game/types/
+
+Podziel sensownie, np.:
+- profile.ts
+- market.ts
+- farm.ts
+- crop.ts
+- equipment.ts
+- barn.ts
+- orchard.ts
+- customers.ts
+- messages.ts
+- settings.ts
+- index.ts jako re-export
+
+3. Przenieś największe stałe/configi do:
+game/constants/
+
+Na ten etap przenieś:
+- XP_TABLE
+- CROPS
+- CROP_QUALITY_DEFS
+- ANIMALS
+- ANIMAL_ITEMS
+- TREES
+- FRUIT_QUALITY_DEFS
+- CHAR_EQUIP_ITEMS
+- EQUIP_SLOT_META
+- podstawowe DEFAULT/MAX/FARM/CITY/UNLOCK_LVL jeśli są bezpieczne i nie zależą od React state
+
+4. Przenieś tylko pure helpery bez React/state/RPC do:
+game/utils/
+
+Na ten etap tylko funkcje, które:
+- nie używają useState/useEffect,
+- nie używają supabase,
+- nie używają profile state,
+- nie mają side-effectów poza localStorage jeśli już teraz takie miały.
+
+Np.:
+- parsePlotCrops
+- serializePlotCrops
+- parseSeedInventory
+- getMapForLevel
+- calcStatEffect
+- getXpForLevel
+- format helpery
+- barn/orchard/crop pure helpers
+
+5. Przenieś AnimalImg do:
+game/components/AnimalImg.tsx
+
+6. Bardzo ważne:
+- NIE zmieniaj wartości żadnych stałych.
+- NIE zmieniaj logiki żadnej funkcji.
+- NIE zmieniaj JSX renderu poza importami.
+- NIE zmieniaj SQL, DB, ekonomii, tutoriala, hitboxów, map, RPC, harvest, market, customer orders ani ustawień.
+- To ma być czysty refactor: copy/import/delete, zero behavior change.
+
+7. Po zmianach:
+- uruchom typecheck,
+- pokaż diff z listą nowych plików,
+- podaj ile linii ma Game.tsx przed i po,
+- nie pushuj.
+
+Jeśli coś jest ryzykowne albo ma zależności cykliczne, zostaw to w Game.tsx i wypisz w raporcie „zostawione na później”.
