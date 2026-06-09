@@ -1,0 +1,77 @@
+Zrób większy refactor: Etap 2B/2C — wydziel średnie panele i funkcje UI, ale bez Field View i Tutoriala.
+
+Źródło prawdy:
+artifacts/plonopolis/src/Game.tsx
+
+Cel:
+Mocniej zmniejszyć Game.tsx i uporządkować kod szybciej, ale bez zmiany działania gry.
+
+Możesz wydzielić w tym jednym etapie:
+
+1. Sklep:
+game/features/shop/ShopModal.tsx
+- przenieś JSX modalu sklepu,
+- inline supabase.rpc wyciągnij do nazwanych handlerów w Game.tsx,
+- ShopModal dostaje propsy i handlery,
+- zachowanie bez zmian.
+
+2. Kompostownik:
+game/features/compost/CompostModal.tsx
+game/features/compost/CompostNotificationPopup.tsx
+- przenieś JSX,
+- istniejące handlery zostają w Game.tsx,
+- bez zmian logiki kompostu.
+
+3. Stodoła:
+game/features/barn/BarnModal.tsx
+- przenieś JSX stodoły, jeśli da się przez propsy,
+- helpery barn już są w utils/constants, użyj importów,
+- nie zmieniaj produkcji, karmienia, zbierania, obliczeń.
+
+4. Ul:
+game/features/hive/HiveModal.tsx
+- przenieś JSX ula, jeśli jest osobny blok,
+- nie zmieniaj logiki miodu, pszczół, słoików ani timers.
+
+5. Sad:
+game/features/orchard/OrchardModal.tsx
+- przenieś JSX sadu, jeśli jest osobny blok,
+- nie zmieniaj logiki drzew, owoców, slotów ani zbiorów.
+
+6. Sesja zbiorów:
+game/features/harvest/HarvestSessionModal.tsx
+- przenieś tylko jeśli da się bezpiecznie.
+- Jeśli tooltip/pozycjonowanie mousePos/gameScale robi ryzyko, zostaw w Game.tsx.
+
+7. Inne małe popups/modale:
+- przenieś tylko jeśli mają mało propsów i są czysto JSX.
+
+Nie ruszaj w tym etapie:
+- Targu,
+- Lady klientów,
+- Field View,
+- Tutoriala,
+- map/hitboxów,
+- loadProfile/initGame/useEffect,
+- state managementu,
+- React Context/Zustand,
+- handlerów harvest/plant/water/compost poza przekazaniem ich jako props,
+- SQL/RPC definicji w Supabase,
+- ekonomii, dropów, czasów wzrostu, nagród.
+
+Zasady:
+- zero logic change,
+- nie zmieniaj tekstów,
+- nie zmieniaj stylu wizualnego,
+- nie zmieniaj wartości stałych,
+- nie przebudowuj flow gry,
+- nie twórz nowych zależności,
+- jeśli coś wymaga zbyt wielu zmian albo ryzykuje regresję, zostaw w Game.tsx i wypisz w raporcie.
+
+Po zmianach:
+1. typecheck,
+2. pokaż nowe/zmienione pliki,
+3. pokaż ile linii ma Game.tsx przed i po,
+4. wypisz co zostało przeniesione,
+5. wypisz co zostało zostawione na później,
+6. nie pushuj.

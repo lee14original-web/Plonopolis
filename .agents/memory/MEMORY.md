@@ -1,1 +1,1 @@
-- [Game.tsx modularization](game-modularization.md) — Etap 2A zakończony: 4 modale wydzielone do game/features/; Game.tsx: 14710 linii; commit 7cbda87.
+- [Game.tsx modularization](game-modularization.md) — Etap 2B/2C zakończony: 5 modali wydzielone; Game.tsx: 13806 linii; typecheck czysty.

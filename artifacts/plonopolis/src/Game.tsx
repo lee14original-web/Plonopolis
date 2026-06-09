@@ -60,6 +60,11 @@ import { RankingModal } from "./game/features/ranking/RankingModal";
 import { MessagesModal } from "./game/features/messages/MessagesModal";
 import { SkinPickerModal } from "./game/features/avatar/SkinPickerModal";
 import { EpicPurchaseModal } from "./game/features/avatar/EpicPurchaseModal";
+import { CompostNotificationPopup } from "./game/features/compost/CompostNotificationPopup";
+import { HiveModal } from "./game/features/hive/HiveModal";
+import { ShopModal } from "./game/features/shop/ShopModal";
+import { BarnModal } from "./game/features/barn/BarnModal";
+import { OrchardModal } from "./game/features/orchard/OrchardModal";
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
 const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
@@ -630,7 +635,6 @@ export default function Page() {
   const harvestProcessingRef = React.useRef(false);
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
-  const [shopTab, setShopTab] = React.useState<"nasiona"|"zwierzeta"|"drzewa"|"przedmioty">("nasiona");
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
   const [shopError, setShopError] = React.useState("");
   const [promoCountdown, setPromoCountdown] = React.useState(() => formatShopCountdown(getMsToPolandMidnight()));
@@ -759,7 +763,6 @@ export default function Page() {
   const sliderDragRef = React.useRef(false);
   const sliderContainerRef = React.useRef<HTMLDivElement>(null);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
-  const [selectedAnimal, setSelectedAnimal] = React.useState<string|null>(null);
   const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
   const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_ITEMS_KEY, uid), JSON.stringify(next)); } catch {} };
   // SAD — state + persystencja
@@ -4026,6 +4029,264 @@ export default function Page() {
     setMessage({ type: "success", title: "⭐ Avatar odblokowany!", text: `Odblokowano epicki avatar: ${es?.name ?? ""}` });
   }
 
+  async function handleBuyHive() {
+    if (!profile?.id) return;
+    const playerMoney = profile?.money ?? 0;
+    if (playerMoney < HIVE_BUY_COST) {
+      setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${HIVE_BUY_COST} zł żeby kupić ul.` });
+      return;
+    }
+    const { data, error } = await supabase.rpc("buy_hive", { p_user_id: profile.id });
+    if (error || !data?.ok) {
+      setMessage({ type:"error", title:"Nie udało się kupić ula", text: data?.error || error?.message || "Spróbuj ponownie." });
+      await loadProfile(profile.id);
+      return;
+    }
+    setHiveData(data.hive_data as HiveData);
+    await loadProfile(profile.id);
+    setMessage({ type:"success", title:"🍯 Ul kupiony!", text:`Kup minimum ${HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ul ruszył z produkcją miodu.` });
+  }
+  async function handleAddBees(n: number) {
+    if (!profile?.id) return;
+    const hlvl = hiveData.level;
+    const beesNeeded = HIVE_UPGRADE_BEES[hlvl] ?? 50;
+    const beesProgress = Math.min(hiveData.bees_progress, beesNeeded);
+    const add = Math.min(n, beesNeeded - beesProgress);
+    if (add <= 0) return;
+    const cost = add * BEE_COST;
+    const playerMoney = profile?.money ?? 0;
+    if (playerMoney < cost) {
+      setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${cost} zł na ${add} ${add === 1 ? "pszczołę" : add < 5 ? "pszczoły" : "pszczół"}.` });
+      return;
+    }
+    const { data, error } = await supabase.rpc("add_hive_bees", { p_user_id: profile.id, p_amount: add });
+    if (error || !data?.ok) {
+      setMessage({ type:"error", title:"Nie udało się kupić pszczół", text: data?.error || error?.message || "Spróbuj ponownie." });
+      await loadProfile(profile.id);
+      return;
+    }
+    setHiveData(data.hive_data as HiveData);
+    await loadProfile(profile.id);
+    const _attempted = data.bees_attempted ?? add;
+    const _accepted  = data.bees_accepted  ?? _attempted;
+    const _rejected  = data.bees_rejected  ?? 0;
+    const _lostMoney = _rejected * BEE_COST;
+    if (_rejected === 0) {
+      if (_accepted === 1) {
+        setMessage({ type:"success", title:`🐝 Pszczoła przyjęta!`, text:`Powodzenie — wleciała prosto do ula.` });
+      } else {
+        setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
+      }
+    } else if (_accepted === 0) {
+      if (_rejected === 1) {
+        setMessage({ type:"error", title:`💀 Pszczoła nie przyjęła się, zginęła!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+      } else {
+        setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
+      }
+    } else {
+      setMessage({ type:"error", title:`🐝 Przyjęto ${_accepted}/${_attempted} pszczół`, text:`${_rejected} ${_rejected === 1 ? "zginęła" : "zginęło"} — straciłeś ${_lostMoney} zł. (szansa przyjęcia: ${data.chance_pct}%)` });
+    }
+  }
+  async function handleCollectHoney() {
+    if (!profile?.id) return;
+    const _honeyBonusPct = getEquipBonusPct("% produkcji miodu", charEquipped);
+    const _suitSavePct   = getEquipBonusPct("% zużycia stroju", charEquipped);
+    const { data, error } = await supabase.rpc("collect_honey", {
+      p_user_id: profile.id,
+      p_honey_bonus_pct: _honeyBonusPct,
+      p_suit_save_pct:   _suitSavePct,
+    });
+    if (error || !data?.ok) {
+      const msg = data?.error === "no_honey" ? "Poczekaj — miód jeszcze nie jest gotowy!"
+                : data?.error === "no_jars"  ? "Brak pustych słoików!"
+                : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
+                : "Błąd zbierania miodu — spróbuj ponownie.";
+      setMessage({ type:"error", title: msg, text: "Synchronizuję stan ula z bazą..." });
+      await loadProfile(profile.id);
+      return;
+    }
+    setHiveData(data.hive_data as HiveData);
+    if (data.success) {
+      const _bonusInfo = _honeyBonusPct > 0 ? ` (+${_honeyBonusPct.toFixed(0)}% produkcji)` : "";
+      setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯${_bonusInfo}`, text:"" });
+    } else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
+  }
+  async function handleShopBuyAnimal(a: AnimalDef) {
+    if (!profile?.id) return;
+    const st = barnState[a.id];
+    if (!st) return;
+    if (displayLevel < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
+    if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
+    if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca w stodole!",text:`Kup więcej slotów dla ${a.name} w Stodole.`}); return; }
+    const { data, error } = await supabase.rpc("buy_barn_animal", { p_user_id: profile.id, p_animal_id: a.id });
+    if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
+    const response = data as { ok?: boolean; error?: string } | null;
+    if (response?.ok === false) { setMessage({type:"error",title:"Błąd zakupu!",text:response.error ?? "Operacja nie powiodła się."}); return; }
+    await loadProfile(profile.id);
+    setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
+  }
+  async function handleShopBuyTree(t: TreeDef) {
+    if (!profile?.id) return;
+    setOrchardError("");
+    const { data, error } = await supabase.rpc("buy_orchard_tree", { p_user_id: profile.id, p_tree_id: t.id });
+    if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
+    const response = data as { ok?: boolean; error?: string } | null;
+    if (response?.ok === false) { setOrchardError(response.error ?? "Nie udało się kupić drzewa."); return; }
+    await loadProfile(profile.id);
+    setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
+  }
+  async function handleShopBuyHiveItem(itemId: string, label: string) {
+    if (!profile?.id) return;
+    const { data, error } = await supabase.rpc("buy_hive_shop_item", { p_item_id: itemId });
+    if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; hive_data?: HiveData } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu", text: response.error ?? "Nieznany błąd" }); return; }
+    if (response?.hive_data) setHiveData(response.hive_data);
+    await loadProfile(profile.id);
+    setMessage({ type: "success", title: "Zakupiono!", text: `Kupiono: ${label}` });
+  }
+  async function handleShopBuySeeds() {
+    if (!profile?.id) return;
+    setShopError("");
+    const p_items = Object.entries(shopCart)
+      .filter(([, qty]) => (qty as number) > 0)
+      .map(([key, qty]) => {
+        let crop_id = key;
+        let quality = "good";
+        for (const q of ["epic","legendary","rotten","good"]) {
+          if (key.endsWith(`_${q}`)) { crop_id = key.slice(0, -(q.length + 1)); quality = q; break; }
+        }
+        return { crop_id, quality, qty: qty as number };
+      });
+    const { data, error } = await supabase.rpc("buy_shop_seeds", { p_user_id: profile.id, p_items });
+    if (error) { setShopError("Blad: " + error.message); return; }
+    const response = data as { ok?: boolean; error?: string } | null;
+    if (response?.ok === false) { setShopError("Blad: " + (response.error ?? "Operacja nie powiodła się.")); return; }
+    setShopCart({});
+    setShopError("");
+    await loadProfile(profile.id);
+  }
+  async function handleBarnBuySlot(a: AnimalDef) {
+    if (!profile?.id) return;
+    const st = barnState[a.id];
+    const upg = st.slots - a.startSlots;
+    if (upg >= a.slotUpgCosts.length) { setMessage({type:"info",title:"Maks!",text:`Maksymalna liczba slotów dla ${a.name}.`}); return; }
+    const cost = a.slotUpgCosts[upg];
+    if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
+    const { data, error } = await supabase.rpc("buy_barn_slot", { p_user_id: profile.id, p_animal_id: a.id });
+    if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
+    const response = data as { ok?: boolean; error?: string; animal_state?: { slots?: number } } | null;
+    if (response?.ok === false) { setMessage({type:"error",title:"Błąd!",text:response.error ?? "Operacja nie powiodła się."}); return; }
+    const newSlots = response?.animal_state?.slots ?? (st.slots + 1);
+    await loadProfile(profile.id);
+    setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${newSlots} / ${a.maxSlots}`});
+  }
+  async function handleBarnFeed(a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) {
+    const have = seedInventory[cropKey] ?? 0;
+    if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${cropName} (${cropIcon}).`}); return; }
+    if (!profile?.id) return;
+    const opiekaPts = effectiveStats.opieka;
+    const st = barnState[a.id];
+    const curH = barnCurrentHunger(st, opiekaPts);
+    const newH = Math.min(100, curH + points);
+    const { data, error } = await supabase.rpc("feed_barn_animal", { p_user_id: profile.id, p_animal_id: a.id, p_crop_key: cropKey });
+    if (error) { setMessage({type:"error",title:"Błąd karmienia!",text:error.message}); return; }
+    const response = data as { ok?: boolean; error?: string } | null;
+    if (response?.ok === false) { setMessage({type:"error",title:"Błąd karmienia!",text:response.error ?? "Karmienie nie powiodło się."}); return; }
+    await loadProfile(profile.id);
+    setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
+  }
+  function handleBarnCollect(a: AnimalDef) {
+    if (!profile?.id) return;
+    void (async () => {
+      const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
+      let rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+      if (rpc.error?.message?.includes("sync_barn_owned")) {
+        const st = barnState[a.id];
+        if (!st || st.owned === 0) { setMessage({type:"error",title:"Błąd!",text:"Brak zwierząt do synchronizacji."}); return; }
+        await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+        rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
+      }
+      if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+      const res = rpc.data as { ok: boolean; collected: number; item_id: string; new_prod_start: number; new_barn_items: Record<string,number> };
+      if (res.collected === 0) { setMessage({type:"info",title:`${a.icon} Brak produktów`,text:`${a.name} jeszcze pracuje — wróć później.`}); return; }
+      saveBarnItems(res.new_barn_items);
+      saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start, baseProdStart: res.new_prod_start}});
+      setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${res.collected} ${item.name}`});
+    })();
+  }
+  function handleBarnCollectAll() {
+    if (!profile?.id) return;
+    void (async () => {
+      let rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
+      if (rpc.error?.message?.includes("sync_barn_owned")) {
+        for (const a of ANIMALS) {
+          const st = barnState[a.id];
+          if (st && st.owned > 0) await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
+        }
+        rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
+      }
+      if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
+      const res = rpc.data as { ok: boolean; results: Array<{animal_id:string;item_id:string;collected:number;new_prod_start:number}>; total: number; new_barn_items: Record<string,number> };
+      if (res.total === 0) { setMessage({type:"info",title:"Nic do odbioru",text:"Żadne zwierzę nie jest jeszcze gotowe."}); return; }
+      saveBarnItems(res.new_barn_items);
+      const newState = {...barnState};
+      res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start, baseProdStart: r.new_prod_start}; });
+      saveBarnState(newState);
+      setMessage({type:"success",title:"Odebrano wszystko!",text:`+${res.total} produktów. Sprzedaj je w Ladzie dla klientów.`});
+    })();
+  }
+  function handleOrchardHarvestTree(t: TreeDef) {
+    if (!profile?.id) return;
+    void (async () => {
+      setOrchardError("");
+      let rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
+      if (rpc.error?.message?.includes("sync_orchard_owned")) {
+        const cur = orchardState[t.id];
+        if (!cur || cur.owned === 0) { setOrchardError("Brak drzew do zebrania."); return; }
+        await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned });
+        rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
+      }
+      if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+      const res = rpc.data as { ok: boolean; added: Record<string,number>; new_prod_start: number; new_fruit_inventory: Record<string,number> };
+      const total = Object.values(res.added ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+      if (total === 0) { setOrchardError(`${t.icon} Drzewo jeszcze rośnie — wróć za chwilę.`); return; }
+      saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+      saveOrchardState({ ...orchardState, [t.id]: { ...orchardState[t.id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: res.new_prod_start } });
+      const a = res.added; const parts: string[] = [];
+      if ((a[`${t.fruitId}_zwykly`]   ?? 0) > 0) parts.push(`${a[`${t.fruitId}_zwykly`]} zwykłych`);
+      if ((a[`${t.fruitId}_soczysty`] ?? 0) > 0) parts.push(`\u{1F4A7}${a[`${t.fruitId}_soczysty`]} soczystych`);
+      if ((a[`${t.fruitId}_zloty`]    ?? 0) > 0) parts.push(`\u2728${a[`${t.fruitId}_zloty`]} złotych`);
+      if ((a[`${t.fruitId}_zgnile`]   ?? 0) > 0) parts.push(`\u{1F342}${a[`${t.fruitId}_zgnile`]} zgniłych`);
+      setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
+    })();
+  }
+  function handleOrchardHarvestAll() {
+    if (!profile?.id) return;
+    void (async () => {
+      setOrchardError("");
+      let rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+      if (rpc.error?.message?.includes("sync_orchard_owned")) {
+        for (const t of TREES) {
+          const st = orchardState[t.id];
+          if (st && st.owned > 0) await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: st.owned });
+        }
+        rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
+      }
+      if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
+      const res = rpc.data as { ok: boolean; results: Array<{tree_id:string;added:Record<string,number>;new_prod_start:number}>; added_all: Record<string,number>; new_fruit_inventory: Record<string,number> };
+      const totalAll = Object.values(res.added_all ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
+      if (totalAll === 0) { setOrchardError("Brak owoców — drzewa jeszcze rosną."); return; }
+      saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
+      const newOrch = { ...orchardState };
+      res.results.forEach(r => { if (newOrch[r.tree_id]) newOrch[r.tree_id] = { ...newOrch[r.tree_id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: r.new_prod_start }; });
+      saveOrchardState(newOrch);
+      const partsAll: string[] = [];
+      TREES.forEach(t => { const n = Object.entries(res.added_all ?? {}).filter(([k]) => k.startsWith(t.fruitId+"_")).reduce((s,[,v]) => s+(Number(v)||0), 0); if (n > 0) partsAll.push(`${t.fruitIcon}\xD7${n}`); });
+      setMessage({ type:"success", title:`\uD83C\uDF33 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
+    })();
+  }
+
   async function handleAddHoneyJars(amount: number) {
     if (!profile?.id) return;
     const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "honey_jars", p_amount: amount });
@@ -6112,7 +6373,7 @@ export default function Page() {
                   />
                   <button
                     type="button"
-                    onClick={() => { setShopTab("nasiona"); setShowShopModal(true); }}
+                    onClick={() => { setShowShopModal(true); }}
                     onMouseEnter={() => setHoveredSklep(true)}
                     onMouseLeave={() => setHoveredSklep(false)}
                     data-no-map-drag="true"
@@ -7749,363 +8010,26 @@ export default function Page() {
 
           {/* ═══ SHOP MODAL ═══ */}
           {showShopModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1500px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
-                <button onClick={() => { setShowShopModal(false); setShopCart({}); setShopError(""); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
-                {/* Sidebar — kategorie sklepu */}
-                <div className="flex w-[308px] shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">
-                  <div className="flex flex-col gap-3 p-6 pt-14">
-                    <p className="mb-3 text-[17px] font-black uppercase tracking-widest text-[#8b6a3e]">Sklep</p>
-                    {(["nasiona","zwierzeta","drzewa","przedmioty"] as const).map(tab => (
-                      <button key={tab} onClick={() => setShopTab(tab)}
-                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[20px] font-bold transition ${
-                          shopTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
-                        }`}>
-                        {tab === "nasiona" ? "Nasiona" : tab === "zwierzeta" ? "Zwierzęta" : tab === "drzewa" ? "Drzewa" : "Przedmioty"}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex-1" />
-                  {/* Kasa gracza */}
-                  <div className="border-t border-[#8b6a3e]/30 px-5 pt-5 pb-8">
-                    <p className="text-sm text-[#8b6a3e] uppercase tracking-widest mb-1">Kasa</p>
-                    <p className="text-2xl font-black text-[#f9e7b2]">{Number(displayMoney).toFixed(2)}</p>
-                  </div>
-                </div>
-                {/* Content */}
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <div className="flex-1 overflow-y-auto p-5 text-[#dfcfab]">
-                    {shopTab === "nasiona" && (
-                      <div>
-                        {/* Lista wszystkich upraw — siatka 3 kolumny */}
-                        <div className="grid grid-cols-3 gap-2">
-                          {CROPS.filter(c => c.id !== "test_nasiono").map(crop => {
-                            const locked = displayLevel < crop.unlockLevel;
-                            const basePrice = CROP_PRICES[crop.id] ?? 0;
-                            const isSuper = dailyPromos.super_.includes(crop.id);
-                            const isNormal = dailyPromos.normal.includes(crop.id);
-                            const disc = isSuper ? 0.8 : isNormal ? 0.9 : 1;
-                            const effPrice = Math.round(basePrice * disc * 100) / 100;
-                            const qty = shopCart[crop.id] ?? 0;
-                            const owned = seedInventory[crop.id + "_good"] ?? 0;
-                            const maxBuy = effPrice > 0 ? Math.floor(displayMoney / effPrice) : 0;
-                            return (
-                              <div key={crop.id} className={`flex flex-col rounded-xl border p-3 transition-all ${locked && isSuper ? "border-green-700/30 bg-green-900/5 opacity-60" : locked && isNormal ? "border-amber-700/30 bg-amber-900/5 opacity-60" : locked ? "border-[#374151]/30 bg-black/10 opacity-50" : isSuper && qty === 0 ? "promo-super bg-green-900/10" : isNormal && qty === 0 ? "promo-normal bg-amber-900/10" : qty > 0 ? "border-yellow-500/40 bg-yellow-900/10" : "border-[#8b6a3e]/30 bg-black/15"}`}>
-                                {/* Górny rząd: promo lewo | nazwa środek | cena prawo */}
-                                <div className="grid grid-cols-[1fr_auto_1fr] items-start w-full mb-2 gap-1">
-                                  {/* Lewa: lock + promocja + czas */}
-                                  <div className="flex flex-col gap-0.5 items-start">
-                                    {locked && <span className="rounded-full bg-[#1f2937]/80 border border-[#374151]/60 px-1.5 py-0.5 text-[9px] font-black text-[#9ca3af]">🔒 Lvl {crop.unlockLevel}</span>}
-                                    {isSuper && (
-                                      <>
-                                        <span className="rounded-full bg-green-900/40 border border-green-500/40 px-1.5 py-0.5 text-[9px] font-black text-green-300">⭐ -20%</span>
-                                        {!locked && <span className="text-[13px] text-green-400/80 font-black">{promoCountdown}</span>}
-                                      </>
-                                    )}
-                                    {isNormal && (
-                                      <>
-                                        <span className="rounded-full bg-amber-900/40 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-black text-amber-300">🔥 -10%</span>
-                                        {!locked && <span className="text-[13px] text-amber-400/80 font-black">{promoCountdown}</span>}
-                                      </>
-                                    )}
-                                  </div>
-                                  {/* Środek: nazwa */}
-                                  <p className={`text-[15px] font-black leading-tight text-center ${locked ? "text-[#6b7280]" : "text-[#f9e7b2]"}`}>{crop.name}</p>
-                                  {/* Prawa: cena */}
-                                  <div className="flex flex-col items-end">
-                                    {(isNormal || isSuper) ? (
-                                      <>
-                                        <p className="text-[11px] text-[#8b6a3e] line-through leading-tight">{basePrice.toFixed(2)} 💰</p>
-                                        <p className={`text-[15px] font-black leading-tight ${isSuper ? "text-green-300" : "text-amber-300"}`}>{effPrice.toFixed(2)} 💰</p>
-                                      </>
-                                    ) : (
-                                      <p className="text-[15px] font-black text-[#8b6a3e] leading-tight">{effPrice.toFixed(2)} 💰</p>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* Ikona wyśrodkowana */}
-                                <div className="flex justify-center w-full mb-2">
-                                  <img src={crop.spritePath} alt={crop.name} className="h-[96px] w-[96px] object-contain" style={{imageRendering:"pixelated"}} />
-                                </div>
-                                {/* Masz — dół wycentrowane */}
-                                <p className="text-[16px] font-bold text-emerald-400 text-center mb-2">Masz: {owned}</p>
-                                {/* Kontrolki ilości */}
-                                {!locked && (
-                                  <div className="flex items-center gap-1 w-full">
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:Math.max(0,(c[crop.id]??0)-1)}))} className="h-7 w-7 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-red-900/30 hover:border-red-500/40 active:scale-75 active:bg-red-900/50 transition-all duration-75">−</button>
-                                    <input type="number" min={0} value={qty} onChange={e => setShopCart(c => ({...c,[crop.id]:Math.max(0,Number(e.target.value))}))} className="min-w-0 flex-1 rounded-md border border-[#8b6a3e]/40 bg-black/30 px-1 py-1 text-center text-sm font-bold text-[#f9e7b2] focus:outline-none focus:border-yellow-400/60" />
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:(c[crop.id]??0)+1}))} className="h-7 w-7 shrink-0 rounded-md border border-[#8b6a3e]/40 bg-black/30 text-base font-black text-[#f9e7b2] hover:bg-emerald-900/30 hover:border-emerald-500/40 active:scale-75 active:bg-emerald-900/50 transition-all duration-75">+</button>
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:maxBuy}))} disabled={maxBuy === 0} className={`shrink-0 rounded-md border px-1.5 py-1 text-[9px] font-black transition-all duration-75 ${maxBuy > 0 ? "border-amber-500/50 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40 active:scale-90" : "border-[#374151]/30 bg-black/10 text-[#6b7280] cursor-not-allowed"}`}>MAX</button>
-                                    <button onClick={() => setShopCart(c => ({...c,[crop.id]:0}))} disabled={qty === 0} className={`shrink-0 rounded-md border px-1.5 py-1 text-[9px] font-black transition-all duration-75 ${qty > 0 ? "border-red-500/50 bg-red-900/20 text-red-300 hover:bg-red-900/40 active:scale-90" : "border-[#374151]/30 bg-black/10 text-[#6b7280] cursor-not-allowed"}`}>0</button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {shopTab === "przedmioty" && (() => {
-                      const SHOP_ITEMS = [
-                        { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/przedmioty/beekeeper_suit.png", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
-                        { id:"jar_empty_1",    label:"Słoik × 1",         img:"/przedmioty/jar_pack_1.png",     desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
-                        { id:"jar_empty_8",    label:"Słoik × 8",         img:"/przedmioty/jar_pack_8.png",     desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
-                        { id:"jar_empty_15",   label:"Słoik × 15",        img:"/przedmioty/jar_pack_15.png",    desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
-                      ];
-                      return (
-                        <div className="flex flex-col gap-3 p-4 overflow-y-auto">
-                          {SHOP_ITEMS.map(item => {
-                            const canAfford = displayMoney >= item.price;
-                            return (
-                              <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-[#8b6a3e]/40 bg-black/20 p-4">
-                                <img src={item.img} alt={item.label} className="w-[84px] h-[84px] object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                                <div className="flex-1">
-                                  <p className="font-black text-[#f9e7b2]">{item.label}</p>
-                                  <p className="text-xs text-[#8b6a3e]">{item.desc}</p>
-                                  <p className="mt-1 text-sm font-bold text-yellow-300">{item.price.toFixed(2)} 💰</p>
-                                </div>
-                                <button
-                                  disabled={!canAfford || !profile?.id}
-                                  onClick={() => {
-                                    if (!profile?.id || !canAfford) return;
-                                    void (async () => {
-                                      const { data, error } = await supabase.rpc("buy_hive_shop_item", { p_item_id: item.id });
-                                      if (error) { setMessage({ type: "error", title: "Błąd zakupu", text: error.message }); return; }
-                                      const response = data as { ok?: boolean; error?: string; item_id?: string; price?: number; qty?: number; item_type?: "suit" | "jar"; money?: number; hive_data?: HiveData } | null;
-                                      if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu", text: response.error ?? "Nieznany błąd" }); return; }
-                                      if (response?.hive_data) setHiveData(response.hive_data);
-                                      await loadProfile(profile.id);
-                                      setMessage({ type: "success", title: "Zakupiono!", text: `Kupiono: ${item.label}` });
-                                    })();
-                                  }}
-                                  className={`rounded-xl px-4 py-2 text-sm font-black transition ${canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
-                                >Kup</button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                    {shopTab === "zwierzeta" && (() => {
-                      const lvl = profile?.level ?? 1;
-                      const handleBuyAnimalShop = async (a: AnimalDef) => {
-                        if (!profile?.id) return;
-                        const st = barnState[a.id];
-                        if (!st) return;
-                        if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
-                        if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
-                        if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca w stodole!",text:`Kup więcej slotów dla ${a.name} w Stodole.`}); return; }
-                        const { data, error } = await supabase.rpc("buy_barn_animal", { p_user_id: profile.id, p_animal_id: a.id });
-                        if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
-                        const response = data as { ok?: boolean; error?: string } | null;
-                        if (response?.ok === false) { setMessage({type:"error",title:"Błąd zakupu!",text:response.error ?? "Operacja nie powiodła się."}); return; }
-                        await loadProfile(profile.id);
-                        setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
-                      };
-                      return (
-                        <div className="flex flex-col gap-2 p-3 overflow-y-auto">
-                          <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
-                            <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">🐄 Zwierzęta hodowlane</p>
-                            <p className="mt-1 text-sm font-bold text-[#f9e7b2]">Każde zwierzę ma własne sloty w Stodole.</p>
-                            <p className="mt-1 text-[11px] text-[#8b6a3e]">Po zakupie zwierzę pojawi się w zagrodzie. Sloty kupujesz w Stodole (przycisk 🏗️).</p>
-                          </div>
-                          {ANIMALS.map(a => {
-                            const st = barnState[a.id];
-                            const owned = st?.owned ?? 0;
-                            const slots = st?.slots ?? a.startSlots;
-                            const item = ANIMAL_ITEMS.find(i => i.id === a.itemId);
-                            const locked = lvl < a.unlockLevel;
-                            const needSlot = !locked && owned >= slots && slots < a.maxSlots;
-                            const atMax = !locked && owned >= slots && slots >= a.maxSlots;
-                            const noSlot = needSlot || atMax;
-                            const tooPoor = !locked && !noSlot && displayMoney < a.buyPrice;
-                            const canBuy = !locked && !noSlot && !tooPoor;
-                            return (
-                              <div key={a.id} className={`flex items-center gap-3 rounded-2xl border p-3 ${locked ? "border-[#374151]/40 bg-black/10 opacity-60" : "border-[#8b6a3e]/40 bg-black/20"}`}>
-                                <div className="flex h-[64px] w-[64px] items-center justify-center rounded-xl border border-[#8b6a3e]/40 bg-black/30 text-4xl overflow-hidden">
-                                  <AnimalImg id={a.id} icon={a.icon} className="h-full w-full" /></div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-black text-[#f9e7b2]">{a.name}</p>
-                                    <span className="rounded-full border border-[#8b6a3e]/40 bg-black/30 px-2 py-0.5 text-[10px] font-bold text-[#dfcfab]">LVL {a.unlockLevel}</span>
-                                    {locked && <span className="rounded-full border border-red-500/40 bg-red-900/20 px-2 py-0.5 text-[10px] font-bold text-red-300">🔒 Zablokowane</span>}
-                                  </div>
-                                  <p className="mt-1 text-[11px] text-[#8b6a3e]">
-                                    {canBuy
-                                      ? <>{item?.icon} <span className="text-[#dfcfab] font-bold">Produkcja po zakupie: {owned+1} {item ? plItem(owned+1, item) : "szt."} co {a.prodMs/3600000}h</span></>
-                                      : <>{item?.icon} <span className="text-[#dfcfab] font-bold">Produkcja: {owned > 0 ? `${owned} ${item ? plItem(owned, item) : "szt."}` : `1 ${item ? item.n1 : "szt."} / szt.`} co {a.prodMs/3600000}h</span></>
-                                    }
-                                  </p>
-                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
-                                    {canBuy
-                                      ? <>Magazyn po zakupie: <span className="text-[#dfcfab] font-bold">{owned+1} {item ? plItem(owned+1, item) : "szt."}</span></>
-                                      : owned > 0 ? <>Magazyn: <span className="text-[#dfcfab] font-bold">{owned} {item ? plItem(owned, item) : "szt."}</span></> : null
-                                    }
-                                  </p>
-                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
-                                    Karma: {a.feed.map(f => `${f.icon} ${f.name}`).join(" lub ")}
-                                  </p>
-                                  <p className="mt-0.5 text-[11px] text-[#8b6a3e]">
-                                    Posiadasz: <span className={`font-black ${owned > 0 ? "text-emerald-300" : "text-[#dfcfab]"}`}>{owned}/{slots}</span>
-                                    <span className="text-[#6b7280]"> (max {a.maxSlots})</span>
-                                    {" · "}Sprzedaż: <span className="text-amber-300 font-bold">{item?.sellPrice.toLocaleString()} 💰/szt</span>
-                                  </p>
-                                  {needSlot && (
-                                    <p className="mt-0.5 text-[10px] text-amber-300/80">🏗️ Sloty pełne — kup więcej w Stodole (do {a.maxSlots} szt.)</p>
-                                  )}
-                                  {atMax && (
-                                    <p className="mt-0.5 text-[10px] text-[#6b7280]">✦ Osiągnięto maksimum {a.maxSlots} {a.name.toLowerCase()}.</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <p className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</p>
-                                  <button
-                                    disabled={!canBuy}
-                                    onClick={() => void handleBuyAnimalShop(a)}
-                                    className={`rounded-xl border px-4 py-2 text-sm font-black transition ${canBuy ? "border-emerald-500/60 bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/50" : "cursor-not-allowed border-[#374151] bg-black/20 text-[#6b7280]"}`}>
-                                    {locked ? `🔒 LVL ${a.unlockLevel}` : atMax ? "Maks. zwierząt" : needSlot ? "🏗️ Kup slot" : tooPoor ? "Za mało 💰" : "🛒 Kup"}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                    {shopTab === "drzewa" && (() => {
-                      const lvl = profile?.level ?? 1;
-                      const maxSlots = getMaxTreeSlots(lvl);
-                      const owned = getOrchardTotalOwned(orchardState);
-                      const free = maxSlots - owned;
-                      return (
-                        <div className="flex flex-col gap-2 p-3">
-                          <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
-                            <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a]">🌳 Sad — twoje miejsca</p>
-                            <p className="mt-1 text-sm font-bold text-[#f9e7b2]">{owned} / {maxSlots} <span className="text-xs font-normal text-[#8b6a3e]">drzew (limit od poziomu: 10→2, 15→4, 20→6, 25→8)</span></p>
-                            {maxSlots === 0 && <p className="mt-1 text-[11px] text-amber-300">Pierwsze miejsca odblokujesz na poziomie 10.</p>}
-                            {free === 0 && maxSlots > 0 && <p className="mt-1 text-[11px] text-red-300">Wszystkie miejsca zajęte. Zwiększ poziom aby kupić więcej drzew.</p>}
-                          </div>
-                          {TREES.map(t => {
-                            const locked = lvl < t.unlockLevel;
-                            const canBuy = !locked && free > 0 && (profile?.money ?? 0) >= t.buyPrice;
-                            const ownedHere = orchardState[t.id]?.owned ?? 0;
-                            const avgDrop = ((t.dropMin + t.dropMax) / 2).toFixed(1);
-                            const avgEarn = Math.round(((t.dropMin + t.dropMax) / 2) * t.pricePerFruit);
-                            return (
-                              <div key={t.id} className={`flex items-center gap-3 rounded-xl border bg-black/30 p-3 ${locked ? "border-[#8b6a3e]/20 opacity-60" : "border-[#8b6a3e]/50"}`}>
-                                <div className="text-3xl shrink-0">{t.icon}</div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-sm font-black text-[#f9e7b2]">{t.name}</p>
-                                    {ownedHere > 0 && <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-black text-emerald-300">×{ownedHere} w sadzie</span>}
-                                    {locked && <span className="rounded-full bg-red-500/20 border border-red-500/40 px-2 py-0.5 text-[10px] font-black text-red-300">🔒 LVL {t.unlockLevel}</span>}
-                                  </div>
-                                  <p className="text-[11px] text-[#dfcfab]">Owoc: {t.fruitIcon} {t.fruitName} · Drop: {t.dropMin}–{t.dropMax}/cykl · Cykl: {Math.round(t.growthTimeMs/3600000)}h · Cena owocu: {t.pricePerFruit}💰</p>
-                                  <p className="text-[10px] text-[#8b6a3e]">Średnio ~{avgDrop} owoców → ~{avgEarn}💰 / cykl (przy zwykłych)</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <p className="text-sm font-black text-[#f9e7b2]">{t.buyPrice}💰</p>
-                                  <button
-                                    disabled={!canBuy}
-                                    onClick={() => {
-                                      if (!profile?.id || !canBuy) return;
-                                      setOrchardError("");
-                                      void (async () => {
-                                        const { data, error } = await supabase.rpc("buy_orchard_tree", { p_user_id: profile.id, p_tree_id: t.id });
-                                        if (error) { setOrchardError("Błąd zakupu: " + error.message); return; }
-                                        const response = data as { ok?: boolean; error?: string } | null;
-                                        if (response?.ok === false) { setOrchardError(response.error ?? "Nie udało się kupić drzewa."); return; }
-                                        await loadProfile(profile.id);
-                                        setMessage({ type:"success", title:`${t.icon} Posadzono ${t.name}!`, text:`Pierwsze owoce za ${Math.round(t.growthTimeMs/3600000)}h.` });
-                                      })();
-                                    }}
-                                    className={`mt-1 rounded-lg px-3 py-1 text-xs font-black ${canBuy ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
-                                  >Kup</button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {orchardError && <p className="rounded-lg bg-red-900/40 px-3 py-2 text-xs text-red-300">{orchardError}</p>}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              {shopTab === "nasiona" && (() => {
-                const cartEntries = Object.entries(shopCart).filter(([,v]) => (v as number) > 0);
-                const total = Math.round(cartEntries.reduce((s, [id, qty]) => {
-                  const bp = CROP_PRICES[id] ?? 0;
-                  const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
-                  return s + bp * disc * (qty as number);
-                }, 0) * 100) / 100;
-                const totalItems = cartEntries.reduce((s, [,v]) => s + (v as number), 0);
-                const canAfford = displayMoney >= total;
-                return (
-                  <div className="flex w-[268px] shrink-0 flex-col border-l border-[#8b6a3e]/30 bg-black/20">
-                    <div className="px-4 py-3 border-b border-[#8b6a3e]/30 shrink-0">
-                      <p className="text-[18px] font-black uppercase tracking-wider text-[#d8ba7a]">Koszyk</p>
-                      {cartEntries.length === 0 && <p className="mt-1.5 text-[17px] text-[#8b6a3e]">Koszyk jest pusty</p>}
-                    </div>
-                    <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
-                      {cartEntries.map(([id, qty]) => {
-                        const crop = CROPS.find(c => c.id === id);
-                        const bp = CROP_PRICES[id] ?? 0;
-                        const disc = dailyPromos.super_.includes(id) ? 0.8 : dailyPromos.normal.includes(id) ? 0.9 : 1;
-                        const ep = Math.round(bp * disc * 100) / 100;
-                        return (
-                          <div key={id} className="flex items-center gap-2 rounded-lg bg-black/20 px-2.5 py-1.5 border border-[#8b6a3e]/20">
-                            <img src={crop?.spritePath} alt={crop?.name} className="h-9 w-9 object-contain shrink-0" style={{imageRendering:"pixelated"}} />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[17px] font-bold text-[#f9e7b2] truncate">{crop?.name}</p>
-                              <p className="text-[15px] text-[#8b6a3e]">{qty as number} x {ep.toFixed(2)} 💰</p>
-                            </div>
-                            <p className="text-[18px] font-black text-yellow-300 shrink-0">{(ep * (qty as number)).toFixed(2)}</p>
-                            <button onClick={() => setShopCart(c => { const n = {...c}; delete n[id]; return n; })} className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full border border-red-500/40 bg-red-900/20 text-red-300 hover:bg-red-900/50 hover:text-red-200 transition-all text-[13px] font-black">×</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="border-t border-[#8b6a3e]/30 p-3 shrink-0">
-                      {shopError && <p className="mb-2 rounded-lg bg-red-900/40 px-2 py-1 text-[18px] text-red-300">{shopError}</p>}
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[17px] text-[#8b6a3e]">Suma ({totalItems} szt.)</p>
-                        <p className={`text-[21px] font-black ${canAfford || total === 0 ? "text-[#f9e7b2]" : "text-red-400"}`}>{total.toFixed(2)} 💰</p>
-                      </div>
-                      {!canAfford && total > 0 && <p className="text-[15px] text-red-400 mb-2">Za malo srodkow!</p>}
-                      <button
-                        disabled={total === 0 || !canAfford}
-                        onClick={() => {
-                          if (!profile?.id || total === 0 || !canAfford) return;
-                          setShopError("");
-                          void (async () => {
-                            const p_items = Object.entries(shopCart)
-                              .filter(([, qty]) => (qty as number) > 0)
-                              .map(([key, qty]) => {
-                                let crop_id = key;
-                                let quality = "good";
-                                for (const q of ["epic","legendary","rotten","good"]) {
-                                  if (key.endsWith(`_${q}`)) { crop_id = key.slice(0, -(q.length + 1)); quality = q; break; }
-                                }
-                                return { crop_id, quality, qty: qty as number };
-                              });
-                            const { data, error } = await supabase.rpc("buy_shop_seeds", { p_user_id: profile.id, p_items });
-                            if (error) { setShopError("Blad: " + error.message); return; }
-                            const response = data as { ok?: boolean; error?: string } | null;
-                            if (response?.ok === false) { setShopError("Blad: " + (response.error ?? "Operacja nie powiodła się.")); return; }
-                            setShopCart({});
-                            setShopError("");
-                            await loadProfile(profile.id);
-                          })();
-                        }}
-                        className={`w-full rounded-xl py-2 font-black text-[21px] transition-all active:scale-95 ${total > 0 && canAfford ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
-                      >Kup ({totalItems} szt.)</button>
-                      <button onClick={() => setShopCart({})} className="mt-1 w-full rounded-lg py-1 text-[15px] text-[#8b6a3e] hover:text-red-300 transition-colors">Wyczysc koszyk</button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-            </div>
+            <ShopModal
+              profileId={profile?.id}
+              displayMoney={displayMoney}
+              displayLevel={displayLevel}
+              dailyPromos={dailyPromos}
+              promoCountdown={promoCountdown}
+              seedInventory={seedInventory}
+              cropPrices={CROP_PRICES}
+              barnState={barnState}
+              orchardState={orchardState}
+              orchardError={orchardError}
+              shopCart={shopCart}
+              shopError={shopError}
+              setShopCart={setShopCart}
+              onClose={() => { setShowShopModal(false); setShopError(""); }}
+              onBuyAnimal={handleShopBuyAnimal}
+              onBuyTree={handleShopBuyTree}
+              onBuyHiveItem={handleShopBuyHiveItem}
+              onBuySeeds={handleShopBuySeeds}
+            />
           )}
 
           {/* ═══ DOM MODAL ═══ */}
@@ -9788,274 +9712,19 @@ export default function Page() {
           )}
 
           {/* ═══ POWIADOMIENIE KOMPOSTU ═══ */}
-          {compostNotice && (() => {
-            const _cnDef = COMPOST_DEFS[compostNotice.type];
-            return (
-              <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[400] animate-fade-in">
-                <div className="rounded-2xl border border-emerald-500/60 bg-[rgba(10,30,15,0.97)] px-5 py-3 shadow-2xl shadow-emerald-500/30 flex items-center gap-3">
-                  <span className="text-3xl">{_cnDef.icon}</span>
-                  <div>
-                    <p className="text-sm font-black text-emerald-200">Kompost aktywowany!</p>
-                    <p className="text-xs text-emerald-300/90">
-                      {_cnDef.name} · Bonus: {_cnDef.bonusLabel(compostNotice.value)} · Pole #{compostNotice.plotId}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          {compostNotice && <CompostNotificationPopup notice={compostNotice} />}
 
-          {showUlModal && (() => {
-            const hlvl = hiveData.level;
-            const maxHoney = HIVE_MAX_HONEY[hlvl] ?? 16;
-            const elapsed = hiveData.honey_start != null ? Math.max(0, hiveNow - hiveData.honey_start) : 0;
-            const honeyAvailable = hiveData.honey_start != null ? Math.min(Math.floor(elapsed / HONEY_MS_PER_PT), maxHoney) : 0;
-            const msToNext = HONEY_MS_PER_PT - (elapsed % HONEY_MS_PER_PT);
-            const secToNext = Math.ceil(msToNext / 1000);
-            const hh = Math.floor(secToNext / 3600);
-            const mm = Math.floor((secToNext % 3600) / 60);
-            const ss = secToNext % 60;
-            const timerStr = `${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
-            const beesNeeded = HIVE_UPGRADE_BEES[hlvl] ?? 50;
-            const beesProgress = Math.min(hiveData.bees_progress, beesNeeded);
-            const honeyStarted = hiveData.honey_start != null;
-            const canCollect = honeyStarted && honeyAvailable > 0 && hiveData.empty_jars > 0 && hiveData.suit_durability > 0;
-            const suitPct = Math.round((hiveData.suit_durability / 100) * 100);
-            const hiveBonusPct = hlvl * 2;
-            const hiveImg = `/ul/ul_${hlvl}.png`;
-            const playerMoney = profile?.money ?? 0;
-            const buyHive = async () => {
-              if (!profile?.id) return;
-              if (playerMoney < HIVE_BUY_COST) {
-                setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${HIVE_BUY_COST} zł żeby kupić ul.` });
-                return;
-              }
-              const { data, error } = await supabase.rpc("buy_hive", { p_user_id: profile.id });
-              if (error || !data?.ok) {
-                setMessage({ type:"error", title:"Nie udało się kupić ula", text: data?.error || error?.message || "Spróbuj ponownie." });
-                await loadProfile(profile.id);
-                return;
-              }
-              setHiveData(data.hive_data as HiveData);
-              await loadProfile(profile.id);
-              setMessage({ type:"success", title:"🍯 Ul kupiony!", text:`Kup minimum ${HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ul ruszył z produkcją miodu.` });
-            };
-            const addBees = async (n: number) => {
-              if (!profile?.id) return;
-              const add = Math.min(n, beesNeeded - beesProgress);
-              if (add <= 0) return;
-              const cost = add * BEE_COST;
-              if (playerMoney < cost) {
-                setMessage({ type:"error", title:"Brak pieniędzy", text:`Potrzebujesz ${cost} zł na ${add} ${add === 1 ? "pszczołę" : add < 5 ? "pszczoły" : "pszczół"}.` });
-                return;
-              }
-              const { data, error } = await supabase.rpc("add_hive_bees", { p_user_id: profile.id, p_amount: add });
-              if (error || !data?.ok) {
-                setMessage({ type:"error", title:"Nie udało się kupić pszczół", text: data?.error || error?.message || "Spróbuj ponownie." });
-                await loadProfile(profile.id);
-                return;
-              }
-              setHiveData(data.hive_data as HiveData);
-              await loadProfile(profile.id);
-              // Feedback o wyniku losowania (przyjęte vs. zginęły)
-              const _attempted = data.bees_attempted ?? add;
-              const _accepted  = data.bees_accepted  ?? _attempted;
-              const _rejected  = data.bees_rejected  ?? 0;
-              const _lostMoney = _rejected * BEE_COST;
-              if (_rejected === 0) {
-                if (_accepted === 1) {
-                  setMessage({ type:"success", title:`🐝 Pszczoła przyjęta!`, text:`Powodzenie — wleciała prosto do ula.` });
-                } else {
-                  setMessage({ type:"success", title:`🐝 Wszystkie ${_accepted} ${_accepted < 5 ? "pszczoły przyjęte" : "pszczół przyjęte"}!`, text:`Świetna robota — żadna nie zginęła.` });
-                }
-              } else if (_accepted === 0) {
-                if (_rejected === 1) {
-                  setMessage({ type:"error", title:`💀 Pszczoła nie przyjęła się, zginęła!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
-                } else {
-                  setMessage({ type:"error", title:`💀 Wszystkie ${_rejected} ${_rejected < 5 ? "pszczoły zginęły" : "pszczół zginęło"}!`, text:`Straciłeś ${_lostMoney} zł. Pech! (szansa przyjęcia: ${data.chance_pct}%)` });
-                }
-              } else {
-                setMessage({ type:"error", title:`🐝 Przyjęto ${_accepted}/${_attempted} pszczół`, text:`${_rejected} ${_rejected === 1 ? "zginęła" : "zginęło"} — straciłeś ${_lostMoney} zł. (szansa przyjęcia: ${data.chance_pct}%)` });
-              }
-            };
-            const collectHoney = async () => {
-              if (!profile?.id) return;
-              // Bonusy z eq: % produkcji miodu (g3 Kapelusz Pszczelarza), % zużycia stroju (d20 Rękawice Pszczelarza)
-              const _honeyBonusPct = getEquipBonusPct("% produkcji miodu", charEquipped);
-              const _suitSavePct   = getEquipBonusPct("% zużycia stroju", charEquipped);
-              const { data, error } = await supabase.rpc("collect_honey", {
-                p_user_id: profile.id,
-                p_honey_bonus_pct: _honeyBonusPct,
-                p_suit_save_pct:   _suitSavePct,
-              });
-              if (error || !data?.ok) {
-                const msg = data?.error === "no_honey" ? "Poczekaj — miód jeszcze nie jest gotowy!"
-                          : data?.error === "no_jars"  ? "Brak pustych słoików!"
-                          : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
-                          : "Błąd zbierania miodu — spróbuj ponownie.";
-                setMessage({ type:"error", title: msg, text: "Synchronizuję stan ula z bazą..." });
-                // FIX: synchronizacja UI z bazą po błędzie (np. po nieudanym zbiorze
-                // honey_start został zresetowany w bazie, ale UI wciąż pokazuje 8/8).
-                await loadProfile(profile.id);
-                return;
-              }
-              setHiveData(data.hive_data as HiveData);
-              if (data.success) {
-                const _bonusInfo = _honeyBonusPct > 0 ? ` (+${_honeyBonusPct.toFixed(0)}% produkcji)` : "";
-                setMessage({ type:"success", title:`Zebrano ${data.collected} ${data.collected === 1 ? "słoik" : data.collected < 5 ? "słoiki" : "słoików"} miodu! 🍯${_bonusInfo}`, text:"" });
-              }
-              else setMessage({ type:"error", title:"Pszczoły były niespokojne — miód się nie udał!", text:"" });
-            };
-            return (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="relative flex w-full max-w-[900px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5 overflow-y-auto">
-                  <button onClick={() => setShowUlModal(false)} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
-                  {/* Header */}
-                  <div className="flex items-center gap-4">
-                    <span className="text-4xl">🍯</span>
-                    <div>
-                      <h2 className="text-2xl font-black text-[#f9e7b2]">{hlvl === 0 ? "Ul — brak (kup, by zacząć)" : `Ul — poziom ${hlvl}`}</h2>
-                      <p className="text-sm text-amber-400/80">{hlvl === 0 ? "Najpierw kup ul, potem pszczoły — i ruszysz z produkcją miodu." : `Pszczoły przyspieszają wzrost o ${hiveBonusPct}%`}</p>
-                    </div>
-                  </div>
-                  {/* hlvl === 0: placeholder + kup ul */}
-                  {hlvl === 0 && (
-                    <div className="flex justify-center items-center h-36 rounded-2xl border-2 border-dashed border-[#8b6a3e]/40 bg-black/20">
-                      <span className="text-6xl opacity-40">🪧</span>
-                    </div>
-                  )}
-                  {hlvl === 0 && (
-                    <div className="rounded-2xl border border-amber-600/40 bg-amber-900/10 p-5 flex flex-col gap-3">
-                      <div>
-                        <p className="text-base font-black text-[#f9e7b2]">Kup ul (poziom 1)</p>
-                        <p className="text-xs text-[#dfcfab]/80 mt-1">Po zakupie ula musisz dokupić minimum {HIVE_MIN_BEES_TO_PRODUCE} pszczół ({HIVE_MIN_BEES_TO_PRODUCE * BEE_COST} zł), żeby uruchomić produkcję miodu.</p>
-                      </div>
-                      <button
-                        disabled={playerMoney < HIVE_BUY_COST}
-                        onClick={() => { void buyHive(); }}
-                        className={`w-full rounded-xl py-3 text-sm font-black transition ${playerMoney >= HIVE_BUY_COST ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
-                      >
-                        {playerMoney >= HIVE_BUY_COST ? `🍯 Kup ul (${HIVE_BUY_COST} zł)` : `🚫 Brak pieniędzy (${HIVE_BUY_COST} zł)`}
-                      </button>
-                    </div>
-                  )}
-                  {/* hlvl > 0: 2-kolumnowy layout */}
-                  {hlvl > 0 && (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {/* Lewa kolumna: podgląd, produkcja, zbiór */}
-                      <div className="flex flex-col gap-4">
-                        <div className="flex justify-center">
-                          <img src={hiveImg} alt={`Ul poziom ${hlvl}`} className="h-36 object-contain" style={{imageRendering:"pixelated"}} onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = "0.3"; }} />
-                        </div>
-                        {/* Miód */}
-                        <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-[#dfcfab] font-bold">🍯 Miód</span>
-                            <span className="text-amber-300 font-black">{honeyAvailable} / {maxHoney}</span>
-                          </div>
-                          <div className="h-3 rounded-full bg-black/40 border border-amber-700/30 overflow-hidden">
-                            <div className="h-full rounded-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all" style={{ width:`${maxHoney > 0 ? (honeyAvailable/maxHoney*100) : 0}%` }} />
-                          </div>
-                          {honeyStarted ? (
-                            <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
-                          ) : (
-                            <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup minimum {HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ruszyć z produkcją miodu!</p>
-                          )}
-                        </div>
-                        {/* Zasoby */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                            <img src="/przedmioty/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
-                            <div>
-                              <p className="text-xs text-[#8b6a3e]">Puste słoiki</p>
-                              <p className="font-black text-[#f9e7b2]">{hiveData.empty_jars}</p>
-                            </div>
-                          </div>
-                          <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                            <img src="/przedmioty/jar_honey.png" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
-                            <div>
-                              <p className="text-xs text-[#8b6a3e]">Słoiki z miodem</p>
-                              <p className="font-black text-[#f9e7b2]">{hiveData.honey_jars}</p>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Strój pszczelarza */}
-                        <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3">
-                          <div className="flex items-center gap-3 mb-2">
-                            <img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
-                            <div className="flex-1">
-                              <div className="flex justify-between text-xs mb-1">
-                                <span className="text-[#dfcfab]">Strój pszczelarza</span>
-                                <span className={hiveData.suit_durability > 0 ? "text-green-400" : "text-red-400"}>{hiveData.suit_durability}/100</span>
-                              </div>
-                              <div className="h-2 rounded-full bg-black/40 border border-[#8b6a3e]/30 overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width:`${suitPct}%`, background: hiveData.suit_durability > 30 ? "#22c55e" : "#ef4444" }} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Zbierz miód */}
-                        <button
-                          disabled={!canCollect}
-                          onClick={() => { void collectHoney(); }}
-                          className={`w-full rounded-xl py-3 text-sm font-black transition ${canCollect ? "border border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] text-[#2f1b0c] hover:brightness-110" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}
-                        >
-                          {!honeyStarted ? `🐝 Kup minimum ${HIVE_MIN_BEES_TO_PRODUCE} pszczół` : !canCollect && hiveData.suit_durability <= 0 ? "🚫 Brak stroju pszczelarza" : !canCollect && hiveData.empty_jars <= 0 ? "🚫 Brak słoików" : !canCollect ? "🕐 Poczekaj na miód" : `🍯 Zbierz miód (${Math.min(honeyAvailable, hiveData.empty_jars)} słoiki)`}
-                        </button>
-                      </div>
-                      {/* Prawa kolumna: pszczoły i ulepszanie */}
-                      <div className="flex flex-col gap-4">
-                        {hlvl >= 1 && hlvl < 5 && (
-                          <div className="rounded-2xl border border-amber-600/30 bg-black/30 p-4">
-                            <p className="text-sm font-bold text-[#dfcfab] mb-1">🐝 Dokup pszczoły ({beesProgress}/{beesNeeded})</p>
-                            <p className="text-xs text-amber-400/80 mb-1">Cena: <span className="font-black text-yellow-200">{BEE_COST} zł</span> za 1 pszczołę</p>
-                            <p className={`text-xs mb-2 font-bold ${(HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.8 ? "text-green-400" : (HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) >= 0.6 ? "text-yellow-300" : "text-red-400"}`}>
-                              Szansa przyjęcia pszczoły: <span className="font-black">{Math.round((HIVE_BEE_ACCEPT_CHANCE[hlvl] ?? 0) * 100)}%</span>
-                            </p>
-                            <p className="text-xs text-red-400/80 mb-2">⚠️ Pszczoła która nie zostanie przyjęta — ginie, a kasa przepada.</p>
-                            <div className="h-2 rounded-full bg-black/40 overflow-hidden mb-3">
-                              <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width:`${beesNeeded > 0 ? (beesProgress/beesNeeded*100) : 0}%` }} />
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                              {[1,5,10].map(n => {
-                                const _add = Math.min(n, beesNeeded - beesProgress);
-                                const _cost = _add * BEE_COST;
-                                const _disabled = beesProgress >= beesNeeded || playerMoney < _cost || _add <= 0;
-                                return (
-                                  <button key={n} disabled={_disabled} onClick={() => { void addBees(n); }}
-                                    title={`Koszt: ${_cost} zł`}
-                                    className="rounded-lg border border-amber-600/50 bg-amber-900/20 px-3 py-2 text-xs font-bold text-amber-300 hover:bg-amber-800/30 disabled:opacity-40 disabled:cursor-not-allowed">
-                                    +{n} 🐝 ({n * BEE_COST}zł)
-                                  </button>
-                                );
-                              })}
-                              {(() => {
-                                const _addMax = beesNeeded - beesProgress;
-                                const _costMax = _addMax * BEE_COST;
-                                const _disabledMax = _addMax <= 0 || playerMoney < _costMax;
-                                return (
-                                  <button disabled={_disabledMax} onClick={() => { void addBees(_addMax); }}
-                                    title={`Koszt: ${_costMax} zł`}
-                                    className="rounded-lg border border-amber-500/60 bg-amber-700/20 px-3 py-2 text-xs font-bold text-yellow-200 hover:bg-amber-700/30 disabled:opacity-40 disabled:cursor-not-allowed">
-                                    MAX 🐝 ({_costMax}zł)
-                                  </button>
-                                );
-                              })()}
-                            </div>
-                            {beesProgress >= beesNeeded && <p className="mt-2 text-xs text-green-400 font-bold">✅ Ul gotowy do ulepszenia!</p>}
-                          </div>
-                        )}
-                        {hlvl >= 5 && <p className="text-center text-sm text-amber-300 font-bold">✨ Ul osiągnął maksymalny poziom!</p>}
-                      </div>
-                    </div>
-                  )}
-                  <button onClick={() => setShowUlModal(false)} className="w-full rounded-xl border border-[#8b6a3e]/50 bg-black/30 py-3 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:bg-black/50">
-                    ✕ Zamknij (Esc)
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
+          {showUlModal && (
+            <HiveModal
+              hiveData={hiveData}
+              hiveNow={hiveNow}
+              displayMoney={displayMoney}
+              onClose={() => setShowUlModal(false)}
+              onBuyHive={handleBuyHive}
+              onAddBees={handleAddBees}
+              onCollect={handleCollectHoney}
+            />
+          )}
 
           {showLadaModal && (() => {
               const totalOrders = customerOrders.length;
@@ -11016,609 +10685,36 @@ export default function Page() {
             </>);
           })()}
 
-          {showStodolaModal && (() => {
-            const lvl = profile?.level ?? 0;
-            const opiekaPts = effectiveStats.opieka;
-            const bonusChancePct = (opiekaPts * 0.15).toFixed(1);
-            const hungerReducePct = (opiekaPts * 0.3).toFixed(1);
-            const handleBuyAnimal = async (a: AnimalDef) => {
-              if (!profile?.id) return;
-              const st = barnState[a.id];
-              if (!st) return;
-              if (lvl < a.unlockLevel) { setMessage({type:"error",title:"Za niski poziom!",text:`${a.name} odblokujesz na LVL ${a.unlockLevel}.`}); return; }
-              if (displayMoney < a.buyPrice) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${a.buyPrice.toLocaleString()} 💰`}); return; }
-              if (st.owned >= st.slots) { setMessage({type:"error",title:"Brak miejsca!",text:`Kup więcej slotów dla ${a.name}.`}); return; }
-              const { data, error } = await supabase.rpc("buy_barn_animal", { p_user_id: profile.id, p_animal_id: a.id });
-              if (error) { setMessage({type:"error",title:"Błąd zakupu!",text:error.message}); return; }
-              const response = data as { ok?: boolean; error?: string } | null;
-              if (response?.ok === false) { setMessage({type:"error",title:"Błąd zakupu!",text:response.error ?? "Operacja nie powiodła się."}); return; }
-              await loadProfile(profile.id);
-              setMessage({type:"success",title:`${a.icon} Kupiono!`,text:`${a.name} dołączyła do zagrody.`});
-            };
-            const handleBuySlot = async (a: AnimalDef) => {
-              if (!profile?.id) return;
-              const st = barnState[a.id];
-              const upg = st.slots - a.startSlots;
-              if (upg >= a.slotUpgCosts.length) { setMessage({type:"info",title:"Maks!",text:`Maksymalna liczba slotów dla ${a.name}.`}); return; }
-              const cost = a.slotUpgCosts[upg];
-              if (displayMoney < cost) { setMessage({type:"error",title:"Za mało złota!",text:`Potrzebujesz ${cost.toLocaleString()} 💰`}); return; }
-              const { data, error } = await supabase.rpc("buy_barn_slot", { p_user_id: profile.id, p_animal_id: a.id });
-              if (error) { setMessage({type:"error",title:"Błąd!",text:error.message}); return; }
-              const response = data as { ok?: boolean; error?: string; animal_state?: { slots?: number } } | null;
-              if (response?.ok === false) { setMessage({type:"error",title:"Błąd!",text:response.error ?? "Operacja nie powiodła się."}); return; }
-              const newSlots = response?.animal_state?.slots ?? (st.slots + 1);
-              await loadProfile(profile.id);
-              setMessage({type:"success",title:"Slot kupiony!",text:`${a.name}: ${newSlots} / ${a.maxSlots}`});
-            };
-            const handleFeed = async (a: AnimalDef, cropKey: string, points: number, cropName: string, cropIcon: string) => {
-              const have = seedInventory[cropKey] ?? 0;
-              if (have < 1) { setMessage({type:"error",title:"Brak karmy!",text:`Potrzebujesz ${cropName} (${cropIcon}).`}); return; }
-              if (!profile?.id) return;
-              const st = barnState[a.id];
-              const curH = barnCurrentHunger(st, opiekaPts);
-              const newH = Math.min(100, curH + points);
-              const { data, error } = await supabase.rpc("feed_barn_animal", { p_user_id: profile.id, p_animal_id: a.id, p_crop_key: cropKey });
-              if (error) { setMessage({type:"error",title:"Błąd karmienia!",text:error.message}); return; }
-              const response = data as { ok?: boolean; error?: string } | null;
-              if (response?.ok === false) { setMessage({type:"error",title:"Błąd karmienia!",text:response.error ?? "Karmienie nie powiodło się."}); return; }
-              await loadProfile(profile.id);
-              setMessage({type:"success",title:`${a.icon} Nakarmiono!`,text:`+${points} sytości → ${Math.round(newH)}%`});
-            };
-            const handleCollect = (a: AnimalDef) => {
-              if (!profile?.id) return;
-              void (async () => {
-                const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-                let rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
-                if (rpc.error?.message?.includes("sync_barn_owned")) {
-                  const st = barnState[a.id];
-                  if (!st || st.owned === 0) { setMessage({type:"error",title:"Błąd!",text:"Brak zwierząt do synchronizacji."}); return; }
-                  await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
-                  rpc = await supabase.rpc("collect_animal", { p_user_id: profile.id, p_animal_id: a.id });
-                }
-                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
-                const res = rpc.data as { ok: boolean; collected: number; item_id: string; new_prod_start: number; new_barn_items: Record<string,number> };
-                if (res.collected === 0) { setMessage({type:"info",title:`${a.icon} Brak produktów`,text:`${a.name} jeszcze pracuje — wróć później.`}); return; }
-                saveBarnItems(res.new_barn_items);
-                saveBarnState({...barnState, [a.id]: {...barnState[a.id], storage: 0, prodStart: res.new_prod_start, baseProdStart: res.new_prod_start}});
-                setMessage({type:"success",title:`${item.icon} Odebrano!`,text:`+${res.collected} ${item.name}`});
-              })();
-            };
-            const handleCollectAll = () => {
-              if (!profile?.id) return;
-              void (async () => {
-                let rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
-                if (rpc.error?.message?.includes("sync_barn_owned")) {
-                  for (const a of ANIMALS) {
-                    const st = barnState[a.id];
-                    if (st && st.owned > 0) await supabase.rpc("sync_barn_owned", { p_user_id: profile.id, p_animal_id: a.id, p_new_owned: st.owned, p_new_slots: st.slots });
-                  }
-                  rpc = await supabase.rpc("collect_all_animals", { p_user_id: profile.id });
-                }
-                if (rpc.error) { setMessage({type:"error",title:"Błąd odbioru!",text:rpc.error.message}); return; }
-                const res = rpc.data as { ok: boolean; results: Array<{animal_id:string;item_id:string;collected:number;new_prod_start:number}>; total: number; new_barn_items: Record<string,number> };
-                if (res.total === 0) { setMessage({type:"info",title:"Nic do odbioru",text:"Żadne zwierzę nie jest jeszcze gotowe."}); return; }
-                saveBarnItems(res.new_barn_items);
-                const newState = {...barnState};
-                res.results.forEach(r => { if (newState[r.animal_id]) newState[r.animal_id] = {...newState[r.animal_id], storage: 0, prodStart: r.new_prod_start, baseProdStart: r.new_prod_start}; });
-                saveBarnState(newState);
-                setMessage({type:"success",title:"Odebrano wszystko!",text:`+${res.total} produktów. Sprzedaj je w Ladzie dla klientów.`});
-              })();
-            };
-            const selA = selectedAnimal ? ANIMALS.find(a => a.id === selectedAnimal) : null;
-            const totalStorage = ANIMALS.reduce((s,a) => { const st = barnState[a.id]; if (!st) return s; const _bps = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; return s + (_bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) * st.owned : 0); }, 0);
-            return (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-                <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1450px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
-                  <button onClick={() => setShowStodolaModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+          {showStodolaModal && (
+            <BarnModal
+              displayLevel={displayLevel}
+              displayMoney={displayMoney}
+              barnState={barnState}
+              seedInventory={seedInventory}
+              effectiveStats={effectiveStats}
+              barnNow={barnNow}
+              onClose={() => setShowStodolaModal(false)}
+              onBuySlot={handleBarnBuySlot}
+              onFeed={handleBarnFeed}
+              onCollect={handleBarnCollect}
+              onCollectAll={handleBarnCollectAll}
+            />
+          )}
 
-                  {/* ─ Sidebar ─ */}
-                  <div className="flex w-[280px] shrink-0 flex-col gap-1.5 border-r border-[#8b6a3e]/30 bg-black/20 p-4 pt-14 overflow-y-auto">
-                    <p className="mb-3 text-base font-black uppercase tracking-widest text-[#d8ba7a]">🏚️ Zagroda</p>
-                    <button onClick={() => setSelectedAnimal(null)}
-                      className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition ${!selectedAnimal ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                      📋 Przegląd
-                    </button>
-                    <div className="my-1 border-t border-[#8b6a3e]/20" />
-                    {ANIMALS.map(a => {
-                      const locked = lvl < a.unlockLevel;
-                      const st = barnState[a.id];
-                      const hasAnimals = st.owned > 0;
-                      const _bpsS = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0;
-                      const hasProd = _bpsS > 0 && Math.floor((barnNow - _bpsS) / a.prodMs) >= 1;
-                      return (
-                        <button key={a.id} onClick={() => !locked && setSelectedAnimal(a.id)}
-                          disabled={locked}
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-bold transition text-left ${locked ? "opacity-40 cursor-not-allowed text-[#6b7280]" : selectedAnimal===a.id ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"}`}>
-                          <AnimalImg id={a.id} icon={a.icon} className="h-6 w-6 text-xl" />
-                          <span className="flex-1 truncate">{a.name}</span>
-                          {locked && <span className="text-[11px] text-[#6b7280]">LVL{a.unlockLevel}</span>}
-                          {!locked && hasProd && <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />}
-                          {!locked && hasAnimals && !hasProd && <span className="text-[11px] text-[#8b6a3e]">{st.owned}</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* ─ Główna treść ─ */}
-                  <div className="flex-1 overflow-y-auto p-6 pt-5 text-[#dfcfab]">
-
-                    {/* ══ EFEKT OPIEKI ══ */}
-                  {opiekaPts > 0 && (
-                    <div className="mb-3 flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-950/20 px-4 py-2">
-                      <span className="text-lg">🐄</span>
-                      <div className="flex-1 flex flex-wrap gap-x-4 gap-y-0.5">
-                        <p className="text-[11px] font-bold text-green-300">Opieka ({opiekaPts} pkt) aktywna</p>
-                        <p className="text-[11px] text-[#dfcfab]">🌿 Głód wolniej spada o <span className="font-bold text-green-300">{hungerReducePct}%</span></p>
-                        <p className="text-[11px] text-[#dfcfab]">📦 Szansa na bonus produkt: <span className="font-bold text-yellow-300">+{bonusChancePct}%</span></p>
-                      </div>
-                    </div>
-                  )}
-
-                    {/* ══ PRZEGLĄD ══ */}
-                    {!selA && (
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <p className="text-2xl font-black text-[#f9e7b2]">🏚️ Twoja zagroda</p>
-                          {totalStorage > 0 && (
-                            <button onClick={handleCollectAll} className="rounded-xl border border-green-500/60 bg-green-900/20 px-3 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
-                              ✅ Odbierz wszystko
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
-                          {ANIMALS.filter(a => lvl >= a.unlockLevel).map(a => {
-                            const st = barnState[a.id];
-                            const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-                            const h = barnCurrentHunger(st, opiekaPts);
-                            const hs = barnHungerStatus(h);
-                            const effMs = barnEffProdMs(a, h);
-                            const remaining = st.prodStart > 0 ? Math.max(0, effMs - (barnNow - st.prodStart)) : 0;
-                            const pct = st.prodStart > 0 ? Math.min(100, ((barnNow - st.prodStart) / effMs) * 100) : 0;
-                            return (
-                              <div key={a.id} onClick={() => setSelectedAnimal(a.id)}
-                                className="cursor-pointer rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3 hover:border-[#d4a64f]/60 transition">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <AnimalImg id={a.id} icon={a.icon} className="h-10 w-10 text-3xl" />
-                                  <div className="flex-1">
-                                    <p className="text-base font-black text-[#f9e7b2]">{a.name}</p>
-                                    <p className="text-[12px] text-[#8b6a3e]">{st.owned} / {st.slots} · {item.icon} {item.name}</p>
-                                  </div>
-                                  {(() => { const _bpsOv = st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0; const cyclesOv = _bpsOv > 0 ? Math.min(Math.floor((barnNow - _bpsOv) / a.prodMs), a.storageMax) : 0; const itemsOv = cyclesOv * st.owned; return itemsOv > 0 ? <span className="rounded-full bg-green-500/20 border border-green-500/40 px-2 py-0.5 text-[11px] font-black text-green-300">{itemsOv}/{st.owned} {item.icon}</span> : null; })()}
-                                </div>
-                                {st.owned > 0 && (
-                                  <>
-                                    <div className="h-1.5 w-full rounded-full bg-black/40 mb-1">
-                                      <div className="h-full rounded-full bg-amber-400 transition-all" style={{width:`${pct}%`}} />
-                                    </div>
-                                    <div className="flex justify-between text-[9px] text-[#6b7280]">
-                                      <span style={{color:hs.color}}>{hs.label.split(" ")[0]} {Math.round(h)}%</span>
-                                      <span>{st.storage >= a.storageMax ? "📦 Pełny" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe"}</span>
-                                    </div>
-                                  </>
-                                )}
-                                {st.owned === 0 && <p className="text-[11px] text-amber-300/80 text-center py-1">🛒 Kup w mieście · {a.buyPrice.toLocaleString()} 💰</p>}
-                              </div>
-                            );
-                          })}
-                          {ANIMALS.filter(a => lvl < a.unlockLevel).length > 0 && (
-                            <div className="rounded-xl border border-[#374151]/40 bg-black/10 p-3 opacity-50 col-span-2 xl:col-span-1">
-                              <p className="text-xs text-[#6b7280] text-center">
-                                🔒 {ANIMALS.filter(a => lvl < a.unlockLevel).map(a => `${a.icon} LVL${a.unlockLevel}`).join(" · ")}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ══ KARTA ZWIERZĘCIA ══ */}
-                    {selA && (() => {
-                      const a = selA;
-                      const st = barnState[a.id];
-                      const item = ANIMAL_ITEMS.find(i => i.id === a.itemId)!;
-                      const h = barnCurrentHunger(st, opiekaPts);
-                      const hs = barnHungerStatus(h);
-                      const effMs = barnEffProdMs(a, h);
-                      // Server-aligned: use baseProdStart + BASE prodMs (matches collect_animal RPC)
-                      const _bps = (st.baseProdStart > 0 ? st.baseProdStart : st.prodStart > 0 ? st.prodStart : 0);
-                      const serverCycles = _bps > 0 ? Math.min(Math.floor((barnNow - _bps) / a.prodMs), a.storageMax) : 0;
-                      const storageFull = serverCycles >= a.storageMax;
-                      const itemsReady = serverCycles * st.owned;
-                      const itemsMax = a.storageMax * st.owned;
-                      const _cycleStart = _bps > 0 ? _bps + serverCycles * a.prodMs : 0;
-                      const remaining = _cycleStart > 0 && !storageFull ? Math.max(0, _cycleStart + a.prodMs - barnNow) : 0;
-                      const pct = _cycleStart > 0 ? Math.min(100, ((barnNow - _cycleStart) / a.prodMs) * 100) : 0;
-                      void effMs;
-                      const nextUpg = st.slots - a.startSlots;
-                      const upgCost = nextUpg < a.slotUpgCosts.length ? a.slotUpgCosts[nextUpg] : null;
-                      return (
-                        <div>
-                          <div className="flex items-center gap-3 mb-4">
-                            <button onClick={() => setSelectedAnimal(null)} className="text-[#8b6a3e] hover:text-[#f9e7b2] text-sm transition">← Powrót</button>
-                            <AnimalImg id={a.id} icon={a.icon} className="h-10 w-10 text-3xl" />
-                            <div>
-                              <p className="text-xl font-black text-[#f9e7b2]">{a.name}</p>
-                              <p className="text-xs text-[#8b6a3e]">Produkuje: {item.icon} {item.name} · co {a.prodMs/3600000}h · sprzedaż: {item.sellPrice.toLocaleString()} 💰/szt</p>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            {/* Lewa kolumna */}
-                            <div className="flex flex-col gap-3">
-                              {/* Status produkcji */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📊 Produkcja</p>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-2xl">{item.icon}</span>
-                                  <div className="flex-1">
-                                    <p className="text-sm font-bold text-[#f9e7b2]">Posiadasz: {st.owned} / {st.slots}</p>
-                                    <p className="text-[10px] text-[#8b6a3e]">Magazyn: <span className={itemsReady > 0 ? "text-green-300 font-bold" : ""}>{itemsReady} / {itemsMax} {plItem(itemsMax, item)}</span></p>
-                                    <p className="text-[9px] text-[#6b7280]">Produkcja: {st.owned > 0 ? `${st.owned} ${plItem(st.owned, item)}` : `1 ${item.n1} / szt.`} co {a.prodMs/3600000}h</p>
-                                  </div>
-                                </div>
-                                {st.owned > 0 && (
-                                  <>
-                                    <div className="h-2 w-full rounded-full bg-black/40 mb-1">
-                                      <div className="h-full rounded-full transition-all" style={{width:`${pct}%`, background: storageFull?"#6b7280":"#f59e0b"}} />
-                                    </div>
-                                    <p className="text-xs text-center" style={{color: storageFull?"#6b7280":remaining===0?"#4ade80":"#f9e7b2"}}>
-                                      {storageFull ? "📦 Storage pełny — odbierz produkty" : remaining > 0 ? barnFmtMs(remaining) : "✅ Gotowe do odbioru!"}
-                                    </p>
-                                  </>
-                                )}
-                                {st.owned === 0 && <p className="text-xs text-[#6b7280] text-center">Brak zwierząt — kup pierwsze!</p>}
-                                {itemsReady > 0 && (
-                                  <button onClick={() => handleCollect(a)} className="mt-2 w-full rounded-xl border border-green-500/60 bg-green-900/20 py-1.5 text-sm font-bold text-green-300 hover:bg-green-900/40">
-                                    ✅ Odbierz {itemsReady} {item.icon}
-                                  </button>
-                                )}
-                              </div>
-                              {/* Głód */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🌿 Głód</p>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <div className="h-3 flex-1 rounded-full bg-black/40">
-                                    <div className="h-full rounded-full transition-all" style={{width:`${h}%`, background:hs.color}} />
-                                  </div>
-                                  <span className="text-xs font-bold" style={{color:hs.color}}>{Math.round(h)}%</span>
-                                </div>
-                                <p className="text-[11px] font-bold mb-2" style={{color:hs.color}}>{hs.label}{hs.speedMod!==0 ? ` (${hs.speedMod > 0 ? "+" : ""}${Math.round(hs.speedMod*100)}% czas prod.)` : ""}</p>
-                                <p className="text-[10px] text-[#8b6a3e] mb-2">Karma (zepsute nie nadają się!):</p>
-                                <div className="flex flex-col gap-1">
-                                  {a.feed.map(f => {
-                                    const variants: {key:string; label:string; qIcon:string; pts:number; color:string}[] = [
-                                      {key:`${f.cropId}_good`,      label:`${f.name}`,          qIcon:"",   pts:f.points,                   color:"#dfcfab"},
-                                      {key:`${f.cropId}_epic`,      label:`${f.name} Epicka`,   qIcon:"⭐", pts:Math.round(f.points*1.5),    color:"#4ade80"},
-                                      {key:`${f.cropId}_legendary`, label:`${f.name} Legendarna`,qIcon:"🌟",pts:f.points*2,                  color:"#f59e0b"},
-                                    ];
-                                    return (
-                                      <div key={f.cropId}>
-                                        <p className="text-[9px] text-[#8b6a3e] uppercase tracking-widest mt-1 mb-0.5">{f.icon} {f.name}</p>
-                                        {variants.map(v => {
-                                          const have = seedInventory[v.key] ?? 0;
-                                          const canUse = have > 0;
-                                          return (
-                                            <button key={v.key} onClick={() => void handleFeed(a, v.key, v.pts, v.label, f.icon)}
-                                              disabled={!canUse}
-                                              className={`flex w-full items-center gap-2 rounded-lg border px-2 py-1 text-[11px] font-bold transition mb-0.5 ${!canUse ? "opacity-30 cursor-not-allowed border-[#2d2010] text-[#6b7280]" : "border-[#8b6a3e]/60 text-[#dfcfab] hover:border-green-400/60 hover:bg-green-900/20 cursor-pointer"}`}>
-                                              <span>{f.icon}{v.qIcon}</span>
-                                              <span className="flex-1 text-left" style={{color: canUse ? v.color : undefined}}>{v.label}</span>
-                                              <span className="text-green-400 text-[10px]">+{v.pts}</span>
-                                              <span className="text-[#6b7280] text-[9px]">{have} szt</span>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                            {/* Prawa kolumna */}
-                            <div className="flex flex-col gap-3">
-                              {/* Info: kupno przeniesione do miasta */}
-                              <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4">
-                                <p className="text-base font-black uppercase tracking-widest text-amber-300 mb-2">🛒 Kup zwierzę</p>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div>
-                                    <p className="text-base font-bold text-[#f9e7b2]">{a.icon} {a.name}</p>
-                                    <p className="text-sm text-amber-200/80">Posiadasz: <span className="font-black">{st.owned} / {st.slots}</span></p>
-                                  </div>
-                                  <span className="text-base font-black text-amber-400">{a.buyPrice.toLocaleString()} 💰</span>
-                                </div>
-                                <p className="text-sm text-amber-200/90 leading-relaxed">
-                                  ➡️ Zwierzęta kupisz w <span className="font-black text-amber-300">mieście → Sklep → zakładka 🐄 Zwierzęta</span>.
-                                </p>
-                              </div>
-                              {/* Ulepszenia slotów */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-4">
-                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">🏗️ Sloty stodoły</p>
-                                <p className="text-base font-bold text-[#f9e7b2] mb-1">{st.slots} / {a.maxSlots} slotów</p>
-                                <div className="flex gap-1 flex-wrap mb-3">
-                                  {Array.from({length: a.maxSlots}).map((_, i) => (
-                                    <div key={i} className={`h-3 w-3 rounded-sm border ${i < st.slots ? "border-amber-400 bg-amber-400/30" : "border-[#374151] bg-black/20"}`} />
-                                  ))}
-                                </div>
-                                {upgCost !== null ? (
-                                  <button onClick={() => handleBuySlot(a)}
-                                    disabled={displayMoney < upgCost}
-                                    className={`w-full rounded-xl border py-2 text-sm font-bold transition ${displayMoney < upgCost ? "opacity-50 cursor-not-allowed border-[#374151] text-[#6b7280]" : "border-[#8b6a3e]/60 bg-black/30 text-[#dfcfab] hover:border-amber-400/60 hover:text-amber-200"}`}>
-                                    Kup slot · {upgCost.toLocaleString()} 💰
-                                  </button>
-                                ) : (
-                                  <p className="text-xs text-center text-[#4ade80] font-bold">✦ Maks sloty odblokowane ✦</p>
-                                )}
-                              </div>
-                              {/* Tabela produkcji */}
-                              <div className="rounded-xl border border-[#8b6a3e]/40 bg-black/25 p-3">
-                                <p className="text-base font-black uppercase tracking-widest text-[#d8ba7a] mb-2">📈 Info</p>
-                                <div className="flex flex-col gap-1 text-[11px] text-[#dfcfab]">
-                                  <div className="flex justify-between"><span>Produkuje</span><span className="font-bold">{item.icon} {item.name}</span></div>
-                                  <div className="flex justify-between"><span>Czas (normalne)</span><span className="font-bold">{a.prodMs/3600000}h</span></div>
-                                  <div className="flex justify-between"><span>Pojemność magazynu</span><span className="font-bold">{Math.max(1,st.owned) * a.storageMax} {plItem(Math.max(1,st.owned) * a.storageMax, item)}</span></div>
-                                  <div className="flex justify-between"><span>Cena sprzedaży</span><span className="font-bold text-amber-400">{item.sellPrice.toLocaleString()} 💰</span></div>
-                                  <div className="flex justify-between"><span>Cena zwierzęcia</span><span className="font-bold">{a.buyPrice.toLocaleString()} 💰</span></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {showSadModal && (() => {
-            const lvl = profile?.level ?? 1;
-            const maxSlots = getMaxTreeSlots(lvl);
-            const ownedTotal = getOrchardTotalOwned(orchardState);
-            const ownedTrees = TREES.filter(t => (orchardState[t.id]?.owned ?? 0) > 0);
-            const treeSpeedPct = getEquipBonusPct("% speed drzew", charEquipped);
-            const sadownikBonus = calcStatEffect(playerStats?.sadownik ?? 0, 0.005);
-            const luckPct = calcStatEffect((playerStats?.szczescie ?? 0) + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025);
-            const fmtTime = (ms: number) => {
-              if (ms <= 0) return "Gotowe!";
-              const s = Math.floor(ms/1000);
-              const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
-              return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-            };
-            const handleHarvestTree = (t: TreeDef) => {
-              if (!profile?.id) return;
-              void (async () => {
-                setOrchardError("");
-                let rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
-                if (rpc.error?.message?.includes("sync_orchard_owned")) {
-                  const cur = orchardState[t.id];
-                  if (!cur || cur.owned === 0) { setOrchardError("Brak drzew do zebrania."); return; }
-                  await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: cur.owned });
-                  rpc = await supabase.rpc("harvest_tree", { p_user_id: profile.id, p_tree_id: t.id });
-                }
-                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
-                const res = rpc.data as { ok: boolean; added: Record<string,number>; new_prod_start: number; new_fruit_inventory: Record<string,number> };
-                const total = Object.values(res.added ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
-                if (total === 0) { setOrchardError(`${t.icon} Drzewo jeszcze rośnie — wróć za chwilę.`); return; }
-                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
-                saveOrchardState({ ...orchardState, [t.id]: { ...orchardState[t.id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: res.new_prod_start } });
-                const a = res.added; const parts: string[] = [];
-                if ((a[`${t.fruitId}_zwykly`]   ?? 0) > 0) parts.push(`${a[`${t.fruitId}_zwykly`]} zwykłych`);
-                if ((a[`${t.fruitId}_soczysty`] ?? 0) > 0) parts.push(`💧${a[`${t.fruitId}_soczysty`]} soczystych`);
-                if ((a[`${t.fruitId}_zloty`]    ?? 0) > 0) parts.push(`✨${a[`${t.fruitId}_zloty`]} złotych`);
-                if ((a[`${t.fruitId}_zgnile`]   ?? 0) > 0) parts.push(`🍂${a[`${t.fruitId}_zgnile`]} zgniłych`);
-                setMessage({ type:"success", title:`${t.fruitIcon} Zebrano ${total} ${t.fruitName.toLowerCase()}!`, text: parts.join(" · ") });
-              })();
-            };
-            const handleHarvestAll = () => {
-              if (!profile?.id) return;
-              void (async () => {
-                setOrchardError("");
-                let rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
-                if (rpc.error?.message?.includes("sync_orchard_owned")) {
-                  for (const t of TREES) {
-                    const st = orchardState[t.id];
-                    if (st && st.owned > 0) await supabase.rpc("sync_orchard_owned", { p_user_id: profile.id, p_tree_id: t.id, p_new_owned: st.owned });
-                  }
-                  rpc = await supabase.rpc("harvest_all_trees", { p_user_id: profile.id });
-                }
-                if (rpc.error) { setOrchardError("Błąd zbioru: " + rpc.error.message); return; }
-                const res = rpc.data as { ok: boolean; results: Array<{tree_id:string;added:Record<string,number>;new_prod_start:number}>; added_all: Record<string,number>; new_fruit_inventory: Record<string,number> };
-                const totalAll = Object.values(res.added_all ?? {}).reduce<number>((s,v) => s + (Number(v)||0), 0);
-                if (totalAll === 0) { setOrchardError("Brak owoców — drzewa jeszcze rosną."); return; }
-                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
-                const newOrch = { ...orchardState };
-                res.results.forEach(r => { if (newOrch[r.tree_id]) newOrch[r.tree_id] = { ...newOrch[r.tree_id], storage:{ zwykly:0, soczysty:0, zloty:0, zgnile:0 }, prodStart: r.new_prod_start }; });
-                saveOrchardState(newOrch);
-                const partsAll: string[] = [];
-                TREES.forEach(t => { const n = Object.entries(res.added_all ?? {}).filter(([k]) => k.startsWith(t.fruitId+"_")).reduce((s,[,v]) => s+(Number(v)||0), 0); if (n > 0) partsAll.push(`${t.fruitIcon}×${n}`); });
-                setMessage({ type:"success", title:`🌳 Zebrano ${totalAll} owoców!`, text: partsAll.join(" · ") });
-              })();
-            };
-            const calcInvValue = () => {
-              let v = 0;
-              TREES.forEach(t => {
-                (["zwykly","soczysty","zloty"] as FruitQuality[]).forEach(q => {
-                  const k = `${t.fruitId}_${q}`;
-                  const cnt = fruitInventory[k] ?? 0;
-                  if (cnt > 0) v += cnt * t.pricePerFruit * FRUIT_QUALITY_DEFS[q].mult;
-                });
-                // zgniłe: mult=0, nie wliczamy do wartości
-              });
-              return v;
-            };
-            const handleSellAll = () => {
-              if (!profile?.id) return;
-              setOrchardError("");
-              void (async () => {
-                const { data, error } = await supabase.rpc("sell_fruits", { p_user_id: profile.id });
-                if (error) { setOrchardError("Błąd sprzedaży: " + error.message); return; }
-                const res = data as { ok: boolean; reason?: string; sold_value: number; new_money: number; new_fruit_inventory: Record<string,number> };
-                if (!res.ok) { setOrchardError(res.reason ?? "Brak owoców do sprzedaży (zgniłe owoce nie mają wartości)."); return; }
-                saveFruitInventory(res.new_fruit_inventory as Record<string,number>);
-                await loadProfile(profile.id);
-                setMessage({ type:"success", title:`💰 Sprzedano owoce za ${res.sold_value.toLocaleString()} 💰`, text:"Zgniłe owoce pozostały w plecaku — wrzuć je do kompostu." });
-              })();
-            };
-            const invValue = calcInvValue();
-            const invTotal = Object.values(fruitInventory).reduce<number>((s,v) => s + (Number(v) || 0), 0);
-            return (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSadModal(false)}>
-                <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1100px] flex-col overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setShowSadModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
-                  {/* Header */}
-                  <div className="shrink-0 border-b border-[#8b6a3e]/40 px-6 py-4">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-[#8b6a3e]">🌳 Sad Owocowy</p>
-                    <p className="text-xl font-black text-[#f9e7b2]">Twoje drzewa <span className="text-sm font-normal text-[#8b6a3e]">({ownedTotal}/{maxSlots} miejsc)</span></p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                      {treeSpeedPct > 0 && <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">⚡ Eq -{treeSpeedPct.toFixed(1)}% czasu</span>}
-                      {sadownikBonus > 0 && <span className="rounded-full bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 font-bold text-amber-300">🌳 Sadownik +{sadownikBonus.toFixed(1)}% drop</span>}
-                      {luckPct > 0 && <span className="rounded-full bg-yellow-500/20 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">🍀 Szczęście +{luckPct.toFixed(1)}% rare</span>}
-                    </div>
-                  </div>
-                  {/* Body */}
-                  <div className="flex-1 overflow-y-auto p-4">
-                    {ownedTrees.length === 0 ? (
-                      <div className="flex items-center justify-center py-6">
-                        <div className="text-center max-w-md">
-                          <p className="text-5xl mb-3">🌱</p>
-                          <p className="text-base font-black text-[#f9e7b2]">Twój sad jest pusty</p>
-                          <p className="mt-1 text-sm text-[#8b6a3e]">Kup drzewa w Sklepie → zakładka 🌳 Drzewa.</p>
-                          {maxSlots === 0 && <p className="mt-2 text-xs text-amber-300">Pierwsze miejsca odblokujesz na poziomie 10.</p>}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {ownedTrees.map(t => {
-                          const st = orchardState[t.id];
-                          const effMs = Math.max(60_000, Math.round(t.growthTimeMs * Math.max(0.30, 1 - treeSpeedPct/100)));
-                          const elapsed = st.prodStart > 0 ? barnNow - st.prodStart : 0;
-                          const remaining = Math.max(0, effMs - elapsed);
-                          const totalStored = st.storage.zwykly + st.storage.soczysty + st.storage.zloty + (st.storage.zgnile ?? 0);
-                          const cycleEarnings = (st.storage.zwykly * t.pricePerFruit) + (st.storage.soczysty * t.pricePerFruit * 2) + (st.storage.zloty * t.pricePerFruit * 5);
-                          return (
-                            <div key={t.id} className="rounded-2xl border border-[#8b6a3e]/50 bg-black/30 p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="text-4xl">{t.icon}</div>
-                                <div className="flex-1">
-                                  <p className="text-base font-black text-[#f9e7b2]">{t.name} <span className="text-xs font-normal text-emerald-400">×{st.owned}</span></p>
-                                  <p className="text-[11px] text-[#8b6a3e]">Owoc: {t.fruitIcon} {t.fruitName} · Cykl {Math.round(t.growthTimeMs/3600000)}h · Drop {t.dropMin}–{t.dropMax}</p>
-                                </div>
-                              </div>
-                              {/* Status */}
-                              <div className="mt-3 rounded-xl border border-[#8b6a3e]/40 bg-black/30 p-3">
-                                {totalStored === 0 && remaining > 0 && (
-                                  <div>
-                                    <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">⏳ Następny zbiór za</p>
-                                    <p className="text-lg font-black text-amber-300 font-mono">{fmtTime(remaining)}</p>
-                                    <div className="mt-1 h-1.5 rounded-full bg-black/50 overflow-hidden">
-                                      <div className="h-full bg-amber-400 transition-all" style={{ width: `${Math.min(100, (elapsed/effMs)*100)}%` }} />
-                                    </div>
-                                  </div>
-                                )}
-                                {totalStored > 0 && (
-                                  <div>
-                                    <p className="text-[10px] uppercase tracking-widest text-emerald-400">✅ Gotowe do zbioru!</p>
-                                    <p className="mt-1 text-base font-black text-[#f9e7b2]">{totalStored} {t.fruitIcon}</p>
-                                    <div className="mt-1 flex flex-wrap gap-1.5 text-[10px]">
-                                      {st.storage.zwykly > 0          && <span className="rounded bg-emerald-900/40 border border-emerald-500/40 px-2 py-0.5 font-bold text-emerald-300">{st.storage.zwykly} zwykły</span>}
-                                      {st.storage.soczysty > 0         && <span className="rounded bg-cyan-900/40 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">💧 {st.storage.soczysty} soczysty</span>}
-                                      {st.storage.zloty > 0            && <span className="rounded bg-yellow-900/40 border border-yellow-500/40 px-2 py-0.5 font-bold text-yellow-300">✨ {st.storage.zloty} złoty</span>}
-                                      {(st.storage.zgnile ?? 0) > 0   && <span className="rounded bg-gray-900/40 border border-gray-600/40 px-2 py-0.5 font-bold text-gray-400">🍂 {st.storage.zgnile} zgniłe</span>}
-                                    </div>
-                                    <p className="mt-1 text-[10px] text-amber-400">≈ {cycleEarnings.toLocaleString()}💰 wartości</p>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Actions */}
-                              <button
-                                disabled={totalStored === 0}
-                                onClick={() => handleHarvestTree(t)}
-                                className={`mt-2 w-full rounded-xl py-2 text-sm font-black transition ${totalStored > 0 ? "border border-emerald-500/60 bg-emerald-900/40 text-emerald-200 hover:bg-emerald-900/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
-                                ✅ Zbierz {totalStored > 0 ? totalStored : ""}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {/* Info wszystkich drzew (zakupisz w mieście) */}
-                    <div className="mt-5 rounded-2xl border border-[#8b6a3e]/40 bg-black/30 p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#d8ba7a] mb-3">📜 Wszystkie drzewa <span className="font-normal text-[#8b6a3e] normal-case tracking-normal">— zakupisz w mieście (Sklep → 🌳 Drzewa)</span></p>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="text-[10px] uppercase tracking-wider text-[#8b6a3e] border-b border-[#8b6a3e]/30">
-                              <th className="text-left py-1.5 pr-2">LVL</th>
-                              <th className="text-left py-1.5 pr-2">Drzewo</th>
-                              <th className="text-left py-1.5 pr-2">Produkt</th>
-                              <th className="text-left py-1.5 pr-2">Czas</th>
-                              <th className="text-left py-1.5 pr-2">Drop</th>
-                              <th className="text-right py-1.5 pr-2">Cena</th>
-                              <th className="text-right py-1.5">Posiadasz</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {TREES.map(t => {
-                              const ownedHere = orchardState[t.id]?.owned ?? 0;
-                              const locked = lvl < t.unlockLevel;
-                              return (
-                                <tr key={t.id} className={`border-b border-[#8b6a3e]/10 ${locked ? "opacity-50" : ""}`}>
-                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{locked && "🔒"}{t.unlockLevel}</td>
-                                  <td className="py-1.5 pr-2 font-bold text-[#f9e7b2]">{t.icon} {t.name}</td>
-                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.fruitIcon} {t.fruitName}</td>
-                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{Math.round(t.growthTimeMs/3600000)}h</td>
-                                  <td className="py-1.5 pr-2 text-[#dfcfab]">{t.dropMin}–{t.dropMax}</td>
-                                  <td className="py-1.5 pr-2 text-right font-bold text-amber-400">{t.buyPrice.toLocaleString()}💰</td>
-                                  <td className="py-1.5 text-right">
-                                    <span className={`font-black ${ownedHere > 0 ? "text-emerald-300" : "text-[#8b6a3e]"}`}>{ownedHere}/{maxSlots}</span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                      <p className="mt-2 text-[10px] text-[#8b6a3e]">Limit drzew rośnie z poziomem: 10→2, 15→4, 20→6, 25→8 (łącznie wszystkie drzewa).</p>
-                    </div>
-                  </div>
-                  {/* Footer: inventory + harvest (sprzedaż w Ladzie) */}
-                  {(ownedTrees.length > 0 || invTotal > 0) && (
-                    <div className="shrink-0 border-t border-[#8b6a3e]/40 bg-black/30 p-4">
-                      {orchardError && <p className="mb-2 rounded-lg bg-red-900/40 px-3 py-1.5 text-xs text-red-300">{orchardError}</p>}
-                      <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-widest text-[#8b6a3e]">📦 Magazyn owoców</p>
-                          <p className="text-sm font-black text-[#f9e7b2]">{invTotal} owoców · wartość ~{invValue.toLocaleString()}💰</p>
-                          {invTotal > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1.5 text-[10px] max-w-[600px]">
-                              {Object.entries(fruitInventory).filter(([,c]) => (c as number) > 0).slice(0, 12).map(([k,c]) => {
-                                const lastUnd = k.lastIndexOf("_");
-                                const fruitId = k.slice(0, lastUnd);
-                                const q = k.slice(lastUnd+1) as FruitQuality;
-                                const tree = TREES.find(tt => tt.fruitId === fruitId);
-                                if (!tree) return null;
-                                const qd = FRUIT_QUALITY_DEFS[q];
-                                return <span key={k} className="rounded border border-[#8b6a3e]/40 bg-black/40 px-1.5 py-0.5 font-bold" style={{color: qd.color}}>{qd.icon}{tree.fruitIcon}×{c as number}</span>;
-                              })}
-                              {Object.keys(fruitInventory).filter(k => (fruitInventory[k] ?? 0) > 0).length > 12 && <span className="text-[#8b6a3e]">…</span>}
-                            </div>
-                          )}
-                          {invTotal > 0 && <p className="mt-1 text-[11px] text-amber-300/90">💡 Sprzedaż owoców → <span className="font-black text-amber-300">Lada dla klientów</span> w mieście.</p>}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleHarvestAll}
-                            className="rounded-xl border border-emerald-500/60 bg-emerald-900/30 px-4 py-2 text-sm font-black text-emerald-200 hover:bg-emerald-900/50">
-                            ✅ Zbierz wszystko z drzew
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
+          {showSadModal && (
+            <OrchardModal
+              displayLevel={displayLevel}
+              orchardState={orchardState}
+              orchardError={orchardError}
+              fruitInventory={fruitInventory}
+              charEquipped={charEquipped}
+              playerStats={playerStats}
+              barnNow={barnNow}
+              onClose={() => setShowSadModal(false)}
+              onHarvestTree={handleOrchardHarvestTree}
+              onHarvestAll={handleOrchardHarvestAll}
+            />
+          )}
 
           {showSkinModal && (
             <SkinPickerModal
