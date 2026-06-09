@@ -67,6 +67,11 @@ import { BarnModal } from "./game/features/barn/BarnModal";
 import { OrchardModal } from "./game/features/orchard/OrchardModal";
 import { CustomersModal } from "./game/features/customers/CustomersModal";
 import { MarketModal } from "./game/features/market/MarketModal";
+import { SeedPicker } from "./game/features/field/SeedPicker";
+import { CompostPicker } from "./game/features/field/CompostPicker";
+import { HarvestSessionModal } from "./game/features/field/HarvestSessionModal";
+import { TutorialPanel } from "./game/features/tutorial/TutorialPanel";
+import { TutorialArrows } from "./game/features/tutorial/TutorialArrows";
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
 const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
@@ -10447,247 +10452,39 @@ export default function Page() {
 
                   {/* ─── Picker: Nasiona ─── */}
                   {fvSeedPickerOpen && !fvToolEditMode && (
-                    <div
-                      className="fixed inset-0 z-[115] flex items-center justify-center"
-                      onClick={() => setFvSeedPickerOpen(false)}
-                    >
-                      <div
-                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[760px] max-w-[95vw] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-xl font-black text-[#f9e7b2]">Nasiona w plecaku</h3>
-                          <div className="flex gap-1.5">
-                            {(["good","epic","legendary"] as const).map(q => {
-                              const label = q === "good" ? "Zwykłe" : q === "epic" ? "Epickie" : "Legendarne";
-                              const activeColor = q === "good" ? "border-[#6ee7b7] bg-[#6ee7b7]/20 text-[#6ee7b7]" : q === "epic" ? "border-[#a78bfa] bg-[#a78bfa]/20 text-[#a78bfa]" : "border-[#fbbf24] bg-[#fbbf24]/20 text-[#fbbf24]";
-                              const inactiveColor = "border-[#8b6a3e]/40 text-[#8b6a3e] hover:text-[#dfcfab]";
-                              return (
-                                <button key={q} type="button"
-                                  className={`rounded-lg px-3 py-1 text-[13px] font-bold border transition-colors ${seedQualityFilter === q ? activeColor : inactiveColor}`}
-                                  onClick={() => { setSeedQualityFilter(q); localStorage.setItem("plonopolis_seed_filter", q); }}
-                                >{label}</button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                        {(["legendary","epic","good",null] as (string|null)[]).filter(quality => quality === seedQualityFilter).map(quality => {
-                          const entries = Object.entries(seedInventory)
-                            .filter(([k, cnt]) => !isCompostKey(k) && !isGuideCompostKey(k) && cnt > 0 && parseQualityKey(k).quality === quality)
-                            .sort(([aId], [bId]) => {
-                              const aC = parseQualityKey(aId).baseCropId;
-                              const bC = parseQualityKey(bId).baseCropId;
-                              const aLv = CROPS.find(c => c.id === aC)?.unlockLevel ?? 999;
-                              const bLv = CROPS.find(c => c.id === bC)?.unlockLevel ?? 999;
-                              return aLv - bLv;
-                            });
-                          if (entries.length === 0) return (
-                            <div key={quality ?? "base"} className="flex flex-col items-center justify-center py-14 gap-2">
-                              <span className="text-5xl opacity-20">🌱</span>
-                              <p className="text-[#8b6a3e] text-[18px]">Brak nasion tej kategorii.</p>
-                            </div>
-                          );
-                          return (
-                            <div key={quality ?? "base"} className="mb-4">
-                              <div className="grid grid-cols-5 gap-3">
-                                {entries.map(([seedId, cnt]) => {
-                                  const { baseCropId, quality: q } = parseQualityKey(seedId);
-                                  const crop = CROPS.find(c => c.id === baseCropId);
-                                  if (!crop) return null;
-                                  const sprite = q === "legendary" ? (crop.legendarySpritePath ?? crop.spritePath) : q === "epic" ? (crop.epicSpritePath ?? crop.spritePath) : q === "rotten" ? (crop.rottenSpritePath ?? crop.spritePath) : crop.spritePath;
-                                  const qColor = q === "legendary" ? "#fbbf24" : q === "epic" ? "#a78bfa" : q === "good" ? "#6ee7b7" : "#8b6a3e";
-                                  const isSel = selectedSeedId === seedId;
-                                  return (
-                                    <div key={seedId} className={`flex flex-col items-center gap-1${tutorialStep === 6 && seedId === "carrot_good" ? " outline outline-2 outline-amber-400 rounded-xl shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`} data-tutorial-target={tutorialStep === 6 && seedId === "carrot_good" ? "carrot-good-item" : undefined}>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setSelectedSeedId(isSel ? null : seedId);
-                                          setSelectedTool(null);
-                                          setFvSeedPickerOpen(false);
-                                          setSeedPickerTip(null);
-                                          if (tutorialStep === 6 && seedId === "carrot_good") void advanceTutorialStep(7);
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          const tipColor = q === "legendary" ? "#fbbf24" : q === "epic" ? "#a78bfa" : q === "good" ? "#6ee7b7" : "#9ca3af";
-                                          const qLabel = q === "legendary" ? "✨ Legendarne" : q === "epic" ? "🟣 Epickie" : q === "good" ? "🟢 Zwykłe" : q === "rotten" ? "🟫 Zgniłe" : "Zwykłe";
-                                          // Efektywny czas wzrostu gracza (te same wzory co getEffectiveGrowthTimeMs, bez per-pole)
-                                          const _baseMs = crop.growthTimeMs;
-                                          const _wiedzaEff = (effectiveStats.wiedza ?? 0) + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
-                                          const _wiedzaPctRaw = calcStatEffect(_wiedzaEff, WIEDZA_RATE);
-                                          const _wiedzaPct = Math.min((1 - WIEDZA_MULT_MIN) * 100, _wiedzaPctRaw);
-                                          const _hivePct = Math.min((1 - HIVE_MULT_MIN) * 100, hiveData.level * 2);
-                                          const _wiedzaMult = Math.max(WIEDZA_MULT_MIN, 1 - _wiedzaPct / 100);
-                                          const _hiveMult = Math.max(HIVE_MULT_MIN, 1 - _hivePct / 100);
-                                          const _effMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult * _hiveMult));
-                                          const _zaradnoscEff2 = (effectiveStats.zaradnosc ?? 0) + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
-                                          const _zaradBonus = calcStatEffect(_zaradnoscEff2, ZARADNOSC_RATE);
-                                          const _waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped);
-                                          const _waterTotalPct = (WATER_BASE * 100) + _zaradBonus + _waterEqPct;
-                                          const _withWaterMs = Math.round(_baseMs * Math.max(GROWTH_GLOBAL_MIN_MULT, Math.max(WATER_MULT_MIN, 1 - _waterTotalPct / 100) * _wiedzaMult * _hiveMult));
-                                          const _fmt = (ms: number) => { const t = Math.max(0, Math.floor(ms/1000)); const h = Math.floor(t/3600); const m = Math.floor((t%3600)/60); const s = t%60; return h > 0 ? `${h}h ${m}min ${s}s` : m > 0 ? `${m}min ${s}s` : `${s}s`; };
-                                          const _savedPct = Math.round(((_baseMs - _effMs) / _baseMs) * 100);
-                                          const _showBonus = _wiedzaPct > 0 || _hivePct > 0;
-                                          // Zręczność
-                                          const _zrEff2 = (effectiveStats.zrecznosc ?? 0) + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
-                                          const _zrChance2 = calcStatEffect(_zrEff2, 0.004);
-                                          const _isSmall2 = crop.yieldAmount <= 2;
-                                          const _dropStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "20–60 szt." : "40–120 szt.")
-                                            : q === "epic"
-                                            ? (_isSmall2 ? "10–22 szt." : "20–44 szt.")
-                                            : (_isSmall2 ? "1–3 szt." : "2–6 szt.");
-                                          const _dropZrStr2 = q === "legendary"
-                                            ? (_isSmall2 ? "40–120 szt." : "80–240 szt.")
-                                            : q === "epic"
-                                            ? (_isSmall2 ? "20–44 szt." : "40–88 szt.")
-                                            : (_isSmall2 ? "2–6 szt." : "4–12 szt.");
-                                          const _qualLabel = q === "rotten" ? "popsuta" : q === "epic" ? "epicka" : q === "legendary" ? "legendarna" : "zwykła";
-                                          const _expDisplay2 =
-                                            q === "rotten"    ? "+0 EXP"
-                                            : q === "epic"    ? `+${crop.expReward * 3}–${crop.expReward * 6} EXP`
-                                            : q === "legendary" ? `+${crop.expReward * 10}–${crop.expReward * 20} EXP`
-                                            : `+${crop.expReward} EXP`;
-                                          const tipNode = (
-                                            <>
-                                              {/* ── HEADER ── */}
-                                              <p className="text-[22px] font-black text-[#f9e7b2] leading-tight mb-2">
-                                                {crop.name} <span style={{ color: tipColor }}>{_qualLabel}</span>
-                                              </p>
-
-                                              {/* ── BODY ── */}
-                                              <div className="flex flex-col gap-1 text-[18px]">
-                                                {q === "rotten"
-                                                  ? <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
-                                                  : <>
-                                                      <p className="text-[#8b6a3e]">Czas z Twoimi bonusami: <span className="font-bold text-[#dfcfab]">{_fmt(_effMs)}</span></p>
-                                                    </>
-                                                }
-                                                <p className="text-[#8b6a3e]">Doświadczenie: <span className="font-bold text-sky-300">{_expDisplay2}</span></p>
-                                                <p className="text-[#8b6a3e]">Drop: <span className="font-bold text-yellow-300">{_dropStr2}</span></p>
-                                              </div>
-
-                                              {/* ── FOOTER (Zręczność) ── */}
-                                              <div className="mt-2 border-t border-white/10 pt-1.5 flex flex-col gap-0.5 text-[17px]">
-                                                <p className="text-[#8b6a3e]">Jeśli Zręczność zadziała: <span className="font-bold text-yellow-300">{_dropZrStr2}</span></p>
-                                                <p className="text-[#8b6a3e]">Szansa Zręczności: <span className="font-bold text-amber-300">{_zrChance2.toFixed(1)}%</span></p>
-                                                <p className="mt-0.5 text-[15px] text-[#8b6a3e]">Podlewanie i kompost mogą dodatkowo skrócić czas.</p>
-                                              </div>
-                                            </>
-                                          );
-                                          setSeedPickerTip({ x: rect.left + rect.width / 2, y: rect.top, node: tipNode, color: tipColor });
-                                        }}
-                                        onMouseLeave={() => setSeedPickerTip(null)}
-                                        className="relative w-[112px] h-[112px] rounded-xl border-2 overflow-hidden transition-colors"
-                                        style={{ borderColor: isSel ? qColor : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(30,18,8,0.9)" : "rgba(20,12,6,0.7)", ...(isSel ? { boxShadow: `0 0 14px ${qColor}88` } : {}) }}
-                                      >
-                                        <img src={sprite} alt={crop.name} className="absolute inset-0 w-full h-full object-cover" style={{ imageRendering: "pixelated" }} />
-                                        <span className="absolute bottom-1 right-1 min-w-[20px] rounded-md bg-black/80 px-1 py-0.5 text-[11px] font-black leading-none text-[#f9e7b2]">×{cnt}</span>
-                                        {isSel && <span className="absolute inset-0 rounded-xl ring-2 ring-inset pointer-events-none" style={{ outlineColor: qColor }} />}
-                                      </button>
-                                      <p className="text-[11px] font-bold text-[#f9e7b2] text-center leading-tight max-w-[112px] truncate">{crop.name}</p>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {Object.entries(seedInventory).filter(([k, v]) => !isCompostKey(k) && !isGuideCompostKey(k) && v > 0).length === 0 && (
-                          <p className="text-sm text-[#dfcfab] text-center py-6">Brak nasion w plecaku</p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setFvSeedPickerOpen(false)}
-                          className="mt-3 w-full rounded-xl border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.7)] py-2 text-sm font-bold text-[#dfcfab] hover:bg-[rgba(58,34,18,0.9)] transition-colors"
-                        >Zamknij</button>
-                      </div>
-                      {/* Tooltip nasiona */}
-                      {seedPickerTip && (() => {
-                        const TIP_W = 360;
-                        const TIP_H_EST = 320;
-                        const margin = 12;
-                        let left = seedPickerTip.x - TIP_W / 2;
-                        left = Math.max(margin, Math.min(window.innerWidth - TIP_W - margin, left));
-                        let top = seedPickerTip.y - TIP_H_EST - 14;
-                        if (top < margin) top = seedPickerTip.y + 125;
-                        return (
-                          <div
-                            className="pointer-events-none fixed z-[9999] flex flex-col gap-1 rounded-xl border-2 px-4 py-3 shadow-2xl text-left bg-[rgba(8,18,12,0.98)]"
-                            style={{ left, top, width: TIP_W, borderColor: seedPickerTip.color }}>
-                            {seedPickerTip.node}
-                          </div>
-                        );
-                      })()}
-                    </div>
+                    <SeedPicker
+                      fvSeedPickerOpen={fvSeedPickerOpen}
+                      fvToolEditMode={fvToolEditMode}
+                      setFvSeedPickerOpen={setFvSeedPickerOpen}
+                      seedQualityFilter={seedQualityFilter}
+                      setSeedQualityFilter={setSeedQualityFilter}
+                      seedInventory={seedInventory}
+                      selectedSeedId={selectedSeedId}
+                      setSelectedSeedId={setSelectedSeedId}
+                      setSelectedTool={setSelectedTool}
+                      seedPickerTip={seedPickerTip}
+                      setSeedPickerTip={setSeedPickerTip}
+                      advanceTutorialStep={advanceTutorialStep}
+                      tutorialStep={tutorialStep}
+                      effectiveStats={effectiveStats}
+                      charEquipped={charEquipped}
+                      hiveData={hiveData}
+                    />
                   )}
 
                   {/* ─── Picker: Kompost ─── */}
                   {fvCompostPickerOpen && !fvToolEditMode && (
-                    <div
-                      className="fixed inset-0 z-[115] flex items-center justify-center"
-                      onClick={() => setFvCompostPickerOpen(false)}
-                    >
-                      <div
-                        className="rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,6,0.97)] p-5 w-[480px] max-w-[95vw] max-h-[80vh] overflow-y-auto shadow-2xl backdrop-blur-sm"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz kompost</p>
-                        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">♻️ Kompost w plecaku</h3>
-                        {(Object.keys(COMPOST_DEFS) as (keyof typeof COMPOST_DEFS)[]).map(cType => {
-                          const def = COMPOST_DEFS[cType];
-                          const entries = def.bonusValues.flatMap(val => {
-                            const key = compostKeyFor(cType, val);
-                            const cnt = seedInventory[key] ?? 0;
-                            return cnt > 0 ? [{ key, val, cnt }] : [];
-                          });
-                          if (entries.length === 0) return null;
-                          return (
-                            <div key={cType} className="mb-4">
-                              <p className="text-xs font-black mb-2 uppercase tracking-wider text-[#d8ba7a]">{def.icon} {def.name}</p>
-                              <div className="flex flex-col gap-2">
-                                {entries.map(({ key: cKey, val, cnt }) => {
-                                  const isSel = selectedSeedId === cKey;
-                                  const tierLabel = def.tierName(val);
-                                  const bonusLabel = def.bonusLabel(val);
-                                  return (
-                                    <button
-                                      key={cKey}
-                                      type="button"
-                                      data-tutorial-target={tutorialStep === 3 && cKey === "guide_compost" ? "guide-compost-item" : undefined}
-                                      onClick={() => {
-                                        setSelectedSeedId(isSel ? null : cKey);
-                                        setSelectedTool(null);
-                                        setFvCompostPickerOpen(false);
-                                        if (tutorialStep === 3 && cKey === "guide_compost") void advanceTutorialStep(4);
-                                      }}
-                                      className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2 transition-colors text-left${tutorialStep === 3 && cKey === "guide_compost" ? " ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]" : ""}`}
-                                      style={{ borderColor: isSel ? "#86efac" : tutorialStep === 3 && cKey === "guide_compost" ? "#fbbf24" : "rgba(139,106,62,0.4)", backgroundColor: isSel ? "rgba(20,40,10,0.9)" : "rgba(20,12,6,0.7)" }}
-                                    >
-                                      <span className="text-2xl select-none">{def.icon}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold text-[#f9e7b2] leading-tight">{cType === "guide" ? def.name : `${tierLabel} ${def.name}`}</p>
-                                        <p className="text-[11px] text-[#d8ba7a]">{bonusLabel}</p>
-                                      </div>
-                                      <p className="text-sm font-black text-lime-300 shrink-0">×{cnt}</p>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {Object.keys(COMPOST_DEFS).every(t => (COMPOST_DEFS[t as keyof typeof COMPOST_DEFS].bonusValues.every(v => (seedInventory[compostKeyFor(t as keyof typeof COMPOST_DEFS, v)] ?? 0) === 0))) && (
-                          <p className="text-sm text-[#dfcfab] text-center py-6">Brak kompostu w plecaku</p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setFvCompostPickerOpen(false)}
-                          className="mt-3 w-full rounded-xl border border-[#8b6a3e]/60 bg-[rgba(38,24,14,0.7)] py-2 text-sm font-bold text-[#dfcfab] hover:bg-[rgba(58,34,18,0.9)] transition-colors"
-                        >Zamknij</button>
-                      </div>
-                    </div>
+                    <CompostPicker
+                      fvCompostPickerOpen={fvCompostPickerOpen}
+                      fvToolEditMode={fvToolEditMode}
+                      setFvCompostPickerOpen={setFvCompostPickerOpen}
+                      seedInventory={seedInventory}
+                      selectedSeedId={selectedSeedId}
+                      setSelectedSeedId={setSelectedSeedId}
+                      setSelectedTool={setSelectedTool}
+                      advanceTutorialStep={advanceTutorialStep}
+                      tutorialStep={tutorialStep}
+                    />
                   )}
 
                   {/* ─── Prawa kolumna: narzędzia masowe ─── */}
@@ -11456,333 +11253,27 @@ export default function Page() {
 
 
           {/* ═══ MODAL — SESJA ZBIORÓW ═══ */}
-          {isFvHarvestModalOpen && isFieldViewOpen && (() => {
-            const grouped = harvestLog.reduce<Record<string, { cropId: string; cropName: string; baseAmount: number; bonusAmount: number; bonusSource: string | null; baseExp: number; quality: "rotten"|"good"|"epic"|"legendary" }>>(
-              (acc, e) => {
-                const _gKey = `${e.cropId}_${e.quality}`; if (!acc[_gKey]) {
-                  acc[_gKey] = { cropId: e.cropId, cropName: e.cropName, baseAmount: 0, bonusAmount: 0, bonusSource: e.bonusSource, baseExp: 0, quality: e.quality };
-                }
-                acc[_gKey].baseAmount += e.baseAmount;
-                acc[_gKey].bonusAmount += e.bonusAmount;
-                acc[_gKey].baseExp += e.baseExp;
-                if (e.bonusSource) acc[_gKey].bonusSource = e.bonusSource;
-                return acc;
-              }, {}
-            );
-            const totalExp = harvestLog.reduce((s, e) => s + e.baseExp, 0);
-            const _QUAL_ORDER: Record<string, number> = { rotten: 0, good: 1, epic: 2, legendary: 3 };
-            const items = (Object.values(grouped) as Array<{cropId:string;cropName:string;baseAmount:number;bonusAmount:number;bonusSource:string|null;baseExp:number;quality:"rotten"|"good"|"epic"|"legendary"}>).sort((a, b) => {
-              const qDiff = (_QUAL_ORDER[a.quality] ?? 0) - (_QUAL_ORDER[b.quality] ?? 0);
-              if (qDiff !== 0) return qDiff;
-              const lvA = CROPS.find(c => c.id === a.cropId)?.unlockLevel ?? 999;
-              const lvB = CROPS.find(c => c.id === b.cropId)?.unlockLevel ?? 999;
-              return lvA - lvB;
-            });
-            return (
-              <div
-                className="absolute inset-0 z-[160] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-                onClick={() => setIsFvHarvestModalOpen(false)}
-              >
-                <div
-                  className="relative w-[620px] max-w-[95vw] max-h-[calc(100vh-80px)] rounded-[24px] border border-[#8b6a3e] bg-[rgba(18,10,4,0.98)] shadow-2xl flex flex-col overflow-hidden"
-                  onClick={e => e.stopPropagation()}
-                >
-                  {/* Nagłówek */}
-                  <div className="flex items-start justify-between px-7 py-5 border-b border-[#8b6a3e]/40 bg-[rgba(14,8,3,0.7)] shrink-0">
-                    <div>
-                      <h2 className="text-[47px] font-black text-[#f9e7b2] tracking-wide">Sesja zbiorów</h2>
-                      <p className="text-[22px] text-[#8b6a3e] mt-0.5">
-                        {isDailyHarvestView ? "Zebrane plony z dzisiejszego dnia" : "Historia zbiorów z bieżącej sesji w polu uprawnym"}
-                      </p>
-                      <div className="mt-2.5 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setIsDailyHarvestView(false)}
-                          className={`rounded-lg px-3.5 py-1 text-[15px] font-bold border transition-colors ${!isDailyHarvestView ? "border-[#8b6a3e] bg-[#8b6a3e]/40 text-[#f9e7b2]" : "border-[#8b6a3e]/30 text-[#8b6a3e] hover:text-[#dfcfab]"}`}
-                        >Bieżąca sesja</button>
-                        <button
-                          type="button"
-                          onClick={() => { setIsDailyHarvestView(true); void fetchDailyHarvest(); }}
-                          className={`rounded-lg px-3.5 py-1 text-[15px] font-bold border transition-colors ${isDailyHarvestView ? "border-[#d8ba7a] bg-[#d8ba7a]/20 text-[#f9e7b2]" : "border-[#8b6a3e]/30 text-[#8b6a3e] hover:text-[#dfcfab]"}`}
-                        >Zbiory dzisiaj</button>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsFvHarvestModalOpen(false)}
-                      className="text-4xl text-[#8b6a3e] hover:text-[#f9e7b2] transition-colors leading-none mt-1"
-                    >✕</button>
-                  </div>
-
-                  {/* Treść */}
-                  <div className="overflow-y-auto flex-1 p-6">
-                    {isDailyHarvestView ? (
-                      isDailyHarvestLoading ? (
-                        <div className="flex flex-col items-center justify-center py-16 gap-3">
-                          <span className="text-6xl opacity-30 animate-pulse">🌾</span>
-                          <p className="text-[#8b6a3e] text-[21px]">Ładowanie...</p>
-                        </div>
-                      ) : !dailyHarvestData || dailyHarvestData.items.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 gap-3">
-                          <span className="text-6xl opacity-30">🌾</span>
-                          <p className="text-[#8b6a3e] text-[21px]">Nie zebrałeś jeszcze żadnych plonów dzisiaj.</p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-7 gap-2">
-                            {[...dailyHarvestData.items].sort((a, b) => {
-                              const qOrder = { rotten: 0, good: 1, epic: 2, legendary: 3 } as Record<string, number>;
-                              if (qOrder[a.quality] !== qOrder[b.quality]) return qOrder[a.quality] - qOrder[b.quality];
-                              const aLvl = CROPS.find(c => c.id === a.crop_id)?.unlockLevel ?? 0;
-                              const bLvl = CROPS.find(c => c.id === b.crop_id)?.unlockLevel ?? 0;
-                              return aLvl - bLvl;
-                            }).slice(0, 35).map((it, i) => {
-                              const _qd = CROP_QUALITY_DEFS[it.quality];
-                              const _cropDef = CROPS.find(c => c.id === it.crop_id);
-                              const _sprite = it.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
-                                            : it.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
-                                            : it.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
-                                            : _cropDef?.spritePath;
-                              return (
-                                <div key={i} className="relative"
-                                  onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvHarvestTooltip({ cropId: it.crop_id, cropName: _cropDef?.name ?? it.crop_id, baseAmount: it.amount, bonusAmount: 0, bonusSource: null, baseExp: _cropDef?.expReward ?? 0, quality: it.quality, cx: r.left + r.width / 2, cy: r.top }); }}
-                                  onMouseLeave={() => setFvHarvestTooltip(null)}>
-                                  <div className="relative w-full aspect-square rounded-xl border-2"
-                                    style={it.quality === "legendary"
-                                      ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
-                                      : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
-                                    {_sprite
-                                      ? <img src={_sprite} alt={_cropDef?.name ?? it.crop_id} className="h-full w-full object-contain p-1" />
-                                      : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
-                                    }
-                                    {it.quality === "legendary" && (
-                                      <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                                        <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
-                                      </span>
-                                    )}
-                                    <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">×{it.amount}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          {dailyHarvestData.items.length > 35 && (
-                            <p className="mt-3 text-center text-[17px] text-[#8b6a3e]">+{dailyHarvestData.items.length - 35} więcej rodzajów</p>
-                          )}
-                        </>
-                      )
-                    ) : items.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-16 gap-3">
-                        <span className="text-6xl opacity-30">🌾</span>
-                        <p className="text-[#8b6a3e] text-[21px]">Brak zbiorów w tej sesji</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-7 gap-2">
-                          {items.slice(0, 35).map((g, i) => {
-                            const _qd = CROP_QUALITY_DEFS[g.quality];
-                            const _cropDef = CROPS.find(c => c.id === g.cropId);
-                            const _sprite = g.quality === "epic" ? (_cropDef?.epicSpritePath ?? _cropDef?.spritePath)
-                                          : g.quality === "rotten" ? (_cropDef?.rottenSpritePath ?? _cropDef?.spritePath)
-                                          : g.quality === "legendary" ? (_cropDef?.legendarySpritePath ?? _cropDef?.spritePath)
-                                          : _cropDef?.spritePath;
-                            const _total = g.baseAmount + g.bonusAmount;
-                            const _isExpOnly = g.quality === "legendary" && g.baseAmount === 0;
-                            return (
-                              <div key={i} className="relative"
-                                onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvHarvestTooltip({ ...g, cx: r.left + r.width / 2, cy: r.top }); }}
-                                onMouseLeave={() => setFvHarvestTooltip(null)}
-                              >
-                                <div className="relative w-full aspect-square cursor-default rounded-xl border-2 transition-transform duration-150 hover:scale-105"
-                                  style={_isExpOnly
-                                    ? { borderColor: "#38bdf8", background: "rgba(14,60,100,0.6)" }
-                                    : g.quality === "legendary"
-                                      ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
-                                      : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
-                                  {_isExpOnly
-                                    ? <span className="flex h-full w-full flex-col items-center justify-center gap-1">
-                                        <span className="text-2xl leading-none">⭐</span>
-                                        <span className="text-[13px] font-black text-sky-300 leading-none">XP</span>
-                                      </span>
-                                    : _sprite
-                                      ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" />
-                                      : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
-                                  }
-                                  {g.quality === "legendary" && !_isExpOnly && (
-                                    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                                      <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
-                                    </span>
-                                  )}
-                                  {_isExpOnly && <span className="absolute left-1 top-1 text-[15px] leading-none drop-shadow">✨</span>}
-                                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[13px] font-black text-white leading-tight">
-                                    {_total === 0 && g.bonusSource ? "★" : `×${_total}`}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {items.length > 35 && (
-                          <p className="mt-3 text-center text-[17px] text-[#8b6a3e]">+{items.length - 35} więcej rodzajów</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Stopka z EXP */}
-                  {(isDailyHarvestView
-                    ? (dailyHarvestData != null && dailyHarvestData.total_exp > 0)
-                    : items.length > 0
-                  ) && (
-                    <div className="px-7 py-4 border-t border-[#8b6a3e]/30 bg-[rgba(14,8,3,0.6)] shrink-0 flex items-center justify-between">
-                      <span className="text-[27px] font-black uppercase tracking-widest text-[#8b6a3e]">
-                        {isDailyHarvestView ? "EXP za dzisiaj" : "EXP za zbiory"}
-                      </span>
-                      <span className="text-4xl font-black text-sky-200">
-                        +{isDailyHarvestView ? (dailyHarvestData?.total_exp ?? 0) : totalExp}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Tutorial krok 12 */}
-                  {tutorialStep === 12 && (
-                    <div className="border-t border-[#d8ba7a]/30 bg-[rgba(14,8,4,0.85)] px-7 py-5 shrink-0">
-                      <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-[#d8ba7a]">Etap 1 — Krok 12/13</p>
-                      <p className="mb-4 text-[22px] text-[#f9e7b2] leading-snug">
-                        Przy każdym zbiorze możesz sprawdzić swoje ostatnie zbiory. W grze dostępne są <span className="font-black text-[#d8ba7a]">4 rodzaje</span> zebranych upraw.
-                      </p>
-                      {/* 4 ikony jakości marchewki — poglądowo */}
-                      <div className="mb-5 flex gap-5 items-start">
-                        {([
-                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%",   border: "#9ca3af" },
-                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~87,5%", border: "#d1d5db" },
-                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~2%",    border: "#22c55e" },
-                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~0,5%",  border: "#f59e0b" },
-                        ] as { quality: string; sprite: string; label: string; expLabel: string; chance: string; border: string }[]).map(q => (
-                          <div key={q.quality}
-                            className="flex flex-col items-center gap-1.5 cursor-help"
-                            onMouseEnter={(e) => { const r = e.currentTarget.getBoundingClientRect(); setFvQualityTip({ label: q.label, expLabel: q.expLabel, chance: q.chance, sx: r.left + r.width / 2, sy: r.top }); }}
-                            onMouseLeave={() => setFvQualityTip(null)}
-                          >
-                            <div className="w-[80px] h-[80px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
-                              <img src={q.sprite} alt={q.label} className="w-14 h-14 object-contain" style={{ imageRendering: "pixelated" }} />
-                            </div>
-                            <span className="text-[13px] font-bold text-[#dfcfab] whitespace-nowrap">{q.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        data-tutorial-target="tutorial-dalej-btn"
-                        onClick={() => { void advanceTutorialStep(13); setHarvestLog([]); setIsFvHarvestModalOpen(false); }}
-                        className="w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-4 py-2.5 text-[11px] font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
-                      >Dalej</button>
-                    </div>
-                  )}
-                </div>
-                {fvHarvestTooltip && (() => {
-                  const t = fvHarvestTooltip;
-                  const _qd = CROP_QUALITY_DEFS[t.quality];
-                  const _cx = BASE_W / 2 + (t.cx - window.innerWidth / 2) / gameScale;
-                  const _cy = BASE_H / 2 + (t.cy - window.innerHeight / 2) / gameScale;
-                  const _tw = 340;
-                  const _left = Math.max(4, Math.min(Math.round(_cx - _tw / 2), BASE_W - _tw - 4));
-
-                  const _cropDef2 = CROPS.find(c => c.id === t.cropId);
-                  const _expR = _cropDef2?.expReward ?? 0;
-                  const _yieldAmt = _cropDef2?.yieldAmount ?? 1;
-                  const _isSmall = _yieldAmt <= 2;
-                  const _dropStr = t.quality === "legendary"
-                    ? (_isSmall ? "20–60 szt." : "40–120 szt.")
-                    : t.quality === "epic"
-                    ? (_isSmall ? "10–22 szt." : "20–44 szt.")
-                    : (_isSmall ? "1–3 szt." : "2–6 szt.");
-                  const _dropZrStr = t.quality === "legendary"
-                    ? (_isSmall ? "40–120 szt." : "80–240 szt.")
-                    : t.quality === "epic"
-                    ? (_isSmall ? "20–44 szt." : "40–88 szt.")
-                    : (_isSmall ? "2–6 szt." : "4–12 szt.");
-
-                  const _expDisplay =
-                    t.quality === "rotten"    ? "nie sadzi się"
-                    : t.quality === "good"    ? `+${_expR} EXP`
-                    : t.quality === "epic"    ? `+${_expR * 3}–${_expR * 6} EXP`
-                    : /* legendary */           `+${_expR * 10}–${_expR * 20} EXP`;
-
-                  const _wiedzaEff2  = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
-                  const _wiedzaMult2 = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEff2, WIEDZA_RATE) / 100);
-                  const _hiveMult2   = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
-                  const _effMs       = _cropDef2
-                    ? Math.round(_cropDef2.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, _wiedzaMult2 * _hiveMult2))
-                    : 0;
-                  const _effMin      = Math.round(_effMs / 60_000);
-                  const _timeStr     = _effMin >= 60
-                    ? `${Math.floor(_effMin / 60)}h${_effMin % 60 > 0 ? ` ${_effMin % 60}min` : ""}`
-                    : `${_effMin} min`;
-                  const _baseMin     = _cropDef2 ? Math.round(_cropDef2.growthTimeMs / 60_000) : 0;
-                  const _baseTimeStr = _baseMin >= 60
-                    ? `${Math.floor(_baseMin / 60)}h${_baseMin % 60 > 0 ? ` ${_baseMin % 60}min` : ""}`
-                    : `${_baseMin} min`;
-
-                  const _zrEff    = effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped);
-                  const _zrChance = calcStatEffect(_zrEff, 0.004);
-
-                  return (
-                    <div
-                      className="pointer-events-none absolute z-[400] rounded-xl border border-[#8b6a3e] bg-[rgba(20,10,4,0.98)] p-3 shadow-2xl"
-                      style={{ left: _left, top: Math.round(_cy) - 8, width: _tw, transform: "translateY(-100%)" }}
-                    >
-                      <p className="mb-0.5 text-[22px] font-black text-[#f9e7b2]">
-                        {t.cropName} <span style={{ color: _qd.borderColor }}>{_qd.label.toLowerCase()}</span>
-                      </p>
-                      {t.quality === "rotten" ? (
-                        <div className="mt-1.5 text-[18px]">
-                          <p className="text-[#8b6a3e]">Tej uprawy nie można posadzić. Dobry jako kompost lub do zadań specjalnych.</p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mt-1.5 flex flex-col gap-1 text-[18px]">
-                            {_cropDef2 && (
-                              <p className="text-[#8b6a3e]">
-                                Czas bazowy:{" "}
-                                <span className="font-bold text-[#dfcfab]">{_baseTimeStr}</span>
-                              </p>
-                            )}
-                            <p className="text-[#8b6a3e]">
-                              EXP po zbiorze:{" "}
-                              <span className="font-bold text-sky-300">{_expDisplay}</span>
-                            </p>
-                            {_cropDef2 && (
-                              <>
-                                <p className="text-[#8b6a3e]">
-                                  Drop po zbiorze:{" "}
-                                  <span className="font-bold text-yellow-300">{_dropStr}</span>
-                                </p>
-                                <p className="text-[13px] text-[#8b6a3e]/70">każda sztuka losuje jakość osobno</p>
-                              </>
-                            )}
-                          </div>
-                          <div className="mt-2 border-t border-[#8b6a3e]/40 pt-1.5 flex flex-col gap-0.5 text-[17px]">
-                            {_cropDef2 && (
-                              <p className="text-[#8b6a3e]">
-                                Jeśli Zręczność zadziała:{" "}
-                                <span className="font-bold text-yellow-300">{_dropZrStr}</span>
-                              </p>
-                            )}
-                            <p className="text-[#8b6a3e]">
-                              Szansa Zręczności:{" "}
-                              <span className="font-bold text-amber-300">{_zrChance.toFixed(1)}%</span>
-                            </p>
-                            <p className="mt-0.5 text-[15px] text-[#8b6a3e]">EXP zależy od zasadzonego nasiona, nie od jakości tej sztuki.</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            );
-          })()}
+          {isFvHarvestModalOpen && isFieldViewOpen && (
+            <HarvestSessionModal
+              harvestLog={harvestLog}
+              isDailyHarvestView={isDailyHarvestView}
+              setIsDailyHarvestView={setIsDailyHarvestView}
+              isDailyHarvestLoading={isDailyHarvestLoading}
+              dailyHarvestData={dailyHarvestData}
+              fetchDailyHarvest={fetchDailyHarvest}
+              setIsFvHarvestModalOpen={setIsFvHarvestModalOpen}
+              tutorialStep={tutorialStep}
+              advanceTutorialStep={advanceTutorialStep}
+              setHarvestLog={setHarvestLog}
+              fvHarvestTooltip={fvHarvestTooltip}
+              setFvHarvestTooltip={setFvHarvestTooltip}
+              setFvQualityTip={setFvQualityTip}
+              gameScale={gameScale}
+              effectiveStats={effectiveStats}
+              charEquipped={charEquipped}
+              hiveData={hiveData}
+            />
+          )}
 
           {/* Fixed tooltip dla ikon jakości w tutorialu krok 12 — fixed ignoruje overflow-hidden */}
           {fvQualityTip && (
@@ -12219,104 +11710,24 @@ export default function Page() {
 
 
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
-        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (() => {
-          // W step 4: licz faktyczne pola z guide kompostem (nie ufaj tylko tutorialPlotIds po refreshie)
-          const _t4 = tutorialStep === 4
-            ? Math.min(3, Object.values(plotCrops).filter(p => p.compostBonus?.type === "guide").length)
-            : tutorialPlotIds.length;
-          const _t7 = tutorialStep === 7 ? tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId && plotCrops[id]?.compostBonus?.type === "guide").length : tutorialPlantedIds.length;
-          const _t9 = tutorialWateredIds.length;
-          const _t11 = tutorialHarvestedIds.length;
-          const _texts: string[] = [
-            "",
-            "Kliknij Pola uprawne, aby rozpocząć pracę na swoim ranczu.",
-            "Kliknij Kompost. Użyjemy go, żeby przyspieszyć pierwsze marchewki.",
-            "Wybierz Kompost Przewodnika.",
-            `Użyj Kompostu Przewodnika na 3 pustych polach. Dzięki temu pierwsze marchewki urosną dużo szybciej. Wzmocnione pola: ${_t4}/3`,
-            "Teraz kliknij Nasiona.",
-            "Wybierz zwykłą marchewkę.",
-            `Posadź marchewki na 3 wzmocnionych polach. Posadzone: ${_t7}/3`,
-            "Kliknij Konewkę.",
-            (() => {
-              const _canWaterAny = tutorialPlotIds.some(id => { const _p = plotCrops[id]; return _p?.cropId && !isCropReady(id) && !_p.watered; });
-              if (_canWaterAny) return `Podlej swoje marchewki, jeśli jeszcze rosną. Podlane: ${_t9}/3`;
-              // Wszystkie podlane — sprawdź czy faktycznie gotowe (nie wystarczy watered=true)
-              const _allReady = tutorialPlotIds.length > 0 && tutorialPlotIds.every(id => isCropReady(id));
-              return _allReady
-                ? "Marchewki gotowe! Za chwilę przejdziemy do zbioru."
-                : "Marchewki podlane. Poczekaj chwilę — gdy będą gotowe, przewodnik sam przejdzie dalej.";
-            })(),
-            "Kliknij Zbierz.",
-            `Zbierz gotowe marchewki — zebrałeś ${_t11}/3.`,
-            "Sprawdź panel Ostatnie zbiory po lewej stronie — przeczytaj opis jakości, a potem kliknij Dalej.",
-            "Świetnie! Etap 1 przewodnika ukończony.\n\nPRZEWODNIK W BUDOWIE — na razie tyle. Możesz zminimalizować to okno.",
-          ];
-
-          if (tutorialStep === 13 && tutorialPanelMinimized) {
-            return (
-              <div className="fixed bottom-5 left-1/2 z-[87] -translate-x-1/2 pointer-events-none">
-                <button
-                  type="button"
-                  onClick={() => setTutorialPanelMinimized(false)}
-                  className="pointer-events-auto rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] px-5 py-2 text-sm font-black text-[#d8ba7a] shadow-2xl backdrop-blur-sm hover:bg-[rgba(30,16,4,0.98)] transition"
-                >
-                  Etap 1 ukończony — Przewodnik w budowie
-                </button>
-              </div>
-            );
-          }
-
-          return (() => {
-            const _tutPos = TUT_PANEL_PRESET_POSITIONS[tutorialStep];
-            return (
-              <div
-                className={`fixed z-[87] w-full max-w-[700px] px-4 pointer-events-none${_tutPos ? "" : " bottom-5 left-1/2 -translate-x-1/2"}`}
-                style={_tutPos ? { left: _tutPos.x, top: _tutPos.y } : undefined}
-              >
-                <div className="rounded-2xl border-2 border-[#d8ba7a]/60 bg-[rgba(14,8,4,0.96)] shadow-2xl backdrop-blur-sm pointer-events-auto relative overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm uppercase tracking-widest text-[#d8ba7a] font-black">Etap 1 przewodnika</p>
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm text-[#8b6a3e]">Krok {tutorialStep}/13</p>
-                        {tutorialStep === 13 && (
-                          <button
-                            type="button"
-                            onClick={() => setTutorialPanelMinimized(true)}
-                            className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#8b6a3e]/60 bg-[rgba(255,255,255,0.04)] text-[#8b6a3e] hover:text-[#d8ba7a] hover:border-[#d8ba7a]/60 transition text-base font-black leading-none"
-                            title="Minimalizuj"
-                          >
-                            −
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mb-4 h-2 rounded-full bg-[#3a2510]/60 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#d8ba7a] transition-all duration-500"
-                        style={{ width: `${(tutorialStep / 13) * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-xl font-bold text-[#f9e7b2] leading-snug whitespace-pre-line">
-                      {_texts[tutorialStep]}
-                    </p>
-                    {tutorialStep === 13 && (
-                      <button
-                        type="button"
-                        className="mt-4 w-full rounded-xl border border-[#d8ba7a]/50 bg-[rgba(40,25,8,0.8)] px-4 py-2.5 text-sm font-black text-[#f9e7b2] transition hover:bg-[rgba(60,38,12,0.9)] ring-2 ring-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.5)]"
-                        onClick={async () => {
-                          if (!profile?.id) return;
-                          await supabase.from("profiles").update({ tutorial_completed: true }).eq("id", profile.id);
-                          setProfile(p => p ? { ...p, tutorial_completed: true } : p);
-                        }}
-                      >Dalej</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })();
-        })()}
+        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (
+          <TutorialPanel
+            tutorialStep={tutorialStep}
+            tutorialPlotIds={tutorialPlotIds}
+            plotCrops={plotCrops}
+            isCropReady={isCropReady}
+            tutorialPlantedIds={tutorialPlantedIds}
+            tutorialWateredIds={tutorialWateredIds}
+            tutorialHarvestedIds={tutorialHarvestedIds}
+            tutorialPanelMinimized={tutorialPanelMinimized}
+            setTutorialPanelMinimized={setTutorialPanelMinimized}
+            onTutorialComplete={async () => {
+              if (!profile?.id) return;
+              await supabase.from("profiles").update({ tutorial_completed: true }).eq("id", profile.id);
+              setProfile(p => p ? { ...p, tutorial_completed: true } : p);
+            }}
+          />
+        )}
 
         {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
         {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep === 1 && !isFieldViewOpen && (
@@ -12324,79 +11735,15 @@ export default function Page() {
         )}
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
-        {(()=>{
-          const _noArrow=[7,9,11,13];
-          const _tutActive=!!profile?.id&&profile.tutorial_started===true&&profile.tutorial_completed!==true&&profile.tutorial_skipped!==true;
-          if(!_tutActive||_noArrow.includes(tutorialStep)) return null;
-          type SA={x:number;y:number;size:number;rotation:number};
-          // Rotation na osobnym wrapperze wewnętrznym — nie na animate-bounce div.
-          // CSS @keyframes bounce nadpisuje transform inline na tym samym elemencie.
-          // Lewa/prawa strzałka (rotation ±90): animacja pozioma, bez skakania góra/dół.
-          const arr=(a:SA,key:string)=>{
-            const h=Math.round(a.size*62/48);
-            const isH=Math.abs(a.rotation)===90;
-            const bounceAnim=isH
-              ? (a.rotation===-90
-                  ? "bounceLeft 1s ease-in-out infinite"
-                  : "bounceRight 1s ease-in-out infinite")
-              : undefined;
-            return(
-            <div key={key} className="fixed z-[93] pointer-events-none" style={{left:a.x-a.size/2,top:a.y-h/2}}>
-              <style>{`
-                @keyframes bounceLeft{0%,100%{transform:translateX(-20%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateX(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}
-                @keyframes bounceRight{0%,100%{transform:translateX(20%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:translateX(0);animation-timing-function:cubic-bezier(0,0,0.2,1)}}
-              `}</style>
-              <div className={isH?undefined:"animate-bounce"} style={isH?{animation:bounceAnim}:{}}>
-                <div style={{transform:`rotate(${a.rotation}deg)`}}>
-                  <svg width={a.size} height={h} viewBox="0 0 48 62" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M24 62 L0 28 H16 V0 H32 V28 H48 Z" fill="#f9e7b2" stroke="#8b6a3e" strokeWidth="2" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </div>
-            </div>
-          );};
-          // Step 1: pozycje liczone z getBoundingClientRect "Pola uprawne" (tutorialArrow)
-          if(tutorialStep===1){
-            if(!tutorialArrow) return null;
-            const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const ox=-291, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
-            return <>{[
-              {x:cx+ox,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
-              {x:cx+ox,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
-            ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
-          }
-          // Kroki 2–11: stałe pozycje z final config
-          const cfgN:Record<number,SA>={
-            2: {x:153.37, y:132.50, size:108, rotation:0},
-            3: {x:1090.00,y:587.14, size:80,  rotation:0},
-            5: {x:154.37, y:326.88, size:102, rotation:0},
-            6: {x:852.61, y:643.44, size:122, rotation:90},
-            8: {x:155.37, y:529.25, size:112, rotation:0},
-            10:{x:152.35, y:718.63, size:118, rotation:0},
-          };
-          // Krok 12: dwie fazy — przed otwarciem modalu (→ Zbiory) i po otwarciu (→ panel sesji)
-          if(tutorialStep===12){
-            // Faza 2: modal otwarty — statyczna strzałka w prawo przy panelu sesji
-            if(isFvHarvestModalOpen){
-              return arr({x:515,y:786,size:80,rotation:-90},"tut-arr-12-modal");
-            }
-            // Faza 1: modal zamknięty — strzałka na przycisk Zbiory (pozycja z fvZbioryPos)
-            const _sz=fvTutArrow12Pos.w||80;
-            const _ah=Math.round(_sz*62/48);
-            return arr({x:fvZbioryPos.l+fvZbioryPos.w/2,y:fvZbioryPos.t-_ah/2-16,size:_sz,rotation:0},"tut-arr-12");
-          }
-          // Krok 13: stała strzałka — x=948, y=287
-          if(tutorialStep===13){
-            const _13sz=fvTutArrow13Pos.w||80;
-            const _13h=Math.round(_13sz*62/48);
-            const _13x=Math.max(24+_13sz/2,Math.min(window.innerWidth-24-_13sz/2,fvTutArrow13Pos.lPct*window.innerWidth/100));
-            const _13y=Math.max(24+_13h/2,Math.min(window.innerHeight-24-_13h/2,fvTutArrow13Pos.tPct*window.innerHeight/100));
-            return arr({x:_13x,y:_13y,size:_13sz,rotation:0},"tut-arr-13");
-          }
-          const a=cfgN[tutorialStep]; return a?arr(a,`tut-arr-${tutorialStep}`):null;
-        })()}
+        <TutorialArrows
+          profile={profile}
+          tutorialStep={tutorialStep}
+          tutorialArrow={tutorialArrow}
+          isFvHarvestModalOpen={isFvHarvestModalOpen}
+          fvZbioryPos={fvZbioryPos}
+          fvTutArrow12Pos={fvTutArrow12Pos}
+          fvTutArrow13Pos={fvTutArrow13Pos}
+        />
 
         </main>
     </div>
