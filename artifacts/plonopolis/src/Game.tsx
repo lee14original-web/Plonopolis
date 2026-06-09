@@ -56,6 +56,10 @@ import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
 import { SettingsModal } from "./game/features/settings/SettingsModal";
 import { LogoutConfirmModal } from "./game/features/settings/LogoutConfirmModal";
+import { RankingModal } from "./game/features/ranking/RankingModal";
+import { MessagesModal } from "./game/features/messages/MessagesModal";
+import { SkinPickerModal } from "./game/features/avatar/SkinPickerModal";
+import { EpicPurchaseModal } from "./game/features/avatar/EpicPurchaseModal";
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
 const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
@@ -4008,6 +4012,20 @@ export default function Page() {
     setShowSkinModal(false);
   }
 
+  async function handleBuyEpicAvatar(epicAvatarId: number) {
+    if (!profile?.id) return;
+    const { data, error } = await supabase.rpc("buy_epic_avatar", { p_avatar_id: epicAvatarId });
+    if (error) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: error.message }); return; }
+    const response = data as { ok?: boolean; error?: string; avatar_id?: number; cost?: Record<string,number>; seed_inventory?: Record<string,number>; unlocked_epic_avatars?: number[] } | null;
+    if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: response.error ?? "Nieznany błąd" }); return; }
+    if (response?.seed_inventory) setSeedInventory(response.seed_inventory);
+    if (response?.unlocked_epic_avatars) setUnlockedEpicAvatars(response.unlocked_epic_avatars);
+    setEpicPurchaseTarget(null);
+    await loadProfile(profile.id);
+    const es = EPIC_SKINS[epicAvatarId - EPIC_SKIN_START];
+    setMessage({ type: "success", title: "⭐ Avatar odblokowany!", text: `Odblokowano epicki avatar: ${es?.name ?? ""}` });
+  }
+
   async function handleAddHoneyJars(amount: number) {
     if (!profile?.id) return;
     const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "honey_jars", p_amount: amount });
@@ -7415,511 +7433,64 @@ export default function Page() {
           {/* ═══ TEST MODAL ═══ */}
           {/* ═══ MODAL RANKINGU ═══ */}
             {showRankingPanel && (
-              <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-                <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1631px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
-
-                  {/* Header */}
-                  <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">🏆</span>
-                      <div>
-                        <h2 className="text-2xl font-black text-[#f9e7b2]">Ranking graczy</h2>
-                        <p className="text-xs text-[#8b6a3e]">Wszyscy gracze Plonopolis</p>
-                      </div>
-                    </div>
-                    <button onClick={() => setShowRankingPanel(false)}
-                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
-                      ✕ Zamknij
-                    </button>
-                  </div>
-
-                  {/* Sort tabs + search + znajdź mnie */}
-                  <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
-                    <button onClick={() => setRankingSort("farmpower")}
-                      className={rankingSort==="farmpower" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Moc farmy
-                    </button>
-                    <button onClick={() => setRankingSort("level")}
-                      className={rankingSort==="level" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Poziom
-                    </button>
-                    <button onClick={() => setRankingSort("money")}
-                      className={rankingSort==="money" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      Pieniądze
-                    </button>
-                    <button onClick={() => setRankingSort("customers")}
-                      className={rankingSort==="customers" ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-                      😊 Zadowoleni klienci
-                    </button>
-                    <div className="ml-auto flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={rankingSearch}
-                        onChange={e => setRankingSearch(e.target.value)}
-                        placeholder="🔍 Szukaj nicku..."
-                        className="rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d4a64f]/80 w-44"
-                      />
-                      <button
-                        onClick={() => {
-                          setRankingHighlightMe(v => {
-                            const next = !v;
-                            if (next) setTimeout(() => {
-                              const el = document.getElementById("ranking-me-row");
-                              const container = rankingScrollRef.current;
-                              if (!el || !container) return;
-                              let elTop = 0;
-                              let node: HTMLElement | null = el as HTMLElement;
-                              while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
-                              container.scrollTop = elTop - container.clientHeight / 2 + el.offsetHeight / 2;
-                            }, 120);
-                            return next;
-                          });
-                        }}
-                        className={`rounded-xl px-4 py-2 text-sm font-bold transition border ${rankingHighlightMe ? "border-yellow-400 bg-yellow-500/20 text-yellow-300" : "border-[#8b6a3e]/50 bg-black/20 text-[#f1dfb5] hover:bg-white/5"}`}>
-                        🎯 Znajdź mnie
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Table */}
-                  <div ref={rankingScrollRef} className="flex-1 overflow-y-auto px-6 py-4">
-                    {rankingLoading ? (
-                      <div className="flex h-full items-center justify-center">
-                        <div className="text-center">
-                          <div className="mb-3 text-4xl animate-spin">⚙️</div>
-                          <p className="text-[#8b6a3e]">Ładowanie rankingu...</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <table className="w-full border-collapse text-sm table-fixed">
-                        <colgroup>
-                          <col style={{width:"48px"}} />
-                          <col style={{width:"30%"}} />
-                          <col style={{width:"16%"}} />
-                          <col style={{width:"88px"}} />
-                          <col style={{width:"100px"}} />
-                          <col style={{width:"16%"}} />
-                          <col style={{width:"110px"}} />
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-[#8b6a3e]/40 text-left text-xs uppercase tracking-widest text-[#8b6a3e]">
-                            <th className="py-3 pr-3">#</th>
-                            <th className="py-3 pr-4">Gracz</th>
-                            <th className="py-3 pr-3">Gildia</th>
-                            <th className="py-3 pr-3 text-right">Poziom</th>
-                            <th className="py-3 pr-3 text-right">😊 Klienci</th>
-                            <th className="py-3 pr-3 text-right">Pieniądze</th>
-                            <th className="py-3 text-right">Moc farmy</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[...rankingData].sort((a,b) => {
-                            if (rankingSort==="level") return (b.ranking_score ?? 0)-(a.ranking_score ?? 0);
-                            if (rankingSort==="money") return b.money-a.money;
-                            if (rankingSort==="customers") return (b.customer_orders_completed ?? 0)-(a.customer_orders_completed ?? 0);
-                            return (b.farm_power ?? 0)-(a.farm_power ?? 0);
-                          }).filter(p => rankingSearch.trim()==="" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())).map((p,i) => {
-                            const isMe = p.user_id === profile?.id;
-                            const highlighted = rankingHighlightMe && isMe;
-                            return (
-                            <tr key={i} id={isMe ? "ranking-me-row" : undefined} className={`border-b border-[#8b6a3e]/20 transition ${highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60" : "hover:bg-white/5"}`}>
-                              <td className="py-3 pr-3 font-black text-[#d8ba7a]">
-                                {i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : i+1}
-                              </td>
-                              <td className="py-3 pr-4">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <img
-                                    src={ALL_SKINS[isMe ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
-                                    alt={p.player_name}
-                                    className="h-[52px] w-[52px] shrink-0 rounded-full object-cover border-2 border-[#8b6a3e]/60"
-                                    style={{imageRendering:"pixelated"}}
-                                  />
-                                  <span className={`text-sm font-bold truncate ${highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>{p.player_name}</span>
-                                  {!isMe && (<button type="button" onClick={() => openComposeTo(p.user_id, p.player_name)} className="ml-1 shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[#8b6a3e]/50 bg-black/20 text-sm transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]" title={`Wyślij wiadomość do ${p.player_name}`}>✉️</button>)}
-                                </div>
-                              </td>
-                              <td className="py-3 pr-3 italic text-[#8b6a3e] truncate overflow-hidden">{p.guild_name}</td>
-                              <td className="py-3 pr-3 text-right font-black text-[#f2ca69]">⭐ {p.level}</td>
-                              <td className="py-3 pr-3 text-right">
-                                <span className={`font-bold tabular-nums ${(p.customer_orders_completed ?? 0) > 0 ? "text-emerald-400" : "text-[#8b6a3e]"}`}>
-                                  {(p.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
-                                </span>
-                              </td>
-                              <td className="py-3 pr-3 text-right text-[#a8e890] tabular-nums">
-                                {new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(p.money)}
-                              </td>
-                              <td className="py-3 text-right tabular-nums">
-                                <span className={`font-bold ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
-                                  {(p.farm_power ?? 0).toLocaleString("pl-PL")}
-                                </span>
-                              </td>
-                            </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-
-                  <div className="shrink-0 border-t border-[#8b6a3e]/30 px-6 py-3 text-center text-xs text-[#8b6a3e]">
-                    Łącznie graczy: {rankingData.length}
-                  </div>
-
-                </div>
-              </div>
+              <RankingModal
+                onClose={() => setShowRankingPanel(false)}
+                rankingData={rankingData}
+                rankingLoading={rankingLoading}
+                rankingSort={rankingSort}
+                setRankingSort={setRankingSort}
+                rankingSearch={rankingSearch}
+                setRankingSearch={setRankingSearch}
+                rankingHighlightMe={rankingHighlightMe}
+                setRankingHighlightMe={setRankingHighlightMe}
+                rankingScrollRef={rankingScrollRef}
+                profile={profile}
+                avatarSkin={avatarSkin}
+                openComposeTo={openComposeTo}
+              />
             )}
 
           {/* ═══ MODAL WIADOMOŚCI ═══ */}
           {showMessagePanel && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-              <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-5xl flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
-
-                {/* Header */}
-                <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl">📬</span>
-                    <div>
-                      <h2 className="text-3xl font-black text-[#f9e7b2]">Wiadomości</h2>
-                      <p className="text-sm text-[#8b6a3e]">Skrzynka gracza Plonopolis</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void loadMessages()}
-                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-2 text-base font-bold text-[#8b6a3e] transition hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]"
-                      title="Odśwież skrzynkę"
-                    >
-                      🔄
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => showCompose ? setShowCompose(false) : openBlankCompose()}
-                      className="rounded-xl border border-[#d8ba7a]/70 bg-[rgba(80,50,10,0.5)] px-5 py-2 text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(100,70,15,0.7)]">
-                      {showCompose ? "← Wróć" : "✉️ Nowa +"}
-                    </button>
-                    <button onClick={() => { setShowMessagePanel(false); setShowCompose(false); }}
-                      className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 px-5 py-2 text-base font-bold text-[#f3e6c8] transition hover:border-red-400/50 hover:text-red-300">
-                      ✕ Zamknij
-                    </button>
-                  </div>
-                </div>
-
-                {/* Zakładki — ukryte podczas pisania nowej wiadomości */}
-                {!showCompose && (
-                <div className="flex shrink-0 gap-1 border-b border-[#8b6a3e]/30 bg-black/20 px-4 pt-3 pb-0">
-                  {([
-                    { key: "systemowe", label: "Systemowe", icon: "🔔" },
-                    { key: "otrzymane", label: "Otrzymane", icon: "📥" },
-                    { key: "wyslane",   label: "Wysłane",   icon: "📤" },
-                    { key: "targ",      label: "Targ",      icon: "🏪" },
-                  ] as const).map(tab => (
-                    <button key={tab.key} onClick={() => { setMessageTab(tab.key); setSelectedMsgIds(new Set()); }}
-                      className={`flex items-center gap-2 rounded-t-xl px-5 py-3 text-sm font-bold uppercase tracking-[0.12em] transition border-b-2 ${messageTab === tab.key ? "border-[#d8ba7a] text-[#f9e7b2] bg-[rgba(80,50,20,0.3)]" : "border-transparent text-[#8b6a3e] hover:text-[#dfcfab]"}`}>
-                      {tab.icon} {tab.label}
-                      {tab.key === "otrzymane" && unreadCount > 0 && (
-                        <span className="ml-1 rounded-full bg-red-500 px-2 py-0.5 text-xs font-black text-white">{unreadCount}</span>
-                      )}
-                      {tab.key === "targ" && unreadMarketCount > 0 && (
-                        <span className="ml-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-black text-white">{unreadMarketCount}</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                )}
-
-                {/* Treść */}
-                <div className="flex-1 overflow-y-auto p-5">
-                  {showCompose ? (
-                    <div className="relative z-10 flex h-full flex-col gap-4 pointer-events-auto">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">✉️</span>
-                        <h3 className="text-xl font-black text-[#f9e7b2]">Nowa wiadomość</h3>
-                      </div>
-
-                      {/* Odbiorca z autouzupełnianiem */}
-                      <div className="relative">
-                        <label className="mb-1 block text-sm font-bold uppercase tracking-wider text-[#8b6a3e]">Do (login gracza)</label>
-                        <input
-                          type="text"
-                          value={composeRecipient}
-                          onChange={e => {
-                            const v = e.target.value;
-                            setComposeRecipient(v);
-                            setRecipientResolved(null);
-                            void searchPlayers(v);
-                          }}
-                          placeholder="Wpisz login gracza..."
-                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-3 text-base text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
-                        />
-                        {/* Lista podpowiedzi */}
-                        {recipientSuggestions.length > 0 && !recipientResolved && (
-                          <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-[#8b6a3e]/60 bg-[rgba(22,13,8,0.98)] shadow-2xl">
-                            {recipientSuggestions.map(s => (
-                              <button key={s.id} type="button"
-                                onClick={() => { setRecipientResolved(s); setComposeRecipient(s.username); setRecipientSuggestions([]); }}
-                                className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-[rgba(80,50,10,0.5)]">
-                                <img src={ALL_SKINS[((s.avatar_skin ?? -1) >= 0 ? (s.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={s.username} className="h-14 w-14 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60" style={{imageRendering:"pixelated"}} />
-                                <span className="text-lg font-bold text-[#f3dfb4]">{s.username}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {recipientResolved && (
-                          <p className="mt-1 text-sm font-bold text-green-400">✔ Gracz znaleziony: {recipientResolved.username}</p>
-                        )}
-                        {composeRecipient.length >= 2 && recipientSuggestions.length === 0 && !recipientResolved && (
-                          <p className="mt-1 text-sm text-red-400">Nie znaleziono gracza o podanym loginie.</p>
-                        )}
-                      </div>
-
-                      {/* Temat */}
-                      <div>
-                        <label className="mb-1 block text-sm font-bold uppercase tracking-wider text-[#8b6a3e]">Temat</label>
-                        <input
-                          type="text"
-                          value={composeSubject}
-                          onChange={e => setComposeSubject(e.target.value)}
-                          maxLength={120}
-                          placeholder="Temat wiadomości..."
-                          className="w-full rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-3 text-base text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70"
-                        />
-                      </div>
-
-                      {/* Treść */}
-                      <div className="flex flex-1 flex-col">
-                        <label className="mb-1 block text-sm font-bold uppercase tracking-wider text-[#8b6a3e]">Treść</label>
-                        <textarea
-                          value={composeBody}
-                          onChange={e => setComposeBody(e.target.value)}
-                          maxLength={2000}
-                          placeholder="Napisz wiadomość..."
-                          className="flex-1 resize-none rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-3 text-base text-[#f3e6c8] placeholder:text-[#8b6a3e]/60 outline-none focus:border-[#d8ba7a]/70 min-h-[140px]"
-                        />
-                        <p className="mt-1 text-right text-sm text-[#8b6a3e]">{composeBody.length}/2000</p>
-                      </div>
-
-                      {/* Koszt i cooldown */}
-                      <div className="flex items-center gap-2 rounded-xl border border-[#8b6a3e]/40 bg-black/20 px-4 py-3">
-                        <span className="text-base">💰</span>
-                        <p className="text-sm text-[#8b6a3e]">Koszt wysłania: <span className="font-black text-[#f2ca69]">50 💰</span></p>
-                        {recipientResolved && composeCountdownSecs > 0 && (
-                          <span className="ml-auto rounded-lg bg-red-950/40 px-2 py-0.5 text-sm font-black text-red-400">
-                            ⏱ Odblokuj za: {Math.floor(composeCountdownSecs/60)}:{String(composeCountdownSecs%60).padStart(2,"0")}
-                          </span>
-                        )}
-                      </div>
-                      {composeError && <p className="rounded-xl bg-red-950/40 px-4 py-3 text-sm font-bold text-red-400">{composeError}</p>}
-                      <button
-                        type="button"
-                        disabled={!recipientResolved || composeSending}
-                        onClick={() => void sendMessage()}
-                        className="rounded-xl border border-[#d8ba7a]/70 bg-[linear-gradient(180deg,#d9a93a,#a06e18)] px-6 py-3 text-base font-black text-[#1a0e00] transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {composeSending ? "Wysyłanie..." : "📤 Wyślij wiadomość"}
-                      </button>
-                    </div>
-                  ) : (<>
-                  {messagesError && (
-                    <div className="mb-3 rounded-xl border border-red-500/50 bg-red-950/30 px-4 py-3">
-                      <p className="text-sm font-bold text-red-400">⚠️ {messagesError}</p>
-                      <p className="mt-1 text-xs text-red-400/70">Sprawdź konsolę przeglądarki (F12) po więcej szczegółów.</p>
-                    </div>
-                  )}
-                  {messagesLoading ? (
-                    <div className="flex h-full items-center justify-center">
-                      <p className="animate-pulse text-base text-[#8b6a3e]">Ładowanie wiadomości...</p>
-                    </div>
-                  ) : (() => {
-                    const filtered = gameMessages.filter(m => {
-                      if (messageTab === "systemowe") return m.category === "system";
-                      if (messageTab === "otrzymane") return m.category === "received";
-                      if (messageTab === "wyslane")   return m.category === "sent";
-                      if (messageTab === "targ")      return m.category === "market";
-                      return false;
-                    });
-                    const emptyIcon = messageTab === "systemowe" ? "🔔" : messageTab === "otrzymane" ? "📥" : messageTab === "targ" ? "🏪" : "📤";
-                    if (filtered.length === 0) return (
-                      <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-[#8b6a3e]">
-                        <span className="text-7xl opacity-40">{emptyIcon}</span>
-                        <p className="text-base">{messageTab === "targ" ? "Brak powiadomień handlowych" : "Brak wiadomości"}</p>
-                      </div>
-                    );
-                    const selectable = messageTab !== "systemowe";
-                    const selectableIds = filtered.map(m => m.id);
-                    const allSelected = selectable && selectableIds.length > 0 && selectableIds.every(id => selectedMsgIds.has(id));
-                    const selectedInTab = selectableIds.filter(id => selectedMsgIds.has(id));
-                    return (
-                      <div className="space-y-3">
-                        {/* ─ Toolbar zaznaczania ─ */}
-                        {selectable && (
-                          <div className="mb-1 flex items-center gap-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-2">
-                            <label className="flex cursor-pointer items-center gap-2 text-sm text-[#dfcfab] select-none">
-                              <input type="checkbox" checked={allSelected} onChange={() => {
-                                if (allSelected) setSelectedMsgIds(prev => { const n = new Set(prev); selectableIds.forEach(id => n.delete(id)); return n; });
-                                else setSelectedMsgIds(prev => { const n = new Set(prev); selectableIds.forEach(id => n.add(id)); return n; });
-                              }} className="h-4 w-4 accent-yellow-400 cursor-pointer" />
-                              {allSelected ? "Odznacz wszystkie" : "Zaznacz wszystkie"}
-                            </label>
-                            {selectedInTab.length > 0 && (
-                              <>
-                                <span className="text-xs text-[#8b6a3e]">Zaznaczono: <span className="font-bold text-yellow-300">{selectedInTab.length}</span></span>
-                                <button type="button"
-                                  onClick={() => void deleteSelectedMessages(selectedInTab)}
-                                  className="ml-auto rounded-lg border border-red-600/50 bg-red-950/30 px-4 py-1.5 text-sm font-bold text-red-300 transition hover:bg-red-950/60">
-                                  🗑️ Usuń zaznaczone ({selectedInTab.length})
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                        {filtered.map(msg => (
-                          <div key={msg.id}
-                            className={`relative rounded-2xl border p-5 transition ${selectedMsgIds.has(msg.id) ? "border-yellow-400/50 bg-yellow-900/10" : !msg.read && msg.category !== "sent" ? (msg.category === "market" ? "border-amber-500/60 bg-[rgba(80,45,5,0.45)]" : "border-[#d8ba7a]/60 bg-[rgba(80,50,15,0.45)]") : "border-[#8b6a3e]/40 bg-black/20"}`}>
-
-                            {/* Checkbox zaznaczania */}
-                            {msg.category !== "system" && (
-                              <input type="checkbox"
-                                checked={selectedMsgIds.has(msg.id)}
-                                onChange={() => setSelectedMsgIds(prev => { const n = new Set(prev); n.has(msg.id) ? n.delete(msg.id) : n.add(msg.id); return n; })}
-                                className="absolute right-4 top-4 h-5 w-5 accent-yellow-400 cursor-pointer"
-                              />
-                            )}
-                            {/* Data */}
-                            <p className="mb-2 text-xs text-[#8b6a3e]">
-                              {new Date(msg.created_at).toLocaleDateString("pl-PL", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" })}
-                            </p>
-
-                            {/* Received / System / Market: Od kogo → Tytuł → Treść */}
-                            {(msg.category === "received" || msg.category === "system" || msg.category === "market") && (<>
-                              <div className="mb-2 flex items-center gap-3">
-                                {msg.category === "system" ? (
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#8b6a3e]/50 bg-black/30 text-xl">🔧</span>
-                                ) : msg.category === "market" ? (
-                                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-600/60 bg-amber-950/40 text-xl">🏪</span>
-                                ) : (
-                                  <img
-                                    src={ALL_SKINS[msg.from_avatar_skin ?? 0] ?? ALL_SKINS[0]}
-                                    alt={msg.from_username ?? ""}
-                                    className="h-10 w-10 shrink-0 rounded-full object-cover border border-[#8b6a3e]/60"
-                                    style={{imageRendering:"pixelated"}}
-                                  />
-                                )}
-                                <div>
-                                  <p className={`text-xs font-bold ${msg.category === "system" ? "text-red-400 tracking-wide uppercase" : msg.category === "market" ? "text-amber-400 tracking-wide uppercase" : "text-[#8b6a3e]"}`}>
-                                    {msg.category === "system" ? "⚙️ System Plonopolis" : msg.category === "market" ? "🏪 System Targu" : (msg.from_username ?? "Nieznany")}
-                                  </p>
-                                  <p className={`text-lg font-black ${!msg.read ? "text-[#f9e7b2]" : "text-[#dfcfab]"}`}>
-                                    {msg.subject || "(bez tytułu)"}
-                                  </p>
-                                </div>
-                              </div>
-                              <p className={`text-base leading-relaxed whitespace-pre-wrap ${msg.category === "system" ? "text-white" : msg.category === "market" ? "text-amber-100/90" : "text-[#dfcfab]/90"}`}>{msg.body}</p>
-                            </>)}
-
-                            {/* Sent: Od kogo (ja) → Do kogo → Tytuł → Treść */}
-                            {msg.category === "sent" && (<>
-                              <div className="mb-2 flex items-center gap-3">
-                                <div className="flex shrink-0 flex-col items-center gap-1">
-                                  <img
-                                    src={ALL_SKINS[msg.from_avatar_skin ?? avatarSkin ?? 0] ?? ALL_SKINS[0]}
-                                    alt={msg.from_username ?? profile?.login ?? "Ty"}
-                                    className="h-10 w-10 rounded-full object-cover border border-[#8b6a3e]/60"
-                                    style={{imageRendering:"pixelated"}}
-                                    title="Ty"
-                                  />
-                                  <span className="text-[9px] text-[#8b6a3e]">Ty</span>
-                                </div>
-                                <span className="text-[#8b6a3e]">→</span>
-                                <div className="flex shrink-0 flex-col items-center gap-1">
-                                  <img
-                                    src={ALL_SKINS[msg.to_avatar_skin ?? 0] ?? ALL_SKINS[0]}
-                                    alt={msg.to_username ?? "Odbiorca"}
-                                    className="h-10 w-10 rounded-full object-cover border border-[#8b6a3e]/60"
-                                    style={{imageRendering:"pixelated"}}
-                                    title={msg.to_username ?? "Odbiorca"}
-                                  />
-                                  <span className="text-[9px] text-[#8b6a3e]">{msg.to_username ?? "?"}</span>
-                                </div>
-                                <div className="ml-1">
-                                  <p className="text-xs text-[#8b6a3e]">
-                                    <span className="font-bold text-[#d8ba7a]">{msg.from_username ?? profile?.login ?? "Ty"}</span>
-                                    {" → "}
-                                    <span className="font-bold text-[#d8ba7a]">{msg.to_username ?? "Nieznany"}</span>
-                                  </p>
-                                  <p className="text-lg font-black text-[#dfcfab]">{msg.subject || "(bez tytułu)"}</p>
-                                </div>
-                              </div>
-                              <p className="text-base leading-relaxed text-[#dfcfab]/90 whitespace-pre-wrap">{msg.body}</p>
-                            </>)}
-
-                            {/* Akcje — Targ: tylko Usuń */}
-                            {msg.category === "market" && (
-                              <div className="mt-4 flex justify-end border-t border-[#8b6a3e]/20 pt-4">
-                                <button type="button"
-                                  onClick={() => void deleteMessage(msg.id)}
-                                  className="rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
-                                  🗑️ Usuń
-                                </button>
-                              </div>
-                            )}
-                            {/* Akcje — Otrzymane: Zapisz / Blokuj / Odpowiedz / Usuń */}
-                            {msg.category === "received" && (
-                              <div className="mt-4 flex flex-wrap gap-2 border-t border-[#8b6a3e]/20 pt-4">
-                                <button type="button"
-                                  onClick={() => void toggleSaveMessage(msg.id, msg.saved)}
-                                  className={`rounded-lg border px-4 py-2 text-sm font-bold transition ${msg.saved ? "border-green-600/60 bg-green-950/40 text-green-300 hover:bg-green-950/60" : "border-[#8b6a3e]/50 bg-black/20 text-[#8b6a3e] hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]"}`}>
-                                  {msg.saved ? "✔ Zapisano" : "💾 Zapisz"}
-                                </button>
-                                {msg.from_user_id && (
-                                  blockedUsers.includes(msg.from_user_id) ? (
-                                    <button type="button"
-                                      onClick={() => void unblockUser(msg.from_user_id!)}
-                                      className="rounded-lg border border-blue-600/60 bg-blue-950/30 px-4 py-2 text-sm font-bold text-blue-300 transition hover:bg-blue-950/50">
-                                      ✅ Odblokuj
-                                    </button>
-                                  ) : (
-                                    <button type="button"
-                                      onClick={() => void blockUser(msg.from_user_id!)}
-                                      className="rounded-lg border border-red-600/50 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/40">
-                                      🚫 Blokuj
-                                    </button>
-                                  )
-                                )}
-                                {msg.from_user_id && !blockedUsers.includes(msg.from_user_id) && (
-                                  <button type="button"
-                                    onClick={() => openComposeTo(msg.from_user_id!, msg.from_username ?? "")}
-                                    className="rounded-lg border border-[#8b6a3e]/50 bg-black/20 px-4 py-2 text-sm font-bold text-[#8b6a3e] transition hover:border-[#d8ba7a]/50 hover:text-[#dfcfab]">
-                                    ↩️ Odpowiedz
-                                  </button>
-                                )}
-                                <button type="button"
-                                  onClick={() => void deleteMessage(msg.id)}
-                                  className="ml-auto rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
-                                  🗑️ Usuń
-                                </button>
-                              </div>
-                            )}
-                            {/* Akcje (tylko sent) */}
-                            {msg.type === "sent" && (
-                              <div className="mt-4 flex justify-end border-t border-[#8b6a3e]/20 pt-4">
-                                <button type="button"
-                                  onClick={() => void deleteMessage(msg.id)}
-                                  className="rounded-lg border border-red-700/40 bg-red-950/20 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-950/50 hover:border-red-500/60">
-                                  🗑️ Usuń
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                  </>)}
-                </div>
-
-              </div>
-            </div>
+            <MessagesModal
+              onClose={() => setShowMessagePanel(false)}
+              showCompose={showCompose}
+              setShowCompose={setShowCompose}
+              loadMessages={loadMessages}
+              openBlankCompose={openBlankCompose}
+              messageTab={messageTab}
+              setMessageTab={setMessageTab}
+              selectedMsgIds={selectedMsgIds}
+              setSelectedMsgIds={setSelectedMsgIds}
+              unreadCount={unreadCount}
+              unreadMarketCount={unreadMarketCount}
+              composeRecipient={composeRecipient}
+              setComposeRecipient={setComposeRecipient}
+              setRecipientResolved={setRecipientResolved}
+              searchPlayers={searchPlayers}
+              recipientSuggestions={recipientSuggestions}
+              recipientResolved={recipientResolved}
+              composeSubject={composeSubject}
+              setComposeSubject={setComposeSubject}
+              composeBody={composeBody}
+              setComposeBody={setComposeBody}
+              composeCountdownSecs={composeCountdownSecs}
+              composeError={composeError}
+              composeSending={composeSending}
+              sendMessage={sendMessage}
+              messagesError={messagesError}
+              messagesLoading={messagesLoading}
+              gameMessages={gameMessages}
+              avatarSkin={avatarSkin}
+              profile={profile}
+              deleteSelectedMessages={deleteSelectedMessages}
+              deleteMessage={deleteMessage}
+              toggleSaveMessage={toggleSaveMessage}
+              blockedUsers={blockedUsers}
+              blockUser={blockUser}
+              unblockUser={unblockUser}
+              openComposeTo={openComposeTo}
+            />
           )}
 
                       {/* ─── Modal startowy przewodnika dla nowego gracza ─── */}
@@ -12050,155 +11621,21 @@ export default function Page() {
           })()}
 
           {showSkinModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowSkinModal(false)}>
-              <div className="relative max-h-[90vh] w-full max-w-[1100px] overflow-y-auto rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] p-8 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <button onClick={() => setShowSkinModal(false)} className="absolute right-4 top-4 text-[#8b6a3e] text-xl hover:text-red-400">✕</button>
-                <h2 className="mb-3 text-center text-lg font-black text-[#f9e7b2]">Wybierz swoją postać</h2>
-                {/* Koszt/cooldown zmiany avatara */}
-                {(() => {
-                  const tier = getAvatarChangeTier(avatarChangeCount);
-                  const now = Date.now();
-                  const cooldownLeft = tier.cooldownMs > 0 && lastAvatarChangeAt > 0 ? Math.max(0, tier.cooldownMs - (now - lastAvatarChangeAt)) : 0;
-                  const cMins = Math.ceil(cooldownLeft / 60000);
-                  const cHrs = Math.floor(cMins / 60);
-                  const cMinRem = cMins % 60;
-                  const timeStr = cHrs > 0 ? `${cHrs}h ${cMinRem}min` : `${cMins}min`;
-                  const isFree = tier.cost === 0;
-                  const freeLeft = Math.max(0, 2 - avatarChangeCount);
-                  return (
-                    <div className={`mb-4 mx-auto max-w-md rounded-xl border px-4 py-2 text-center text-xs font-medium ${
-                      cooldownLeft > 0 ? "border-red-500/40 bg-red-950/20 text-red-300"
-                      : isFree ? "border-green-500/40 bg-green-950/15 text-green-300"
-                      : "border-yellow-500/40 bg-yellow-950/15 text-yellow-300"
-                    }`}>
-                      {cooldownLeft > 0
-                        ? `Cooldown — kolejna zmiana za ${timeStr}`
-                        : isFree
-                          ? `Zmiana avatara bezplatna${freeLeft > 0 ? ` (${freeLeft} gratis pozostalo)` : ""}`
-                          : `Zmiana avatara: ${tier.cost.toLocaleString("pl-PL")} zl — posiadasz: ${displayMoney.toLocaleString("pl-PL")} zl`
-                      }
-                    </div>
-                  );
-                })()}
-                {/* Zakładki */}
-                <div className="mb-6 flex gap-2 justify-center flex-wrap">
-                  {(["wszystkie","mezczyzni","kobiety","epickie"] as const).map(tab => (
-                    <button key={tab} onClick={() => setSkinTab(tab)}
-                      className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest transition border ${
-                        skinTab === tab
-                          ? tab === "epickie" ? "border-green-400 bg-green-900/30 text-green-300" : "border-yellow-400 bg-yellow-900/20 text-yellow-200"
-                          : "border-[#8b6a3e]/40 text-[#dfcfab] hover:bg-white/5"
-                      }`}>
-                      {tab === "mezczyzni" ? "👨 Mężczyźni" : tab === "kobiety" ? "👩 Kobiety" : tab === "wszystkie" ? "🌾 Wszystkie" : "⭐ Epickie"}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Mężczyźni */}
-                {(skinTab === "mezczyzni" || skinTab === "wszystkie") && (
-                  <>
-                    {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👨 Mężczyźni</p>}
-                    <div className={`${skinTab === "wszystkie" ? "mb-4" : ""} grid grid-cols-5 gap-2`}>
-                      {SKINS_MALE.map((src, i) => {
-                        const _b = getAvatarBonus(i);
-                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
-                        const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
-                        const _meta = AVATAR_META[i];
-                        return (
-                          <button key={i} onClick={() => handleAvatarSelect(i)}
-                            onMouseEnter={() => setHoveredNormalSkin(i)}
-                            onMouseLeave={() => setHoveredNormalSkin(null)}
-                            className={`relative flex aspect-[2/3] w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === i ? "border-yellow-400 shadow-[0_0_16px_rgba(255,200,0,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
-                            <img src={src} alt={`Postac ${i+1}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
-                {/* Kobiety */}
-                {(skinTab === "kobiety" || skinTab === "wszystkie") && (
-                  <>
-                    {skinTab === "wszystkie" && <p className="mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">👩 Kobiety</p>}
-                    <div className="grid grid-cols-5 gap-2">
-                      {SKINS_FEMALE.map((src, i) => {
-                        const _idx = i + 10;
-                        const _b = getAvatarBonus(_idx);
-                        const _e = (Object.entries(_b) as [string,number][]).filter(([,v])=>v>0);
-                        const _sl: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zrecznosc",zaradnosc:"Zaradnosc",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczescie" };
-                        const _meta = AVATAR_META[_idx];
-                        return (
-                          <button key={_idx} onClick={() => handleAvatarSelect(_idx)}
-                            onMouseEnter={() => setHoveredNormalSkin(_idx)}
-                            onMouseLeave={() => setHoveredNormalSkin(null)}
-                            className={`relative flex aspect-[2/3] w-full items-center justify-center rounded-2xl border-2 overflow-hidden transition ${avatarSkin === _idx ? "border-pink-400 shadow-[0_0_16px_rgba(255,100,200,0.4)]" : "border-[#8b6a3e]/50 hover:border-[#8b6a3e]"}`}>
-                            <img src={src} alt={`Postac ${i+11}`} className="absolute inset-0 w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
-                {/* Epickie */}
-                {(skinTab === "epickie" || skinTab === "wszystkie") && (
-                  <>
-                    {skinTab === "wszystkie" && <p className="mt-4 mb-3 text-center text-[10px] text-[#8b6a3e] font-bold uppercase tracking-widest">⭐ Epickie</p>}
-                    <p className="mb-4 text-center text-xs text-green-400/80">Kliknij zablokowany avatar, aby go odblokować za odpowiedni koszt z plecaka.</p>
-                    <div className="grid grid-cols-5 gap-3">
-                      {EPIC_SKINS.map((es, i) => {
-                        const idx = EPIC_SKIN_START + i;
-                        const isUnlocked = unlockedEpicAvatars.includes(idx);
-                        const isActive = avatarSkin === idx;
-                        const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
-                        return (
-                          <button key={idx}
-                            onClick={() => {
-                              if (isUnlocked) {
-                                void handleAvatarSelect(idx);
-                              } else {
-                                setEpicPurchaseTarget(idx);
-                              }
-                            }}
-                            onMouseEnter={() => setHoveredEpicSkin(idx)}
-                            onMouseLeave={() => setHoveredEpicSkin(null)}
-                            className={`relative flex flex-col items-center justify-end rounded-2xl border-2 overflow-hidden transition pb-2 ${
-                              isActive ? "border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.5)] bg-green-900/20"
-                              : isUnlocked ? "border-green-500/70 bg-green-950/20 hover:border-green-400"
-                              : "border-[#8b6a3e]/40 bg-black/30 hover:border-green-600/50"
-                            }`}
-                            style={{ aspectRatio: "2/3" }}>
-                            {/* Obrazek — szary jeśli zablokowany */}
-                            <img
-                              src={es.path} alt={es.name}
-                              className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-                              style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(100%) brightness(0.45)" }}
-                            />
-                            {/* Zielona ramka glow dla odblokowanych */}
-                            {isUnlocked && !isActive && (
-                              <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{boxShadow:"inset 0 0 0 2px rgba(34,197,94,0.4)"}} />
-                            )}
-                            {/* Kłódka / aktywny badge */}
-                            <div className="relative z-10 mt-auto w-full px-1">
-                              {isActive && (
-                                <div className="mb-1 rounded-lg bg-green-500/90 px-2 py-0.5 text-center text-[10px] font-black text-white">✓ Aktywny</div>
-                              )}
-                              {!isUnlocked && (
-                                <div className={`mb-1 rounded-lg px-2 py-0.5 text-center text-[10px] font-black ${canAfford ? "bg-green-700/90 text-green-100" : "bg-black/80 text-[#8b6a3e]"}`}>
-                                  🔒 {canAfford ? "Możesz kupić!" : "Zablokowany"}
-                                </div>
-                              )}
-                              <div className="rounded-lg bg-black/70 px-1 py-0.5 text-center text-[10px] font-bold text-[#f9e7b2]">{es.name}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            <SkinPickerModal
+              onClose={() => setShowSkinModal(false)}
+              avatarSkin={avatarSkin}
+              avatarChangeCount={avatarChangeCount}
+              lastAvatarChangeAt={lastAvatarChangeAt}
+              displayMoney={displayMoney}
+              skinTab={skinTab}
+              setSkinTab={setSkinTab}
+              unlockedEpicAvatars={unlockedEpicAvatars}
+              seedInventory={seedInventory}
+              handleAvatarSelect={handleAvatarSelect}
+              setHoveredNormalSkin={setHoveredNormalSkin}
+              setHoveredEpicSkin={setHoveredEpicSkin}
+              setEpicPurchaseTarget={setEpicPurchaseTarget}
+            />
           )}
 
           {/* ═══ TOOLTIP EPICKIEGO SKINA ═══ */}
@@ -12290,61 +11727,14 @@ export default function Page() {
           })()}
 
           {/* ═══ MODAL ZAKUPU EPICKIEGO AVATARA ═══ */}
-          {epicPurchaseTarget !== null && (() => {
-            const es = EPIC_SKINS[epicPurchaseTarget - EPIC_SKIN_START];
-            if (!es) return null;
-            const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
-            const costLabel = (key: string, amt: number) => {
-              const { baseCropId, quality } = parseQualityKey(key);
-              const crop = CROPS.find(c => c.id === baseCropId);
-              const qLabel = quality === "epic" ? " epickich" : quality === "legendary" ? " legendarnych" : " zwykłych";
-              return `${amt}× ${crop?.name ?? key}${qLabel}`;
-            };
-            return (
-              <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setEpicPurchaseTarget(null)}>
-                <div className="relative w-full max-w-[420px] rounded-[24px] border border-green-500/60 bg-[rgba(10,30,10,0.98)] p-7 shadow-2xl" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setEpicPurchaseTarget(null)} className="absolute right-4 top-4 text-[#8b6a3e] hover:text-red-400">✕</button>
-                  <div className="mb-4 flex justify-center">
-                    <div className="relative h-36 w-36 overflow-hidden rounded-2xl border-2 border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-                      <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{imageRendering:"pixelated"}} />
-                    </div>
-                  </div>
-                  <h3 className="mb-1 text-center text-lg font-black text-green-300">⭐ {es.name}</h3>
-                  <p className="mb-4 text-center text-xs text-[#8b6a3e]">Avatar epicki — odblokuj raz, używaj na zawsze</p>
-                  <div className="mb-5 rounded-2xl border border-green-800/50 bg-black/30 p-4">
-                    <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-green-400">Koszt odblokowania:</p>
-                    {Object.entries(es.cost).map(([k,v]) => {
-                      const have = seedInventory[k] ?? 0;
-                      const ok = have >= v;
-                      return (
-                        <div key={k} className={`flex items-center justify-between text-sm font-bold ${ok ? "text-green-300" : "text-red-400"}`}>
-                          <span>{costLabel(k, v)}</span>
-                          <span className="text-xs opacity-70">({ok ? "✓" : `brak — masz ${have}`})</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <button
-                    disabled={!canAfford}
-                    onClick={async () => {
-                      if (!profile?.id || !canAfford) return;
-                      const { data, error } = await supabase.rpc("buy_epic_avatar", { p_avatar_id: epicPurchaseTarget });
-                      if (error) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: error.message }); return; }
-                      const response = data as { ok?: boolean; error?: string; avatar_id?: number; cost?: Record<string,number>; seed_inventory?: Record<string,number>; unlocked_epic_avatars?: number[] } | null;
-                      if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu avatara", text: response.error ?? "Nieznany błąd" }); return; }
-                      if (response?.seed_inventory) setSeedInventory(response.seed_inventory);
-                      if (response?.unlocked_epic_avatars) setUnlockedEpicAvatars(response.unlocked_epic_avatars);
-                      setEpicPurchaseTarget(null);
-                      await loadProfile(profile.id);
-                      setMessage({ type: "success", title: "⭐ Avatar odblokowany!", text: `Odblokowano epicki avatar: ${es.name}` });
-                    }}
-                    className={`w-full rounded-2xl py-3 font-black transition text-sm ${canAfford ? "border border-green-400 bg-green-700/40 text-green-200 hover:bg-green-700/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
-                    {canAfford ? "✅ Odblokuj avatar" : "❌ Brak surowców"}
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
+          {epicPurchaseTarget !== null && (
+            <EpicPurchaseModal
+              epicPurchaseTarget={epicPurchaseTarget}
+              onClose={() => setEpicPurchaseTarget(null)}
+              seedInventory={seedInventory}
+              onConfirm={handleBuyEpicAvatar}
+            />
+          )}
 
           {isFieldViewOpen && isOnFarmMap && (
             <div
