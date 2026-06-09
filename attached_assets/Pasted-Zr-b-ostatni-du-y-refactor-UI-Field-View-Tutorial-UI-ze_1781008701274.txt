@@ -1,0 +1,82 @@
+Zrób ostatni duży refactor UI: Field View + Tutorial UI, zero logic change.
+
+Źródło prawdy:
+artifacts/plonopolis/src/Game.tsx
+
+Cel:
+Wydzielić pozostałe duże UI związane z Polami uprawnymi i Tutorialem, ale bez zmiany logiki gry.
+
+1. Field View:
+Utwórz sensowne pliki, np.:
+- game/features/field/FieldView.tsx
+- game/features/field/FieldToolbar.tsx
+- game/features/field/SeedPicker.tsx
+- game/features/field/CompostPicker.tsx
+- game/features/field/HarvestSessionModal.tsx, jeśli nadal siedzi w Game.tsx
+- game/features/field/FieldPlotTile.tsx, jeśli ma sens
+
+Przenieś JSX Field View i małe helpery UI.
+Handlery zostają w Game.tsx i są przekazywane jako propsy.
+
+Bardzo ważne:
+- nie zmieniaj handlerów harvest/plant/water/compost,
+- nie zmieniaj działania seed picker/compost picker,
+- nie zmieniaj drag/sweep,
+- nie zmieniaj pozycjonowania pól,
+- nie zmieniaj tooltipów ani mousePos/gameScale,
+- nie zmieniaj tutorial step conditions,
+- nie zmieniaj overlayów podlewania/kompostowania/zbierania,
+- nie zmieniaj blokad narzędzi w tutorialu.
+
+2. Tutorial UI:
+Utwórz sensowne pliki, np.:
+- game/features/tutorial/TutorialPanel.tsx
+- game/features/tutorial/TutorialOverlay.tsx
+- game/features/tutorial/TutorialArrows.tsx
+
+Przenieś tylko JSX/warstwę wizualną tutoriala:
+- panel przewodnika,
+- overlay,
+- strzałki,
+- komunikaty wizualne.
+
+Logika tutoriala ma zostać w Game.tsx:
+- tutorial_step,
+- tutorial_started/completed/skipped,
+- przejścia kroków,
+- warunki kroków,
+- guide_compost,
+- blokady narzędzi,
+- funkcje advance/skip/start,
+- pozycjonowanie strzałek liczone tak samo jak teraz.
+
+Nie ruszaj:
+- Targu,
+- Lady klientów,
+- Stodoły,
+- Ula,
+- Sadu,
+- Sklepu,
+- Kompostownika,
+- map/hitboxów,
+- loadProfile/initGame/useEffect,
+- SQL/RPC,
+- ekonomii,
+- state managementu,
+- React Context/Zustand.
+
+Zasady:
+- zero logic change,
+- zero zmian tekstów,
+- zero zmian stylu wizualnego,
+- zero zmian wartości stałych,
+- tylko przeniesienie JSX i prostych helperów UI,
+- jeśli jakiś fragment wymaga przebudowy logiki, zostaw go w Game.tsx i wpisz w raporcie „zostawione na później”.
+
+Po zmianach:
+- typecheck,
+- pokaż nowe/zmienione pliki,
+- pokaż ile linii ma Game.tsx przed i po,
+- wypisz co przeniesiono,
+- wypisz co zostało w Game.tsx i dlaczego,
+- nie pushuj.
