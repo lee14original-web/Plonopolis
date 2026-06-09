@@ -1,1 +1,1 @@
-- [Game.tsx modularization](game-modularization.md) — Etap 2B/2C zakończony: 5 modali wydzielone; Game.tsx: 13806 linii; typecheck czysty.
+- [Game.tsx modularization](game-modularization.md) — Etap 2D zakończony: CustomersModal + MarketModal wydzielone; Game.tsx: 12403 linii; typecheck czysty.
