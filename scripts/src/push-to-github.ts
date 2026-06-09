@@ -24,6 +24,8 @@ const ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const WITH_IMAGES = process.argv.includes("--images");
 const WITH_ALL    = process.argv.includes("--all");
 const WITH_SQL    = process.argv.includes("--sql");
+const MSG_IDX     = process.argv.indexOf("--message");
+const CUSTOM_MSG  = MSG_IDX !== -1 ? process.argv[MSG_IDX + 1] : undefined;
 
 // Foldery "nowe/rzadko zmieniane" — uzyj --images aby je wyslac
 const NEW_IMAGE_FOLDERS: { local: string; github: string }[] = [
@@ -192,7 +194,7 @@ async function main() {
   ];
 
   console.log(`Wysylam app/page.tsx + ${gameFiles.length} modułów game/ (łącznie ${allCodeFiles.length} plików)...`);
-  headSha = await pushCommit(allCodeFiles, headSha, `sync z Replita [${now}]`);
+  headSha = await pushCommit(allCodeFiles, headSha, CUSTOM_MSG ?? `sync z Replita [${now}]`);
 
   // Zaktualizuj ref gałęzi
   await gh("PATCH", `/repos/${OWNER}/${REPO}/git/refs/heads/${BRANCH}`, { sha: headSha });
