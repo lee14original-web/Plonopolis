@@ -422,7 +422,7 @@ return (<>
                       {/* Scena karuzeli — drag do nawigacji */}
                       <div
                         className="relative flex-1 overflow-visible"
-                        style={{ height: 390, perspective: 1100, touchAction: 'none', userSelect: 'none', cursor: 'grab' }}
+                        style={{ height: 500, perspective: 1100, touchAction: 'none', userSelect: 'none', cursor: 'grab' }}
                         onMouseDown={(e) => e.stopPropagation()}
                         onTouchStart={(e) => e.stopPropagation()}
                         onPointerDown={(e) => {
@@ -500,8 +500,8 @@ return (<>
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
-                                width: 268,
-                                marginLeft: -134,
+                                width: 220,
+                                marginLeft: -110,
                                 transform: `translateX(${tx}px) translateY(-50%) rotateY(${ry}deg) scale(${scale})`,
                                 transformOrigin: 'center center',
                                 transition: 'transform 0.38s cubic-bezier(.4,0,.2,1), opacity 0.38s ease',
@@ -516,9 +516,9 @@ return (<>
                               <p className="text-xl font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
 
                               {/* Blok avatara */}
-                              <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '1 / 1' }}>
+                              <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '2 / 3' }}>
                                 {avatarPath
-                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" />
                                   : <div className="w-full h-full flex items-center justify-center">
                                       <span className="text-9xl leading-none">{cd.icon}</span>
                                     </div>
@@ -614,9 +614,9 @@ return (<>
                           }`}
                         >
                           <div className="flex gap-3 items-center">
-                            <div className="flex-shrink-0 ml-2 w-24 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
+                            <div className="flex-shrink-0 ml-2 w-16 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
                               {avatarPath
-                                ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />
+                                ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" />
                                 : <span className="text-5xl leading-none">{cd.icon}</span>
                               }
                             </div>
