@@ -215,7 +215,16 @@ return (<>
         );
       })()}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-5">
+      <div
+        className="flex-1 overflow-y-auto overflow-x-hidden p-5"
+        style={{
+          backgroundImage: "linear-gradient(rgba(14,8,4,0.55), rgba(14,8,4,0.55)), url('/ui/lada_bg.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "local",
+        }}
+      >
         {showLadaInfo ? (
           <div className="space-y-5 text-[#dfcfab]">
 
