@@ -2,8 +2,8 @@ import React from "react";
 import type { CustomerOrder } from "../../types/customers";
 import type { HiveData } from "../../types/hive";
 import type { Profile } from "../../types/profile";
-import { NON_EPIC_SKINS } from "../../constants/avatars";
 import { LADA_MAX_CUSTOMERS } from "../../constants/game";
+import { CUSTOMER_AVATARS } from "../../constants/customers";
 import { ANIMAL_ITEMS } from "../../constants/animals";
 import { CROPS } from "../../constants/crops";
 import { TREES, FRUIT_QUALITY_DEFS } from "../../constants/orchard";
@@ -337,7 +337,6 @@ return (<>
           /* ── WIDOK WSZYSTKICH KLIENTÓW ── */
           (() => {
             // Sortowanie + avatary — wspólne dla obu widoków
-            const _avatarTypes = new Set(['Gość', 'neighbor', 'village_guest']);
             const _difficulty = (o: typeof customerOrders[number]) => {
               const merged = mergeOrderItems(o.items);
               const itemCount = merged.length;
@@ -346,12 +345,22 @@ return (<>
             };
             const _sorted = [...customerOrders.map((o, i) => ({ o, originalIndex: i }))]
               .sort((a, b) => _difficulty(a.o) - _difficulty(b.o));
-            const _eligibleIds = _sorted.filter(({ o }) => _avatarTypes.has(o.customer_type)).map(({ o }) => o.id);
-            let _seed = _eligibleIds.reduce((h, id) => { let s = h; for (let ci = 0; ci < id.length; ci++) s = (s * 31 + id.charCodeAt(ci)) >>> 0; return s; }, 1) || 1;
-            const _rng = () => { _seed = (_seed * 1664525 + 1013904223) >>> 0; return _seed / 0x100000000; };
-            const _shuf = [...NON_EPIC_SKINS];
-            for (let i = _shuf.length - 1; i > 0; i--) { const j = Math.floor(_rng() * (i + 1)); [_shuf[i], _shuf[j]] = [_shuf[j], _shuf[i]]; }
-            const _avatarMap = new Map<string, string>(_eligibleIds.map((id, idx) => [id, _shuf[idx]]));
+            // Deterministyczne avatary per order.id + deduplikacja indeksów w obrębie widoku
+            const _usedIndices = new Map<string, Set<number>>();
+            const _avatarMap = new Map<string, string>();
+            for (const { o } of _sorted) {
+              const pool = CUSTOMER_AVATARS[o.customer_type];
+              if (!pool || pool.length === 0) continue;
+              let hash = 0;
+              for (let ci = 0; ci < o.id.length; ci++) hash = (hash * 31 + o.id.charCodeAt(ci)) & 0xffff;
+              const usedForType = _usedIndices.get(o.customer_type) ?? new Set<number>();
+              let idx = hash % pool.length;
+              let attempts = 0;
+              while (usedForType.has(idx) && attempts < pool.length) { idx = (idx + 1) % pool.length; attempts++; }
+              usedForType.add(idx);
+              _usedIndices.set(o.customer_type, usedForType);
+              _avatarMap.set(o.id, pool[idx]);
+            }
 
             // Helper: dane pojedynczej karty
             const _cardData = (o: CustomerOrder) => {
