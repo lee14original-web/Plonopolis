@@ -221,7 +221,7 @@ return (<>
             position: 'absolute',
             inset: 0,
             backgroundImage: ladaView === 'carousel'
-              ? "linear-gradient(rgba(14,8,4,0.35), rgba(14,8,4,0.35)), url('/ui/lada_spotlight.gif')"
+              ? "linear-gradient(rgba(14,8,4,0.60), rgba(14,8,4,0.60)), url('/ui/lada_spotlight.gif')"
               : "linear-gradient(rgba(14,8,4,0.55), rgba(14,8,4,0.55)), url('/ui/lada_bg.png')",
             backgroundSize: 'cover',
             backgroundPosition: ladaView === 'carousel' ? 'center center' : 'center top',
