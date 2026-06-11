@@ -35,8 +35,8 @@ export function ShopModal({ profileId, displayMoney, displayLevel, dailyPromos, 
   const [shopTab, setShopTab] = React.useState<ShopTab>("nasiona");
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1500px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+    <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(14,8,4,0.99)]">
+      <div className="relative flex w-full flex-1 min-h-0 overflow-hidden">
         <button onClick={() => { setShopCart({}); onClose(); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] hover:text-red-300">✕</button>
         {/* Sidebar — kategorie sklepu */}
         <div className="flex w-[308px] shrink-0 flex-col border-r border-[#8b6a3e]/30 bg-black/20">

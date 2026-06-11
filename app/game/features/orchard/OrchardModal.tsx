@@ -51,8 +51,8 @@ export function OrchardModal({ displayLevel, orchardState, orchardError, fruitIn
   const invTotal = Object.values(fruitInventory).reduce<number>((s,v) => s + (Number(v) || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1550px] flex-col overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(28,16,6,0.98)] shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(28,16,6,0.99)]">
+      <div className="relative flex w-full flex-1 min-h-0 flex-col overflow-hidden">
         <button onClick={onClose} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
         {/* Header */}
         <div className="shrink-0 border-b border-[#8b6a3e]/40 px-6 py-4">

@@ -8110,8 +8110,8 @@ export default function Page() {
 
           {/* ═══ DOM MODAL ═══ */}
           {showDomModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-              <div className="relative flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1650px] overflow-hidden rounded-[28px] border border-[#8b6a3e] bg-[rgba(14,8,4,0.98)] shadow-2xl">
+            <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(14,8,4,0.99)]">
+              <div className="relative flex w-full flex-1 min-h-0 overflow-hidden">
 
                 {/* ─ Zamknij ─ */}
                 <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
@@ -9186,7 +9186,7 @@ export default function Page() {
               { id:"all",       label:"Wszystkie",   color:"#6ee7b7" },
             ];
             return (
-              <div className="fixed inset-0 z-[300] flex items-start justify-center gap-3 bg-black/75 p-4 backdrop-blur-sm">
+              <div className="fixed inset-0 z-[300] flex gap-3 overflow-hidden bg-[rgba(14,8,4,0.99)] p-3">
                 {/* Panel historii */}
                 <div className="flex flex-col items-stretch gap-2 pt-0" style={{ width: 290, flexShrink: 0 }}>
                   <button
@@ -9213,7 +9213,7 @@ export default function Page() {
                   )}
                 </div>
                 <div
-                  className="relative w-full max-w-[1450px] h-[calc(100vh-32px)] overflow-hidden rounded-[28px] border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.98)] shadow-2xl flex flex-col transition-all duration-700"
+                  className="relative flex-1 min-w-0 h-full overflow-hidden bg-[rgba(14,8,4,0.98)] flex flex-col transition-all duration-700"
                   style={milestoneGlow ? { boxShadow: `0 0 50px ${milestoneGlow}55, 0 0 100px ${milestoneGlow}22` } : undefined}>
                   <button onClick={() => { setShowKompostModal(false); setKompostRewards(null); setShowKompostHelp(false); }} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
                   {/* Przycisk pomocy ? */}

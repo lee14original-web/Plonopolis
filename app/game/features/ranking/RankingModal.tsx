@@ -36,8 +36,8 @@ export function RankingModal({
   openComposeTo,
 }: RankingModalProps) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="flex h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] w-full max-w-[1631px] flex-col rounded-[28px] border border-[#8b6a3e] bg-[rgba(22,13,8,0.98)] shadow-2xl">
+    <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(22,13,8,0.99)]">
+      <div className="flex w-full flex-1 min-h-0 flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e]/40 px-6 py-4">
