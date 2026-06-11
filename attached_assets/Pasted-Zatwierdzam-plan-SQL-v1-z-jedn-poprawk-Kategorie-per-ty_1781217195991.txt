@@ -1,0 +1,83 @@
+Zatwierdzam plan SQL v1 z jedną poprawką.
+
+Kategorie per typ klienta — OK:
+- neighbor: crop
+- village_guest: crop
+- small_market: crop + animal, ale animal tylko unlock cap 3
+- village_shop: crop + animal, unlock cap 5
+- restaurant: crop + animal, a fruit/honey dopiero player lvl >= 10
+- wholesaler: crop + animal + fruit + honey
+- market_chain/distribution_center/international_contract: crop + animal + fruit + honey + compost
+
+Potwierdzam:
+- small_market: tylko jajko
+- village_shop: jajko + futro królika
+- village_shop: jajko max 5, futro max 3
+
+Poprawka:
+Nie dawaj `international_contract` bez capa.
+Nawet endgame nie powinien dostać absurdalnych ilości rogów byka/energii.
+
+Użyj capów animal:
+
+village_shop:
+- unlock <=3: max 5
+- unlock <=5: max 3
+
+restaurant:
+- unlock <=5: max 8
+- unlock <=10: max 3
+- unlock <=15: max 2
+
+wholesaler:
+- unlock <=5: max 12
+- unlock <=10: max 8
+- unlock <=15: max 5
+- unlock <=20: max 3
+
+market_chain:
+- unlock <=5: max 20
+- unlock <=10: max 12
+- unlock <=15: max 8
+- unlock <=20: max 5
+- unlock <=25: max 3
+
+distribution_center:
+- unlock <=5: max 30
+- unlock <=10: max 18
+- unlock <=15: max 12
+- unlock <=20: max 8
+- unlock <=25: max 5
+
+international_contract:
+- unlock <=5: max 40
+- unlock <=10: max 25
+- unlock <=15: max 16
+- unlock <=20: max 10
+- unlock <=25: max 6
+
+neighbor/village_guest/small_market:
+- jeśli animal niedozwolony przez kategorię albo unlock cap, max nie ma znaczenia.
+
+Nie zmieniaj jeszcze gold/EXP multiplier.
+Nie zmieniaj frontendu.
+Nie kasuj istniejących zamówień.
+Nie zmieniaj customer_orders schema.
+Nie zmieniaj ilości plonów/owoców/miodu.
+
+Przygotuj pełny idempotentny SQL do Supabase:
+1. helper `_npc_allowed_categories(p_ctype text, p_level int)`
+2. helper `_npc_animal_unlock_cap(p_ctype text)`
+3. helper `_npc_animal_qty_cap(p_ctype text, p_unlock int)`
+4. nowa wersja `_npc_pick_item(p_level int, p_ctype text)`
+5. update `spawn_customer_order`, żeby wywoływał `_npc_pick_item(v_level, v_ctype)`
+
+Dodaj SELECT-y testowe:
+- allowed categories dla każdego typu przy lvl 1/3/5/8/10/12/16/20/25
+- animal capy dla typów
+- test pokazujący, że neighbor nie ma animal
+- test pokazujący, że small_market ma animal tylko do unlock 3
+- test pokazujący, że village_shop ma animal tylko do unlock 5
+
+Podaj pełny SQL do wklejenia w Supabase.
+Nie pushuj.
