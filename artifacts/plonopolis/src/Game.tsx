@@ -5723,7 +5723,7 @@ export default function Page() {
         <div
           ref={mapContainerRef}
           className="relative overflow-hidden"
-          style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
+          style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none", touchAction: isOnPanMap ? "none" : undefined } as React.CSSProperties}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             if (showSettingsModal) return;
@@ -5758,6 +5758,41 @@ export default function Page() {
           }}
           onClickCapture={(e) => {
             if (panDragRef.current.moved) { e.stopPropagation(); panDragRef.current.moved = false; }
+          }}
+          // TYMCZASOWE — touch support do testów mobilnych
+          onTouchStart={(e) => {
+            if (showSettingsModal) return;
+            if (!isOnPanMap) return;
+            const tgt = e.target as HTMLElement;
+            if (tgt.closest('[data-no-map-drag], button, [role="button"], a, input, textarea, select')) return;
+            const t = e.touches[0];
+            panDragRef.current = { active: true, startX: t.clientX, startY: t.clientY, startPanX: panX, startPanY: panY, moved: false };
+          }}
+          onTouchMove={(e) => {
+            if (showSettingsModal) { panDragRef.current.active = false; return; }
+            if (!panDragRef.current.active) return;
+            const t = e.touches[0];
+            const dx = t.clientX - panDragRef.current.startX;
+            if (Math.abs(dx) > 4) {
+              if (!panDragRef.current.moved) {
+                panDragRef.current.moved = true;
+                document.body.classList.add("plono-dragging");
+                setIsPanDragging(true);
+              }
+              setPanX(Math.max(-FARM_MAX_PAN, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+            }
+          }}
+          onTouchEnd={() => {
+            document.body.classList.remove("plono-dragging");
+            panDragRef.current.active = false;
+            setIsPanDragging(false);
+            if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
+          }}
+          onTouchCancel={() => {
+            document.body.classList.remove("plono-dragging");
+            panDragRef.current.active = false;
+            setIsPanDragging(false);
+            panDragRef.current.moved = false;
           }}
         >
         {/* Tło mapy — przesuwa się wraz z panowaniem */}
@@ -5901,6 +5936,17 @@ export default function Page() {
               setPanX(Math.max(-FARM_MAX_PAN, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
             }}
             onMouseUp={() => {
+              document.body.classList.remove("plono-dragging");
+              panDragRef.current.active = false;
+              setIsPanDragging(false);
+              if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
+            }}
+            onTouchMove={(e) => {
+              if (!e.touches[0]) return;
+              const dx = e.touches[0].clientX - panDragRef.current.startX;
+              setPanX(Math.max(-FARM_MAX_PAN, Math.min(0, panDragRef.current.startPanX + dx / gameScale)));
+            }}
+            onTouchEnd={() => {
               document.body.classList.remove("plono-dragging");
               panDragRef.current.active = false;
               setIsPanDragging(false);
