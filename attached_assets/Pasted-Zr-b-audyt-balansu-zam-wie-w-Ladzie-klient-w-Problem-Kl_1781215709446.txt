@@ -1,0 +1,50 @@
+Zrób audyt balansu zamówień w Ladzie klientów.
+
+Problem:
+Klienci czasem żądają praktycznie nierealnych lub nieopłacalnych rzeczy.
+Przykład ze screena:
+- klient: Sąsiad
+- wymaga: 17× Futro Królika
+- nagroda: 299 zł + 68 EXP
+
+To jest za trudne i za tanie, bo futro królika jest produktem zwierzęcym, królik jest drogi i trudno szybko zebrać 17 sztuk. Taki klient nie powinien być „Sąsiadem” albo ilość/nagroda powinna być inna.
+
+Zrób tylko audyt i plan, bez zmian w kodzie/SQL.
+
+Sprawdź:
+1. gdzie generowane są zamówienia klientów,
+2. jakie typy klientów mogą żądać jakich produktów,
+3. czy Sąsiad/Gospodyni/Mały targ mogą losować produkty zwierzęce/stodoły,
+4. jak liczone są ilości produktów,
+5. jak liczona jest nagroda złota,
+6. jak liczony jest EXP,
+7. czy cena/nagroda bierze pod uwagę realną trudność zdobycia itemu,
+8. czy system rozróżnia:
+   - zwykłe plony,
+   - owoce,
+   - miód,
+   - produkty zwierzęce,
+   - rzadkie/drogie produkty,
+9. czy itemy odblokowane od wyższych leveli nie trafiają do zbyt łatwych klientów,
+10. czy ilości są skalowane pod typ klienta i trudność itemu.
+
+Zaproponuj poprawki balansu:
+- Sąsiad: tylko proste plony / małe ilości / niskie nagrody.
+- Gospodyni/Gospodarz: proste plony + ewentualnie małe ilości łatwych produktów.
+- Mały targ: kilka produktów, umiarkowane ilości.
+- Sklep wiejski: większe ilości, ale nadal sensowne.
+- Karczma: może żądać produktów zwierzęcych, ale w małych/średnich ilościach.
+- Hurtownik i wyżej: większe ilości, droższe produkty, lepsze nagrody.
+- Futro Królika i podobne drogie produkty: nie dla Sąsiada albo ilość mocno ograniczona.
+
+Podaj:
+1. aktualne źródło problemu w kodzie/SQL,
+2. przykłady złych zamówień, które mogą się generować,
+3. proponowaną tabelę limitów ilości per typ klienta,
+4. proponowaną tabelę dozwolonych kategorii itemów per typ klienta,
+5. rekomendowany mnożnik nagrody za trudniejsze produkty,
+6. czy zmiana wymaga SQL w Supabase czy tylko frontend/kod,
+7. plan bezpiecznej poprawki.
+
+Nie zmieniaj jeszcze kodu.
+Nie pushuj.
