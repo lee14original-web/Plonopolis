@@ -1,0 +1,139 @@
+Zrób balans zwierząt w Stodole + zgodność SQL dla Lady klientów.
+
+Cel:
+Obecna progresja zwierząt jest nielogiczna, np. kaczka jest później i drożej niż krowa. Chcę uporządkować kolejność zwierząt, ceny i materiały ekwipunku.
+
+Zrób to jako jeden etap, ale bez ruszania karmy.
+
+1. Zmień progresję zwierząt w frontendzie
+
+Plik:
+artifacts/plonopolis/src/game/constants/animals.ts
+
+Finalna tabela:
+
+- Kura lvl 3, cena 450, produkcja 4h
+- Kaczka lvl 5, cena 1050, produkcja 6h
+- Królik lvl 7, cena 2625, produkcja 10h
+- Świnia lvl 9, cena 5250, produkcja 14h
+- Krowa lvl 11, cena 13500, produkcja 20h
+- Owca lvl 13, cena 26250, produkcja 24h
+- Koza lvl 15, cena 48750, produkcja 30h
+- Indyk lvl 17, cena 90000, produkcja 36h
+- Koń lvl 20, cena 187500, produkcja 48h
+- Byk lvl 25, cena 450000, produkcja 72h
+
+Uwaga:
+Ceny są już obniżone o 25% względem zatwierdzonej tabeli.
+Nie obniżaj ich drugi raz.
+
+2. Nie zmieniaj karmy
+
+Nie ruszaj feedów zwierząt.
+Nie poprawiaj teraz karm typu rzepak/słonecznik/szparagi.
+Karmę poprawimy albo usuniemy w osobnym etapie.
+
+3. Zmień materiały ekwipunku
+
+Plik:
+artifacts/plonopolis/src/game/constants/equipment.ts
+
+Zmień TIER_MATERIAL na nową logiczną kolejność:
+
+T1: jajko
+T2: piora
+T3: futro_krolika
+T4: nawoz_naturalny
+T5: mleko
+T6: welna
+T7: mleko_kozie
+T8: duze_piora
+T9: energia_robocza
+T10: rogi_byka
+
+Nie zmieniaj innych zasad ulepszania ekwipunku.
+
+4. Przygotuj SQL do Supabase
+
+Przygotuj pełny SQL do aktualizacji funkcji `_npc_animal_data()` pod nową progresję Lady klientów:
+
+- jajko unlock 3, base_price 40
+- piora unlock 5, base_price 70
+- futro_krolika unlock 7, base_price 120
+- nawoz_naturalny unlock 9, base_price 190
+- mleko unlock 11, base_price 320
+- welna unlock 13, base_price 450
+- mleko_kozie unlock 15, base_price 650
+- duze_piora unlock 17, base_price 900
+- energia_robocza unlock 20, base_price 1400
+- rogi_byka unlock 25, base_price 2500
+
+5. Zaktualizuj SQL helpery Lady klientów, jeśli są w pliku SQL
+
+`_npc_animal_unlock_cap()`:
+- small_market = 3
+- village_shop = 7
+- restaurant = 15
+- wholesaler = 20
+- market_chain = 25
+- distribution_center = 25
+- international_contract = 25
+
+`_npc_animal_qty_cap()`:
+village_shop:
+- unlock <=3: max 5
+- unlock <=5: max 5
+- unlock <=7: max 3
+
+restaurant:
+- unlock <=5: max 8
+- unlock <=10: max 3
+- unlock <=15: max 2
+
+wholesaler:
+- unlock <=5: max 12
+- unlock <=10: max 8
+- unlock <=15: max 5
+- unlock <=20: max 3
+
+market_chain:
+- unlock <=5: max 20
+- unlock <=10: max 12
+- unlock <=15: max 8
+- unlock <=20: max 5
+- unlock <=25: max 3
+
+distribution_center:
+- unlock <=5: max 30
+- unlock <=10: max 18
+- unlock <=15: max 12
+- unlock <=20: max 8
+- unlock <=25: max 5
+
+international_contract:
+- unlock <=5: max 40
+- unlock <=10: max 25
+- unlock <=15: max 16
+- unlock <=20: max 10
+- unlock <=25: max 6
+
+6. Nie zmieniaj
+
+Nie zmieniaj:
+- karmy zwierząt,
+- inventory graczy,
+- istniejących zwierząt w profilach,
+- istniejących zamówień klientów,
+- gold/EXP multiplier Lady,
+- frontendowych paneli poza animals.ts i equipment.ts,
+- UI Stodoły poza tym, co wynika z nowych wartości,
+- SQL schematu tabel.
+
+7. Po zmianach
+
+Podaj:
+- diff frontendu,
+- pełny SQL do Supabase,
+- testy SQL,
+- wynik typecheck,
+- nie pushuj.
