@@ -1,0 +1,68 @@
+Zrób zmianę UI: wszystkie główne okna funkcjonalne mają otwierać się pełnoekranowo / prawie pełnoekranowo, podobnie jak „Liga Farmerów”.
+
+Cel:
+Obecnie część funkcji gry otwiera się jako małe/średnie modale. Chcę, żeby główne funkcjonalne panele były duże, wygodne i zajmowały prawie całe okno gry.
+
+Panele do zmiany:
+1. Targ
+2. Sklep
+3. Ranking graczy w Ratuszu
+4. Dom
+5. Pola uprawne / Field View
+6. Lada dla klientów
+7. Sad
+8. Stodoła
+9. Ul
+10. Kompostownik
+
+Wzorzec:
+Użyj stylu/rozmiaru podobnego do istniejącego panelu „Liga Farmerów”, który już wygląda jak duże okno na całym ekranie.
+
+Wymagania UI:
+1. Panel ma być duży:
+   - desktop: prawie pełna szerokość i wysokość okna gry,
+   - np. około `w-[min(96vw,1600px)]` albo według wzorca Ligi Farmerów,
+   - wysokość np. `max-h-[92vh]` / `max-h-[95vh]`,
+   - z wewnętrznym scrollowaniem treści.
+
+2. Nie może wychodzić poza ekran.
+3. Przycisk zamknięcia zawsze widoczny.
+4. Nagłówek panelu powinien być czytelny.
+5. Treść panelu scrolluje się w środku, nie cała strona.
+6. Na telefonie/tablecie ma się zmieścić możliwie najlepiej, nawet jeśli będzie wymagać scrolla.
+
+Technicznie:
+- Jeśli panel jest już wydzielony do komponentu w `game/features/...`, zmień jego wrapper/modal size tam.
+- Jeśli panel nadal jest w `Game.tsx`, zmień jego wrapper w `Game.tsx`.
+- Możesz zrobić wspólny helper/className albo wykorzystać istniejący `ModalOverlay`, jeśli to bezpieczne.
+- Nie rób przebudowy logiki.
+
+Nie zmieniaj:
+- logiki gry,
+- SQL/RPC,
+- ekonomii,
+- nagród,
+- timerów,
+- sortowania,
+- tutoriala,
+- map/hitboxów,
+- gameScale,
+- wyboru grafik klientów,
+- działania karuzeli klientów,
+- działania Field View narzędzi,
+- handlerów harvest/plant/water/compost.
+
+Uważaj szczególnie:
+- Lada ma tło/animację i karuzelę — nie zepsuj tła ani dragowania.
+- Field View ma scroll/drag/pola — nie zmieniaj logiki pól.
+- Targ ma blokadę role tester — nie ruszaj jej.
+- Dom może mieć dużo zakładek/ekwipunek — tylko rozmiar okna.
+- Ranking graczy w Ratuszu ma być tak duży jak Liga Farmerów albo zbliżony.
+
+Po zmianach:
+1. Typecheck.
+2. Pokaż diff summary dla każdego panelu:
+   - jaki plik,
+   - jaki wrapper/rozmiar zmieniony.
+3. Pokaż czy wszystkie 10 paneli zostało objęte.
+4. Nie pushuj.

@@ -34,7 +34,7 @@ export function HiveModal({ hiveData, hiveNow, displayMoney, onClose, onBuyHive,
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="relative flex w-full max-w-[900px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5 overflow-y-auto">
+      <div className="relative flex w-full max-w-[1400px] max-h-[calc(100vh-40px)] flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] p-8 shadow-2xl gap-5 overflow-y-auto">
         <button onClick={onClose} className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
         {/* Header */}
         <div className="flex items-center gap-4">
