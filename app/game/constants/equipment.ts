@@ -59,8 +59,8 @@ export const DEFAULT_CHAR_EQUIPPED: CharEquipped = { dlonie: null, nogi: null, g
 
 // ─── Materiały ze zwierząt: M1..M10 → ID przedmiotu zwierzęcego ───
 export const TIER_MATERIAL: Record<number, string> = {
-  1: "jajko", 2: "futro_krolika", 3: "mleko", 4: "piora", 5: "welna",
-  6: "nawoz_naturalny", 7: "mleko_kozie", 8: "duze_piora", 9: "energia_robocza", 10: "rogi_byka",
+  1: "jajko", 2: "piora", 3: "futro_krolika", 4: "nawoz_naturalny", 5: "mleko",
+  6: "welna", 7: "mleko_kozie", 8: "duze_piora", 9: "energia_robocza", 10: "rogi_byka",
 };
 
 export const UPG_COLOR = ["#6b7280", "#9ca3af", "#9ca3af", "#9ca3af", "#4ade80", "#4ade80", "#4ade80", "#fbbf24", "#fbbf24", "#fbbf24", "#fbbf24"];
