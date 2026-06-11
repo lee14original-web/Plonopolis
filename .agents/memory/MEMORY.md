@@ -1,1 +1,2 @@
 - [Game.tsx modularization](game-modularization.md) — Etap 2D zakończony: CustomersModal + MarketModal wydzielone; Game.tsx: 12403 linii; typecheck czysty.
+- [Barn animal progression rebalance](barn-animal-progression.md) — Nowa kolejność zwierząt w Stodole; SQL pliki do Supabase; zależności TIER_MATERIAL + _npc_animal_unlock_cap.
