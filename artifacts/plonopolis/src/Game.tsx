@@ -5655,7 +5655,10 @@ export default function Page() {
     else setUnreadMarketCount(0);
   }
 
-    if (!isDesktop) {
+  // TYMCZASOWE — do testów mobilnych. Ustaw false przed produkcyjnym releasem.
+  const ALLOW_MOBILE_TESTING = true;
+
+  if (!isDesktop && !ALLOW_MOBILE_TESTING) {
     return (
       <main className="flex h-screen w-screen items-center justify-center bg-[#1a130d] px-6 text-center text-[#f3e6c8]">
         <div className="max-w-md rounded-[28px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.95)] p-8 shadow-2xl">
