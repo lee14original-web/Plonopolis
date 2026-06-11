@@ -1,0 +1,102 @@
+Zaktualizuj plan SQL balansu Lady klientów na podstawie pełniejszych danych o odblokowaniach.
+
+Ważne:
+Nie bierz pod uwagę tekstów typu „Sprzedaj: X zł/szt.” z UI Stodoły, bo to nie jest aktualny sklepowy skup. Tych produktów nie da się sprzedać do sklepu, tylko na targu albo użyć do ulepszeń ekwipunku.
+
+Balansuj po:
+- unlock lvl itemu/systemu,
+- koszcie wejścia w produkcję,
+- czasie produkcji 1 sztuki,
+- realnej dostępności dla gracza,
+- typie klienta.
+
+Dane:
+Zwierzęta:
+- Kura lvl 3, jajko, 1 szt. co 4h, koszt 600
+- Królik lvl 5, futro królika, 1 szt. co 8h, koszt 1800
+- Krowa lvl 7, mleko, 1 szt. co 12h, koszt 4500
+- Kaczka lvl 9, pióro, 1 szt. co 16h, koszt 9000
+- Owca lvl 11, wełna, 1 szt. co 20h, koszt 18000
+- Świnia lvl 13, nawóz, 1 szt. co 24h, koszt 35000
+- Koza lvl 15, mleko kozie, 1 szt. co 30h, koszt 65000
+- Indyk lvl 17, pióro, 1 szt. co 36h, koszt 120000
+- Koń lvl 20, energia, 1 szt. co 48h, koszt 250000
+- Byk lvl 25, róg, 1 szt. co 72h, koszt 600000
+
+Owoce:
+- Sad/owoce startują od lvl 10.
+- Jabłoń lvl 10, 4h
+- Grusza lvl 12, 6h
+- Śliwa lvl 14, 8h
+- Wiśnia lvl 16, 10h
+- Czereśnia lvl 18, 12h
+- Brzoskwinia lvl 20, 14h
+- Morela lvl 22, 16h
+- Pomarańcza lvl 23, 18h
+- Cytryna lvl 25, 24h
+
+Miód:
+- Ul/miód od lvl 10.
+- Ul wymaga kupna ula i pszczół.
+- Miód ma własny limit pojemności i czas produkcji, więc nie traktuj go jak zwykłego plonu.
+
+Typy klientów:
+- neighbor lvl 1, 1 produkt
+- village_guest lvl 1, 1–2 produkty
+- small_market lvl 3, 2–3 produkty
+- village_shop lvl 5, 3–4 produkty
+- restaurant lvl 8, 4–5 produktów
+- wholesaler lvl 12, 5–6 produktów
+- market_chain lvl 16, 6–8 produktów
+- distribution_center lvl 20, 7–9 produktów
+- international_contract lvl 25, 8–10 produktów
+
+Docelowe zasady:
+1. neighbor:
+   - tylko crop
+   - nigdy animal/fruit/honey/compost
+
+2. village_guest:
+   - tylko crop
+   - na razie bez animal/fruit/honey/compost
+
+3. small_market:
+   - crop
+   - egg only, jeśli player lvl >= 3
+   - bez rabbit_fur, milk, fruit, honey
+
+4. village_shop:
+   - crop
+   - egg
+   - rabbit_fur tylko małe ilości, np. max 1–3, jeśli player lvl >= 5
+   - bez fruit/honey przed lvl 10
+   - bez milk+ i droższych zwierząt
+
+5. restaurant:
+   - crop
+   - animal do sensownego unlocku, ale z małymi limitami
+   - fruit/honey dopiero jeśli player lvl >= 10
+
+6. wholesaler:
+   - crop, animal, fruit, honey
+   - animal większe niż restaurant, ale nadal limitowane czasem produkcji
+
+7. market_chain/distribution_center/international_contract:
+   - wszystko, ale ilości droższych animal muszą być ograniczone.
+
+Przygotuj plan SQL v1:
+- helper dozwolonych kategorii per customer_type + player_level,
+- helper limitu produktów zwierzęcych per customer_type + animal unlock lvl,
+- zmiana _npc_pick_item tak, żeby znał customer_type albo allowed categories,
+- zmiana spawn_customer_order tak, żeby przekazywał customer_type do losowania itemów.
+
+Nie zmieniaj jeszcze gold/EXP multiplier.
+Nie zmieniaj frontendu.
+Nie zmieniaj istniejących zamówień.
+Nie pushuj.
+
+Podaj:
+1. pełny plan,
+2. czy da się filtrować konkretne animal itemy,
+3. proponowane limity ilości per typ klienta,
+4. pełny SQL dopiero po zatwierdzeniu planu.
