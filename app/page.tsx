@@ -302,6 +302,9 @@ export default function Page() {
   const dragPlantedFieldsRef = React.useRef<Set<number>>(new Set());
   const dragEndedRef = React.useRef(false);
   const [isDesktop, setIsDesktop] = useState(true);
+  // TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych
+  const [rotateNoticeDismissed, setRotateNoticeDismissed] = useState(false);
+  const [showRotateNotice, setShowRotateNotice] = useState(false);
   const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
     const v = parseFloat(localStorage.getItem("plonopolis_zoom") ?? "1");
@@ -2457,6 +2460,22 @@ export default function Page() {
     window.addEventListener("resize", checkScreen);
 
     return () => window.removeEventListener("resize", checkScreen);
+  }, []);
+
+  // TYMCZASOWE — detekcja orientacji pionowej na telefonie
+  useEffect(() => {
+    const checkOrientation = () => {
+      const isMobile = window.innerWidth < 768;
+      const isPortrait = window.innerHeight > window.innerWidth;
+      setShowRotateNotice(isMobile && isPortrait);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      window.removeEventListener("orientationchange", checkOrientation);
+    };
   }, []);
 
   // ─── Licznik czasu sesji (aktualizacja co sekundę) ────────────────────
@@ -5764,7 +5783,8 @@ export default function Page() {
             if (showSettingsModal) return;
             if (!isOnPanMap) return;
             const tgt = e.target as HTMLElement;
-            if (tgt.closest('[data-no-map-drag], button, [role="button"], a, input, textarea, select')) return;
+            // Dla touch blokujemy tylko twarde kontrolki UI — hitboxy budynków (button[data-no-map-drag]) przepuszczamy
+            if (tgt.closest('input, textarea, select, a[href]')) return;
             const t = e.touches[0];
             panDragRef.current = { active: true, startX: t.clientX, startY: t.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
@@ -5773,7 +5793,8 @@ export default function Page() {
             if (!panDragRef.current.active) return;
             const t = e.touches[0];
             const dx = t.clientX - panDragRef.current.startX;
-            if (Math.abs(dx) > 4) {
+            // Próg 8px dla touch (większy niż 4px mouse) — tolerancja na drżenie palca
+            if (Math.abs(dx) > 8) {
               if (!panDragRef.current.moved) {
                 panDragRef.current.moved = true;
                 document.body.classList.add("plono-dragging");
@@ -11792,6 +11813,52 @@ export default function Page() {
           fvTutArrow12Pos={fvTutArrow12Pos}
           fvTutArrow13Pos={fvTutArrow13Pos}
         />
+
+        {/* TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych */}
+        {showRotateNotice && !rotateNoticeDismissed && (
+          <div
+            style={{
+              position: "fixed",
+              top: 16,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 999998,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 16px",
+              borderRadius: 14,
+              background: "rgba(26,19,13,0.93)",
+              border: "1.5px solid rgba(200,160,60,0.55)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.55)",
+              maxWidth: "calc(100vw - 32px)",
+              backdropFilter: "blur(6px)",
+            }}
+          >
+            <span style={{ fontSize: 22 }}>📱</span>
+            <span style={{ color: "#f3e6c8", fontSize: 13, fontWeight: 600, lineHeight: 1.4, whiteSpace: "nowrap" }}>
+              Obróć telefon poziomo,<br />aby wygodniej grać.
+            </span>
+            <button
+              type="button"
+              onClick={() => setRotateNoticeDismissed(true)}
+              style={{
+                marginLeft: 4,
+                padding: "5px 12px",
+                borderRadius: 8,
+                background: "rgba(200,150,40,0.85)",
+                border: "none",
+                color: "#1a130d",
+                fontWeight: 800,
+                fontSize: 12,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
 
         </main>
     </div>
