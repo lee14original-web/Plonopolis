@@ -149,8 +149,8 @@ const expPct = (() => {
 })();
 
 return (<>
-  <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-    <div className={`relative flex ${ladaView === 'carousel' && ladaDetailIdx === null ? 'w-[min(97vw,1440px)] max-h-[95vh]' : 'w-[min(97vw,1240px)] max-h-[90vh]'} flex-col rounded-[28px] border border-amber-600/60 bg-[rgba(14,8,4,0.98)] shadow-2xl overflow-hidden`}>
+  <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(14,8,4,0.98)]">
+    <div className="relative flex w-full flex-1 min-h-0 flex-col overflow-hidden">
       <button
         type="button"
         onClick={() => setShowLadaInfo(v => !v)}
