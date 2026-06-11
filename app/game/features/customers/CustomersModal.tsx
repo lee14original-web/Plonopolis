@@ -215,7 +215,7 @@ return (<>
         );
       })()}
 
-      <div className="relative flex-1 overflow-y-auto overflow-x-hidden p-5">
+      <div className="relative flex-1 flex flex-col overflow-y-auto overflow-x-hidden p-5">
         <div
           style={{
             position: 'absolute',
@@ -230,7 +230,7 @@ return (<>
             zIndex: 0,
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-10 min-h-full flex flex-col">
         {showLadaInfo ? (
           <div className="space-y-5 text-[#dfcfab]">
 
@@ -400,7 +400,7 @@ return (<>
             const safeCarouselIdx = Math.min(carouselIdx, Math.max(0, _sorted.length - 1));
 
             return (
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3 flex-1">
                 {/* Nagłówek + toggle widoku */}
                 <div className="flex items-center justify-between px-1">
                   <p className="text-sm text-amber-400 uppercase tracking-widest font-black">
@@ -419,7 +419,8 @@ return (<>
                 </div>
 
                 {ladaView === 'carousel' ? (
-                  <>
+                  <div className="flex-1 flex flex-col">
+                    <div className="my-auto flex flex-col gap-3">
                     {/* ── WIDOK KARUZELA — duży avatar slider 3D ── */}
                     <div
                       className="flex items-center gap-2"
@@ -607,10 +608,12 @@ return (<>
                         </p>
                       )
                     )}
-                  </>
+                    </div>
+                  </div>
                 ) : (
-                  /* ── WIDOK LISTA (bez zmian) ── */
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                  <div className="flex-1 flex flex-col">
+                  {/* ── WIDOK LISTA (bez zmian) ── */}
+                  <div className="my-auto grid grid-cols-2 sm:grid-cols-3 gap-5">
                     {_sorted.map(({ o, originalIndex }) => {
                       const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
                       return (
@@ -662,6 +665,7 @@ return (<>
                         </button>
                       );
                     })}
+                  </div>
                   </div>
                 )}
               </div>
