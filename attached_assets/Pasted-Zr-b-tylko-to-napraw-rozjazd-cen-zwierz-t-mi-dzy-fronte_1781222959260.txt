@@ -1,0 +1,64 @@
+Zrób tylko to: napraw rozjazd cen zwierząt między frontendem a backendem Supabase.
+
+Problem po balansie zwierząt:
+- UI pokazuje Kurę za 450 zł, ale przy zakupie backend nadal wymaga 600 zł.
+- UI pokazuje dokupienie slotu kury za 123 zł, ale backend pobrał 163 zł.
+- Gracz miał 746.89 zł, po zakupie slotu za 123 zł powinno zostać 623.89 zł, a zostało 583.89 zł.
+To oznacza, że RPC/Supabase dalej używa starych cen zwierząt albo starego barn_animal_defs.
+
+Sprawdź funkcje SQL/RPC odpowiedzialne za:
+- zakup zwierzęcia,
+- dokupienie slotu zwierzęcia,
+- definicje zwierząt w Stodole,
+- koszt slotów,
+- collect/production jeśli używa czasu produkcji z SQL.
+
+Szukaj nazw typu:
+- barn_animal_defs
+- buy_barn_animal
+- buy_animal
+- upgrade_animal_slot
+- buy_animal_slot
+- barnSlotCosts
+- animal_defs
+- purchase_animal
+- animal_slots
+
+Zaktualizuj backendowe definicje zwierząt do finalnej tabeli:
+
+- kura: lvl 3, buyPrice 450, prod 4h
+- kaczka: lvl 5, buyPrice 1050, prod 6h
+- krolik: lvl 7, buyPrice 2625, prod 10h
+- swinia: lvl 9, buyPrice 5250, prod 14h
+- krowa: lvl 11, buyPrice 13500, prod 20h
+- owca: lvl 13, buyPrice 26250, prod 24h
+- koza: lvl 15, buyPrice 48750, prod 30h
+- indyk: lvl 17, buyPrice 90000, prod 36h
+- kon: lvl 20, buyPrice 187500, prod 48h
+- byk: lvl 25, buyPrice 450000, prod 72h
+
+Nie ruszaj karmy.
+
+Ważne:
+- SQL Lady klientów `_npc_animal_data()` jest już wgrany osobno i działa.
+- Teraz napraw tylko backend Stodoły/RPC, które sprawdzają ceny i pobierają złoto.
+- Frontend animals.ts już ma nowe ceny.
+- Backend ma liczyć identycznie jak frontend.
+- Jeśli koszt slotu jest liczony wzorem, ma używać nowego buyPrice.
+- Usuń/stare hardcoded wartości typu kura=600, kaczka=9000, krolik=1800, krowa=4500, swinia=35000 itd. z backendowych funkcji Stodoły.
+
+Przygotuj pełny SQL do Supabase, najlepiej jako plik:
+attached_assets/sql_fix_barn_animal_backend_prices_v1.sql
+
+Dodaj testy SQL:
+1. kura buyPrice = 450
+2. kaczka buyPrice = 1050
+3. krolik buyPrice = 2625
+4. swinia buyPrice = 5250
+5. krowa buyPrice = 13500
+6. koszt slotu kury dla tego samego slotIndex co frontend daje 123, a nie 163
+7. zakup kury przy money=450 powinien przejść, a nie wymagać 600
+
+Nie zmieniaj frontendu.
+Nie pushuj.
+Pokaż diff SQL i pełny SQL do wgrania.
