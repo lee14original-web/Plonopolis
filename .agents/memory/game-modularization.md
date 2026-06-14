@@ -26,7 +26,7 @@ description: Stan modularyzacji Game.tsx (Plonopolis) — które etapy zakończo
 - Settery typowane jako `React.Dispatch<React.SetStateAction<T>>` gdy GameTSX przekazuje dokładny typ (nie `string | null`)
 - `onTutorialComplete: () => Promise<void>` — supabase call + setProfile zamknięty w Game.tsx closure, przekazany jako handler
 - Array.from(new Set()) zamiast [...new Set()] (Railway compat)
-- NIE pushować (użytkownik powiedział "nie pushuj") — commit message gotowy, ale push przez skrypt scripts/src/push-to-github.ts
+- push przez skrypt scripts/src/push-to-github.ts; `--images` pushuje pliki z NEW_IMAGE_FOLDERS rekurencyjnie (fix: collectDirFiles zamiast readdir)
 
 ## Następne etapy (planowane)
 - Etap 2F: dalsze wydzielenie FieldView (FieldToolbar, może FieldView container)
