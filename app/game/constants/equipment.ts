@@ -40,13 +40,13 @@ export const CHAR_EQUIP_ITEMS: CharEquipItem[] = [
   { id: "n10", name: "Buty Burzy",              slot: "nogi", icon: "⚡", unlockLevel: 27, bonuses: [{ base: 12, label: " pkt Wiedzy", flat: true }] },
   { id: "n11", name: "Legendarne Kalosze",      slot: "nogi", icon: "👑", unlockLevel: 30, bonuses: [{ base: 10, label: " pkt Wiedzy", flat: true }] },
   // ─── GŁOWA (LVL 1–30) ───
-  { id: "g1",  name: "Słomkowy Kapelusz",       slot: "glowa", icon: "👒", unlockLevel: 1,  bonuses: [{ base: 5,  label: "% EXP z upraw" }] },
-  { id: "g2",  name: "Kapelusz Rolnika",        slot: "glowa", icon: "👒", unlockLevel: 5,  bonuses: [{ base: 5,  label: "% EXP z upraw" }, { base: 3, label: " pkt Wiedzy", flat: true }] },
-  { id: "g3",  name: "Kapelusz Pszczelarza",    slot: "glowa", icon: "🐝", unlockLevel: 10, bonuses: [{ base: 10, label: "% produkcji miodu" }, { base: 5, label: " pkt Wiedzy", flat: true }] },
-  { id: "g4",  name: "Czapka Szczęścia",        slot: "glowa", icon: "🍀", unlockLevel: 15, bonuses: [{ base: 5,  label: " pkt Szczescia", flat: true }, { base: 3, label: " pkt Zrecznosci", flat: true }, { base: 5, label: "% EXP" }] },
-  { id: "g5",  name: "Korona Sadownika",        slot: "glowa", icon: "👑", unlockLevel: 20, bonuses: [{ base: 10, label: "% speed drzew" }, { base: 5, label: "% reward zwierząt" }, { base: 5, label: " pkt Wiedzy", flat: true }] },
-  { id: "g6",  name: "Kapelusz Mistrza Farmy",  slot: "glowa", icon: "🎓", unlockLevel: 25, bonuses: [{ base: 10, label: " pkt Wiedzy", flat: true }, { base: 10, label: "% EXP" }, { base: 3, label: " pkt Zrecznosci", flat: true }] },
-  { id: "g7",  name: "Korona Plonopolis",       slot: "glowa", icon: "👑", unlockLevel: 30, bonuses: [{ base: 8,  label: " pkt Wiedzy", flat: true }, { base: 8, label: "% speed drzew" }, { base: 8, label: "% reward zwierząt" }, { base: 5, label: " pkt Zrecznosci", flat: true }] },
+  { id: "g1",  name: "Słomkowy Kapelusz",       slot: "glowa", icon: "👒", img: "/ekwipunek/glowa/g1_slomkowy_kapelusz.png",      unlockLevel: 1,  bonuses: [{ base: 5,  label: "% EXP z upraw" }] },
+  { id: "g2",  name: "Kapelusz Rolnika",        slot: "glowa", icon: "👒", img: "/ekwipunek/glowa/g2_kapelusz_rolnika.png",         unlockLevel: 5,  bonuses: [{ base: 5,  label: "% EXP z upraw" }, { base: 3, label: " pkt Wiedzy", flat: true }] },
+  { id: "g3",  name: "Kapelusz Pszczelarza",    slot: "glowa", icon: "🐝", img: "/ekwipunek/glowa/g3_kapelusz_pszczelarza.png",     unlockLevel: 10, bonuses: [{ base: 10, label: "% produkcji miodu" }, { base: 5, label: " pkt Wiedzy", flat: true }] },
+  { id: "g4",  name: "Czapka Szczęścia",        slot: "glowa", icon: "🍀", img: "/ekwipunek/glowa/g4_czapka_szczescia.png",         unlockLevel: 15, bonuses: [{ base: 5,  label: " pkt Szczescia", flat: true }, { base: 3, label: " pkt Zrecznosci", flat: true }, { base: 5, label: "% EXP" }] },
+  { id: "g5",  name: "Korona Sadownika",        slot: "glowa", icon: "👑", img: "/ekwipunek/glowa/g5_korona_sadownika.png",         unlockLevel: 20, bonuses: [{ base: 10, label: "% speed drzew" }, { base: 5, label: "% reward zwierząt" }, { base: 5, label: " pkt Wiedzy", flat: true }] },
+  { id: "g6",  name: "Kapelusz Mistrza Farmy",  slot: "glowa", icon: "🎓", img: "/ekwipunek/glowa/g6_kapelusz_mistrza_farmy.png",  unlockLevel: 25, bonuses: [{ base: 10, label: " pkt Wiedzy", flat: true }, { base: 10, label: "% EXP" }, { base: 3, label: " pkt Zrecznosci", flat: true }] },
+  { id: "g7",  name: "Korona Plonopolis",       slot: "glowa", icon: "👑", img: "/ekwipunek/glowa/g7_korona_plonopolis.png",        unlockLevel: 30, bonuses: [{ base: 8,  label: " pkt Wiedzy", flat: true }, { base: 8, label: "% speed drzew" }, { base: 8, label: "% reward zwierząt" }, { base: 5, label: " pkt Zrecznosci", flat: true }] },
 ];
 
 export const EQUIP_SLOT_META: Record<EquipSlot, { label: string; icon: string; desc: string }> = {

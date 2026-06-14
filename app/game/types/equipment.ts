@@ -11,6 +11,7 @@ export interface CharEquipItem {
   name: string;
   slot: EquipSlot;
   icon: string;
+  img?: string;
   unlockLevel: number;
   bonuses: EquipBonus[];
 }

@@ -5215,8 +5215,9 @@ export default function Page() {
       if (quality === "rotten"    && crop.rottenSpritePath)    return crop.rottenSpritePath;
       return crop.spritePath;
     }
-    if (type === "barn_item") return `/przedmioty/item_${key}.png`;
-    if (type === "honey")     return `/przedmioty/jar_honey.png`;
+    if (type === "barn_item")  return `/przedmioty/item_${key}.png`;
+    if (type === "honey")      return `/przedmioty/jar_honey.png`;
+    if (type === "equipment")  return CHAR_EQUIP_ITEMS.find(i => i.id === key)?.img ?? null;
     return null;
   }
   function buildSellableItems() {
@@ -5250,7 +5251,7 @@ export default function Page() {
     CHAR_EQUIP_ITEMS
       .filter(item => ownedEqItems[item.id] && !equippedIds.has(item.id))
       .forEach(item => {
-        items.push({ type: "equipment", key: item.id, name: item.name, icon: item.icon, imgPath: null, qty: 1, minPrice: marketMinPrice("equipment", item.id, getItemUpg(item.id)) });
+        items.push({ type: "equipment", key: item.id, name: item.name, icon: item.icon, imgPath: getMarketItemImg("equipment", item.id), qty: 1, minPrice: marketMinPrice("equipment", item.id, getItemUpg(item.id)) });
       });
     return items;
   }
@@ -8630,7 +8631,9 @@ export default function Page() {
                                 >
                                   {eItem ? (
                                     <>
-                                      <span className="text-xl leading-none">{eItem.icon}</span>
+                                      {eItem.img
+                                        ? <img src={eItem.img} alt={eItem.name} className="w-10 h-10 object-contain drop-shadow-lg" draggable={false} />
+                                        : <span className="text-xl leading-none">{eItem.icon}</span>}
                                       <span className="text-[30px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
                                       <span className="text-[40px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
                                     </>
@@ -8754,7 +8757,9 @@ export default function Page() {
                                       className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
                                       style={{ borderColor:isOn?uc:"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
                                       <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
-                                      <span className="text-2xl leading-none">{item.icon}</span>
+                                      {item.img
+                                        ? <img src={item.img} alt={item.name} className="w-8 h-8 object-contain drop-shadow-md" draggable={false} />
+                                        : <span className="text-2xl leading-none">{item.icon}</span>}
                                       <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:isOn?uc:"#9ca3af"}}>
                                         {item.name.split(" ")[0]}
                                       </span>
@@ -8942,7 +8947,9 @@ export default function Page() {
                                         className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none cursor-pointer hover:brightness-125"
                                         style={{ borderColor: isSel ? "#fbbf24" : "#8b6a3e", background: isSel ? "rgba(60,40,5,0.55)" : "rgba(10,6,2,0.55)", boxShadow: isSel ? "0 0 8px rgba(251,191,36,0.55)" : "none", opacity: isSel ? 1 : 0.92 }}>
                                         <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
-                                        <span className="text-2xl leading-none">{item.icon}</span>
+                                        {item.img
+                                          ? <img src={item.img} alt={item.name} className="w-8 h-8 object-contain drop-shadow-md" draggable={false} />
+                                          : <span className="text-2xl leading-none">{item.icon}</span>}
                                         <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color: isSel ? "#f9e7b2" : "#9ca3af"}}>
                                           {item.name.split(" ")[0]}
                                         </span>
