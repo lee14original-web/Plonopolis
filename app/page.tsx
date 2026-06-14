@@ -9655,12 +9655,14 @@ export default function Page() {
                                       onMouseEnter={showTip}
                                       onMouseMove={showTip}
                                       onMouseLeave={() => setKompostHoverTip(null)}
-                                      className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 p-2 transition cursor-help hover:brightness-110"
+                                      className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 overflow-hidden transition cursor-help hover:brightness-110"
                                       style={{ borderColor: rarityDef.border, background: `rgba(0,0,0,0.5)`, boxShadow: `0 0 12px ${rarityDef.shadow}` }}>
-                                      <span className="text-3xl">{r.itemIcon}</span>
-                                      <span className="mt-1 text-[10px] font-black truncate w-full text-center" style={{ color: rarityDef.border }}>{r.itemName}</span>
-                                      <span className="text-[8px] font-bold opacity-70" style={{ color: rarityDef.border }}>{rarityDef.label}</span>
-                                      {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-black/70 border px-1 text-[10px] font-black text-white" style={{ borderColor: rarityDef.border }}>×{g.count}</span>}
+                                      {it?.img
+                                        ? <img src={it.img} alt={it.name} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+                                        : <span className="text-3xl">{r.itemIcon}</span>}
+                                      <span className="relative z-10 mt-1 text-[10px] font-black truncate w-full text-center px-1" style={{ color: rarityDef.border, textShadow:"0 1px 3px #000" }}>{r.itemName}</span>
+                                      <span className="relative z-10 text-[8px] font-bold" style={{ color: rarityDef.border, opacity:0.85, textShadow:"0 1px 2px #000" }}>{rarityDef.label}</span>
+                                      {g.count > 1 && <span className="absolute top-1 right-1 z-10 rounded bg-black/70 border px-1 text-[10px] font-black text-white" style={{ borderColor: rarityDef.border }}>×{g.count}</span>}
                                     </div>
                                   );
                                 }
