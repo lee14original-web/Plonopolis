@@ -8632,10 +8632,10 @@ export default function Page() {
                                   {eItem ? (
                                     <>
                                       {eItem.img
-                                        ? <img src={eItem.img} alt={eItem.name} className="w-10 h-10 object-contain drop-shadow-lg" draggable={false} />
+                                        ? <img src={eItem.img} alt={eItem.name} className="absolute inset-0 w-full h-full object-cover rounded-lg" draggable={false} />
                                         : <span className="text-xl leading-none">{eItem.icon}</span>}
-                                      <span className="text-[30px] font-black mt-0.5" style={{ color:uc }}>+{upg}</span>
-                                      <span className="text-[40px] text-[#f9e7b2] leading-tight text-center px-0.5 truncate w-full">{eItem.name.split(" ")[0]}</span>
+                                      <span className="relative z-10 text-[30px] font-black" style={{ color:uc, textShadow:"0 1px 3px #000" }}>+{upg}</span>
+                                      <span className="relative z-10 w-full text-center text-[40px] text-[#f9e7b2] leading-tight px-0.5 truncate rounded-b-lg" style={{ background:"rgba(0,0,0,0.45)", textShadow:"0 1px 4px #000" }}>{eItem.name.split(" ")[0]}</span>
                                     </>
                                   ) : (
                                     <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
@@ -8756,15 +8756,15 @@ export default function Page() {
                                       onClick={() => { const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
                                       className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
                                       style={{ borderColor:isOn?uc:"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
-                                      <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
                                       {item.img
-                                        ? <img src={item.img} alt={item.name} className="w-8 h-8 object-contain drop-shadow-md" draggable={false} />
+                                        ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
                                         : <span className="text-2xl leading-none">{item.icon}</span>}
-                                      <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color:isOn?uc:"#9ca3af"}}>
+                                      <span className="absolute top-1 left-1 text-[8px] opacity-70 z-10 drop-shadow">{slotIcon}</span>
+                                      <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[8px] leading-tight py-0.5 truncate rounded-b-xl" style={{color:isOn?uc:"#d1b080", background:"rgba(0,0,0,0.55)"}}>
                                         {item.name.split(" ")[0]}
                                       </span>
-                                      {isOn && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
-                                      {!isOn && curUpg>0 && <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
+                                      {isOn && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
+                                      {!isOn && curUpg>0 && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
                                       {/* Tooltip */}
                                       <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[145px] max-w-[187px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-2.5 py-1.5 shadow-2xl text-left">
                                         <p className="text-[10px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
@@ -8946,14 +8946,14 @@ export default function Page() {
                                         onClick={() => setSelectedExtraUid(isSel ? null : entry.uid)}
                                         className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none cursor-pointer hover:brightness-125"
                                         style={{ borderColor: isSel ? "#fbbf24" : "#8b6a3e", background: isSel ? "rgba(60,40,5,0.55)" : "rgba(10,6,2,0.55)", boxShadow: isSel ? "0 0 8px rgba(251,191,36,0.55)" : "none", opacity: isSel ? 1 : 0.92 }}>
-                                        <span className="absolute top-1 left-1 text-[8px] opacity-40">{slotIcon}</span>
                                         {item.img
-                                          ? <img src={item.img} alt={item.name} className="w-8 h-8 object-contain drop-shadow-md" draggable={false} />
+                                          ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
                                           : <span className="text-2xl leading-none">{item.icon}</span>}
-                                        <span className="mt-0.5 px-0.5 text-[8px] leading-tight truncate w-full text-center" style={{color: isSel ? "#f9e7b2" : "#9ca3af"}}>
+                                        <span className="absolute top-1 left-1 text-[8px] opacity-70 z-10 drop-shadow">{slotIcon}</span>
+                                        <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[8px] leading-tight py-0.5 truncate rounded-b-xl" style={{color: isSel ? "#f9e7b2" : "#d1b080", background:"rgba(0,0,0,0.55)"}}>
                                           {item.name.split(" ")[0]}
                                         </span>
-                                        <span className="absolute top-1 right-1 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
+                                        <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
                                         {/* Tooltip */}
                                         <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[145px] max-w-[187px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-2.5 py-1.5 shadow-2xl text-left">
                                           <p className="text-[10px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
