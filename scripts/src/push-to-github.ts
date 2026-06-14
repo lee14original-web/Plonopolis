@@ -137,10 +137,8 @@ async function main() {
     for (const folder of folders) {
       const dir = resolve(ROOT, folder.local);
       if (!existsSync(dir)) continue;
-      const files = await readdir(dir);
-      for (const f of files) {
-        allImgFiles.push({ githubPath: `${folder.github}/${f}`, localPath: resolve(dir, f) });
-      }
+      const collected = await collectDirFiles(dir, folder.github);
+      allImgFiles.push(...collected);
     }
 
     const CHUNK = 50;
