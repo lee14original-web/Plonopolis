@@ -53,7 +53,7 @@ import { isCompostKey, compostTypeFromKey, compostValueFromKey } from "../../uti
       const v = compostValueFromKey(id);
       if (t) {
         const def = COMPOST_DEFS[t];
-        return { name: t === "guide" ? def.name : `${def.tierName(v)} ${def.name}`, icon: def.icon };
+        return { name: t === "guide" ? def.name : `${def.tierName(v)} ${def.name}`, icon: def.icon, spritePath: def.imgs[v] };
       }
     }
     const eq = CHAR_EQUIP_ITEMS.find(i => i.id === id);

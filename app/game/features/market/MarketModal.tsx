@@ -77,6 +77,11 @@ import { isCompostKey } from "../../utils/compost";
     }
     if (type === "barn_item") return `/przedmioty/item_${key}.png`;
     if (type === "honey")     return `/przedmioty/jar_honey.png`;
+    if (type === "compost") {
+      const ct = compostTypeFromKey(key);
+      const val = compostValueFromKey(key);
+      if (ct) return COMPOST_DEFS[ct].imgs[val] ?? null;
+    }
     return null;
   }
 
