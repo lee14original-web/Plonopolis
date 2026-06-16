@@ -139,7 +139,7 @@ export function SkinPickerModal({
                 const idx = EPIC_SKIN_START + i;
                 const isUnlocked = unlockedEpicAvatars.includes(idx);
                 const isActive = avatarSkin === idx;
-                const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+                const canAfford = Object.entries(es.cost).every(([k,v]) => k === "money" ? displayMoney >= v : (seedInventory[k] ?? 0) >= v);
                 return (
                   <button key={idx}
                     onClick={() => {
