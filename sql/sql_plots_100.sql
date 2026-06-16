@@ -55,7 +55,7 @@ DECLARE
     'kret','kret','kret','kret','kret',
     'kret'
   ];
-  v_costs jsonb := '{"chwasty":5,"kamienie":50,"maly_pien":150,"duzy_pien":250,"kret":500}'::jsonb;
+  v_costs jsonb := '{"chwasty":15,"kamienie":50,"maly_pien":150,"duzy_pien":250,"kret":500}'::jsonb;
   v_shuffled text[];
   v_result   jsonb := '{}'::jsonb;
   v_i        integer;
