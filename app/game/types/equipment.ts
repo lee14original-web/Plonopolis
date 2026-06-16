@@ -14,6 +14,7 @@ export interface CharEquipItem {
   img?: string;
   unlockLevel: number;
   bonuses: EquipBonus[];
+  desc?: string;
 }
 
 export type CharEquipped = Record<EquipSlot, { id: string; upg: number } | null>;
