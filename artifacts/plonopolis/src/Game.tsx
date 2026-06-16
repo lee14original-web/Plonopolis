@@ -8771,9 +8771,15 @@ export default function Page() {
                                       {isOn && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
                                       {!isOn && curUpg>0 && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
                                       {/* Tooltip */}
-                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[145px] max-w-[187px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-2.5 py-1.5 shadow-2xl text-left">
-                                        <p className="text-[10px] font-black text-[#f9e7b2] leading-tight">{item.icon} {item.name}</p>
+                                      <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[160px] max-w-[210px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-2.5 py-2 shadow-2xl text-left">
+                                        <p className="text-[11px] font-black text-[#f9e7b2] leading-tight uppercase tracking-wide">{item.icon} {item.name}</p>
                                         <p className="text-[9px] text-[#8b6a3e]">{slotIcon} {EQUIP_SLOT_META[sl].label} · poziom <span className="font-bold text-[#dfcfab]">{item.unlockLevel}</span></p>
+                                        {item.desc && (
+                                          <>
+                                            <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                            <p className="text-[10px] italic text-[#d8ba7a] leading-snug">{item.desc}</p>
+                                          </>
+                                        )}
                                         <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
                                         <p className="text-[9px] text-cyan-300 font-bold">{bonusLine(item.bonuses, curUpg)}</p>
                                         {curUpg > 0 && <p className="text-[9px] font-black" style={{color:uc}}>Ulepszenie: +{curUpg}</p>}
