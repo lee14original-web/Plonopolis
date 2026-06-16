@@ -7688,7 +7688,7 @@ export default function Page() {
                                             onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                             onDragEnd={() => setDraggedSeedId(null)}
                                             onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                            onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                            onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
                                             onMouseLeave={() => setCardTip(null)}
                                             className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
                                             style={isSel
@@ -8387,7 +8387,7 @@ export default function Page() {
                                           ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.descs[val] ?? def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
                                           {val < 100
                                             ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
@@ -9112,7 +9112,7 @@ export default function Page() {
                                   return (
                                     <div key={cid} draggable onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
                                       onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p></>)}
+                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p></>)}
                                       onMouseLeave={() => setCardTip(null)}
                                       className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
                                       style={isSel ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` } : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
@@ -9683,7 +9683,7 @@ export default function Page() {
                                 const tipNode = (
                                   <>
                                     <p className="text-[17px] font-black text-emerald-200">{def.icon} {def.name}</p>
-                                    <p className="text-[14px] text-emerald-300/80">{def.desc}</p>
+                                    <p className="text-[14px] text-emerald-300/80">{def.descs[r.value] ?? def.desc}</p>
                                     <p className="text-[15px] font-black mt-1" style={{ color: tierColor }}>Tier: {def.tierName(r.value)}</p>
                                     <p className="text-[15px] font-black" style={{ color: tierColor }}>Bonus: {def.bonusLabel(r.value)}</p>
                                     <p className="text-[14px] text-amber-300 mt-1">Przeciagnij na pole z uprawa w plecaku</p>
@@ -9943,7 +9943,7 @@ export default function Page() {
                           <p className="text-[11px] text-[#bfa274]">Kompost</p>
                         </div>
                       </div>
-                      <p className="text-[12px] text-[#dfcfab]">{def.desc}</p>
+                      <p className="text-[12px] text-[#dfcfab]">{def.descs[v] ?? def.desc}</p>
                       <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 p-2">
                         <p className="text-[12px] text-emerald-200 font-bold">{def.effectLabel}: {def.bonusLabel(v)}</p>
                       </div>
