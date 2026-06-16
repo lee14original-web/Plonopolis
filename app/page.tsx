@@ -7688,7 +7688,7 @@ export default function Page() {
                                             onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }}
                                             onDragEnd={() => setDraggedSeedId(null)}
                                             onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                            onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[10px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
+                                            onMouseEnter={() => setCardTip(<><p className="text-[24px] font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[20px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[22px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p><p className="text-[20px] text-amber-300 mt-1">↗ Przeciągnij lub kliknij i wybierz puste pole</p></>)}
                                             onMouseLeave={() => setCardTip(null)}
                                             className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer active:cursor-grabbing transition"
                                             style={isSel
@@ -9112,7 +9112,7 @@ export default function Page() {
                                   return (
                                     <div key={cid} draggable onDragStart={() => { setDraggedSeedId(cid); setSelectedSeedId(cid); setSelectedTool(null); }} onDragEnd={() => setDraggedSeedId(null)}
                                       onClick={() => { setSelectedSeedId(prev => prev === cid ? null : cid); setSelectedTool(null); }}
-                                      onMouseEnter={() => setCardTip(<><p className="text-xs font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[10px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[11px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p></>)}
+                                      onMouseEnter={() => setCardTip(<><p className="text-[24px] font-black text-emerald-200">{def.icon} {def.name} <span style={{color: tierColor}}>({def.tierName(value)})</span></p><p className="text-[20px] text-emerald-300/80 mt-0.5">{def.descs[value] ?? def.desc}</p><p className="text-[22px] font-black mt-1" style={{color: tierColor}}>Bonus: {def.bonusLabel(value)}</p></>)}
                                       onMouseLeave={() => setCardTip(null)}
                                       className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
                                       style={isSel ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` } : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
@@ -10916,21 +10916,26 @@ export default function Page() {
                                   const _tIdx = _def.bonusValues.indexOf(_cb.value);
                                   const _tColor = _tIdx === 0 ? "#9ca3af" : _tIdx === 1 ? "#fbbf24" : "#a78bfa";
                                   const _hasCrop = !!getPlotCrop(plotId).cropId;
+                                  const _tip = (<><p className="text-[24px] font-black text-emerald-200">{_def.icon} {_def.name} <span style={{color: _tColor}}>({_def.tierName(_cb.value)})</span></p><p className="text-[20px] text-emerald-300/80 mt-0.5">{_def.descs[_cb.value] ?? _def.desc}</p><p className="text-[22px] font-black mt-1" style={{color: _tColor}}>Bonus: {_def.bonusLabel(_cb.value)}</p></>);
                                   if (_hasCrop) {
                                     return (
                                       <div
-                                        className="pointer-events-none absolute left-0.5 top-0.5 z-10 flex items-center rounded-full px-1 py-0.5 text-[18px] leading-none shadow-lg"
-                                        style={{ background: `${_tColor}33`, border: `1px solid ${_tColor}` }}>
+                                        className="absolute left-0.5 top-0.5 z-10 flex items-center rounded-full px-1 py-0.5 text-[18px] leading-none shadow-lg cursor-default"
+                                        style={{ background: `${_tColor}33`, border: `1px solid ${_tColor}` }}
+                                        onMouseEnter={(e) => { e.stopPropagation(); setCardTip(_tip); }}
+                                        onMouseLeave={() => setCardTip(null)}>
                                         <span>{_def.icon}</span>
                                       </div>
                                     );
                                   }
                                   return (
                                     <div
-                                      className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-                                      style={{ filter: `drop-shadow(0 0 8px ${_tColor}cc)` }}>
-                                      <span className="text-4xl md:text-5xl">{_def.icon}</span>
-                                      <span className="mt-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider md:text-[10px]"
+                                      className="absolute inset-0 flex flex-col items-center justify-center cursor-default"
+                                      style={{ filter: `drop-shadow(0 0 8px ${_tColor}cc)` }}
+                                      onMouseEnter={(e) => { e.stopPropagation(); setCardTip(_tip); }}
+                                      onMouseLeave={() => setCardTip(null)}>
+                                      <span className="text-4xl md:text-5xl pointer-events-none">{_def.icon}</span>
+                                      <span className="mt-1 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider md:text-[10px] pointer-events-none"
                                         style={{ background: "rgba(0,0,0,0.6)", color: _tColor, border: `1px solid ${_tColor}88` }}>
                                         {_def.tierName(_cb.value)}
                                       </span>
