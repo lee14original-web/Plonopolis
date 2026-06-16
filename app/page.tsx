@@ -10153,7 +10153,8 @@ export default function Page() {
             const es = EPIC_SKINS[hoveredEpicSkin - EPIC_SKIN_START];
             if (!es) return null;
             const isUnlocked = unlockedEpicAvatars.includes(hoveredEpicSkin);
-            const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+            const _tooltipMoney = profile?.money ?? 0;
+            const canAfford = Object.entries(es.cost).every(([k,v]) => k === "money" ? _tooltipMoney >= v : (seedInventory[k] ?? 0) >= v);
             return (
               <div className="pointer-events-none fixed z-[9999] w-80 rounded-[20px] border border-green-500/70 bg-[rgba(8,25,8,0.98)] p-5 shadow-2xl backdrop-blur-sm"
                 style={ttStyle(mousePos.x, mousePos.y, 320, 300)}>
@@ -10195,6 +10196,15 @@ export default function Page() {
                   <div className="rounded-xl border border-green-800/40 bg-black/30 p-3">
                     <p className="mb-1.5 text-[13px] font-black uppercase tracking-widest text-green-500">Koszt odblokowania:</p>
                     {Object.entries(es.cost).map(([k, v]) => {
+                      if (k === "money") {
+                        const enough = _tooltipMoney >= v;
+                        return (
+                          <div key={k} className={`flex items-center justify-between text-[12px] font-bold ${enough ? "text-green-300" : "text-red-300"}`}>
+                            <span>💰 {v} zł</span>
+                            <span className="ml-2 text-[11px] opacity-70">({_tooltipMoney.toFixed(0)}/{v} zł)</span>
+                          </div>
+                        );
+                      }
                       const { baseCropId, quality } = parseQualityKey(k);
                       const crop = CROPS.find(c => c.id === baseCropId);
                       const qLabel = quality === "epic" ? "epickich" : quality === "legendary" ? "legendarnych" : "zwykłych";
@@ -10242,6 +10252,7 @@ export default function Page() {
               epicPurchaseTarget={epicPurchaseTarget}
               onClose={() => setEpicPurchaseTarget(null)}
               seedInventory={seedInventory}
+              playerMoney={profile?.money ?? 0}
               onConfirm={handleBuyEpicAvatar}
             />
           )}

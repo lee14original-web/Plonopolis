@@ -6,6 +6,7 @@ interface EpicPurchaseModalProps {
   epicPurchaseTarget: number;
   onClose: () => void;
   seedInventory: Record<string, number>;
+  playerMoney: number;
   onConfirm: (epicAvatarId: number) => Promise<void>;
 }
 
@@ -13,16 +14,34 @@ export function EpicPurchaseModal({
   epicPurchaseTarget,
   onClose,
   seedInventory,
+  playerMoney,
   onConfirm,
 }: EpicPurchaseModalProps) {
   const es = EPIC_SKINS[epicPurchaseTarget - EPIC_SKIN_START];
   if (!es) return null;
-  const canAfford = Object.entries(es.cost).every(([k,v]) => (seedInventory[k] ?? 0) >= v);
+  const canAfford = Object.entries(es.cost).every(([k, v]) => {
+    if (k === "money") return playerMoney >= v;
+    return (seedInventory[k] ?? 0) >= v;
+  });
   const costLabel = (key: string, amt: number) => {
+    if (key === "money") return `${amt} zł`;
     const { baseCropId, quality } = parseQualityKey(key);
     const crop = CROPS.find(c => c.id === baseCropId);
     const qLabel = quality === "epic" ? " epickich" : quality === "legendary" ? " legendarnych" : " zwykłych";
     return `${amt}× ${crop?.name ?? key}${qLabel}`;
+  };
+  const haveLabel = (key: string, v: number) => {
+    if (key === "money") {
+      const ok = playerMoney >= v;
+      return (
+        <span className="text-xs opacity-70">({ok ? "✓" : `brak — masz ${playerMoney.toFixed(0)} zł`})</span>
+      );
+    }
+    const have = seedInventory[key] ?? 0;
+    const ok = have >= v;
+    return (
+      <span className="text-xs opacity-70">({ok ? "✓" : `brak — masz ${have}`})</span>
+    );
   };
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
@@ -37,13 +56,12 @@ export function EpicPurchaseModal({
         <p className="mb-4 text-center text-xs text-[#8b6a3e]">Avatar epicki — odblokuj raz, używaj na zawsze</p>
         <div className="mb-5 rounded-2xl border border-green-800/50 bg-black/30 p-4">
           <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-green-400">Koszt odblokowania:</p>
-          {Object.entries(es.cost).map(([k,v]) => {
-            const have = seedInventory[k] ?? 0;
-            const ok = have >= v;
+          {Object.entries(es.cost).map(([k, v]) => {
+            const ok = k === "money" ? playerMoney >= v : (seedInventory[k] ?? 0) >= v;
             return (
               <div key={k} className={`flex items-center justify-between text-sm font-bold ${ok ? "text-green-300" : "text-red-400"}`}>
                 <span>{costLabel(k, v)}</span>
-                <span className="text-xs opacity-70">({ok ? "✓" : `brak — masz ${have}`})</span>
+                {haveLabel(k, v)}
               </div>
             );
           })}
@@ -52,7 +70,7 @@ export function EpicPurchaseModal({
           disabled={!canAfford}
           onClick={() => void onConfirm(epicPurchaseTarget)}
           className={`w-full rounded-2xl py-3 font-black transition text-sm ${canAfford ? "border border-green-400 bg-green-700/40 text-green-200 hover:bg-green-700/60" : "cursor-not-allowed border border-[#8b6a3e]/30 bg-black/20 text-[#8b6a3e] opacity-50"}`}>
-          {canAfford ? "✅ Odblokuj avatar" : "❌ Brak surowców"}
+          {canAfford ? "✅ Odblokuj avatar" : "❌ Brak środków"}
         </button>
       </div>
     </div>
