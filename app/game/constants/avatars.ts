@@ -128,8 +128,7 @@ export const AVATAR_META: Record<number, { name: string; style: string }> = {
 };
 
 export const AVATAR_CHANGE_TIERS: { cost: number; cooldownMs: number }[] = [
-  { cost: 0,     cooldownMs: 0               },  // 1. zmiana gratis
-  { cost: 0,     cooldownMs: 0               },  // 2. zmiana gratis
-  { cost: 5000,  cooldownMs: 1 * 3600 * 1000 },  // 3. zmiana
-  { cost: 15000, cooldownMs: 3 * 3600 * 1000 },  // 4. zmiana
+  { cost: 0,  cooldownMs: 0          },  // 1. zmiana gratis
+  { cost: 0,  cooldownMs: 0          },  // 2. zmiana gratis
+  { cost: 50, cooldownMs: 5 * 60_000 },  // 3.+ zmiana: 50 zł, co 5 min
 ];
