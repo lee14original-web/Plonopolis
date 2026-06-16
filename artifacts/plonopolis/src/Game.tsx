@@ -8639,8 +8639,11 @@ export default function Page() {
                                       {eItem.img
                                         ? <img src={eItem.img} alt={eItem.name} className="absolute inset-0 w-full h-full object-cover rounded-lg" draggable={false} />
                                         : <span className="text-xl leading-none">{eItem.icon}</span>}
-                                      <span className="relative z-10 text-[30px] font-black" style={{ color:uc, textShadow:"0 1px 3px #000" }}>+{upg}</span>
-                                      <span className="relative z-10 w-full text-center text-[40px] text-[#f9e7b2] leading-tight px-0.5 truncate rounded-b-lg" style={{ background:"rgba(0,0,0,0.45)", textShadow:"0 1px 4px #000" }}>{eItem.name.split(" ")[0]}</span>
+                                      <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[14px] font-black text-[#f9e7b2] leading-tight px-1 py-1 truncate rounded-b-lg" style={{ background:"rgba(0,0,0,0.60)", textShadow:"0 1px 4px #000" }}>{eItem.name.split(" ")[0]}</span>
+                                      {upg === 10
+                                        ? <span className="absolute top-1 right-1 z-10 text-[18px] font-black animate-pulse px-1 rounded" style={{ background:"linear-gradient(90deg,#EF4444,#FACC15)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", filter:"drop-shadow(0 0 6px #FACC1566)" }}>+10</span>
+                                        : <span className="absolute top-1 right-1 z-10 text-[18px] font-black px-1 rounded" style={{ color:uc, textShadow:`0 0 8px ${uc}99` }}>+{upg}</span>
+                                      }
                                     </>
                                   ) : (
                                     <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
@@ -8765,9 +8768,6 @@ export default function Page() {
                                         ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
                                         : <span className="text-2xl leading-none">{item.icon}</span>}
                                       <span className="absolute top-1 left-1 text-[8px] opacity-70 z-10 drop-shadow">{slotIcon}</span>
-                                      <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[8px] leading-tight py-0.5 truncate rounded-b-xl" style={{color:isOn?uc:"#d1b080", background:"rgba(0,0,0,0.55)"}}>
-                                        {item.name.split(" ")[0]}
-                                      </span>
                                       {isOn && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
                                       {!isOn && curUpg>0 && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
                                       {/* Tooltip */}
@@ -8961,9 +8961,6 @@ export default function Page() {
                                           ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
                                           : <span className="text-2xl leading-none">{item.icon}</span>}
                                         <span className="absolute top-1 left-1 text-[8px] opacity-70 z-10 drop-shadow">{slotIcon}</span>
-                                        <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[8px] leading-tight py-0.5 truncate rounded-b-xl" style={{color: isSel ? "#f9e7b2" : "#d1b080", background:"rgba(0,0,0,0.55)"}}>
-                                          {item.name.split(" ")[0]}
-                                        </span>
                                         <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
                                         {/* Tooltip */}
                                         <div className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1 min-w-[145px] max-w-[187px] rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-2.5 py-1.5 shadow-2xl text-left">
