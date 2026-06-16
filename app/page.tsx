@@ -8652,62 +8652,82 @@ export default function Page() {
                               );
                             })}
                           </div>
-                          {/* Panel ulepszania wybranego slotu */}
+                          {/* Panel ulepszania wybranego slotu — 3 kolumny */}
                           {equippingSlot && charEquipped[equippingSlot] && (() => {
                             const slot = equippingSlot;
                             const eqD = charEquipped[slot];
                             if (!eqD) return null;
                             const eItem = CHAR_EQUIP_ITEMS.find(i => i.id === eqD.id);
                             if (!eItem) return null;
-                            const upg = eqD.upg; const uc = UPG_COLOR[upg]??"#6b7280";
+                            const upg = eqD.upg;
+                            const uc = UPG_COLOR[upg] ?? "#6b7280";
+                            const matsNeeded = upg < 10 ? getUpgradeMaterials(eqD.id, upg + 1) : [];
+                            const matsOk = matsNeeded.every(m => (barnItems[m.matId] ?? 0) >= m.qty);
+                            const chance = upg < 10 ? Math.round(Math.min(100, (UPGRADE_CHANCE[upg + 1] + Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005)) * 100)) : 0;
                             return (
-                              <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/25 px-3 py-2">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-base">{eItem.icon}</span>
-                                      <p className="text-xs font-bold text-[#f9e7b2] truncate">{eItem.name}</p>
-                                      <span className="text-[11px] font-black px-1.5 rounded" style={{ background:uc+"33", color:uc }}>+{upg}</span>
-                                    </div>
-                                    <p className="text-[10px] text-cyan-300 mt-0.5">{bonusLine(eItem.bonuses, upg)}</p>
-                                    {upg < 10
-                                      ? <p className="text-[11px] font-bold text-[#f9e7b2] mt-1">+{upg} → +{upg+1} · {Math.round(Math.min(100, (UPGRADE_CHANCE[upg+1] + Math.min(0.05, (effectiveStats.szczescie ?? 0) * 0.0005)) * 100))}% szansy</p>
-                                      : <p className="text-[11px] font-black mt-1" style={{ color:UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>}
-                                    {upg > 6 && upg < 10 && <p className="text-[10px] text-red-400">⚠ Fail: cofa do +{upg-1}</p>}
-                                    {upg < 10 && (() => {
-                                      const matsNeeded = getUpgradeMaterials(eqD.id, upg+1);
-                                      if (matsNeeded.length === 0) return null;
-                                      return (
-                                        <div className="mt-1 flex flex-wrap gap-1">
+                              <div className="grid grid-cols-3 gap-3 mb-2">
+                                {/* ── Lewa: info o przedmiocie ── */}
+                                <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-4 flex flex-col gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-2xl leading-none">{eItem.icon}</span>
+                                    <p className="text-base font-black text-[#f9e7b2] leading-tight">{eItem.name}</p>
+                                    {upg === 10
+                                      ? <span className="text-[15px] font-black animate-pulse px-1.5 py-0.5 rounded" style={{ background:"linear-gradient(90deg,#EF4444,#FACC15)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", filter:"drop-shadow(0 0 5px #FACC1566)" }}>+10</span>
+                                      : <span className="text-[15px] font-black px-1.5 py-0.5 rounded" style={{ background:uc+"22", color:uc }}>+{upg}</span>
+                                    }
+                                  </div>
+                                  <p className="text-[13px] text-cyan-300 font-bold leading-snug">{bonusLine(eItem.bonuses, upg)}</p>
+                                  {eItem.desc && <p className="text-[12px] italic text-[#d8ba7a] leading-snug">{eItem.desc}</p>}
+                                </div>
+
+                                {/* ── Środek: załóż / zdejmij ── */}
+                                <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-4 flex flex-col items-center justify-center gap-3">
+                                  <p className="text-[12px] text-[#8b6a3e] uppercase tracking-widest font-bold">Założone</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                    className="w-full rounded-xl border border-red-500/60 bg-red-900/20 px-4 py-3 text-[15px] font-black text-red-300 hover:bg-red-900/40 transition-colors"
+                                  >Zdejmij</button>
+                                </div>
+
+                                {/* ── Prawa: ulepszanie ── */}
+                                <div className="rounded-2xl border border-[#8b6a3e]/60 bg-black/30 px-4 py-4 flex flex-col gap-2">
+                                  {upg < 10 ? (
+                                    <>
+                                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <p className="text-[13px] font-bold text-[#f9e7b2]">+{upg} → <span style={{ color: UPG_COLOR[upg + 1] ?? uc }}>+{upg + 1}</span></p>
+                                        <span className={`text-[13px] font-black ${chance >= 80 ? "text-emerald-300" : chance >= 50 ? "text-yellow-300" : "text-red-400"}`}>{chance}% szansy</span>
+                                      </div>
+                                      {(effectiveStats.szczescie ?? 0) > 0 && (
+                                        <p className="text-[11px] text-amber-400">✨ Szczęście +{effectiveStats.szczescie} zwiększa szansę</p>
+                                      )}
+                                      {upg > 6 && <p className="text-[12px] text-red-400 font-bold">⚠ Fail: cofa do +{upg - 1}</p>}
+                                      {matsNeeded.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-1">
                                           {matsNeeded.map(m => {
                                             const md = ANIMAL_ITEMS.find(i => i.id === m.matId);
                                             const have = barnItems[m.matId] ?? 0;
                                             const enough = have >= m.qty;
                                             return (
-                                              <span key={m.matId} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${enough ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/50" : "bg-red-900/40 text-red-300 border border-red-700/50"}`}>
+                                              <span key={m.matId} className={`text-[12px] font-bold px-2 py-1 rounded-lg ${enough ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/50" : "bg-red-900/40 text-red-300 border border-red-700/50"}`}>
                                                 {md?.icon ?? "•"} {have}/{m.qty}
                                               </span>
                                             );
                                           })}
                                         </div>
-                                      );
-                                    })()}
-                                  </div>
-                                  <div className="flex flex-col gap-1 shrink-0">
-                                    {upg < 10 && (() => {
-                                      const matsNeeded = getUpgradeMaterials(eqD.id, upg+1);
-                                      const matsOk = matsNeeded.every(m => (barnItems[m.matId] ?? 0) >= m.qty);
-                                      return (
-                                      <button type="button" onClick={() => handleUpg(slot, eqD)}
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpg(slot, eqD)}
                                         disabled={!matsOk}
-                                        className="rounded-xl border border-amber-500/60 bg-amber-900/20 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/40 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed">
-                                        ⚒ {getUpgradeCost(eqD.id, upg+1).toLocaleString()} 💰
-                                      </button>
-                                      );
-                                    })()}
-                                    <button type="button" onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
-                                      className="rounded-xl border border-red-500/50 px-2 py-1 text-[10px] text-red-400 hover:bg-red-900/30">Zdejmij</button>
-                                  </div>
+                                        className="mt-auto w-full rounded-xl border border-amber-500/60 bg-amber-900/20 px-4 py-3 text-[15px] font-black text-amber-300 hover:bg-amber-900/40 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                      >⚒ {getUpgradeCost(eqD.id, upg + 1).toLocaleString()} zł</button>
+                                    </>
+                                  ) : (
+                                    <div className="flex flex-1 items-center justify-center">
+                                      <p className="text-[16px] font-black text-center animate-pulse" style={{ color: UPG_COLOR[10] }}>✦ MAKS +10 ✦</p>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -8716,10 +8736,10 @@ export default function Page() {
                           <div>
                             {/* Tabs filtrów */}
                             <div className="flex gap-1.5 mb-3 flex-wrap">
-                              {([["","Wszystkie","⚔️"],["glowa","Głowa","👑"],["dlonie","Dłonie","🧤"],["nogi","Nogi","👢"]] as [EquipSlot|"",string,string][]).map(([val,lbl,ico]) => (
+                              {([["","Wszystkie"],["glowa","Głowa"],["dlonie","Dłonie"],["nogi","Nogi"]] as [EquipSlot|"",string][]).map(([val,lbl]) => (
                                 <button key={val} onClick={() => setEqFilter(val)}
-                                  className={`flex items-center gap-1 rounded-lg border px-3 py-1 text-[11px] font-bold transition ${eqFilter===val?"border-yellow-400/70 bg-yellow-500/15 text-yellow-200":"border-[#8b6a3e]/50 bg-black/20 text-[#dfcfab] hover:border-[#8b6a3e] hover:bg-white/5"}`}>
-                                  {ico} {lbl}
+                                  className={`rounded-lg border px-3 py-1 text-[11px] font-bold transition ${eqFilter===val?"border-yellow-400/70 bg-yellow-500/15 text-yellow-200":"border-[#8b6a3e]/50 bg-black/20 text-[#dfcfab] hover:border-[#8b6a3e] hover:bg-white/5"}`}>
+                                  {lbl}
                                 </button>
                               ))}
                             </div>
