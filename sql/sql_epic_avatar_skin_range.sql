@@ -1,6 +1,7 @@
 -- ============================================================
--- Patch: rozszerzenie game_change_avatar_skin do indeksu 40
--- Nowe epickie avatary zajmują indeksy 25–40
+-- Patch: game_change_avatar_skin
+-- - zakres 0-40 (21 epickich avatarów)
+-- - pierwsze 2 zmiany gratis, każda kolejna 50 zł + cooldown 5 min
 -- Wgraj w Supabase SQL Editor
 -- ============================================================
 
@@ -15,15 +16,9 @@ DECLARE
   v_change_count       integer;
   v_last_change_at     bigint;
   v_now_ms             bigint;
-  v_tier_idx           integer;
   v_cost               numeric;
   v_cooldown_ms        bigint;
   v_remaining_ms       bigint;
-  -- Tiers: (cost, cooldown_ms)
-  -- 0: gratis, 0 ms
-  -- 1: gratis, 0 ms
-  -- 2: 5000, 1h
-  -- 3+: 15000, 3h
 BEGIN
   IF v_uid IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_logged_in');
@@ -50,18 +45,14 @@ BEGIN
   v_last_change_at := COALESCE(v_profile.last_avatar_change_at, 0);
   v_now_ms         := EXTRACT(EPOCH FROM now())::bigint * 1000;
 
-  -- Tier (indeks w tablicy tierów, max 3)
-  v_tier_idx := LEAST(v_change_count, 3);
-
-  -- Ustaw koszt i cooldown wg tieru
-  IF v_tier_idx = 0 THEN
-    v_cost := 0; v_cooldown_ms := 0;
-  ELSIF v_tier_idx = 1 THEN
-    v_cost := 0; v_cooldown_ms := 0;
-  ELSIF v_tier_idx = 2 THEN
-    v_cost := 5000; v_cooldown_ms := 3600000;
+  -- Pierwsze 2 zmiany gratis i bez cooldownu
+  -- Od 3. zmiany: 50 zł + cooldown 5 minut
+  IF v_change_count < 2 THEN
+    v_cost        := 0;
+    v_cooldown_ms := 0;
   ELSE
-    v_cost := 15000; v_cooldown_ms := 10800000;
+    v_cost        := 50;
+    v_cooldown_ms := 300000; -- 5 minut w ms
   END IF;
 
   -- Sprawdź cooldown
@@ -79,18 +70,18 @@ BEGIN
 
   -- Dokonaj zmiany
   UPDATE public.profiles SET
-    avatar_skin          = p_avatar_skin,
-    avatar_change_count  = v_change_count + 1,
+    avatar_skin           = p_avatar_skin,
+    avatar_change_count   = v_change_count + 1,
     last_avatar_change_at = v_now_ms,
-    money                = CASE WHEN v_cost > 0 THEN money - v_cost ELSE money END
+    money                 = CASE WHEN v_cost > 0 THEN money - v_cost ELSE money END
   WHERE id = v_uid;
 
   RETURN jsonb_build_object(
-    'ok',                   true,
-    'avatar_skin',          p_avatar_skin,
-    'avatar_change_count',  v_change_count + 1,
+    'ok',                    true,
+    'avatar_skin',           p_avatar_skin,
+    'avatar_change_count',   v_change_count + 1,
     'last_avatar_change_at', v_now_ms,
-    'spent',                v_cost
+    'spent',                 v_cost
   );
 END;
 $$;
