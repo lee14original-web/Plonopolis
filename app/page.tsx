@@ -8387,7 +8387,7 @@ export default function Page() {
                                           ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.descs[val] ?? def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
+                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
                                           {val < 100
                                             ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
