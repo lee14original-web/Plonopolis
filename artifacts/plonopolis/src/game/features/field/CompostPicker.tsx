@@ -3,6 +3,7 @@
 import type { SeedInventory } from "../../types/farm";
 import { COMPOST_DEFS } from "../../constants/compost";
 import { compostKeyFor } from "../../utils/compost";
+import { compostTierColor } from "../../utils/ui";
 
 interface CompostPickerProps {
   fvCompostPickerOpen: boolean;
@@ -14,6 +15,7 @@ interface CompostPickerProps {
   setSelectedTool: React.Dispatch<React.SetStateAction<"watering_can" | "sickle" | null>>;
   advanceTutorialStep: (nextStep: number) => Promise<void>;
   tutorialStep: number;
+  setCardTip: (tip: React.ReactNode | null) => void;
 }
 
 export function CompostPicker({
@@ -26,6 +28,7 @@ export function CompostPicker({
   setSelectedTool,
   advanceTutorialStep,
   tutorialStep,
+  setCardTip,
 }: CompostPickerProps) {
   if (!fvCompostPickerOpen || fvToolEditMode) return null;
 
@@ -50,7 +53,7 @@ export function CompostPicker({
         onClick={e => e.stopPropagation()}
       >
         <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8ba7a] mb-1">Wybierz kompost</p>
-        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">♻️ Kompost w plecaku</h3>
+        <h3 className="text-xl font-black text-[#f9e7b2] mb-4">Kompost w plecaku</h3>
 
         {isEmpty ? (
           <p className="text-sm text-[#dfcfab] text-center py-6">Brak kompostu w plecaku</p>
@@ -60,6 +63,15 @@ export function CompostPicker({
               const isSel = selectedSeedId === cKey;
               const tierLabel = def.tierName(val);
               const isTutTarget = tutorialStep === 3 && cKey === "guide_compost";
+              const tierIdx = def.bonusValues.indexOf(val);
+              const tierColor = compostTierColor(tierIdx);
+              const tip = (
+                <>
+                  <p className="text-[24px] font-black text-emerald-200">{def.icon} {def.name} <span style={{ color: tierColor }}>({def.tierName(val)})</span></p>
+                  <p className="text-[20px] text-emerald-300/80 mt-0.5">{def.descs[val] ?? def.desc}</p>
+                  <p className="text-[22px] font-black mt-1" style={{ color: tierColor }}>Bonus: {def.bonusLabel(val)}</p>
+                </>
+              );
               return (
                 <div
                   key={cKey}
@@ -74,6 +86,8 @@ export function CompostPicker({
                       setFvCompostPickerOpen(false);
                       if (isTutTarget) void advanceTutorialStep(4);
                     }}
+                    onMouseEnter={() => setCardTip(tip)}
+                    onMouseLeave={() => setCardTip(null)}
                     className="relative w-[112px] h-[112px] rounded-xl border-2 overflow-hidden transition-colors"
                     style={{
                       borderColor: isSel ? "#86efac" : isTutTarget ? "#fbbf24" : "rgba(139,106,62,0.4)",

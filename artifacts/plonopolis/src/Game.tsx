@@ -10573,6 +10573,7 @@ export default function Page() {
                       setSelectedTool={setSelectedTool}
                       advanceTutorialStep={advanceTutorialStep}
                       tutorialStep={tutorialStep}
+                      setCardTip={setCardTip}
                     />
                   )}
 
