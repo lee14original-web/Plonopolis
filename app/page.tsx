@@ -5218,6 +5218,11 @@ export default function Page() {
     if (type === "barn_item")  return `/przedmioty/item_${key}.png`;
     if (type === "honey")      return `/przedmioty/jar_honey.png`;
     if (type === "equipment")  return CHAR_EQUIP_ITEMS.find(i => i.id === key)?.img ?? null;
+    if (type === "compost") {
+      const ct = compostTypeFromKey(key);
+      const val = compostValueFromKey(key);
+      if (ct) return COMPOST_DEFS[ct].imgs[val] ?? null;
+    }
     return null;
   }
   function buildSellableItems() {
@@ -9105,7 +9110,7 @@ export default function Page() {
                                       onMouseLeave={() => setCardTip(null)}
                                       className="relative flex h-24 w-24 flex-col items-center justify-center rounded-xl border cursor-pointer transition"
                                       style={isSel ? { borderColor: tierColor, background: "rgba(60,40,5,0.4)", boxShadow: `0 0 12px ${tierColor}66` } : { borderColor: "rgba(6,95,70,0.5)", background: "rgba(6,78,59,0.3)" }}>
-                                      <span className="text-4xl leading-none">{def.icon}</span>
+                                      <img src={def.imgs[value]} alt={def.name} className="h-12 w-12 object-contain" />
                                       <p className="mt-0.5 text-center text-[9px] font-bold leading-tight px-1" style={{color: tierColor}}>{def.tierName(value)}</p>
                                       {isSel && <p className="text-[8px] font-black text-amber-300">✓ zaznaczony</p>}
                                       <span className="absolute bottom-2 right-2 min-w-[18px] rounded-md bg-black/80 px-1 py-0.5 text-xs font-black leading-none text-[#f9e7b2]">×{cnt}</span>
@@ -9689,10 +9694,10 @@ export default function Page() {
                                     onMouseEnter={showTip}
                                     onMouseMove={showTip}
                                     onMouseLeave={() => setKompostHoverTip(null)}
-                                    className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 bg-emerald-950/40 p-2 shadow-lg hover:brightness-110 transition cursor-help"
+                                    className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 bg-emerald-950/40 overflow-hidden shadow-lg hover:brightness-110 transition cursor-help"
                                     style={{ borderColor: tierColor }}>
-                                    <span className="text-3xl">{def.icon}</span>
-                                    <span className="mt-1 text-[9px] font-black text-emerald-200 truncate w-full text-center">{def.name.replace("Kompost ","")}</span>
+                                    <img src={def.imgs[r.value]} alt={def.name} className="absolute inset-0 w-full h-full object-contain p-1" />
+                                    <span className="relative z-10 mt-auto text-[9px] font-black text-emerald-200 truncate w-full text-center bg-black/60 pb-0.5">{def.name.replace("Kompost ","")}</span>
                                     <span className="text-[9px] font-black" style={{ color: tierColor }}>{def.tierName(r.value)}</span>
                                     {g.count > 1 && <span className="absolute top-1 right-1 rounded bg-emerald-700 px-1 text-[10px] font-black text-white">×{g.count}</span>}
                                   </div>
