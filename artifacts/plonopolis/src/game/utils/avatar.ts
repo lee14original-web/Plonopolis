@@ -19,5 +19,5 @@ export function mergeAvatarBonus(base: PlayerStatsMap, skin: number): PlayerStat
 
 export function getAvatarChangeTier(changeCount: number): { cost: number; cooldownMs: number } {
   if (changeCount < AVATAR_CHANGE_TIERS.length) return AVATAR_CHANGE_TIERS[changeCount];
-  return { cost: 50000, cooldownMs: 12 * 3600 * 1000 };
+  return AVATAR_CHANGE_TIERS[AVATAR_CHANGE_TIERS.length - 1];
 }
