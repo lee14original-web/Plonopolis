@@ -63,7 +63,7 @@ export const TIER_MATERIAL: Record<number, string> = {
   6: "welna", 7: "mleko_kozie", 8: "duze_piora", 9: "energia_robocza", 10: "rogi_byka",
 };
 
-export const UPG_COLOR = ["#6b7280", "#9ca3af", "#9ca3af", "#9ca3af", "#4ade80", "#4ade80", "#4ade80", "#fbbf24", "#fbbf24", "#fbbf24", "#fbbf24"];
+export const UPG_COLOR = ["#9CA3AF","#86EFAC","#22C55E","#14B8A6","#3B82F6","#8B5CF6","#D946EF","#EC4899","#F97316","#FACC15","#EF4444"];
 
 // ─── Bazowe koszty ulepszenia (index = poziom docelowy +1..+10) ───
 export const UPGRADE_COST   = [0, 50, 100, 250, 500, 1200, 2500, 5000, 10000, 20000, 40000];
