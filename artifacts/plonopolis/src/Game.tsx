@@ -485,6 +485,7 @@ export default function Page() {
   const completingCustomerOrderRef = React.useRef(false);
   const [hiveData, setHiveData] = React.useState<HiveData>({ ...DEFAULT_HIVE_DATA });
   const [hiveNow, setHiveNow] = React.useState(Date.now());
+  const hiveClockOffsetRef = React.useRef(0); // server_now_ms - Date.now() przy ostatniej kalibracji
   const [showTestModal, setShowTestModal] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const OWNER_ID = "c68b84c6-335a-4832-af86-477bcb09fc16"; // właściciel gry (do przyszłego użycia)
@@ -2966,7 +2967,7 @@ export default function Page() {
 
   React.useEffect(() => {
     if (!showUlModal) return;
-    const t = setInterval(() => setHiveNow(Date.now()), 1000);
+    const t = setInterval(() => setHiveNow(Date.now() + hiveClockOffsetRef.current), 1000);
     return () => clearInterval(t);
   }, [showUlModal]);
 
@@ -3094,18 +3095,25 @@ export default function Page() {
     });
   }
   async function loadProfile(_userId?: string) {
-    const { data, error } = await supabase.rpc("game_get_my_profile");
+    const [profileResult, timeResult] = await Promise.all([
+      supabase.rpc("game_get_my_profile"),
+      supabase.rpc("get_server_time_ms"),
+    ]);
 
-    if (error) {
+    if (profileResult.error) {
       setMessage({
         type: "error",
         title: "Błąd profilu",
-        text: error.message,
+        text: profileResult.error.message,
       });
       return null;
     }
 
-    return applyProfileState(extractRpcProfile(data));
+    if (typeof timeResult.data === "number") {
+      hiveClockOffsetRef.current = timeResult.data - Date.now();
+    }
+
+    return applyProfileState(extractRpcProfile(profileResult.data));
   }
 
   // ─── LADA NPC: helpery + handlery ────────────────────────────────────
@@ -4126,9 +4134,17 @@ export default function Page() {
                 : data?.error === "no_jars"  ? "Brak pustych słoików!"
                 : data?.error === "no_suit"  ? "Brak stroju pszczelarza!"
                 : "Błąd zbierania miodu — spróbuj ponownie.";
+      if (typeof data?.server_now_ms === "number") {
+        hiveClockOffsetRef.current = data.server_now_ms - Date.now();
+        setHiveNow(data.server_now_ms);
+      }
       setMessage({ type:"error", title: msg, text: "Synchronizuję stan ula z bazą..." });
       await loadProfile(profile.id);
       return;
+    }
+    if (typeof data.server_now_ms === "number") {
+      hiveClockOffsetRef.current = data.server_now_ms - Date.now();
+      setHiveNow(data.server_now_ms);
     }
     setHiveData(data.hive_data as HiveData);
     if (data.success) {
