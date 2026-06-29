@@ -82,7 +82,9 @@ export function HiveModal({ hiveData, hiveNow, displayMoney, onClose, onBuyHive,
                 <div className="h-3 rounded-full bg-black/40 border border-amber-700/30 overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all" style={{ width:`${maxHoney > 0 ? (honeyAvailable/maxHoney*100) : 0}%` }} />
                 </div>
-                {honeyStarted ? (
+                {honeyStarted && honeyAvailable >= maxHoney ? (
+                  <p className="mt-2 text-xs text-amber-400 font-bold">🍯 Ul pełny — zbierz miód!</p>
+                ) : honeyStarted ? (
                   <p className="mt-2 text-xs text-[#8b6a3e]">Następny słoik za: <span className="text-amber-300 font-bold">{timerStr}</span></p>
                 ) : (
                   <p className="mt-2 text-xs text-amber-400/90 font-bold">🐝 Ul jeszcze nie produkuje — kup minimum {HIVE_MIN_BEES_TO_PRODUCE} pszczół żeby ruszyć z produkcją miodu!</p>
