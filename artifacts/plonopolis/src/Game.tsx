@@ -8631,7 +8631,7 @@ export default function Page() {
                               const isSel = equippingSlot === slot;
                               return (
                                 <div key={slot}
-                                  className="absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
+                                  className="group absolute rounded-lg flex flex-col items-center justify-center cursor-pointer select-none transition-all"
                                   style={{
                                     top:`${box.top}%`, left:`${box.left}%`, width:`${box.width}%`, height:`${box.height}%`,
                                     border:`2px ${isOver?"dashed":"solid"} ${isOver?"#fbbf24":isSel?"#fff":eqD?uc:"#8b6a3e"}`,
@@ -8660,6 +8660,21 @@ export default function Page() {
                                         ? <span className="absolute top-1 right-1 z-10 text-[18px] font-black animate-pulse px-1 rounded" style={{ background:"linear-gradient(90deg,#EF4444,#FACC15)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", filter:"drop-shadow(0 0 6px #FACC1566)" }}>+10</span>
                                         : <span className="absolute top-1 right-1 z-10 text-[18px] font-black px-1 rounded" style={{ color:uc, textShadow:`0 0 8px ${uc}99` }}>+{upg}</span>
                                       }
+                                      {/* Tooltip założonego przedmiotu */}
+                                      <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-[999] hidden group-hover:flex flex-col gap-1.5 min-w-[300px] max-w-[380px] rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl text-left">
+                                        <p className="text-[23px] font-black text-[#f9e7b2] leading-tight uppercase tracking-wide">{eItem.name}</p>
+                                        <p className="text-[17px] text-[#8b6a3e]">{EQUIP_SLOT_META[slot].label} · poziom <span className="font-bold text-[#dfcfab]">{eItem.unlockLevel}</span></p>
+                                        {eItem.desc && (
+                                          <>
+                                            <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                            <p className="text-[18px] italic text-[#d8ba7a] leading-snug">{eItem.desc}</p>
+                                          </>
+                                        )}
+                                        <div className="h-px bg-[#8b6a3e]/30 my-0.5" />
+                                        <p className="text-[17px] text-cyan-300 font-bold">{bonusLine(eItem.bonuses, upg)}</p>
+                                        {upg > 0 && <p className="text-[17px] font-black" style={{color:uc}}>Ulepszenie: +{upg}</p>}
+                                        <p className="text-[17px] text-green-400 font-bold">✓ Założone</p>
+                                      </div>
                                     </>
                                   ) : (
                                     <span className="text-[9px] text-[#8b6a3e] text-center leading-tight">{EQUIP_SLOT_META[slot].icon} {EQUIP_SLOT_META[slot].label}</span>
@@ -8754,7 +8769,7 @@ export default function Page() {
                             <div className="flex gap-1.5 mb-3 flex-wrap">
                               {([["","Wszystkie"],["glowa","Głowa"],["dlonie","Dłonie"],["nogi","Nogi"]] as [EquipSlot|"",string][]).map(([val,lbl]) => (
                                 <button key={val} onClick={() => setEqFilter(val)}
-                                  className={`rounded-lg border px-3 py-1 text-[11px] font-bold transition ${eqFilter===val?"border-yellow-400/70 bg-yellow-500/15 text-yellow-200":"border-[#8b6a3e]/50 bg-black/20 text-[#dfcfab] hover:border-[#8b6a3e] hover:bg-white/5"}`}>
+                                  className={`rounded-lg border px-3 py-1 text-[22px] font-bold transition ${eqFilter===val?"border-yellow-400/70 bg-yellow-500/15 text-yellow-200":"border-[#8b6a3e]/50 bg-black/20 text-[#dfcfab] hover:border-[#8b6a3e] hover:bg-white/5"}`}>
                                   {lbl}
                                 </button>
                               ))}
