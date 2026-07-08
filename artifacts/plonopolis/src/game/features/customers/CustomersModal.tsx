@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import type { CustomerOrder } from "../../types/customers";
 import type { HiveData } from "../../types/hive";
 import type { Profile } from "../../types/profile";
@@ -136,6 +136,25 @@ export function CustomersModal({
   setShowLadaModal, setShowLadaInfo, setLadaDetailIdx, setLadaCardHoverIdx,
   setLadaView, setCarouselIdx, completeCustomerOrder,
 }: Props) {
+useEffect(() => {
+  const handler = (e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 's' || e.key === 'S') {
+      e.preventDefault();
+      setCarouselIdx(ci => Math.max(0, ci - 1));
+    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'w' || e.key === 'W') {
+      e.preventDefault();
+      setCarouselIdx(ci => {
+        const total = customerOrders.length;
+        return Math.min(total - 1, ci + 1);
+      });
+    }
+  };
+  window.addEventListener('keydown', handler);
+  return () => window.removeEventListener('keydown', handler);
+}, [customerOrders.length, setCarouselIdx]);
+
 const totalOrders = customerOrders.length;
 const order = ladaDetailIdx !== null ? (customerOrders[ladaDetailIdx] ?? null) : null;
 
@@ -494,7 +513,7 @@ return (<>
                         onClick={() => setCarouselIdx(ci => Math.max(0, ci - 1))}
                         disabled={safeCarouselIdx === 0}
                         onMouseDown={(e) => e.stopPropagation()}
-                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-3xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                        className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-5xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                       >‹</button>
 
                       {/* Scena karuzeli — drag do nawigacji */}
@@ -646,7 +665,7 @@ return (<>
                       <button type="button"
                         onClick={() => setCarouselIdx(ci => Math.min(_sorted.length - 1, ci + 1))}
                         disabled={safeCarouselIdx >= _sorted.length - 1}
-                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-3xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
+                        className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-amber-600/50 bg-black/50 text-5xl font-black text-amber-300 transition hover:border-amber-400/80 hover:bg-amber-900/30 disabled:cursor-not-allowed disabled:opacity-20"
                       >›</button>
                     </div>
 
