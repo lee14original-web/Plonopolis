@@ -503,6 +503,8 @@ return (<>
                                 if (isCenter) setLadaDetailIdx(originalIndex);
                                 else setCarouselIdx(i);
                               }}
+                              onMouseEnter={() => { if (isCenter) setLadaCardHoverIdx(originalIndex); }}
+                              onMouseLeave={() => setLadaCardHoverIdx(null)}
                               style={{
                                 position: 'absolute',
                                 top: '50%',
@@ -518,7 +520,6 @@ return (<>
                                 pointerEvents: absOff > 2 ? 'none' : 'auto',
                               }}
                               className="select-none"
-                              title={isCenter ? 'Nakierowano na tego klienta — kliknij, aby zobaczyć zamówienie' : undefined}
                             >
                               {/* Nazwa klienta NAD avatarem */}
                               <p className="text-xl font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
