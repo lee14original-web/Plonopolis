@@ -457,26 +457,6 @@ return (<>
                           );
                         })}
                       </div>
-                      {/* Status realizacji + timer */}
-                      <div className="flex items-center justify-between gap-4 px-2 pb-3 mb-3 border-b border-[#8b6a3e]/30">
-                        {canDo && !expired ? (
-                          <span className="text-xl font-black text-emerald-300">✓ Masz wszystko!</span>
-                        ) : expired ? (
-                          <span className="text-xl font-black text-red-400">✗ Zamówienie wygasło</span>
-                        ) : (
-                          <span className="text-xl font-black text-red-400">
-                            ✗ Brakuje: {missingItems.map(it => {
-                              const d = getOrderItemDisplay(it.id);
-                              const missing = it.qty - haveFor(it.id);
-                              return `${missing}× ${d.name}`;
-                            }).join(', ')}
-                          </span>
-                        )}
-                        <span className={`text-xl font-bold shrink-0 ${timerCls}`}>
-                          ⏱ {expired ? 'Wygasło' : ml > 0 ? `${ml}min ${sl}s` : `${sl}s`}
-                        </span>
-                      </div>
-
                       <div className="flex flex-wrap items-center justify-center gap-6 text-2xl font-bold pt-3 border-t border-[#8b6a3e]/30">
                         <span className="text-yellow-300">💰 {Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
                         <span className="text-blue-300">
@@ -491,6 +471,9 @@ return (<>
                             })}
                           </span>
                         )}
+                        <span className={`text-xl font-bold ml-auto ${timerCls}`}>
+                          ⏱ {expired ? 'Wygasło' : ml > 0 ? `${ml}min ${sl}s` : `${sl}s`}
+                        </span>
                       </div>
                     </div>
                   );
@@ -646,16 +629,13 @@ return (<>
                                 )}
                               </div>
 
-                              {/* Nagrody + timer pod avatarem */}
+                              {/* Nagrody pod avatarem */}
                               <div className="mt-3 text-center px-1">
                                 <div className="flex items-center justify-center gap-3 text-lg font-bold flex-wrap">
                                   <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
                                   <span className="text-blue-300">{o.rewards.exp} EXP</span>
                                   {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+🎁</span>}
                                 </div>
-                                <p className={`text-lg font-bold mt-1 ${expired ? 'text-red-400' : isCritical ? 'text-red-400 animate-pulse' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                  {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                                </p>
                               </div>
                             </div>
                           );
