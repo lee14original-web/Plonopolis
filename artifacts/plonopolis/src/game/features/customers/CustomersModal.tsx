@@ -140,10 +140,10 @@ useEffect(() => {
   const handler = (e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 's' || e.key === 'S') {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown' || e.key === 'a' || e.key === 'A' || e.key === 's' || e.key === 'S') {
       e.preventDefault();
       setCarouselIdx(ci => Math.max(0, ci - 1));
-    } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'w' || e.key === 'W') {
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'd' || e.key === 'D' || e.key === 'w' || e.key === 'W') {
       e.preventDefault();
       setCarouselIdx(ci => {
         const total = customerOrders.length;
@@ -452,7 +452,7 @@ return (<>
                   return (
                     <div className="rounded-xl border border-[#8b6a3e]/60 bg-black/40 px-6 py-5">
                       <p className="text-center text-xl font-black text-amber-400 uppercase tracking-widest mb-3">
-                        {cd.icon} {cd.name} potrzebuje:
+                        {cd.name} potrzebuje:
                       </p>
                       <div className="flex flex-wrap justify-center gap-x-7 gap-y-3 mb-4">
                         {mi.map((it) => {
@@ -477,9 +477,9 @@ return (<>
                         })}
                       </div>
                       <div className="flex flex-wrap items-center justify-center gap-6 text-2xl font-bold pt-3 border-t border-[#8b6a3e]/30">
-                        <span className="text-yellow-300">💰 {Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
+                        <span className="text-yellow-300">{Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
                         <span className="text-blue-300">
-                          ⭐ +{centerOrder.rewards.exp} EXP
+                          +{centerOrder.rewards.exp} EXP
                           {expPct > 0 && <span className="text-base text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
                         </span>
                         {centerOrder.rewards.bonus && centerOrder.rewards.bonus.length > 0 && (
