@@ -398,6 +398,7 @@ return (<>
             };
 
             const safeCarouselIdx = Math.min(carouselIdx, Math.max(0, _sorted.length - 1));
+            const centerOrder = _sorted[safeCarouselIdx]?.o ?? null;
 
             return (
               <div className="flex flex-col gap-3 flex-1">
@@ -407,6 +408,53 @@ return (<>
                     {totalOrders} {totalOrders === 1 ? 'aktywny klient' : 'aktywnych klientów'}
                   </p>
                 </div>
+
+                {/* Panel: czego potrzebuje nakierowany klient + nagroda */}
+                {centerOrder && (() => {
+                  const cd = getCustomerDisplay(centerOrder.customer_type);
+                  const mi = mergeOrderItems(centerOrder.items);
+                  const xtn = profile?.xp_to_next_level;
+                  const expPct = xtn && xtn > 0 ? (centerOrder.rewards.exp / xtn) * 100 : 0;
+                  return (
+                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-black/40 px-5 py-3">
+                      <p className="text-center text-sm font-black text-amber-400 uppercase tracking-widest mb-2">
+                        {cd.icon} {cd.name} potrzebuje:
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-3">
+                        {mi.map((it) => {
+                          const d = getOrderItemDisplay(it.id);
+                          const have = haveFor(it.id);
+                          const ok = have >= it.qty;
+                          return (
+                            <div key={it.id} className="flex items-center gap-2">
+                              {d.spritePath ? (
+                                <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+                              ) : (
+                                <span className="text-xl leading-none shrink-0">{d.icon}</span>
+                              )}
+                              <span className={`text-base font-bold ${ok ? 'text-emerald-300' : 'text-[#dfcfab]'}`}>{it.qty}× {d.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-base font-bold pt-2.5 border-t border-[#8b6a3e]/30">
+                        <span className="text-yellow-300">💰 {Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
+                        <span className="text-blue-300">
+                          ⭐ +{centerOrder.rewards.exp} EXP
+                          {expPct > 0 && <span className="text-sm text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
+                        </span>
+                        {centerOrder.rewards.bonus && centerOrder.rewards.bonus.length > 0 && (
+                          <span className="text-purple-300">
+                            {centerOrder.rewards.bonus.map((b, bi) => {
+                              const bd = getOrderItemDisplay(b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : ''));
+                              return <span key={bi}>✨ +{b.qty}× {bd.icon} {bd.name}</span>;
+                            })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {(() => {
                   return (
@@ -503,8 +551,6 @@ return (<>
                                 if (isCenter) setLadaDetailIdx(originalIndex);
                                 else setCarouselIdx(i);
                               }}
-                              onMouseEnter={() => { if (isCenter) setLadaCardHoverIdx(originalIndex); }}
-                              onMouseLeave={() => setLadaCardHoverIdx(null)}
                               style={{
                                 position: 'absolute',
                                 top: '50%',
@@ -750,73 +796,5 @@ return (<>
       </div>
     </div>
   </div>
-  {/* Tooltip kart klientów — fixed, śledzi kursor */}
-  {ladaCardHoverIdx !== null && ladaDetailIdx === null && (() => {
-    const o = customerOrders[ladaCardHoverIdx];
-    if (!o) return null;
-    const cd = getCustomerDisplay(o.customer_type);
-    const mi = mergeOrderItems(o.items);
-    const MAX_ITEMS = 4;
-    const visibleItems = mi.slice(0, MAX_ITEMS);
-    const hiddenCount = mi.length - MAX_ITEMS;
-    const xtn = profile?.xp_to_next_level;
-    const expPct = xtn && xtn > 0 ? (o.rewards.exp / xtn) * 100 : 0;
-    return (
-      <div
-        className="pointer-events-none fixed z-[9999] flex flex-col items-center"
-        style={{ left: mousePos.x, top: mousePos.y - 14, transform: 'translate(-50%, -100%)' }}
-      >
-        <div className="rounded-xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-5 py-4 shadow-2xl min-w-[300px] max-w-[420px]">
-          <p className="font-black text-[#f9e7b2] text-lg mb-0.5">{cd.icon} {cd.name}</p>
-          <p className="text-sm text-[#8b6a3e] mb-2.5">{mi.length} {mi.length === 1 ? 'produkt' : 'produktów'}</p>
-
-          {/* Sekcja: Potrzebuje */}
-          <div className="mb-2.5">
-            <p className="text-xs uppercase tracking-widest text-amber-500/80 font-black mb-1.5">Potrzebuje:</p>
-            <div className="space-y-1.5">
-              {visibleItems.map((it, idx) => {
-                const d = getOrderItemDisplay(it.id);
-                return (
-                  <div key={idx} className="flex items-center gap-2">
-                    {d.spritePath ? (
-                      <img src={d.spritePath} alt={d.name} className="w-6 h-6 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
-                    ) : (
-                      <span className="text-lg leading-none shrink-0">{d.icon}</span>
-                    )}
-                    <span className="text-base text-[#dfcfab]">{it.qty}× {d.name}</span>
-                  </div>
-                );
-              })}
-              {hiddenCount > 0 && (
-                <p className="text-sm text-[#8b6a3e] pl-0.5">... +{hiddenCount} więcej</p>
-              )}
-            </div>
-          </div>
-
-          {/* Nagrody */}
-          <div className="flex justify-between gap-2 text-base font-bold pt-2.5 border-t border-[#8b6a3e]/30">
-            <span className="text-yellow-300">💰 {Number(o.rewards.gold).toFixed(0)} zł</span>
-            <span className="text-blue-300">
-              ⭐ +{o.rewards.exp} EXP
-              {expPct > 0 && <span className="text-sm text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
-            </span>
-          </div>
-
-          {/* Bonus */}
-          {o.rewards.bonus && o.rewards.bonus.length > 0 && (
-            <div className="mt-2.5 pt-2.5 border-t border-[#8b6a3e]/30 space-y-1">
-              {o.rewards.bonus.map((b, bi) => {
-                const d = getOrderItemDisplay(b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : ''));
-                return (
-                  <p key={bi} className="text-base text-purple-300 font-bold">✨ +{b.qty}× {d.icon} {d.name}</p>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className="h-2 w-2 rotate-45 border-r border-b border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] -mt-1" />
-      </div>
-    );
-  })()}
 </>);
 }
