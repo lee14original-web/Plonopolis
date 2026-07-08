@@ -965,6 +965,7 @@ export default function Page() {
   const rankingScrollRef = React.useRef<HTMLDivElement>(null);
   const harvestLogTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const fieldViewOpenedAtRef = React.useRef<number>(0);
+  const harvestSessionStartRef = React.useRef<number>(0);
   const farmPowerTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const farmAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const cityAudioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -1022,6 +1023,7 @@ export default function Page() {
     setTutorialWateredIds([]);
     setTutorialHarvestedIds([]);
     setHarvestLog([]);
+    harvestSessionStartRef.current = Date.now();
     setHarvestCountdown(25);
   }
 
@@ -2194,7 +2196,9 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (!isFieldViewOpen) { setHarvestLog([]); setIsFvHarvestModalOpen(false); return; }
+    // Historia zbiorów ("Bieżąca sesja") NIE resetuje się przy zamknięciu widoku pola —
+    // liczy się dalej aż do wyjazdu "Do miasta", odświeżenia strony lub wylogowania.
+    if (!isFieldViewOpen) { setIsFvHarvestModalOpen(false); return; }
   }, [isFieldViewOpen]);
 
   useEffect(() => {
@@ -5156,7 +5160,7 @@ export default function Page() {
         };
       });
       setHarvestLog(prev => [
-        ...prev.filter(e => e.timestamp >= fieldViewOpenedAtRef.current),
+        ...prev.filter(e => e.timestamp >= harvestSessionStartRef.current),
         ..._logEvents,
       ]);
     }
@@ -5389,6 +5393,12 @@ export default function Page() {
 
   async function handleChangeMap(targetMap: string) {
       if (!profile) return;
+
+      // "Do miasta" kończy bieżącą sesję zbiorów — licznik "Bieżąca sesja" startuje od nowa.
+      if (targetMap === "city" && !currentMap.startsWith("city")) {
+        setHarvestLog([]);
+        harvestSessionStartRef.current = Date.now();
+      }
 
       // Reset pan przy zmianie mapy (farma/miasto → środek, reszta → 0)
       setPanX((targetMap.startsWith("farm") || targetMap === "city") ? FARM_CENTER_PAN : 0); setPanY(0); setIsPanDragging(false);
