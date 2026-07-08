@@ -27,26 +27,38 @@ import { isCompostKey, compostTypeFromKey, compostValueFromKey } from "../../uti
     return Array.from(map.values());
   }
 
-  function getOrderItemDisplay(id: string): { name: string; icon: string; spritePath?: string } {
+  function getOrderItemDisplay(id: string): { name: string; icon: string; spritePath?: string; qualityBadge?: React.ReactNode } {
     if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯', spritePath: '/przedmioty/jar_honey.png' };
     const ai = ANIMAL_ITEMS.find(a => a.id === id);
     if (ai) return { name: ai.name, icon: ai.icon };
     const cropM = id.match(/^(.+)_(good|epic|legendary)$/);
     if (cropM) {
       const crop = CROPS.find(c => c.id === cropM[1]);
-      const qLabel = cropM[2] === 'good' ? ' (zwykła)' : cropM[2] === 'epic' ? ' (epicka)' : ' (legendarna)';
+      const badge = cropM[2] === 'good'
+        ? <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-800/80 border border-green-500/70 text-green-300 text-[10px] font-black leading-none shrink-0">Z</span>
+        : cropM[2] === 'epic'
+        ? <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-900/80 border border-purple-500/70 text-purple-300 text-[10px] font-black leading-none shrink-0">E</span>
+        : <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-800/80 border border-yellow-400/70 text-yellow-200 text-[10px] font-black leading-none shrink-0">L</span>;
       if (crop) {
         const sprite = cropM[2] === 'legendary' ? (crop.legendarySpritePath ?? crop.epicSpritePath ?? crop.spritePath)
                      : cropM[2] === 'epic'      ? (crop.epicSpritePath ?? crop.spritePath)
                      : crop.spritePath;
-        return { name: crop.name + qLabel, icon: '🌱', spritePath: sprite };
+        return { name: crop.name, icon: '🌱', spritePath: sprite, qualityBadge: badge };
       }
     }
     const fruitM = id.match(/^(.+)_(zwykly|soczysty|zloty|zgnile)$/);
     if (fruitM) {
       const tree = TREES.find(t => t.fruitId === fruitM[1]);
       const qd = FRUIT_QUALITY_DEFS[fruitM[2] as FruitQuality];
-      if (tree) return { name: `${tree.fruitName}${qd?.label ? ' ' + qd.label : ''}`, icon: tree.fruitIcon };
+      const fruitBadge = fruitM[2] === 'zwykly'
+        ? <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-800/80 border border-green-500/70 text-green-300 text-[10px] font-black leading-none shrink-0">Z</span>
+        : fruitM[2] === 'soczysty'
+        ? <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-900/80 border border-blue-500/70 text-blue-300 text-[10px] font-black leading-none shrink-0">S</span>
+        : fruitM[2] === 'zloty'
+        ? <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-800/80 border border-yellow-400/70 text-yellow-200 text-[10px] font-black leading-none shrink-0">Z</span>
+        : <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-800/80 border border-gray-500/70 text-gray-400 text-[10px] font-black leading-none shrink-0">Zg</span>;
+      if (tree) return { name: tree.fruitName, icon: tree.fruitIcon, qualityBadge: fruitBadge };
+      if (qd) return { name: fruitM[1], icon: '🍎', qualityBadge: fruitBadge };
     }
     if (isCompostKey(id)) {
       const t = compostTypeFromKey(id);
@@ -428,7 +440,7 @@ return (<>
                           const partial = !ok && have > 0;
                           const textCls = ok ? 'text-emerald-300' : partial ? 'text-yellow-300' : 'text-red-400';
                           return (
-                            <div key={it.id} className="flex items-center gap-2">
+                            <div key={it.id} className="flex items-center gap-1.5">
                               {d.spritePath ? (
                                 <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
                               ) : (
@@ -437,6 +449,7 @@ return (<>
                               <span className={`text-base font-bold ${textCls}`}>
                                 <span className="text-sm opacity-80">{have}/{it.qty}</span> {d.name}
                               </span>
+                              {d.qualityBadge}
                             </div>
                           );
                         })}
