@@ -28,7 +28,7 @@ import { isCompostKey, compostTypeFromKey, compostValueFromKey } from "../../uti
   }
 
   function getOrderItemDisplay(id: string): { name: string; icon: string; spritePath?: string } {
-    if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯' };
+    if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯', spritePath: '/przedmioty/jar_honey.png' };
     const ai = ANIMAL_ITEMS.find(a => a.id === id);
     if (ai) return { name: ai.name, icon: ai.icon };
     const cropM = id.match(/^(.+)_(good|epic|legendary)$/);
@@ -425,6 +425,8 @@ return (<>
                           const d = getOrderItemDisplay(it.id);
                           const have = haveFor(it.id);
                           const ok = have >= it.qty;
+                          const partial = !ok && have > 0;
+                          const textCls = ok ? 'text-emerald-300' : partial ? 'text-yellow-300' : 'text-red-400';
                           return (
                             <div key={it.id} className="flex items-center gap-2">
                               {d.spritePath ? (
@@ -432,7 +434,9 @@ return (<>
                               ) : (
                                 <span className="text-xl leading-none shrink-0">{d.icon}</span>
                               )}
-                              <span className={`text-base font-bold ${ok ? 'text-emerald-300' : 'text-[#dfcfab]'}`}>{it.qty}× {d.name}</span>
+                              <span className={`text-base font-bold ${textCls}`}>
+                                <span className="text-sm opacity-80">{have}/{it.qty}</span> {d.name}
+                              </span>
                             </div>
                           );
                         })}
