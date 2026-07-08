@@ -401,24 +401,15 @@ return (<>
 
             return (
               <div className="flex flex-col gap-3 flex-1">
-                {/* Nagłówek + toggle widoku */}
+                {/* Nagłówek */}
                 <div className="flex items-center justify-between px-1">
                   <p className="text-sm text-amber-400 uppercase tracking-widest font-black">
                     {totalOrders} {totalOrders === 1 ? 'aktywny klient' : 'aktywnych klientów'}
                   </p>
-                  <div className="flex overflow-hidden rounded-xl border border-[#8b6a3e]/60 text-xs font-black">
-                    <button type="button" onClick={() => setLadaView('list')}
-                      className={`px-3 py-1.5 transition ${ladaView === 'list' ? 'bg-[rgba(212,166,79,0.22)] text-[#f9e7b2]' : 'text-[#8b6a3e] hover:text-[#d8ba7a]'}`}>
-                      Lista
-                    </button>
-                    <button type="button" onClick={() => { setLadaView('carousel'); setCarouselIdx(0); }}
-                      className={`px-3 py-1.5 transition border-l border-[#8b6a3e]/60 ${ladaView === 'carousel' ? 'bg-[rgba(212,166,79,0.22)] text-[#f9e7b2]' : 'text-[#8b6a3e] hover:text-[#d8ba7a]'}`}>
-                      Karuzela
-                    </button>
-                  </div>
                 </div>
 
-                {ladaView === 'carousel' ? (
+                {(() => {
+                  return (
                   <div className="flex-1 flex flex-col">
                     <div className="my-auto flex flex-col gap-3">
                     {/* ── WIDOK KARUZELA — duży avatar slider 3D ── */}
@@ -527,6 +518,7 @@ return (<>
                                 pointerEvents: absOff > 2 ? 'none' : 'auto',
                               }}
                               className="select-none"
+                              title={isCenter ? 'Nakierowano na tego klienta — kliknij, aby zobaczyć zamówienie' : undefined}
                             >
                               {/* Nazwa klienta NAD avatarem */}
                               <p className="text-xl font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
@@ -610,64 +602,8 @@ return (<>
                     )}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col">
-                  {/* ── WIDOK LISTA (bez zmian) ── */}
-                  <div className="my-auto grid grid-cols-2 sm:grid-cols-3 gap-5">
-                    {_sorted.map(({ o, originalIndex }) => {
-                      const { cd, tl, ml, sl, expired, mi, canDo, isWarning, isCritical, isNew, avatarPath } = _cardData(o);
-                      return (
-                        <button
-                          key={o.id}
-                          onClick={() => setLadaDetailIdx(originalIndex)}
-                          onMouseEnter={() => setLadaCardHoverIdx(originalIndex)}
-                          onMouseLeave={() => setLadaCardHoverIdx(null)}
-                          className={`relative text-left rounded-xl border p-4 min-h-[130px] flex flex-col justify-between transition active:scale-[0.98] hover:brightness-110 hover:scale-[1.02] ${
-                            isNew      ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_18px_rgba(52,211,153,0.3)]' :
-                            expired    ? 'border-red-600/50 bg-red-950/15 opacity-70' :
-                            isCritical ? 'border-red-500/70 bg-red-950/15 hover:border-red-400/80' :
-                            isWarning  ? 'border-orange-500/60 bg-orange-950/10 hover:border-orange-400/80' :
-                            canDo      ? 'border-emerald-500/60 bg-emerald-950/15 hover:border-emerald-400/80' :
-                                         'border-amber-600/40 bg-black/30 hover:border-amber-400/60'
-                          }`}
-                        >
-                          <div className="flex gap-3 items-center">
-                            <div className="flex-shrink-0 ml-2 w-16 h-24 rounded-xl bg-black/30 border border-amber-800/30 overflow-hidden flex items-center justify-center">
-                              {avatarPath
-                                ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" />
-                                : <span className="text-5xl leading-none">{cd.icon}</span>
-                              }
-                            </div>
-                            <div className="flex-1 flex flex-col items-center text-center gap-0.5">
-                              <p className="text-base font-black text-[#f9e7b2] leading-tight">{cd.name}</p>
-                              <p className="text-xs text-[#8b6a3e]">{mi.length} {mi.length === 1 ? 'produkt' : mi.length < 5 ? 'produkty' : 'produktów'}</p>
-                              <div className="flex items-center justify-center gap-3 text-sm font-bold mt-1">
-                                <span className="text-yellow-300">{Number(o.rewards.gold).toFixed(0)} zł</span>
-                                <span className="text-blue-300">{o.rewards.exp} EXP</span>
-                                {o.rewards.bonus?.length > 0 && <span className="text-purple-300">+ prezent</span>}
-                              </div>
-                              <p className={`text-xs font-bold ${expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : tl < 3600000 ? 'text-orange-400' : 'text-[#8b6a3e]'}`}>
-                                {expired ? 'Wygasło' : `${ml > 0 ? ml + 'min ' : ''}${sl}s`}
-                              </p>
-                            </div>
-                          </div>
-                          {!expired && (
-                            isNew ? (
-                              <span className="absolute top-2.5 right-2.5 text-sm font-black text-emerald-200 bg-emerald-700/80 rounded-full px-2.5 py-0.5 border border-emerald-400/60 animate-bounce">Nowy!</span>
-                            ) : isCritical ? (
-                              <span className="absolute top-2.5 right-2.5 text-xs font-black text-red-200 bg-red-800/80 rounded-full px-1.5 py-0.5 border border-red-500/60 animate-pulse">⚠</span>
-                            ) : isWarning ? (
-                              <span className="absolute top-2.5 right-2.5 text-xs font-black text-orange-200 bg-orange-800/60 rounded-full px-1.5 py-0.5 border border-orange-500/50">!</span>
-                            ) : canDo ? (
-                              <span className="absolute top-2.5 right-2.5 text-xs font-black text-emerald-300 bg-emerald-900/50 rounded-full px-2 py-0.5 border border-emerald-600/40">✓</span>
-                            ) : null
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })()

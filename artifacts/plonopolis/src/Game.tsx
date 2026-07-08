@@ -463,7 +463,7 @@ export default function Page() {
   const [currentCustomerIdx, setCurrentCustomerIdx] = React.useState(0);
   const [ladaDetailIdx, setLadaDetailIdx] = React.useState<number | null>(null);
   const [ladaCardHoverIdx, setLadaCardHoverIdx] = React.useState<number | null>(null);
-  const [ladaView, setLadaView] = React.useState<"list" | "carousel">("list");
+  const [ladaView, setLadaView] = React.useState<"list" | "carousel">("carousel");
   const [carouselIdx, setCarouselIdx] = React.useState(0);
   const carouselDragRef = React.useRef<{ startX: number; baseIdx: number; totalMoved: number; pointerId: number } | null>(null);
   const carouselHasDraggedRef = React.useRef(false);
