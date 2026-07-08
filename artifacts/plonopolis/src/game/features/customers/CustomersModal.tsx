@@ -428,11 +428,11 @@ return (<>
                   const xtn = profile?.xp_to_next_level;
                   const expPct = xtn && xtn > 0 ? (centerOrder.rewards.exp / xtn) * 100 : 0;
                   return (
-                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-black/40 px-5 py-3">
-                      <p className="text-center text-sm font-black text-amber-400 uppercase tracking-widest mb-2">
+                    <div className="rounded-xl border border-[#8b6a3e]/60 bg-black/40 px-6 py-5">
+                      <p className="text-center text-xl font-black text-amber-400 uppercase tracking-widest mb-3">
                         {cd.icon} {cd.name} potrzebuje:
                       </p>
-                      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-3">
+                      <div className="flex flex-wrap justify-center gap-x-7 gap-y-3 mb-4">
                         {mi.map((it) => {
                           const d = getOrderItemDisplay(it.id);
                           const have = haveFor(it.id);
@@ -440,28 +440,28 @@ return (<>
                           const partial = !ok && have > 0;
                           const textCls = ok ? 'text-emerald-300' : partial ? 'text-yellow-300' : 'text-red-400';
                           return (
-                            <div key={it.id} className="flex items-center gap-1.5">
+                            <div key={it.id} className="flex items-center gap-2.5">
                               {d.spritePath ? (
-                                <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+                                <img src={d.spritePath} alt={d.name} className="w-14 h-14 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
                               ) : (
-                                <span className="text-xl leading-none shrink-0">{d.icon}</span>
+                                <span className="text-3xl leading-none shrink-0">{d.icon}</span>
                               )}
-                              <span className={`text-base font-bold ${textCls}`}>
-                                <span className="text-sm opacity-80">{have}/{it.qty}</span> {d.name}
+                              <span className={`text-2xl font-bold ${textCls}`}>
+                                <span className="text-xl opacity-80">{have}/{it.qty}</span> {d.name}
                               </span>
                               {d.qualityBadge}
                             </div>
                           );
                         })}
                       </div>
-                      <div className="flex flex-wrap items-center justify-center gap-4 text-base font-bold pt-2.5 border-t border-[#8b6a3e]/30">
+                      <div className="flex flex-wrap items-center justify-center gap-6 text-2xl font-bold pt-3 border-t border-[#8b6a3e]/30">
                         <span className="text-yellow-300">💰 {Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
                         <span className="text-blue-300">
                           ⭐ +{centerOrder.rewards.exp} EXP
-                          {expPct > 0 && <span className="text-sm text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
+                          {expPct > 0 && <span className="text-base text-blue-400/80 font-bold ml-1">({expPct.toFixed(2).replace('.', ',')}%)</span>}
                         </span>
                         {centerOrder.rewards.bonus && centerOrder.rewards.bonus.length > 0 && (
-                          <span className="text-purple-300">
+                          <span className="text-purple-300 text-2xl">
                             {centerOrder.rewards.bonus.map((b, bi) => {
                               const bd = getOrderItemDisplay(b.id ?? (b.type === 'eq_item' ? `eq_tier_${b.tier ?? 0}` : ''));
                               return <span key={bi}>✨ +{b.qty}× {bd.icon} {bd.name}</span>;
@@ -476,7 +476,7 @@ return (<>
                 {(() => {
                   return (
                   <div className="flex-1 flex flex-col">
-                    <div className="my-auto flex flex-col gap-3">
+                    <div className="mt-8 mb-auto flex flex-col gap-3">
                     {/* ── WIDOK KARUZELA — duży avatar slider 3D ── */}
                     <div
                       className="flex items-center gap-2"
@@ -585,7 +585,7 @@ return (<>
                               className="select-none"
                             >
                               {/* Nazwa klienta NAD avatarem */}
-                              <p className="text-xl font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
+                              <p className="text-[1.5625rem] font-black text-[#f9e7b2] truncate leading-tight text-center mb-2">{cd.name}</p>
 
                               {/* Blok avatara */}
                               <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '2 / 3' }}>
