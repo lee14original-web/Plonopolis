@@ -460,7 +460,7 @@ return (<>
                       {/* Status realizacji + timer */}
                       <div className="flex items-center justify-between gap-4 px-2 pb-3 mb-3 border-b border-[#8b6a3e]/30">
                         {canDo && !expired ? (
-                          <span className="text-xl font-black text-emerald-300">✓ Masz wszystko! Kliknij, by zrealizować</span>
+                          <span className="text-xl font-black text-emerald-300">✓ Masz wszystko!</span>
                         ) : expired ? (
                           <span className="text-xl font-black text-red-400">✗ Zamówienie wygasło</span>
                         ) : (
@@ -588,8 +588,7 @@ return (<>
                               key={o.id}
                               onClick={() => {
                                 if (carouselHasDraggedRef.current) return;
-                                if (isCenter) setLadaDetailIdx(originalIndex);
-                                else setCarouselIdx(i);
+                                if (!isCenter) setCarouselIdx(i);
                               }}
                               style={{
                                 position: 'absolute',
@@ -687,6 +686,28 @@ return (<>
                         </p>
                       )
                     )}
+
+                    {/* Przycisk Zrealizuj bezpośrednio pod kartą */}
+                    {centerOrder && (() => {
+                      const { canDo: cDo, expired: cExp } = _cardData(centerOrder);
+                      const isSelling = customerSelling === centerOrder.id;
+                      return (
+                        <div className="flex justify-center pt-3 pb-1">
+                          <button
+                            onClick={() => {
+                              if (completingCustomerOrderRef.current) return;
+                              if (customerSelling) return;
+                              completingCustomerOrderRef.current = true;
+                              completeCustomerOrder(centerOrder.id).finally(() => { completingCustomerOrderRef.current = false; });
+                            }}
+                            disabled={!cDo || !!customerSelling || cExp}
+                            className="rounded-2xl border-2 border-yellow-400 bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-10 py-3 text-2xl font-black text-[#2f1b0c] shadow-[0_4px_20px_rgba(242,202,105,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {isSelling ? '⏳ Realizuję...' : cExp ? '⏱ Wygasło' : !cDo ? '❌ Brak produktów' : '🤝 Zrealizuj zamówienie'}
+                          </button>
+                        </div>
+                      );
+                    })()}
                     </div>
                   </div>
                   );
