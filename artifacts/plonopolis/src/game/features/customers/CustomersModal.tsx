@@ -471,7 +471,7 @@ return (<>
                             })}
                           </span>
                         )}
-                        <span className={`text-xl font-bold ml-auto ${timerCls}`}>
+                        <span className={`text-xl font-bold ${timerCls}`}>
                           ⏱ {expired ? 'Wygasło' : ml > 0 ? `${ml}min ${sl}s` : `${sl}s`}
                         </span>
                       </div>
