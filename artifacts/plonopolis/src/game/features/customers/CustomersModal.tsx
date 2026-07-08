@@ -427,6 +427,9 @@ return (<>
                   const mi = mergeOrderItems(centerOrder.items);
                   const xtn = profile?.xp_to_next_level;
                   const expPct = xtn && xtn > 0 ? (centerOrder.rewards.exp / xtn) * 100 : 0;
+                  const { tl, ml, sl, expired, canDo, isWarning, isCritical } = _cardData(centerOrder);
+                  const missingItems = mi.filter(it => haveFor(it.id) < it.qty);
+                  const timerCls = expired ? 'text-red-400' : isCritical ? 'text-red-400' : isWarning ? 'text-orange-400' : 'text-[#8b6a3e]';
                   return (
                     <div className="rounded-xl border border-[#8b6a3e]/60 bg-black/40 px-6 py-5">
                       <p className="text-center text-xl font-black text-amber-400 uppercase tracking-widest mb-3">
@@ -454,6 +457,26 @@ return (<>
                           );
                         })}
                       </div>
+                      {/* Status realizacji + timer */}
+                      <div className="flex items-center justify-between gap-4 px-2 pb-3 mb-3 border-b border-[#8b6a3e]/30">
+                        {canDo && !expired ? (
+                          <span className="text-xl font-black text-emerald-300">✓ Masz wszystko! Kliknij, by zrealizować</span>
+                        ) : expired ? (
+                          <span className="text-xl font-black text-red-400">✗ Zamówienie wygasło</span>
+                        ) : (
+                          <span className="text-xl font-black text-red-400">
+                            ✗ Brakuje: {missingItems.map(it => {
+                              const d = getOrderItemDisplay(it.id);
+                              const missing = it.qty - haveFor(it.id);
+                              return `${missing}× ${d.name}`;
+                            }).join(', ')}
+                          </span>
+                        )}
+                        <span className={`text-xl font-bold shrink-0 ${timerCls}`}>
+                          ⏱ {expired ? 'Wygasło' : ml > 0 ? `${ml}min ${sl}s` : `${sl}s`}
+                        </span>
+                      </div>
+
                       <div className="flex flex-wrap items-center justify-center gap-6 text-2xl font-bold pt-3 border-t border-[#8b6a3e]/30">
                         <span className="text-yellow-300">💰 {Number(centerOrder.rewards.gold).toFixed(0)} zł</span>
                         <span className="text-blue-300">
