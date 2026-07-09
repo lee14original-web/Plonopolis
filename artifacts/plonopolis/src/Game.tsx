@@ -6141,7 +6141,7 @@ export default function Page() {
     onMouseLeave={() => setHoveredPolaUprawne(false)}
     data-zone="polaUprawne"
     data-tutorial-target="pola-uprawne"
-    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
     style={{
       left: `${activeHitboxPos.polaUprawne.left}%`,
       top: `${activeHitboxPos.polaUprawne.top}%`,
@@ -6167,7 +6167,7 @@ export default function Page() {
                           onMouseEnter={() => setHoveredDom(true)}
                           onMouseLeave={() => setHoveredDom(false)}
                           data-zone="dom"
-                          className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                          className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                           style={{ left:`${activeHitboxPos.dom.left}%`, top:`${activeHitboxPos.dom.top}%`, width:`${activeHitboxPos.dom.width}%`, height:`${activeHitboxPos.dom.height}%`, zIndex: 20 }}
                         />
                         {/* Stodoła */}
@@ -6191,7 +6191,7 @@ export default function Page() {
                                 setHoveredBarnLock(false);
                                 setShowStodolaModal(true);
                               }}
-                              className={`pointer-events-auto absolute transition-all duration-300 ${_barnUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed"}`}
+                              className={`pointer-events-auto absolute transition-all duration-300 ${_barnUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed"}`}
                               style={{ left:`${activeHitboxPos.stodola.left}%`, top:`${activeHitboxPos.stodola.top}%`, width:`${activeHitboxPos.stodola.width}%`, height:`${activeHitboxPos.stodola.height}%`, zIndex: 20 }}
                             />
                           );
@@ -6215,7 +6215,7 @@ export default function Page() {
                             onMouseEnter={() => { if (_cityUnlocked) setHoveredDoMiasta(true); else setHoveredCityLock(true); }}
                             onMouseLeave={() => { setHoveredDoMiasta(false); setHoveredCityLock(false); }}
                             data-zone="doMiasta"
-                            className={`pointer-events-auto absolute transition-all duration-300 ${_cityUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed opacity-70"}`}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_cityUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed opacity-70"}`}
                             style={{ left:`${activeHitboxPos.doMiasta.left}%`, top:`${activeHitboxPos.doMiasta.top}%`, width:`${activeHitboxPos.doMiasta.width}%`, height:`${activeHitboxPos.doMiasta.height}%`, zIndex: 20 }}
                           />
                         );
@@ -6241,7 +6241,7 @@ export default function Page() {
                               setHoveredHiveLock(false);
                               setShowUlModal(true);
                             }}
-                            className={`pointer-events-auto absolute transition-all duration-300 ${_hiveUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed"}`}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_hiveUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed"}`}
                             style={{ left:`${activeHitboxPos.ul.left}%`, top:`${activeHitboxPos.ul.top}%`, width:`${activeHitboxPos.ul.width}%`, height:`${activeHitboxPos.ul.height}%`, zIndex: 20 }}
                           />
                         );
@@ -6269,7 +6269,7 @@ export default function Page() {
                               setLadaDetailIdx(null);
                               setShowLadaModal(true);
                             }}
-                            className={`pointer-events-auto absolute transition-all duration-300 ${_ladaUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed opacity-70"}`}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_ladaUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed opacity-70"}`}
                             style={{ left:`${activeHitboxPos.lada.left}%`, top:`${activeHitboxPos.lada.top}%`, width:`${activeHitboxPos.lada.width}%`, height:`${activeHitboxPos.lada.height}%`, zIndex: 20 }}
                           />
                         );
@@ -6295,7 +6295,7 @@ export default function Page() {
                               setHoveredKompostownik(false);
                               setShowKompostModal(true);
                             }}
-                            className={`pointer-events-auto absolute transition-all duration-300 ${_kompostUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed opacity-70"}`}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_kompostUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed opacity-70"}`}
                             style={{ left:`${activeHitboxPos.kompostownik.left}%`, top:`${activeHitboxPos.kompostownik.top}%`, width:`${activeHitboxPos.kompostownik.width}%`, height:`${activeHitboxPos.kompostownik.height}%`, zIndex: 20 }}
                           />
                         );
@@ -6321,7 +6321,7 @@ export default function Page() {
                               setHoveredSadLock(false);
                               setShowSadModal(true);
                             }}
-                            className={`pointer-events-auto absolute transition-all duration-300 ${_sadUnlocked ? "hover:scale-105 hover:brightness-125" : "cursor-not-allowed"}`}
+                            className={`pointer-events-auto absolute transition-all duration-300 ${_sadUnlocked ? "hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]" : "cursor-not-allowed"}`}
                             style={{ left:`${activeHitboxPos.sad.left}%`, top:`${activeHitboxPos.sad.top}%`, width:`${activeHitboxPos.sad.width}%`, height:`${activeHitboxPos.sad.height}%`, zIndex: 20 }}
                           />
                         );
@@ -6475,7 +6475,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredNaFarme(false)}
                     data-no-map-drag="true"
                     data-zone="naFarme"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.naFarme.left}%`, top:`${cityHitboxPos.naFarme.top}%`, width:`${cityHitboxPos.naFarme.width}%`, height:`${cityHitboxPos.naFarme.height}%` }}
                     title=""
                   />
@@ -6486,7 +6486,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredSklep(false)}
                     data-no-map-drag="true"
                     data-zone="sklep"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.sklep.left}%`, top:`${cityHitboxPos.sklep.top}%`, width:`${cityHitboxPos.sklep.width}%`, height:`${cityHitboxPos.sklep.height}%` }}
                     title=""
                   />
@@ -6497,7 +6497,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredTarg(false)}
                     data-no-map-drag="true"
                     data-zone="targ"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.targ.left}%`, top:`${cityHitboxPos.targ.top}%`, width:`${cityHitboxPos.targ.width}%`, height:`${cityHitboxPos.targ.height}%` }}
                     title=""
                   />
@@ -6508,7 +6508,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredBank(false)}
                     data-no-map-drag="true"
                     data-zone="bank"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.bank.left}%`, top:`${cityHitboxPos.bank.top}%`, width:`${cityHitboxPos.bank.width}%`, height:`${cityHitboxPos.bank.height}%` }}
                     title=""
                   />
@@ -6519,7 +6519,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredRatusz(false)}
                     data-no-map-drag="true"
                     data-zone="ratusz"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.ratusz.left}%`, top:`${cityHitboxPos.ratusz.top}%`, width:`${cityHitboxPos.ratusz.width}%`, height:`${cityHitboxPos.ratusz.height}%` }}
                     title=""
                   />
@@ -6530,7 +6530,7 @@ export default function Page() {
                     onMouseLeave={() => setHoveredLiga(false)}
                     data-no-map-drag="true"
                     data-zone="liga"
-                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 hover:brightness-125"
+                    className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:bg-[radial-gradient(ellipse_at_center,rgba(255,239,180,0.45)_0%,rgba(255,239,180,0.15)_60%,transparent_85%)] hover:shadow-[0_0_25px_8px_rgba(255,239,180,0.35)]"
                     style={{ left:`${cityHitboxPos.liga.left}%`, top:`${cityHitboxPos.liga.top}%`, width:`${cityHitboxPos.liga.width}%`, height:`${cityHitboxPos.liga.height}%` }}
                     title=""
                   />
