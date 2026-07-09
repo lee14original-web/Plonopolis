@@ -66,7 +66,6 @@ export function CompostPicker({
           <div className="grid grid-cols-4 gap-3 mb-3">
             {allEntries.map(({ key: cKey, val, cnt, def, cType }) => {
               const isSel = selectedSeedId === cKey;
-              const tierLabel = def.tierName(val);
               const isTutTarget = tutorialStep === 3 && cKey === "guide_compost";
               const tierIdx = def.bonusValues.indexOf(val);
               const tierColor = compostTierColor(tierIdx);
@@ -103,10 +102,6 @@ export function CompostPicker({
                     <img src={def.imgs[val]} alt={def.name} className="absolute inset-0 w-full h-full object-contain" />
                     <span className="absolute bottom-1 right-1 min-w-[20px] rounded-md bg-black/80 px-1 py-0.5 text-[11px] font-black leading-none text-[#f9e7b2]">×{cnt}</span>
                   </button>
-                  <p className="text-[10px] font-bold text-[#f9e7b2] text-center leading-tight px-1">
-                    {cType === "guide" ? def.name : `${tierLabel}`}
-                  </p>
-                  <p className="text-[9px] text-[#d8ba7a] text-center leading-tight px-1">{def.bonusLabel(val)}</p>
                 </div>
               );
             })}

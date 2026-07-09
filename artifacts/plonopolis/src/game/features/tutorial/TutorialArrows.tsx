@@ -99,11 +99,12 @@ function renderTutorialArrowsContent({
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
           // Krok 3: pozycja liczona dynamicznie z getBoundingClientRect celu (guide-compost-item)
+          // Strzałka wchodzi z lewej strony, żeby nie zasłaniać tekstu tooltipa nad przedmiotem.
           if(tutorialStep===3){
             if(!tutorialArrow) return null;
-            const {cx,top:it}=tutorialArrow;
-            const sz=80, ah=Math.round(sz*62/48);
-            return arr({x:cx,y:it-ah/2-14,size:sz,rotation:0},"tut-arr-3");
+            const {left:il,top:it,height:ih}=tutorialArrow;
+            const sz=80, cy=it+ih/2;
+            return arr({x:il-sz/2-14,y:cy,size:sz,rotation:-90},"tut-arr-3");
           }
           // Kroki 2,5,6,8,10: stałe pozycje z final config (w przestrzeni canvasu gry)
           const cfgN:Record<number,SA>={
