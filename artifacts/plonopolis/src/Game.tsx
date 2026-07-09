@@ -8790,6 +8790,7 @@ export default function Page() {
                                 const ownedList = CHAR_EQUIP_ITEMS
                                   .filter(i => !eqFilter || i.slot === eqFilter)
                                   .filter(i => ownedEqItems[i.id])
+                                  .filter(i => charEquipped[i.slot]?.id !== i.id)
                                   .sort((a,b) => {
                                     // 1) wg poziomu rosnąco
                                     if (a.unlockLevel !== b.unlockLevel) return a.unlockLevel - b.unlockLevel;
