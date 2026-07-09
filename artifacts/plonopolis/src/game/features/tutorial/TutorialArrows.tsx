@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import type { Profile } from "../../types/profile";
 
 interface TutorialArrowsProps {
@@ -13,6 +14,31 @@ interface TutorialArrowsProps {
 }
 
 export function TutorialArrows({
+  profile,
+  tutorialStep,
+  tutorialArrow,
+  isFvHarvestModalOpen,
+  fvZbioryPos,
+  fvTutArrow12Pos,
+  fvTutArrow13Pos,
+}: TutorialArrowsProps) {
+  const content = renderTutorialArrowsContent({
+    profile,
+    tutorialStep,
+    tutorialArrow,
+    isFvHarvestModalOpen,
+    fvZbioryPos,
+    fvTutArrow12Pos,
+    fvTutArrow13Pos,
+  });
+  if (!content) return null;
+  // Portal poza <main> (ma transform: scale(gameScale)), które inaczej tworzyłoby
+  // nowy containing block dla position:fixed i podwójnie skalowałoby pozycje strzałek.
+  if (typeof document === "undefined") return null;
+  return createPortal(content, document.body);
+}
+
+function renderTutorialArrowsContent({
   profile,
   tutorialStep,
   tutorialArrow,
