@@ -55,18 +55,24 @@ export function TutorialArrows({
           if(tutorialStep===1){
             if(!tutorialArrow) return null;
             const {cx,top:ft,bottom:fb,left:fl,right:fr,height:fh}=tutorialArrow;
-            const ox=-291, cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
+            const cy=ft+fh/2, sz=80, ah=Math.round(sz*62/48);
             return <>{[
-              {x:cx+ox,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
-              {x:cx+ox,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
-              {x:fl+ox-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
-              {x:fr+ox+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
+              {x:cx,         y:ft-ah/2-14, rotation:0   as number, k:"top"},
+              {x:cx,         y:fb+ah/2+14, rotation:180 as number, k:"bottom"},
+              {x:fl-sz/2-14, y:cy,          rotation:-90 as number, k:"left"},
+              {x:fr+sz/2+14, y:cy,          rotation:90  as number, k:"right"},
             ].map(({x,y,rotation,k})=>arr({x,y,size:sz,rotation},`tut-arr-1-${k}`))}</>;
           }
-          // Kroki 2–11: stałe pozycje z final config
+          // Krok 3: pozycja liczona dynamicznie z getBoundingClientRect celu (guide-compost-item)
+          if(tutorialStep===3){
+            if(!tutorialArrow) return null;
+            const {cx,top:it}=tutorialArrow;
+            const sz=80, ah=Math.round(sz*62/48);
+            return arr({x:cx,y:it-ah/2-14,size:sz,rotation:0},"tut-arr-3");
+          }
+          // Kroki 2,5,6,8,10: stałe pozycje z final config
           const cfgN:Record<number,SA>={
             2: {x:153.37, y:132.50, size:108, rotation:0},
-            3: {x:1090.00,y:587.14, size:80,  rotation:0},
             5: {x:154.37, y:326.88, size:102, rotation:0},
             6: {x:852.61, y:643.44, size:122, rotation:90},
             8: {x:155.37, y:529.25, size:112, rotation:0},

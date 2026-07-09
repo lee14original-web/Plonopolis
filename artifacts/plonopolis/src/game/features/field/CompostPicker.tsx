@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { SeedInventory } from "../../types/farm";
 import { COMPOST_DEFS } from "../../constants/compost";
 import { compostKeyFor } from "../../utils/compost";
@@ -30,6 +31,10 @@ export function CompostPicker({
   tutorialStep,
   setCardTip,
 }: CompostPickerProps) {
+  useEffect(() => {
+    return () => setCardTip(null);
+  }, [setCardTip]);
+
   if (!fvCompostPickerOpen || fvToolEditMode) return null;
 
   const allEntries = (Object.keys(COMPOST_DEFS) as (keyof typeof COMPOST_DEFS)[]).flatMap(cType => {
