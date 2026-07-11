@@ -8143,33 +8143,43 @@ export default function Page() {
           {/* ═══ DOM MODAL ═══ */}
           {showDomModal && (
             <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(14,8,4,0.99)]">
-              <div className="relative flex w-full flex-1 min-h-0 overflow-hidden">
+              <div className="relative flex w-full flex-1 min-h-0 flex-col overflow-hidden">
 
                 {/* ─ Zamknij ─ */}
-                <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
+                <button onClick={() => setShowDomModal(false)} className="absolute right-4 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-black/40 text-[#dfcfab] transition hover:border-red-400/60 hover:text-red-300">✕</button>
 
-                {/* ─ Sidebar ─ */}
-                <div className="flex w-[264px] shrink-0 flex-col gap-3 border-r border-[#8b6a3e]/30 bg-black/20 p-8 pt-20 overflow-y-auto">
-                  <p className="mb-4 text-sm font-black uppercase tracking-widest text-[#8b6a3e]">🏠 Dom gracza</p>
-                  {(["profil","eq","plecak"] as const).map(tab => (
-                    <button key={tab} onClick={() => setDomTab(tab)}
-                      className={`flex items-center gap-3 rounded-xl px-5 py-4 text-xl font-bold transition ${
-                        domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
-                      }`}>
-                      {tab === "profil" ? "👤" : tab === "eq" ? "⚔️" : "🎒"}
-                      {tab === "profil" ? "Profil" : tab === "eq" ? "Ekwipunek" : "Plecak"}
-                    </button>
-                  ))}
+                {/* ─ Nawigacja (top bar) ─ */}
+                <div className="flex shrink-0 items-center gap-6 border-b border-[#8b6a3e]/30 bg-black/20 px-8 pt-4 pb-3">
+                  <p className="text-sm font-black uppercase tracking-widest text-[#8b6a3e] whitespace-nowrap">🏠 Dom gracza</p>
+                  <div className="flex gap-2">
+                    {(["profil","eq","plecak"] as const).map(tab => (
+                      <button key={tab} onClick={() => setDomTab(tab)}
+                        className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-base font-bold transition ${
+                          domTab === tab ? "border border-yellow-400/60 bg-yellow-500/10 text-yellow-200" : "text-[#dfcfab] hover:bg-white/5"
+                        }`}>
+                        {tab === "profil" ? "👤" : tab === "eq" ? "⚔️" : "🎒"}
+                        {tab === "profil" ? "Profil" : tab === "eq" ? "Ekwipunek" : "Plecak"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* ─ Zawartość ─ */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-9 pt-8 text-[#dfcfab]">
+                <div className="flex-1 min-h-0 overflow-y-auto p-9 pt-6 text-[#dfcfab]">
 
                   {/* ════ PROFIL ════ */}
                   {domTab === "profil" && (
                     <div className="flex gap-9">
                       {/* Lewa kolumna: avatar */}
-                      <div className="flex w-72 shrink-0 flex-col items-center gap-6">
+                      <div className="flex w-64 shrink-0 flex-col items-center gap-4">
+                        {/* Nick nad avatarem */}
+                        <div className="w-full text-center">
+                          <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
+                          {freeSkillPoints > 0 && (
+                            <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
+                          )}
+                        </div>
+                        {/* Avatar */}
                         <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
                           className="flex h-56 w-56 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
                           {avatarSkin >= 0
@@ -8179,153 +8189,21 @@ export default function Page() {
                                 <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
                               </span>}
                         </button>
-                        <div className="w-full text-center">
-                          <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
-                          {freeSkillPoints > 0 && (
-                            <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
-                          )}
-                        </div>
-                        <div className="w-full rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 space-y-2 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[#8b6a3e]">Poziom</span>
-                            <span className="font-black text-[#f9e7b2]">⭐ {displayLevel}</span>
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between text-[11px] mb-1">
-                              <span className="text-[#8b6a3e]">EXP</span>
-                              <span className="text-[#dfcfab] tabular-nums">{displayXp.toLocaleString("pl-PL")} / {displayXpToNextLevel.toLocaleString("pl-PL")}</span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-black/50 overflow-hidden">
-                              <div className="h-full rounded-full bg-gradient-to-r from-blue-700 to-blue-400 transition-all" style={{ width:`${displayXpToNextLevel > 0 ? Math.min(100, Math.round(displayXp / displayXpToNextLevel * 100)) : 100}%` }} />
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[#8b6a3e]">PLN</span>
-                            <span className="font-bold text-green-300 tabular-nums">{Number(displayMoney).toLocaleString("pl-PL")} zł</span>
-                          </div>
-                          <div className="flex items-center justify-between border-t border-[#8b6a3e]/20 pt-2">
-                            <span className="text-[#8b6a3e]">Moc farmy</span>
-                            <span className="font-black text-yellow-300 tabular-nums">{computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState)}</span>
-                          </div>
-                        </div>
-                        <div className="w-full rounded-xl border border-[#8b6a3e]/20 bg-black/15 p-3">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-[#8b6a3e] mb-2">Twoje osiągnięcia</p>
-                          {(() => {
-                            const systems = [
-                              { label:"Zwierzęta", val:Object.values(barnState as Record<string,{owned:number}>).reduce((s,a)=>s+a.owned,0) },
-                              { label:"Drzewa",    val:Object.values(orchardState as Record<string,{owned:number}>).reduce((s,t)=>s+t.owned,0) },
-                              { label:"Pszczoły",  val:hiveData.level },
-                            ];
-                            const top = [...systems].sort((a,b)=>b.val-a.val)[0];
-                            const statLabels: Record<string,string> = { wiedza:"Wiedza",zrecznosc:"Zręczność",zaradnosc:"Zaradność",sadownik:"Sadownik",opieka:"Opieka",szczescie:"Szczęście" };
-                            const _statEntries = Object.entries(playerStats) as [string,number][];
-                            const bestStat = _statEntries.length > 0 ? _statEntries.reduce((a,b)=>a[1]>=b[1]?a:b) : ["wiedza",0] as [string,number];
-                            return (
-                              <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[11px] text-[#8b6a3e]">Najsilniejszy system</span>
-                                  <span className="text-[11px] font-bold text-[#dfcfab]">{top.label} ({top.val})</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[11px] text-[#8b6a3e]">Najwyższy stat</span>
-                                  <span className="text-[11px] font-bold text-[#dfcfab]">{statLabels[bestStat[0]]??bestStat[0]} ({bestStat[1]})</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[11px] text-[#8b6a3e]">Aktywność dziś</span>
-                                  <span className="text-[11px] font-bold text-[#dfcfab]">{dailyProgress.harvests + dailyProgress.customers} akcji</span>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
+                        {/* Plecak — obraz otwierającego się plecaka */}
+                        <button onClick={() => setDomTab("plecak")}
+                          className="group flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3 transition hover:border-[#8b6a3e] hover:bg-black/30">
+                          <img src="/ui/backpack.png" alt="Plecak" className="h-14 w-14 object-contain" style={{imageRendering:"pixelated"}} />
+                          <span className="text-sm font-bold text-[#dfcfab]">Plecak</span>
+                        </button>
+                        {/* Ekwipunek */}
+                        <button onClick={() => setDomTab("eq")}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3 text-sm font-bold text-[#dfcfab] transition hover:border-[#8b6a3e] hover:bg-black/30">
+                          ⚔️ Ekwipunek
+                        </button>
                       </div>
 
                       {/* Prawa kolumna: statystyki */}
                       <div className="flex-1">
-                        {/* ─── Moc farmy + bonusy summary ─── */}
-                        {(() => {
-                          const _wB  = Math.min(25, calcStatEffect(effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped), WIEDZA_RATE));
-                          const _zaB = calcStatEffect(effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped), ZARADNOSC_RATE);
-                          const _zrB = calcStatEffect(effectiveStats.zrecznosc + getEquipFlatBonus(" pkt Zrecznosci", charEquipped), 0.004);
-                          const _saB = calcStatEffect(effectiveStats.sadownik + getEquipFlatBonus(" pkt Sadownika", charEquipped), 0.005);
-                          const _opB = Math.min(90, effectiveStats.opieka * 0.3);
-                          const _shB = calcStatEffect(effectiveStats.szczescie + getEquipFlatBonus(" pkt Szczescia", charEquipped), 0.0025);
-                          const _fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
-                          const _statsPow = Math.round(Object.values(playerStats).reduce((s: number, v: unknown) => s + (v as number), 0) * 3);
-                          const _eqB = (Object.values(charEquipped) as ({id:string;upg:number}|null)[]).reduce((s, eq) => { if (!eq) return s; const d = CHAR_EQUIP_ITEMS.find(it => it.id === eq.id); return s + (d?.unlockLevel ?? 1) * 8 + (eq.upg ?? 0) * (eq.upg ?? 0) * 4; }, 0);
-                          const _hivB = Math.round(hiveData.level * hiveData.level * 20);
-                          const _orchB = TREES.reduce((s, t) => s + Math.round(Math.sqrt(t.buyPrice) * 2) * (orchardState[t.id]?.owned ?? 0), 0);
-                          const _barnB = ANIMALS.reduce((s, a) => s + Math.round(Math.sqrt(a.buyPrice) * 2.5) * (barnState[a.id]?.owned ?? 0), 0);
-                          const _farmRank = _fp >= 15000 ? "Legenda Plonopolis" : _fp >= 7500 ? "Magnat" : _fp >= 3500 ? "Farmer Premium" : _fp >= 1500 ? "Gospodarz" : _fp >= 500 ? "Rolnik" : "Nowicjusz";
-                          const _farmRankC = _fp >= 15000 ? "text-purple-300" : _fp >= 7500 ? "text-yellow-300" : _fp >= 3500 ? "text-orange-300" : _fp >= 1500 ? "text-green-300" : _fp >= 500 ? "text-blue-300" : "text-[#8b6a3e]";
-                          return (
-                            <div className="mb-4 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-black/20 p-4">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="text-base font-black text-[#f9e7b2]">🏆 Moc farmy</p>
-                                <span className="text-2xl font-black text-yellow-300 tabular-nums">{_fp}</span>
-                              </div>
-                              <p className="text-xs mb-3"><span className="text-[#8b6a3e]">Ranga: </span><span className={`font-black ${_farmRankC}`}>{_farmRank}</span></p>
-                              <div className="flex flex-wrap gap-2">
-                                {[
-                                  { icon:"🌱", label:"Wzrost",    val:`−${_wB.toFixed(1)}%`,  c:"text-green-300"  },
-                                  { icon:"💧", label:"Podlanie",  val:`−${_zaB.toFixed(1)}%`, c:"text-cyan-300"   },
-                                  { icon:"🎯", label:"Zbiór x2",  val:`+${_zrB.toFixed(1)}%`, c:"text-yellow-300" },
-                                  { icon:"🌳", label:"Sad",       val:`+${_saB.toFixed(1)}%`, c:"text-emerald-300"},
-                                  { icon:"🐄", label:"Zwierzęta", val:`−${_opB.toFixed(1)}%`, c:"text-orange-300" },
-                                  { icon:"🍀", label:"Drop",      val:`+${_shB.toFixed(1)}%`, c:"text-green-300"  },
-                                ].map(b => (
-                                  <span key={b.label} className="flex items-center gap-1 rounded-lg bg-black/30 px-3 py-1.5 text-xs font-medium">
-                                    <span className="text-[#8b6a3e]">{b.icon} {b.label}</span>
-                                    <span className={`font-bold ${b.c}`}>{b.val}</span>
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="mt-2 grid grid-cols-5 gap-1.5 text-center">
-                                {([
-                                  { label:"Staty",   val:_statsPow },
-                                  { label:"Ekwip.",  val:_eqB      },
-                                  { label:"Ul",      val:_hivB     },
-                                  { label:"Sad",     val:_orchB    },
-                                  { label:"Zwierz.", val:_barnB    },
-                                ] as {label:string;val:number}[]).map(c => (
-                                  <div key={c.label} className="rounded-lg bg-black/30 py-1.5">
-                                    <div className="text-[10px] text-[#8b6a3e]">{c.label}</div>
-                                    <div className="text-xs font-black text-yellow-200 tabular-nums">{c.val}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* ─── Historia postępu: dziś ─── */}
-                        <div className="mb-4 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-950/15 to-black/20 p-4">
-                          <p className="text-sm font-black text-[#f9e7b2] mb-2">📈 Dziś</p>
-                          {(dailyProgress.harvests === 0 && dailyProgress.customers === 0 && dailyProgress.expGained === 0 && dailyProgress.levelsGained === 0) ? (
-                            <div className="space-y-2">
-                              <p className="text-[11px] text-[#8b6a3e] mb-1">Propozycje na dziś:</p>
-                              {([
-                                { text:"Zbierz pierwszą uprawę" },
-                                { text:"Zrealizuj zamówienie klienta" },
-                                { text:"Użyj kompostu na polu" },
-                              ] as {text:string}[]).map(t => (
-                                <div key={t.text} className="flex items-center gap-2 text-xs text-[#8b6a3e]">
-                                  <span className="shrink-0 text-sm">☐</span>
-                                  <span>{t.text}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {dailyProgress.levelsGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-yellow-900/30 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-300">+{dailyProgress.levelsGained} lvl</span>}
-                              {dailyProgress.expGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-blue-900/30 border border-blue-500/30 px-3 py-1.5 text-xs font-bold text-blue-300">+{dailyProgress.expGained.toLocaleString("pl-PL")} EXP</span>}
-                              {dailyProgress.moneyGained > 0 && <span className="flex items-center gap-1 rounded-lg bg-green-900/30 border border-green-500/30 px-3 py-1.5 text-xs font-bold text-green-300">+{dailyProgress.moneyGained.toLocaleString("pl-PL")} zł</span>}
-                              {dailyProgress.customers > 0 && <span className="flex items-center gap-1 rounded-lg bg-purple-900/30 border border-purple-500/30 px-3 py-1.5 text-xs font-bold text-purple-300">+{dailyProgress.customers} klientów</span>}
-                              {dailyProgress.harvests > 0 && <span className="flex items-center gap-1 rounded-lg bg-[#8b6a3e]/30 border border-[#8b6a3e]/50 px-3 py-1.5 text-xs font-bold text-[#dfcfab]">+{dailyProgress.harvests} zbiorów</span>}
-                            </div>
-                          )}
-                        </div>
-
                         {/* ─── Nagłówek + selector ─── */}
                         <div className="mb-3 flex items-center justify-between">
                           <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki</p>
