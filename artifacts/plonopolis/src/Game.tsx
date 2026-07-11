@@ -8206,7 +8206,7 @@ export default function Page() {
                       <div className="flex-1">
                         {/* ─── Nagłówek + selector ─── */}
                         <div className="mb-3 flex items-center justify-between">
-                          <p className="text-base font-black text-[#f9e7b2]">🧙 Statystyki</p>
+                          <p className="text-base font-black text-[#f9e7b2]">Statystyki</p>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
                             {([1,5,10] as const).map(n => (
@@ -8261,6 +8261,7 @@ export default function Page() {
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-[15px] font-black text-[#f9e7b2]">{def.label}</span>
+                                      <span className="text-[13px] font-bold text-[#dfcfab] tabular-nums">{val}/100</span>
                                       {isLocked
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
@@ -8281,14 +8282,6 @@ export default function Page() {
                                             <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
                                               style={{ width:`${rankBarFill}%` }} />
                                           </div>
-                                          {[25,50,75].map(pct => (
-                                            <div key={pct} className="absolute top-0 bottom-0 w-px bg-black/60 z-10" style={{ left:`${pct}%` }} />
-                                          ))}
-                                        </div>
-                                        <div className="flex justify-between mt-0.5 px-0">
-                                          {[0,25,50,75,100].map(t => (
-                                            <span key={t} className="text-[9px] text-[#6b4e2e] tabular-nums">{t}</span>
-                                          ))}
                                         </div>
                                         <div className="flex items-center justify-between mt-0.5">
                                           <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
