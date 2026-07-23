@@ -1209,10 +1209,15 @@ export default function Page() {
     const uid = source.id;
     // char_equipped: DB jest autorytatywne (synchronizacja między urządzeniami); localStorage jako fallback dla starszych sesji
     const dbCharEquipped = source.char_equipped ? migrateCharEquipped(source.char_equipped) : null;
-    const loadedCharEquipped = dbCharEquipped ?? lsLoadMigrate(CHAR_EQUIP_KEY, uid, s => migrateCharEquipped(JSON.parse(s)), () => ({ ...DEFAULT_CHAR_EQUIPPED }));
+    const lsCharEquipped = lsLoadMigrate(CHAR_EQUIP_KEY, uid, s => migrateCharEquipped(JSON.parse(s)), () => null);
+    const loadedCharEquipped = dbCharEquipped ?? lsCharEquipped ?? { ...DEFAULT_CHAR_EQUIPPED };
     setCharEquipped(loadedCharEquipped);
     // Synchronizuj localStorage z DB żeby były spójne
     if (dbCharEquipped && uid) { try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(dbCharEquipped)); } catch { /* ignore */ } }
+    // Migracja jednorazowa: jeśli DB było puste ale localStorage ma dane → zapisz do DB
+    if (!dbCharEquipped && lsCharEquipped && uid) {
+      void supabase.from("profiles").update({ char_equipped: lsCharEquipped as unknown as Record<string, unknown> }).eq("id", uid);
+    }
     setItemUpgRegistry(lsLoadMigrate(ITEM_UPG_KEY, uid, s => JSON.parse(s) as Record<string,number>, () => ({})));
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
