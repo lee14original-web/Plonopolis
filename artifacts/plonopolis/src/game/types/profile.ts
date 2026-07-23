@@ -50,4 +50,5 @@ export type Profile = {
   tutorial_skipped?: boolean | null;
   tutorial_step?: number | null;
   lada_starter_given?: boolean | null;
+  char_equipped?: Record<string, unknown> | null;
 };

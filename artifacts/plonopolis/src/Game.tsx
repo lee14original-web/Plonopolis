@@ -675,7 +675,14 @@ export default function Page() {
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
   const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>({});
-  const saveCharEquipped = (next: CharEquipped) => { setCharEquipped(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ } };
+  const saveCharEquipped = (next: CharEquipped) => {
+    setCharEquipped(next);
+    const uid = profile?.id ?? "";
+    if (uid) {
+      try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ }
+      void supabase.from("profiles").update({ char_equipped: next as unknown as Record<string, unknown> }).eq("id", uid);
+    }
+  };
   const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(reg)); } catch { /* ignore */ } };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
   // ─── Ekwipunek: zdobyte przedmioty (gracz musi je zdobyć by je mieć) ───
@@ -1200,7 +1207,12 @@ export default function Page() {
 
     // Załaduj dane z localStorage per-userId (izolacja kont — każde konto ma swoje klucze)
     const uid = source.id;
-    setCharEquipped(lsLoadMigrate(CHAR_EQUIP_KEY, uid, s => migrateCharEquipped(JSON.parse(s)), () => ({ ...DEFAULT_CHAR_EQUIPPED })));
+    // char_equipped: DB jest autorytatywne (synchronizacja między urządzeniami); localStorage jako fallback dla starszych sesji
+    const dbCharEquipped = source.char_equipped ? migrateCharEquipped(source.char_equipped) : null;
+    const loadedCharEquipped = dbCharEquipped ?? lsLoadMigrate(CHAR_EQUIP_KEY, uid, s => migrateCharEquipped(JSON.parse(s)), () => ({ ...DEFAULT_CHAR_EQUIPPED }));
+    setCharEquipped(loadedCharEquipped);
+    // Synchronizuj localStorage z DB żeby były spójne
+    if (dbCharEquipped && uid) { try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(dbCharEquipped)); } catch { /* ignore */ } }
     setItemUpgRegistry(lsLoadMigrate(ITEM_UPG_KEY, uid, s => JSON.parse(s) as Record<string,number>, () => ({})));
     setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
     setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
