@@ -2466,6 +2466,25 @@ export default function Page() {
     };
   }, []);
 
+  // ─── Auto-sync przy powrocie na kartę/okno (multi-device) ───
+  // Kiedy gracz wróci do gry (np. ze telefonu przełączy się z innej apki),
+  // odśwież profil z DB żeby dane ekwipunku/złota były aktualne.
+  React.useEffect(() => {
+    let lastSync = Date.now();
+    const MIN_SYNC_INTERVAL_MS = 30_000; // max co 30s żeby nie floodować DB
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      const pid = profile?.id;
+      if (!pid) return;
+      if (Date.now() - lastSync < MIN_SYNC_INTERVAL_MS) return;
+      lastSync = Date.now();
+      void loadProfile(pid);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
   // ─── Powitanie nowego gracza ───
   useEffect(() => {
     if (!profile?.id) return;
