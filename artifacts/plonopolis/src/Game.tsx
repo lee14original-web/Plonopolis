@@ -8323,10 +8323,6 @@ export default function Page() {
                     })();
                     const _xpPct = displayXpToNextLevel > 0 ? Math.min(100, Math.round(displayXp / displayXpToNextLevel * 100)) : 100;
 
-                    // Emoji ikon statu
-                    const STAT_ICON: Record<string, string> = {
-                      wiedza:"🧠", zrecznosc:"🎯", zaradnosc:"💡", sadownik:"🌳", opieka:"🐾", szczescie:"🍀",
-                    };
 
                     return (
                     <div className="flex gap-8">
@@ -8478,7 +8474,6 @@ export default function Page() {
                               : `+${eff.toFixed(1)}% drop`;
                             const bonusIsReduction = bonusStr.startsWith("−");
                             const isFlashing = statFlash === def.key;
-                            const statIcon = STAT_ICON[def.key] ?? "";
                             return (
                               <div key={def.key}
                                 className={`rounded-xl border px-4 py-3 transition-all duration-300 ${
@@ -8490,7 +8485,7 @@ export default function Page() {
                                   <div className="flex-1 min-w-0">
                                     {/* Wiersz 1: ikona + nazwa statu + rank + efekt */}
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[20px] font-black text-[#f9e7b2] leading-tight">{statIcon} {def.label}</span>
+                                      <span className="text-[20px] font-black text-[#f9e7b2] leading-tight">{def.label}</span>
                                       {isLocked
                                         ? <span className="text-[13px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[13px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
