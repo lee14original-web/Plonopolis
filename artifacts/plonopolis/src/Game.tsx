@@ -8302,28 +8302,97 @@ export default function Page() {
                 <div className="flex-1 min-h-0 overflow-y-auto p-9 pt-6 text-[#dfcfab]">
 
                   {/* ════ PROFIL ════ */}
-                  {domTab === "profil" && (
+                  {domTab === "profil" && (() => {
+                    // ── Ramka avatara zależna od poziomu ──
+                    const _lvl = displayLevel;
+                    // Każdy poziom wzmacnia blask; co 5 poziomów nowy styl ramki
+                    const _glowAlpha = Math.min(0.72, 0.08 + _lvl * 0.013);
+                    const _glowR     = Math.min(32, 3 + _lvl * 0.55);
+                    const avatarFrame = (() => {
+                      if (_lvl >= 51) return { label:"✦ Legendarna", lc:"text-fuchsia-300", border:"", shadow:"", animated:true };
+                      if (_lvl >= 46) { const a=_glowAlpha,r=_glowR; return { label:"◈ Rubinowa+", lc:"text-red-200", border:`3px solid rgb(248,113,113)`, shadow:`0 0 ${r}px rgba(248,113,113,${a}), 0 0 ${Math.round(r*0.4)}px rgba(239,68,68,0.5)`, animated:false }; }
+                      if (_lvl >= 41) { const a=_glowAlpha,r=_glowR; return { label:"◈ Rubinowa",  lc:"text-red-300",  border:`3px solid rgb(239,68,68)`,  shadow:`0 0 ${r}px rgba(239,68,68,${a})`, animated:false }; }
+                      if (_lvl >= 36) { const a=_glowAlpha,r=_glowR; return { label:"◆ Szmaragdowa+", lc:"text-emerald-200", border:`3px solid rgb(52,211,153)`, shadow:`0 0 ${r}px rgba(52,211,153,${a}), 0 0 ${Math.round(r*0.4)}px rgba(16,185,129,0.5)`, animated:false }; }
+                      if (_lvl >= 31) { const a=_glowAlpha,r=_glowR; return { label:"◆ Szmaragdowa",  lc:"text-emerald-300", border:`3px solid rgb(16,185,129)`, shadow:`0 0 ${r}px rgba(16,185,129,${a})`, animated:false }; }
+                      if (_lvl >= 26) { const a=_glowAlpha,r=_glowR; return { label:"★ Złota+", lc:"text-yellow-200", border:`3px solid rgb(250,204,21)`, shadow:`0 0 ${r}px rgba(250,204,21,${a}), 0 0 ${Math.round(r*0.4)}px rgba(202,138,4,0.5)`, animated:false }; }
+                      if (_lvl >= 21) { const a=_glowAlpha,r=_glowR; return { label:"★ Złota",  lc:"text-yellow-300", border:`3px solid rgb(234,179,8)`,  shadow:`0 0 ${r}px rgba(234,179,8,${a})`, animated:false }; }
+                      if (_lvl >= 16) { const a=_glowAlpha,r=_glowR; return { label:"◇ Srebrna+", lc:"text-slate-200", border:`2px solid rgb(226,232,240)`, shadow:`0 0 ${r}px rgba(203,213,225,${a}), 0 0 ${Math.round(r*0.4)}px rgba(148,163,184,0.4)`, animated:false }; }
+                      if (_lvl >= 11) { const a=_glowAlpha,r=_glowR; return { label:"◇ Srebrna",  lc:"text-slate-300", border:`2px solid rgb(148,163,184)`, shadow:`0 0 ${r}px rgba(148,163,184,${a})`, animated:false }; }
+                      if (_lvl >= 6)  { const a=_glowAlpha,r=_glowR; return { label:"◻ Kamienna", lc:"text-stone-400", border:`2px solid rgb(120,113,108)`, shadow:`0 0 ${r}px rgba(120,113,108,${a})`, animated:false }; }
+                      return { label:"▪ Drewniana", lc:"text-amber-700", border:`2px solid #8b6a3e`, shadow:_lvl > 1 ? `0 0 ${_glowR}px rgba(139,106,62,${_glowAlpha})` : "", animated:false };
+                    })();
+                    const _xpPct = displayXpToNextLevel > 0 ? Math.min(100, Math.round(displayXp / displayXpToNextLevel * 100)) : 100;
+
+                    return (
                     <div className="flex gap-9">
-                      {/* Lewa kolumna: avatar */}
-                      <div className="flex w-64 shrink-0 flex-col items-center gap-4">
-                        {/* Nick nad avatarem */}
+                      {/* ── Lewa kolumna ── */}
+                      <div className="flex w-64 shrink-0 flex-col items-center gap-3">
+                        {/* Nick */}
                         <div className="w-full text-center">
                           <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
                           {freeSkillPoints > 0 && (
                             <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
                           )}
                         </div>
-                        {/* Avatar */}
-                        <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
-                          className="flex h-56 w-56 items-center justify-center rounded-[28px] border-2 border-[#8b6a3e] bg-[rgba(38,24,14,0.8)] shadow-xl transition hover:border-yellow-400/60 overflow-hidden">
-                          {avatarSkin >= 0
-                            ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
-                            : <span className="flex flex-col items-center justify-center gap-1 animate-pulse">
-                                <span className="text-[#f9e7b2] text-xl font-black leading-tight text-center">Wybierz Avatar</span>
-                                <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
-                              </span>}
-                        </button>
-                        {/* Plecak — obraz otwierającego się plecaka */}
+
+                        {/* Avatar z ramką poziomową */}
+                        {avatarFrame.animated ? (
+                          <>
+                            <style>{`@keyframes _legendary-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} ._legendary-ring{animation:_legendary-spin 4s linear infinite;transform-origin:center}`}</style>
+                            <div className="relative h-56 w-56 shrink-0 cursor-pointer" onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}>
+                              <div className="absolute inset-0 overflow-hidden rounded-[30px]">
+                                <div className="_legendary-ring absolute" style={{width:"300%",height:"300%",top:"-100%",left:"-100%",background:"conic-gradient(from 0deg,#f0abfc,#818cf8,#67e8f9,#34d399,#fbbf24,#f87171,#f0abfc)"}} />
+                              </div>
+                              <div className="absolute inset-[3px] flex items-center justify-center rounded-[26px] overflow-hidden bg-[rgba(38,24,14,0.9)]">
+                                {avatarSkin >= 0
+                                  ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                                  : <span className="flex flex-col items-center justify-center gap-1 animate-pulse text-center px-2">
+                                      <span className="text-[#f9e7b2] text-xl font-black leading-tight">Wybierz Avatar</span>
+                                      <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                                    </span>}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
+                            className="flex h-56 w-56 shrink-0 items-center justify-center rounded-[28px] bg-[rgba(38,24,14,0.8)] overflow-hidden transition hover:opacity-90"
+                            style={{ border: avatarFrame.border, boxShadow: avatarFrame.shadow || undefined }}>
+                            {avatarSkin >= 0
+                              ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
+                              : <span className="flex flex-col items-center justify-center gap-1 animate-pulse text-center px-2">
+                                  <span className="text-[#f9e7b2] text-xl font-black leading-tight">Wybierz Avatar</span>
+                                  <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                                </span>}
+                          </button>
+                        )}
+
+                        {/* Etykieta ramki */}
+                        <div className={`w-full text-center text-[11px] font-bold ${avatarFrame.lc} rounded-lg bg-black/25 border border-white/5 py-1 px-2`}>
+                          Ramka: {avatarFrame.label}
+                        </div>
+
+                        {/* Poziom + pasek XP */}
+                        <div className="w-full rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-2.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-[#9b7a4e]">Poziom</span>
+                            <span className="text-sm font-black text-[#f9e7b2]">LVL {displayLevel}{displayLevel >= MAX_LEVEL ? " ✦" : ""}</span>
+                          </div>
+                          {displayLevel < MAX_LEVEL ? (
+                            <>
+                              <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-black/50">
+                                <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
+                                  style={{width:`${_xpPct}%`}} />
+                              </div>
+                              <p className="text-[10px] text-[#8b6a3e] text-right tabular-nums">
+                                {displayXp.toLocaleString("pl-PL")} / {displayXpToNextLevel.toLocaleString("pl-PL")} XP
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xs font-bold text-yellow-400 text-center">MAX LEVEL</p>
+                          )}
+                        </div>
+
+                        {/* Plecak */}
                         <button onClick={() => setDomTab("plecak")}
                           className="group flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3 transition hover:border-[#8b6a3e] hover:bg-black/30">
                           <img src="/ui/backpack.png" alt="Plecak" className="h-14 w-14 object-contain" style={{imageRendering:"pixelated"}} />
@@ -8336,11 +8405,30 @@ export default function Page() {
                         </button>
                       </div>
 
-                      {/* Prawa kolumna: statystyki */}
-                      <div className="flex-1">
-                        {/* ─── Nagłówek + selector ─── */}
-                        <div className="mb-3 flex items-center justify-between">
-                          <p className="text-base font-black text-[#f9e7b2]">Statystyki</p>
+                      {/* ── Prawa kolumna: statystyki ── */}
+                      <div className="flex-1 min-w-0">
+                        {/* Nagłówek + reset + selector */}
+                        <div className="mb-3 flex items-center gap-2 flex-wrap">
+                          <p className="text-base font-black text-[#f9e7b2] mr-auto">Statystyki</p>
+                          {/* Reset — destruktywna akcja, dyskretnie w nagłówku */}
+                          <button className="rounded-lg border border-red-400/20 bg-red-950/15 px-2.5 py-1 text-[11px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
+                            onClick={() => {
+                              if (!profile?.id) return;
+                              if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
+                              void (async () => {
+                                const { data, error } = await supabase.rpc("game_reset_player_stats");
+                                if (error) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: error.message }); return; }
+                                const response = data as { ok?: boolean; error?: string; spent?: number; spent_points?: number; player_stats?: PlayerStatsMap; free_skill_points?: number } | null;
+                                if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: response.error ?? "Nieznany błąd." }); return; }
+                                const newStats = response?.player_stats ?? { ...DEFAULT_STATS };
+                                const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : freeSkillPoints;
+                                setPlayerStats(newStats);
+                                setFreeSkillPoints(newFsp);
+                                saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
+                                await loadProfile(profile.id);
+                                setMessage({ type: "success", title: "Statystyki zresetowane", text: `Odzyskano ${response?.spent_points ?? 0} punktów umiejętności. Koszt: ${response?.spent ?? 50000} 💰.` });
+                              })();
+                            }}>🔄 Reset (50 000 💰)</button>
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
                             {([1,5,10] as const).map(n => (
@@ -8352,7 +8440,7 @@ export default function Page() {
                           </div>
                         </div>
 
-                        {/* ─── Karty statystyk ─── */}
+                        {/* Karty statystyk */}
                         <div className="space-y-2">
                           {STATS_DEFS.map(def => {
                             const val = playerStats[def.key];
@@ -8376,58 +8464,65 @@ export default function Page() {
                                 ? (Math.min(90, (val+1)*0.3) - Math.min(90, val*0.3)).toFixed(2)
                                 : (calcStatEffect(val+1, def.rate) - eff).toFixed(2)
                               : "0.00";
-                            const bonusStr = def.key === "wiedza"    ? `−${Math.min(25, eff).toFixed(1)}% wzrostu`
-                              : def.key === "zrecznosc"  ? `+${eff.toFixed(1)}% szansa`
-                              : def.key === "zaradnosc"  ? `−${eff.toFixed(1)}% podlanie`
-                              : def.key === "sadownik"   ? `+${eff.toFixed(1)}% drzewa`
-                              : def.key === "opieka"     ? `−${Math.min(90, effVal*0.3).toFixed(1)}% głód`
+                            // Bonus — redukcje w cyan (mniej czegoś = dobrze), przyrosty w zielonym
+                            const bonusStr = def.key === "wiedza"   ? `−${Math.min(25, eff).toFixed(1)}% wzrostu`
+                              : def.key === "zrecznosc" ? `+${eff.toFixed(1)}% szansa`
+                              : def.key === "zaradnosc" ? `−${eff.toFixed(1)}% podlanie`
+                              : def.key === "sadownik"  ? `+${eff.toFixed(1)}% drzewa`
+                              : def.key === "opieka"    ? `−${Math.min(90, effVal*0.3).toFixed(1)}% głód`
                               : `+${eff.toFixed(1)}% drop`;
+                            const bonusIsReduction = bonusStr.startsWith("−");
                             const isFlashing = statFlash === def.key;
                             return (
                               <div key={def.key}
-                                className={`rounded-xl border p-3 transition-all duration-300 ${
-                                  isFlashing  ? "border-yellow-400 bg-yellow-500/10 shadow-lg shadow-yellow-500/10"
+                                className={`rounded-xl border px-3 py-2.5 transition-all duration-300 ${
+                                  isFlashing ? "border-yellow-400 bg-yellow-500/10 shadow-lg shadow-yellow-500/10"
                                   : isLocked  ? "border-[#8b6a3e]/20 bg-black/10 opacity-60"
                                   : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e]/70"
                                 }`}>
                                 <div className="flex items-center gap-3">
-                                  {/* Info */}
                                   <div className="flex-1 min-w-0">
+                                    {/* Wiersz 1: nazwa statu + rank + efekt */}
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[15px] font-black text-[#f9e7b2]">{def.label}</span>
-                                      <span className="text-[13px] font-bold text-[#dfcfab] tabular-nums">{val}/100</span>
+                                      <span className="text-base font-black text-[#f9e7b2] leading-tight">{def.label}</span>
                                       {isLocked
                                         ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
                                         : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
                                       {effVal > 0 && (
-                                        <span className="text-sm font-bold text-green-200 ml-auto tabular-nums">{bonusStr}</span>
+                                        <span className={`text-sm font-black ml-auto tabular-nums ${bonusIsReduction ? "text-cyan-300" : "text-green-300"}`}>{bonusStr}</span>
                                       )}
                                     </div>
+                                    {/* Wiersz 2: pasek lub info o blokadzie */}
                                     {isLocked ? (
                                       <div className="mt-0.5 space-y-0.5">
-                                        <p className="text-[11px] text-[#8b6a3e]">Ulepszanie odblokuje sie na poziomie {def.unlockLevel}</p>
-                                        {_avBonus > 0 && <p className="text-[11px] font-bold text-amber-400">+{_avBonus} z avatara — juz aktywne!</p>}
+                                        <p className="text-[11px] text-[#8b6a3e]">Ulepszanie odblokuje się na poziomie {def.unlockLevel}</p>
+                                        {_avBonus > 0 && <p className="text-[11px] font-bold text-amber-400">+{_avBonus} z avatara — już aktywne!</p>}
                                       </div>
                                     ) : (
                                       <>
-                                        <div className="mt-1 relative h-2 w-full">
-                                          <div className="absolute inset-0 overflow-hidden rounded-full bg-black/40">
-                                            <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
-                                              style={{ width:`${rankBarFill}%` }} />
-                                          </div>
+                                        {/* Pasek rangi — wyraźniejszy */}
+                                        <div className="mt-1.5 relative h-3 w-full overflow-hidden rounded-full bg-black/50">
+                                          <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
+                                            style={{width:`${rankBarFill}%`}} />
                                         </div>
-                                        <div className="flex items-center justify-between mt-0.5">
-                                          <span className="text-[11px] text-[#9b7a4e]">{def.desc} · {val}/100{_avBonus > 0 ? <span className="text-amber-400 font-bold"> +{_avBonus} avatar</span> : null}{_eqBonus > 0 ? <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span> : null}</span>
+                                        {/* Wiersz 3: opis + wartość + nextPtBonus */}
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-[11px] text-[#9b7a4e]">
+                                            {val}<span className="text-[#6b5030]">/100</span>
+                                            {_avBonus > 0 && <span className="text-amber-400 font-bold"> +{_avBonus} av</span>}
+                                            {_eqBonus > 0 && <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span>}
+                                            <span className="text-[#6b5030]"> · {def.desc}</span>
+                                          </span>
                                           {val < 100
-                                            ? <span className="text-[11px] text-[#9b7a4e]">+1 pkt → <span className="text-green-300 font-bold">+{nextPtBonus}%</span></span>
+                                            ? <span className="text-[11px] text-[#9b7a4e] tabular-nums">+1 → <span className={`font-bold ${bonusIsReduction ? "text-cyan-400" : "text-green-300"}`}>+{nextPtBonus}%</span></span>
                                             : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
                                           }
                                         </div>
                                       </>
                                     )}
                                   </div>
-                                  {/* Przycisk */}
+                                  {/* Przycisk ulepszenia */}
                                   {!isLocked && (
                                     <button disabled={!canUp2}
                                       onClick={() => {
@@ -8435,13 +8530,11 @@ export default function Page() {
                                         void (async () => {
                                           let curStats = { ...playerStats };
                                           let curFsp = freeSkillPoints;
-                                          // 1. Wolne punkty najpierw
                                           if (freeToUse > 0) {
                                             curStats = { ...curStats, [def.key]: val + freeToUse };
                                             curFsp = freeSkillPoints - freeToUse;
                                             setPlayerStats(curStats);
                                             setFreeSkillPoints(curFsp);
-                                            // Await DB — żeby paid RPC widział aktualny poziom stat
                                             await supabase.rpc("game_save_avatar_data", {
                                               p_avatar_skin: avatarSkin,
                                               p_player_stats: curStats as Record<string, number>,
@@ -8450,27 +8543,19 @@ export default function Page() {
                                             });
                                             saveAvatarDataLS(profile.id, avatarSkin, curStats, curFsp, prevLevelRef.current);
                                           }
-                                          // 2. Płatne punkty (jeśli są)
                                           if (paidCount > 0) {
                                             const { data, error } = await supabase.rpc("game_buy_stat_points", {
                                               p_stat_key: def.key,
                                               p_amount: paidCount,
                                             });
                                             if (error) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: error.message }); return; }
-                                            const response = data as {
-                                              ok?: boolean; error?: string; stat_key?: string;
-                                              amount?: number; cost?: number;
-                                              player_stats?: PlayerStatsMap; free_skill_points?: number;
-                                            } | null;
+                                            const response = data as { ok?: boolean; error?: string; stat_key?: string; amount?: number; cost?: number; player_stats?: PlayerStatsMap; free_skill_points?: number } | null;
                                             if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return; }
-                                            // Zawsze oblicz lokalnie z curStats (unikamy race condition: game_save_avatar_data
-                                            // z wolnych punktów może nie zdążyć zacommitować przed odczytem game_buy_stat_points)
                                             const newStats: PlayerStatsMap = { ...curStats, [def.key]: (curStats[def.key] as number) + paidCount };
                                             const newFsp = curFsp;
                                             setPlayerStats(newStats);
                                             setFreeSkillPoints(newFsp);
                                             saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
-                                            // Zaktualizuj DB z poprawnymi danymi (nadpisuje ewentualnie stale dane z RPC)
                                             void supabase.rpc("game_save_avatar_data", {
                                               p_avatar_skin: avatarSkin,
                                               p_player_stats: newStats as Record<string, number>,
@@ -8495,7 +8580,7 @@ export default function Page() {
                                       }`}>
                                       {val >= 100 ? "MAX"
                                         : freeToUse > 0 && paidCount === 0 ? `▲ +${totalApplicable} pkt`
-                                        : freeToUse > 0 && paidCount > 0   ? `▲ +${totalApplicable} pkt · ${paidCost.toLocaleString("pl-PL")} 💰`
+                                        : freeToUse > 0 && paidCount > 0   ? `▲ +${totalApplicable} · ${paidCost.toLocaleString("pl-PL")} 💰`
                                         : `${paidCost.toLocaleString("pl-PL")} 💰`}
                                     </button>
                                   )}
@@ -8504,36 +8589,10 @@ export default function Page() {
                             );
                           })}
                         </div>
-
-                        {/* ─── Reset ─── */}
-                        <button className="mt-3 block ml-auto rounded-lg border border-red-400/20 bg-red-950/15 px-3 py-1.5 text-[11px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
-                          onClick={() => {
-                            if (!profile?.id) return;
-                            if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
-                            void (async () => {
-                              const { data, error } = await supabase.rpc("game_reset_player_stats");
-                              if (error) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: error.message }); return; }
-                              const response = data as {
-                                ok?: boolean;
-                                error?: string;
-                                spent?: number;
-                                spent_points?: number;
-                                player_stats?: PlayerStatsMap;
-                                free_skill_points?: number;
-                              } | null;
-                              if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu statystyk", text: response.error ?? "Nieznany błąd." }); return; }
-                              const newStats = response?.player_stats ?? { ...DEFAULT_STATS };
-                              const newFsp = typeof response?.free_skill_points === "number" ? response.free_skill_points : freeSkillPoints;
-                              setPlayerStats(newStats);
-                              setFreeSkillPoints(newFsp);
-                              saveAvatarDataLS(profile.id, avatarSkin, newStats, newFsp, prevLevelRef.current);
-                              await loadProfile(profile.id);
-                              setMessage({ type: "success", title: "Statystyki zresetowane", text: `Odzyskano ${response?.spent_points ?? 0} punktów umiejętności. Koszt: ${response?.spent ?? 50000} 💰.` });
-                            })();
-                          }}>🔄 Reset statystyk (50 000 💰)</button>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
 
                   {/* ════ KOSMETYKA ════ */}
                   {/* ════ EKWIPUNEK ════ */}
