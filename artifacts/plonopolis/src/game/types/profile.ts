@@ -51,4 +51,7 @@ export type Profile = {
   tutorial_step?: number | null;
   lada_starter_given?: boolean | null;
   char_equipped?: Record<string, unknown> | null;
+  owned_eq_items?: Record<string, unknown> | null;
+  extra_eq_items?: unknown[] | null;
+  item_upg_registry?: Record<string, unknown> | null;
 };

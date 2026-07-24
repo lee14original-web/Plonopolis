@@ -683,15 +683,36 @@ export default function Page() {
       void supabase.from("profiles").update({ char_equipped: next as unknown as Record<string, unknown> }).eq("id", uid);
     }
   };
-  const saveItemUpg = (reg: Record<string,number>) => { setItemUpgRegistry(reg); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(reg)); } catch { /* ignore */ } };
+  const saveItemUpg = (reg: Record<string,number>) => {
+    setItemUpgRegistry(reg);
+    const uid = profile?.id ?? "";
+    if (uid) {
+      try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(reg)); } catch { /* ignore */ }
+      void supabase.from("profiles").update({ item_upg_registry: reg as unknown as Record<string, unknown> }).eq("id", uid);
+    }
+  };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
   // ─── Ekwipunek: zdobyte przedmioty (gracz musi je zdobyć by je mieć) ───
   const [ownedEqItems, setOwnedEqItems] = React.useState<Record<string, true>>({});
-  const saveOwnedEqItems = (next: Record<string, true>) => { setOwnedEqItems(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(next)); } catch {} };
+  const saveOwnedEqItems = (next: Record<string, true>) => {
+    setOwnedEqItems(next);
+    const uid = profile?.id ?? "";
+    if (uid) {
+      try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(next)); } catch {}
+      void supabase.from("profiles").update({ owned_eq_items: next as unknown as Record<string, unknown> }).eq("id", uid);
+    }
+  };
   // ─── Ekwipunek Dodatkowy: nadmiarowe duplikaty (przyszłość: handel/ulepszenia/sprzedaż) ───
   type ExtraEqEntry = { uid: string; id: string; upg: number };
   const [extraEqItems, setExtraEqItems] = React.useState<ExtraEqEntry[]>([]);
-  const saveExtraEqItems = (next: ExtraEqEntry[]) => { setExtraEqItems(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {} };
+  const saveExtraEqItems = (next: ExtraEqEntry[]) => {
+    setExtraEqItems(next);
+    const uid = profile?.id ?? "";
+    if (uid) {
+      try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {}
+      void supabase.from("profiles").update({ extra_eq_items: next as unknown[] }).eq("id", uid);
+    }
+  };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
   const [kompostBatch, setKompostBatch] = React.useState<CompostBatch>({ fill: 0, scoreSum: 0, cropIds: [] });
@@ -1218,9 +1239,29 @@ export default function Page() {
     if (!dbCharEquipped && lsCharEquipped && uid) {
       void supabase.from("profiles").update({ char_equipped: lsCharEquipped as unknown as Record<string, unknown> }).eq("id", uid);
     }
-    setItemUpgRegistry(lsLoadMigrate(ITEM_UPG_KEY, uid, s => JSON.parse(s) as Record<string,number>, () => ({})));
-    setOwnedEqItems(lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => ({})));
-    setExtraEqItems(lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : []; }, () => []));
+    // item_upg_registry: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
+    const dbItemUpg = source.item_upg_registry ? source.item_upg_registry as Record<string,number> : null;
+    const lsItemUpg = lsLoadMigrate(ITEM_UPG_KEY, uid, s => JSON.parse(s) as Record<string,number>, () => null);
+    const loadedItemUpg = dbItemUpg ?? lsItemUpg ?? {};
+    setItemUpgRegistry(loadedItemUpg);
+    if (dbItemUpg && uid) { try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(dbItemUpg)); } catch { /* ignore */ } }
+    if (!dbItemUpg && lsItemUpg && uid) { void supabase.from("profiles").update({ item_upg_registry: lsItemUpg as unknown as Record<string,unknown> }).eq("id", uid); }
+
+    // owned_eq_items: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
+    const dbOwned = source.owned_eq_items ? source.owned_eq_items as Record<string,true> : null;
+    const lsOwned = lsLoadMigrate(OWNED_EQ_KEY, uid, s => JSON.parse(s) as Record<string,true>, () => null);
+    const loadedOwned = dbOwned ?? lsOwned ?? {};
+    setOwnedEqItems(loadedOwned);
+    if (dbOwned && uid) { try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(dbOwned)); } catch { /* ignore */ } }
+    if (!dbOwned && lsOwned && uid) { void supabase.from("profiles").update({ owned_eq_items: lsOwned as unknown as Record<string,unknown> }).eq("id", uid); }
+
+    // extra_eq_items: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
+    const dbExtra = Array.isArray(source.extra_eq_items) ? source.extra_eq_items as ExtraEqEntry[] : null;
+    const lsExtra = lsLoadMigrate(EXTRA_EQ_KEY, uid, s => { const p = JSON.parse(s); return Array.isArray(p) ? p as ExtraEqEntry[] : null; }, () => null);
+    const loadedExtra = dbExtra ?? lsExtra ?? [];
+    setExtraEqItems(loadedExtra);
+    if (dbExtra && uid) { try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(dbExtra)); } catch { /* ignore */ } }
+    if (!dbExtra && lsExtra && uid) { void supabase.from("profiles").update({ extra_eq_items: lsExtra as unknown[] }).eq("id", uid); }
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
     const _loadedSettings = lsLoadMigrate(SETTINGS_KEY, uid, s => { const p = JSON.parse(s) as Partial<GameSettings>; return { ...DEFAULT_GAME_SETTINGS, ...p }; }, () => ({ ...DEFAULT_GAME_SETTINGS }));
     setGameSettings(_loadedSettings);
