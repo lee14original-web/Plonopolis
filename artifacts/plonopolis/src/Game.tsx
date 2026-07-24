@@ -3157,9 +3157,10 @@ export default function Page() {
     });
   }
   async function loadProfile(_userId?: string) {
-    const [profileResult, timeResult] = await Promise.all([
+    const [profileResult, timeResult, eqResult] = await Promise.all([
       supabase.rpc("game_get_my_profile"),
       supabase.rpc("get_server_time_ms"),
+      supabase.from("profiles").select("char_equipped, owned_eq_items, extra_eq_items, item_upg_registry").limit(1).maybeSingle(),
     ]);
 
     if (profileResult.error) {
@@ -3175,7 +3176,13 @@ export default function Page() {
       hiveClockOffsetRef.current = timeResult.data - Date.now();
     }
 
-    return applyProfileState(extractRpcProfile(profileResult.data));
+    // Scal dane ekwipunku (pobrane bezpośrednio z tabeli) z danymi RPC
+    const rpcProfile = extractRpcProfile(profileResult.data);
+    const mergedProfile = (rpcProfile && eqResult.data)
+      ? { ...rpcProfile, ...eqResult.data }
+      : rpcProfile;
+
+    return applyProfileState(mergedProfile);
   }
 
   // ─── LADA NPC: helpery + handlery ────────────────────────────────────
