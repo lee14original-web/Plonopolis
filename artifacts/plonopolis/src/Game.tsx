@@ -697,10 +697,8 @@ export default function Page() {
   const saveOwnedEqItems = (next: Record<string, true>) => {
     setOwnedEqItems(next);
     const uid = profile?.id ?? "";
-    if (uid) {
-      try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(next)); } catch {}
-      void supabase.from("profiles").update({ owned_eq_items: next as unknown as Record<string, unknown> }).eq("id", uid);
-    }
+    // DB jest aktualizowana przez game_grant_eq_items RPC — tutaj tylko lokalny cache
+    if (uid) { try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(next)); } catch {} }
   };
   // ─── Ekwipunek Dodatkowy: nadmiarowe duplikaty (przyszłość: handel/ulepszenia/sprzedaż) ───
   type ExtraEqEntry = { uid: string; id: string; upg: number };
@@ -708,9 +706,24 @@ export default function Page() {
   const saveExtraEqItems = (next: ExtraEqEntry[]) => {
     setExtraEqItems(next);
     const uid = profile?.id ?? "";
+    // DB jest aktualizowana przez game_grant_eq_items RPC — tutaj tylko lokalny cache
+    if (uid) { try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {} }
+  };
+  // Przyznaje przedmioty serwerowo (atomowe, odporne na manipulację localStorage)
+  const grantEqItemsServer = async (itemIds: string[]) => {
+    if (!itemIds.length) return;
+    const { data, error } = await supabase.rpc("game_grant_eq_items", { p_item_ids: itemIds });
+    if (error) return; // stan lokalny już zaktualizowany — brak krytycznego błędu
+    const d = data as { owned_eq_items?: Record<string,true>; extra_eq_items?: unknown[] } | null;
+    if (!d) return;
+    const owned = (d.owned_eq_items ?? {}) as Record<string,true>;
+    const extras = Array.isArray(d.extra_eq_items) ? d.extra_eq_items as ExtraEqEntry[] : [];
+    setOwnedEqItems(owned);
+    setExtraEqItems(extras);
+    const uid = profile?.id ?? "";
     if (uid) {
-      try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(next)); } catch {}
-      void supabase.from("profiles").update({ extra_eq_items: next as unknown[] }).eq("id", uid);
+      try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(owned)); } catch {}
+      try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(extras)); } catch {}
     }
   };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
@@ -962,7 +975,11 @@ export default function Page() {
       }
     });
     if (changed) saveItemUpg(merged);
-    if (ownedChanged) saveOwnedEqItems(ownedNext);
+    if (ownedChanged) {
+      saveOwnedEqItems(ownedNext);
+      const newIds = Object.keys(ownedNext).filter(id => !ownedEqItems[id]);
+      if (newIds.length > 0) void grantEqItemsServer(newIds); // serwerowy zapis niezarejestrowanych itemów
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [equipmentSlots, setEquipmentSlots] = React.useState(1);
   const [equipment, setEquipment] = React.useState<string[]>([]);
@@ -3581,6 +3598,7 @@ export default function Page() {
     // dodaje do owned/extra (tak samo jak w kompostowniku) i podmienia bonus.id.
     const bonusList: CustomerOrderBonus[] = Array.isArray(data.bonus) ? [...data.bonus] : [];
     const eqBonuses = bonusList.filter(b => b.type === 'eq_item');
+    const grantedOrderItemIds: string[] = [];
     if (eqBonuses.length > 0) {
       const playerLvl = profile.level ?? 1;
       let owned = { ...ownedEqItems };
@@ -3598,15 +3616,14 @@ export default function Page() {
           continue;
         }
         const item = pool[Math.floor(Math.random() * pool.length)];
-        if (!owned[item.id]) {
-          owned = { ...owned, [item.id]: true as const };
-        } else {
-          extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }];
-        }
+        if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
+        else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
+        grantedOrderItemIds.push(item.id);
         b.id = item.id;
       }
       saveOwnedEqItems(owned);
       saveExtraEqItems(extras);
+      await grantEqItemsServer(grantedOrderItemIds); // serwerowy zapis — odporne na manipulację
     }
     // SQL complete_customer_order sam aktualizuje money, xp, level w DB.
     // loadProfile odświeża cały stan UI (złoto, EXP, level-up, inventory).
@@ -4830,6 +4847,11 @@ export default function Page() {
     saveItemUpg(upgReg);
     saveExtraEqItems(extras);
     saveKompostBatch(emptyBatch);
+    // Serwerowy zapis przedmiotów — serwer jest autorytatywny
+    const _grantedKompostIds = (rewards as Array<{kind:string;itemId?:string}>)
+      .filter(r => r.kind === "item" && r.itemId)
+      .map(r => r.itemId!);
+    if (_grantedKompostIds.length > 0) await grantEqItemsServer(_grantedKompostIds);
     if (profile?.id) {
       await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
     }
@@ -5421,6 +5443,7 @@ export default function Page() {
     setBuyQtyMap(prev => { const n = { ...prev }; delete n[offerId]; return n; });
     if (result?.item_type === "equipment" && result.item_key) {
       saveOwnedEqItems({ ...ownedEqItems, [result.item_key]: true });
+      await grantEqItemsServer([result.item_key]); // serwerowy zapis
     }
     setMessage({ type: "success", title: "Zakup udany!", text: `Kupiono: ${result.item_name} ×${result.quantity} za ${result.paid?.toLocaleString("pl-PL")} zł.` });
     await Promise.all([loadProfile(), loadMarketData()]);
@@ -5448,6 +5471,7 @@ export default function Page() {
       const next = { ...ownedEqItems };
       result.equipment_keys.forEach(k => { next[k] = true; });
       saveOwnedEqItems(next);
+      await grantEqItemsServer(result.equipment_keys); // serwerowy zapis
     }
     let claimMsg = "";
     if ((result.gold_claimed ?? 0) > 0) claimMsg += `+${result.gold_claimed?.toLocaleString("pl-PL")} zł. `;
