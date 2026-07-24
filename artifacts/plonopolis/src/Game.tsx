@@ -8552,9 +8552,15 @@ export default function Page() {
                       const newItemUpg = { ...itemUpgRegistry, [eqD.id]: fu };
                       saveCharEquipped(newCharEq);
                       saveItemUpg(newItemUpg);
+                      // Wymuś zapis do DB i POCZEKAJ przed loadProfile — inaczej loadProfile
+                      // czyta stare dane i item wraca do poprzedniego poziomu po odświeżeniu
+                      if (profile?.id) {
+                        await supabase.from("profiles").update({
+                          char_equipped:      newCharEq    as unknown as Record<string, unknown>,
+                          item_upg_registry:  newItemUpg   as unknown as Record<string, unknown>,
+                        }).eq("id", profile.id);
+                      }
                       await loadProfile(profile!.id);
-                      // loadProfile może nadpisać charEquipped/itemUpg starymi danymi z DB (race condition)
-                      // — wymuś właściwe wartości po odświeżeniu profilu
                       setCharEquipped(newCharEq);
                       setItemUpgRegistry(newItemUpg);
                       if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
@@ -8897,8 +8903,11 @@ export default function Page() {
                               const newItemUpgE = { ...itemUpgRegistry, [entry.id]: fu };
                               saveExtraEqItems(newExtra);
                               saveItemUpg(newItemUpgE);
+                              // Wymuś zapis do DB i POCZEKAJ przed loadProfile
+                              await supabase.from("profiles").update({
+                                item_upg_registry: newItemUpgE as unknown as Record<string, unknown>,
+                              }).eq("id", profile.id);
                               await loadProfile(profile.id);
-                              // loadProfile może nadpisać itemUpg starymi danymi z DB (race condition) — wymuś właściwe wartości
                               setExtraEqItems(newExtra);
                               setItemUpgRegistry(newItemUpgE);
                               if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
