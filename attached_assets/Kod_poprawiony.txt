@@ -10635,4 +10635,4 @@ export default function Page() {
 
 Nie ruszaj pól, narzędzi, tutoriala, DB ani logiki upraw.
 
-Typecheck, pokaż diff, nie pushuj.
+Typecheck, pokaż diff, nie pushuj.    

@@ -8323,15 +8323,20 @@ export default function Page() {
                     })();
                     const _xpPct = displayXpToNextLevel > 0 ? Math.min(100, Math.round(displayXp / displayXpToNextLevel * 100)) : 100;
 
+                    // Emoji ikon statu
+                    const STAT_ICON: Record<string, string> = {
+                      wiedza:"🧠", zrecznosc:"🎯", zaradnosc:"💡", sadownik:"🌳", opieka:"🐾", szczescie:"🍀",
+                    };
+
                     return (
-                    <div className="flex gap-9">
+                    <div className="flex gap-8">
                       {/* ── Lewa kolumna ── */}
-                      <div className="flex w-64 shrink-0 flex-col items-center gap-3">
+                      <div className="flex w-72 shrink-0 flex-col items-center gap-3">
                         {/* Nick */}
                         <div className="w-full text-center">
-                          <p className="text-xl font-black text-[#f9e7b2]">{profile?.login}</p>
+                          <p className="text-2xl font-black text-[#f9e7b2]">{profile?.login}</p>
                           {freeSkillPoints > 0 && (
-                            <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-xs font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
+                            <span className="mt-1 inline-block rounded-lg bg-yellow-500/20 px-3 py-1 text-[15px] font-bold text-yellow-300">+{freeSkillPoints} pkt do rozdania</span>
                           )}
                         </div>
 
@@ -8339,68 +8344,68 @@ export default function Page() {
                         {avatarFrame.animated ? (
                           <>
                             <style>{`@keyframes _legendary-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} ._legendary-ring{animation:_legendary-spin 4s linear infinite;transform-origin:center}`}</style>
-                            <div className="relative h-56 w-56 shrink-0 cursor-pointer" onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}>
-                              <div className="absolute inset-0 overflow-hidden rounded-[30px]">
+                            <div className="relative h-64 w-64 shrink-0 cursor-pointer" onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}>
+                              <div className="absolute inset-0 overflow-hidden rounded-[32px]">
                                 <div className="_legendary-ring absolute" style={{width:"300%",height:"300%",top:"-100%",left:"-100%",background:"conic-gradient(from 0deg,#f0abfc,#818cf8,#67e8f9,#34d399,#fbbf24,#f87171,#f0abfc)"}} />
                               </div>
-                              <div className="absolute inset-[3px] flex items-center justify-center rounded-[26px] overflow-hidden bg-[rgba(38,24,14,0.9)]">
+                              <div className="absolute inset-[3px] flex items-center justify-center rounded-[29px] overflow-hidden bg-[rgba(38,24,14,0.9)]">
                                 {avatarSkin >= 0
                                   ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                                   : <span className="flex flex-col items-center justify-center gap-1 animate-pulse text-center px-2">
-                                      <span className="text-[#f9e7b2] text-xl font-black leading-tight">Wybierz Avatar</span>
-                                      <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                                      <span className="text-[#f9e7b2] text-2xl font-black leading-tight">Wybierz Avatar</span>
+                                      <span className="text-[#c9952f] text-base font-bold">(kliknij)</span>
                                     </span>}
                               </div>
                             </div>
                           </>
                         ) : (
                           <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
-                            className="flex h-56 w-56 shrink-0 items-center justify-center rounded-[28px] bg-[rgba(38,24,14,0.8)] overflow-hidden transition hover:opacity-90"
+                            className="flex h-64 w-64 shrink-0 items-center justify-center rounded-[32px] bg-[rgba(38,24,14,0.8)] overflow-hidden transition hover:opacity-90"
                             style={{ border: avatarFrame.border, boxShadow: avatarFrame.shadow || undefined }}>
                             {avatarSkin >= 0
                               ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
                               : <span className="flex flex-col items-center justify-center gap-1 animate-pulse text-center px-2">
-                                  <span className="text-[#f9e7b2] text-xl font-black leading-tight">Wybierz Avatar</span>
-                                  <span className="text-[#c9952f] text-sm font-bold">(kliknij)</span>
+                                  <span className="text-[#f9e7b2] text-2xl font-black leading-tight">Wybierz Avatar</span>
+                                  <span className="text-[#c9952f] text-base font-bold">(kliknij)</span>
                                 </span>}
                           </button>
                         )}
 
                         {/* Etykieta ramki */}
-                        <div className={`w-full text-center text-[11px] font-bold ${avatarFrame.lc} rounded-lg bg-black/25 border border-white/5 py-1 px-2`}>
+                        <div className={`w-full text-center text-[14px] font-bold ${avatarFrame.lc} rounded-lg bg-black/25 border border-white/5 py-1.5 px-2`}>
                           Ramka: {avatarFrame.label}
                         </div>
 
                         {/* Poziom + pasek XP */}
-                        <div className="w-full rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-2.5 space-y-1.5">
+                        <div className="w-full rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-3 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-[#9b7a4e]">Poziom</span>
-                            <span className="text-sm font-black text-[#f9e7b2]">LVL {displayLevel}{displayLevel >= MAX_LEVEL ? " ✦" : ""}</span>
+                            <span className="text-[14px] text-[#9b7a4e]">Poziom</span>
+                            <span className="text-[17px] font-black text-[#f9e7b2]">LVL {displayLevel}{displayLevel >= MAX_LEVEL ? " ✦" : ""}</span>
                           </div>
                           {displayLevel < MAX_LEVEL ? (
                             <>
-                              <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-black/50">
+                              <div className="relative h-3.5 w-full overflow-hidden rounded-full bg-black/50">
                                 <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
                                   style={{width:`${_xpPct}%`}} />
                               </div>
-                              <p className="text-[10px] text-[#8b6a3e] text-right tabular-nums">
+                              <p className="text-[13px] text-[#8b6a3e] text-right tabular-nums">
                                 {displayXp.toLocaleString("pl-PL")} / {displayXpToNextLevel.toLocaleString("pl-PL")} XP
                               </p>
                             </>
                           ) : (
-                            <p className="text-xs font-bold text-yellow-400 text-center">MAX LEVEL</p>
+                            <p className="text-[15px] font-bold text-yellow-400 text-center">MAX LEVEL</p>
                           )}
                         </div>
 
                         {/* Plecak */}
                         <button onClick={() => setDomTab("plecak")}
-                          className="group flex w-full flex-col items-center gap-1 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3 transition hover:border-[#8b6a3e] hover:bg-black/30">
+                          className="group flex w-full flex-col items-center gap-1.5 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3.5 transition hover:border-[#8b6a3e] hover:bg-black/30">
                           <img src="/ui/backpack.png" alt="Plecak" className="h-14 w-14 object-contain" style={{imageRendering:"pixelated"}} />
-                          <span className="text-sm font-bold text-[#dfcfab]">Plecak</span>
+                          <span className="text-[17px] font-bold text-[#dfcfab]">Plecak</span>
                         </button>
                         {/* Ekwipunek */}
                         <button onClick={() => setDomTab("eq")}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3 text-sm font-bold text-[#dfcfab] transition hover:border-[#8b6a3e] hover:bg-black/30">
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#8b6a3e]/50 bg-black/20 py-3.5 text-[17px] font-bold text-[#dfcfab] transition hover:border-[#8b6a3e] hover:bg-black/30">
                           ⚔️ Ekwipunek
                         </button>
                       </div>
@@ -8408,10 +8413,10 @@ export default function Page() {
                       {/* ── Prawa kolumna: statystyki ── */}
                       <div className="flex-1 min-w-0">
                         {/* Nagłówek + reset + selector */}
-                        <div className="mb-3 flex items-center gap-2 flex-wrap">
-                          <p className="text-base font-black text-[#f9e7b2] mr-auto">Statystyki</p>
+                        <div className="mb-4 flex items-center gap-2 flex-wrap">
+                          <p className="text-[20px] font-black text-[#f9e7b2] mr-auto">Statystyki</p>
                           {/* Reset — destruktywna akcja, dyskretnie w nagłówku */}
-                          <button className="rounded-lg border border-red-400/20 bg-red-950/15 px-2.5 py-1 text-[11px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
+                          <button className="rounded-lg border border-red-400/20 bg-red-950/15 px-3 py-1.5 text-[14px] font-bold text-red-400/60 transition hover:border-red-400/50 hover:text-red-300 hover:bg-red-950/40"
                             onClick={() => {
                               if (!profile?.id) return;
                               if (!confirm("Resetować wszystkie statystyki za 50 000 💰?")) return;
@@ -8430,10 +8435,10 @@ export default function Page() {
                               })();
                             }}>🔄 Reset (50 000 💰)</button>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-[#8b6a3e]">Dodaj:</span>
+                            <span className="text-[15px] text-[#8b6a3e]">Dodaj:</span>
                             {([1,5,10] as const).map(n => (
                               <button key={n} onClick={() => setStatUpgradeAmount(n)}
-                                className={`rounded-lg px-2.5 py-1 text-xs font-bold border transition ${
+                                className={`rounded-lg px-3 py-1.5 text-[15px] font-bold border transition ${
                                   statUpgradeAmount === n ? "border-yellow-400 bg-yellow-500/30 text-yellow-200" : "border-[#8b6a3e]/40 bg-black/20 text-[#8b6a3e] hover:border-yellow-600/60 hover:text-yellow-400"
                                 }`}>+{n}</button>
                             ))}
@@ -8473,50 +8478,51 @@ export default function Page() {
                               : `+${eff.toFixed(1)}% drop`;
                             const bonusIsReduction = bonusStr.startsWith("−");
                             const isFlashing = statFlash === def.key;
+                            const statIcon = STAT_ICON[def.key] ?? "";
                             return (
                               <div key={def.key}
-                                className={`rounded-xl border px-3 py-2.5 transition-all duration-300 ${
+                                className={`rounded-xl border px-4 py-3 transition-all duration-300 ${
                                   isFlashing ? "border-yellow-400 bg-yellow-500/10 shadow-lg shadow-yellow-500/10"
                                   : isLocked  ? "border-[#8b6a3e]/20 bg-black/10 opacity-60"
-                                  : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e]/70"
+                                  : "border-[#8b6a3e]/40 bg-black/20 hover:border-[#8b6a3e] hover:bg-[rgba(139,106,62,0.08)]"
                                 }`}>
                                 <div className="flex items-center gap-3">
                                   <div className="flex-1 min-w-0">
-                                    {/* Wiersz 1: nazwa statu + rank + efekt */}
+                                    {/* Wiersz 1: ikona + nazwa statu + rank + efekt */}
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-base font-black text-[#f9e7b2] leading-tight">{def.label}</span>
+                                      <span className="text-[20px] font-black text-[#f9e7b2] leading-tight">{statIcon} {def.label}</span>
                                       {isLocked
-                                        ? <span className="text-[10px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
-                                        : <span className={`text-[10px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
+                                        ? <span className="text-[13px] font-bold text-orange-400 bg-orange-900/30 rounded px-1.5 py-0.5">🔒 lvl {def.unlockLevel}</span>
+                                        : <span className={`text-[13px] font-bold ${rank.color} bg-black/30 rounded px-1.5 py-0.5`}>{rank.name}</span>
                                       }
                                       {effVal > 0 && (
-                                        <span className={`text-sm font-black ml-auto tabular-nums ${bonusIsReduction ? "text-cyan-300" : "text-green-300"}`}>{bonusStr}</span>
+                                        <span className={`text-[17px] font-black ml-auto tabular-nums ${bonusIsReduction ? "text-cyan-300" : "text-green-300"}`}>{bonusStr}</span>
                                       )}
                                     </div>
                                     {/* Wiersz 2: pasek lub info o blokadzie */}
                                     {isLocked ? (
                                       <div className="mt-0.5 space-y-0.5">
-                                        <p className="text-[11px] text-[#8b6a3e]">Ulepszanie odblokuje się na poziomie {def.unlockLevel}</p>
-                                        {_avBonus > 0 && <p className="text-[11px] font-bold text-amber-400">+{_avBonus} z avatara — już aktywne!</p>}
+                                        <p className="text-[14px] text-[#8b6a3e]">Ulepszanie odblokuje się na poziomie {def.unlockLevel}</p>
+                                        {_avBonus > 0 && <p className="text-[14px] font-bold text-amber-400">+{_avBonus} z avatara — już aktywne!</p>}
                                       </div>
                                     ) : (
                                       <>
-                                        {/* Pasek rangi — wyraźniejszy */}
-                                        <div className="mt-1.5 relative h-3 w-full overflow-hidden rounded-full bg-black/50">
+                                        {/* Pasek rangi */}
+                                        <div className="mt-2 relative h-3.5 w-full overflow-hidden rounded-full bg-black/50">
                                           <div className="h-full rounded-full bg-gradient-to-r from-[#8b6a3e] to-[#f9e7b2] transition-all duration-500"
                                             style={{width:`${rankBarFill}%`}} />
                                         </div>
                                         {/* Wiersz 3: opis + wartość + nextPtBonus */}
-                                        <div className="flex items-center justify-between mt-1">
-                                          <span className="text-[11px] text-[#9b7a4e]">
+                                        <div className="flex items-center justify-between mt-1.5">
+                                          <span className="text-[14px] text-[#9b7a4e]">
                                             {val}<span className="text-[#6b5030]">/100</span>
                                             {_avBonus > 0 && <span className="text-amber-400 font-bold"> +{_avBonus} av</span>}
                                             {_eqBonus > 0 && <span className="text-purple-400 font-bold"> +{Math.round(_eqBonus)} eq</span>}
                                             <span className="text-[#6b5030]"> · {def.desc}</span>
                                           </span>
                                           {val < 100
-                                            ? <span className="text-[11px] text-[#9b7a4e] tabular-nums">+1 → <span className={`font-bold ${bonusIsReduction ? "text-cyan-400" : "text-green-300"}`}>+{nextPtBonus}%</span></span>
-                                            : <span className="text-[11px] font-bold text-yellow-400">MAX</span>
+                                            ? <span className="text-[14px] text-[#9b7a4e] tabular-nums">+1 → <span className={`font-bold ${bonusIsReduction ? "text-cyan-400" : "text-green-300"}`}>+{nextPtBonus}%</span></span>
+                                            : <span className="text-[14px] font-bold text-yellow-400">MAX</span>
                                           }
                                         </div>
                                       </>
@@ -8571,7 +8577,7 @@ export default function Page() {
                                           setStatFlash(def.key); setTimeout(() => setStatFlash(null), 700);
                                         })();
                                       }}
-                                      className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition whitespace-nowrap border ${
+                                      className={`shrink-0 rounded-lg px-3.5 py-2.5 text-[15px] font-bold transition whitespace-nowrap border ${
                                         freeToUse > 0 && paidCount === 0 ? "border-yellow-500/50 bg-yellow-500/25 text-yellow-200 hover:bg-yellow-500/40"
                                         : freeToUse > 0 && paidCount > 0  ? "border-purple-500/50 bg-purple-900/30 text-purple-200 hover:bg-purple-800/50"
                                         : canAfford && paidCount > 0       ? "border-green-700/50 bg-green-900/35 text-green-200 hover:bg-green-800/50"
