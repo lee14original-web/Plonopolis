@@ -675,12 +675,12 @@ export default function Page() {
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
   const [dragOverSlot, setDragOverSlot] = React.useState<EquipSlot | null>(null);
   const [itemUpgRegistry, setItemUpgRegistry] = React.useState<Record<string,number>>({});
-  const saveCharEquipped = (next: CharEquipped) => {
+  const saveCharEquipped = async (next: CharEquipped): Promise<void> => {
     setCharEquipped(next);
     const uid = profile?.id ?? "";
     if (uid) {
       try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ }
-      void supabase.from("profiles").update({ char_equipped: next as unknown as Record<string, unknown> }).eq("id", uid);
+      await supabase.from("profiles").update({ char_equipped: next as unknown as Record<string, unknown> }).eq("id", uid);
     }
   };
   const saveItemUpg = (reg: Record<string,number>) => {
@@ -8672,7 +8672,7 @@ export default function Page() {
                                     const di = CHAR_EQUIP_ITEMS.find(i => i.id === draggedItemId);
                                     if (!di || di.slot !== slot || (profile?.level??0) < di.unlockLevel) return;
                                     const existing = charEquipped[slot];
-                                    saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: getItemUpg(di.id) } });
+                                    void saveCharEquipped({ ...charEquipped, [slot]: existing?.id === di.id ? null : { id: di.id, upg: getItemUpg(di.id) } });
                                     setDraggedItemId(null);
                                   }}
                                   onClick={() => { const next = isSel ? null : slot; setEquippingSlot(next); if (next) setEqFilter(next); }}
@@ -8743,7 +8743,7 @@ export default function Page() {
                                   <p className="text-[12px] text-[#8b6a3e] uppercase tracking-widest font-bold">Założone</p>
                                   <button
                                     type="button"
-                                    onClick={() => { saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
+                                    onClick={() => { void saveCharEquipped({ ...charEquipped, [slot]: null }); setEquippingSlot(null); }}
                                     className="w-full rounded-xl border border-red-500/60 bg-red-900/20 px-4 py-3 text-[15px] font-black text-red-300 hover:bg-red-900/40 transition-colors"
                                   >Zdejmij</button>
                                 </div>
@@ -8840,7 +8840,7 @@ export default function Page() {
                                       draggable
                                       onDragStart={() => setDraggedItemId(item.id)}
                                       onDragEnd={() => setDraggedItemId(null)}
-                                      onClick={() => { const nowOn = !isOn; saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
+                                      onClick={() => { const nowOn = !isOn; void saveCharEquipped({...charEquipped, [sl]: nowOn ? {id:item.id, upg:getItemUpg(item.id)} : null}); setEquippingSlot(nowOn ? sl : null); }}
                                       className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
                                       style={{ borderColor:isOn?uc:"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
                                       {item.img
@@ -8933,14 +8933,21 @@ export default function Page() {
                               else if (fu < entry.upg) { setMessage({ type:"error", title:`⬇ Item cofa się do +${fu}!`, text:"Ulepszenie nie powiodło się." }); }
                               else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
                             };
-                            const handleSwapExtra = (entry: ExtraEqEntry) => {
+                            const handleSwapExtra = async (entry: ExtraEqEntry) => {
                               const mainUpg = itemUpgRegistry[entry.id] ?? 0;
                               if (mainUpg === entry.upg) return;
-                              saveItemUpg({ ...itemUpgRegistry, [entry.id]: entry.upg });
+                              const newItemUpgSwap = { ...itemUpgRegistry, [entry.id]: entry.upg };
+                              saveItemUpg(newItemUpgSwap);
                               saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: mainUpg } : e));
                               const it = CHAR_EQUIP_ITEMS.find(i => i.id === entry.id);
                               if (it && charEquipped[it.slot]?.id === entry.id) {
-                                saveCharEquipped({ ...charEquipped, [it.slot]: { id: entry.id, upg: entry.upg } });
+                                await saveCharEquipped({ ...charEquipped, [it.slot]: { id: entry.id, upg: entry.upg } });
+                              }
+                              // Wymuś awaited zapis item_upg do DB
+                              if (profile?.id) {
+                                await supabase.from("profiles").update({
+                                  item_upg_registry: newItemUpgSwap as unknown as Record<string, unknown>,
+                                }).eq("id", profile.id);
                               }
                               setMessage({ type:"success", title:"🔄 Zamieniono!", text:`Główny: +${entry.upg} ↔ Dodatkowy: +${mainUpg}` });
                             };
