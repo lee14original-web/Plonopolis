@@ -8548,9 +8548,15 @@ export default function Page() {
                       }
                       const fu = response?.new_upg ?? eqD.upg;
                       if (response?.barn_items) saveBarnItems(response.barn_items);
-                      saveCharEquipped({ ...charEquipped, [slot]: { id: eqD.id, upg: fu } });
-                      saveItemUpg({ ...itemUpgRegistry, [eqD.id]: fu });
+                      const newCharEq = { ...charEquipped, [slot]: { id: eqD.id, upg: fu } };
+                      const newItemUpg = { ...itemUpgRegistry, [eqD.id]: fu };
+                      saveCharEquipped(newCharEq);
+                      saveItemUpg(newItemUpg);
                       await loadProfile(profile!.id);
+                      // loadProfile może nadpisać charEquipped/itemUpg starymi danymi z DB (race condition)
+                      // — wymuś właściwe wartości po odświeżeniu profilu
+                      setCharEquipped(newCharEq);
+                      setItemUpgRegistry(newItemUpg);
                       if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
                       else if (fu < eqD.upg) { setMessage({ type:"error", title:`⬇ Item cofa się do +${fu}!`, text:"Ulepszenie nie powiodło się." }); }
                       else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
@@ -8887,8 +8893,14 @@ export default function Page() {
                               }
                               const fu = response?.new_upg ?? entry.upg;
                               if (response?.barn_items) saveBarnItems(response.barn_items);
-                              saveExtraEqItems(extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: fu } : e));
+                              const newExtra = extraEqItems.map(e => e.uid === entry.uid ? { ...e, upg: fu } : e);
+                              const newItemUpgE = { ...itemUpgRegistry, [entry.id]: fu };
+                              saveExtraEqItems(newExtra);
+                              saveItemUpg(newItemUpgE);
                               await loadProfile(profile.id);
+                              // loadProfile może nadpisać itemUpg starymi danymi z DB (race condition) — wymuś właściwe wartości
+                              setExtraEqItems(newExtra);
+                              setItemUpgRegistry(newItemUpgE);
                               if (response?.success) { setMessage({ type:"success", title:`✨ +${fu} udane!`, text:`Koszt: ${(response.cost ?? cost).toLocaleString()} 💰` }); }
                               else if (fu < entry.upg) { setMessage({ type:"error", title:`⬇ Item cofa się do +${fu}!`, text:"Ulepszenie nie powiodło się." }); }
                               else { setMessage({ type:"error", title:"Nie powiodło się.", text:`Item pozostaje na +${fu}.` }); }
