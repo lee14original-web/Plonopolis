@@ -1254,7 +1254,11 @@ export default function Page() {
     if (dbCharEquipped && uid) { try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(dbCharEquipped)); } catch { /* ignore */ } }
     // Migracja jednorazowa: jeśli DB było puste ale localStorage ma dane → zapisz do DB
     if (!dbCharEquipped && lsCharEquipped && uid) {
-      void supabase.from("profiles").update({ char_equipped: lsCharEquipped as unknown as Record<string, unknown> }).eq("id", uid);
+      console.log("[Plonopolis] Migracja char_equipped → DB");
+      void supabase.from("profiles").update({ char_equipped: lsCharEquipped as unknown as Record<string, unknown> }).eq("id", uid).then(({ error }) => {
+        if (error) console.error("[Plonopolis] Migracja char_equipped błąd:", error);
+        else console.log("[Plonopolis] Migracja char_equipped OK");
+      });
     }
     // item_upg_registry: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
     const dbItemUpg = source.item_upg_registry ? source.item_upg_registry as Record<string,number> : null;
@@ -1262,7 +1266,13 @@ export default function Page() {
     const loadedItemUpg = dbItemUpg ?? lsItemUpg ?? {};
     setItemUpgRegistry(loadedItemUpg);
     if (dbItemUpg && uid) { try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(dbItemUpg)); } catch { /* ignore */ } }
-    if (!dbItemUpg && lsItemUpg && uid) { void supabase.from("profiles").update({ item_upg_registry: lsItemUpg as unknown as Record<string,unknown> }).eq("id", uid); }
+    if (!dbItemUpg && lsItemUpg && uid) {
+      console.log("[Plonopolis] Migracja item_upg_registry → DB:", lsItemUpg);
+      void supabase.from("profiles").update({ item_upg_registry: lsItemUpg as unknown as Record<string,unknown> }).eq("id", uid).then(({ error }) => {
+        if (error) console.error("[Plonopolis] Migracja item_upg_registry błąd:", error);
+        else console.log("[Plonopolis] Migracja item_upg_registry OK");
+      });
+    }
 
     // owned_eq_items: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
     const dbOwned = source.owned_eq_items ? source.owned_eq_items as Record<string,true> : null;
