@@ -1,0 +1,236 @@
+
+DECLARE
+  v_uid uuid := auth.uid();
+  v_profile record;
+  v_item record;
+  v_target_upg integer;
+  v_base_cost numeric;
+  v_tier_mult numeric;
+  v_slot_mult numeric;
+  v_cost numeric;
+  v_chance numeric;
+  v_luck_bonus numeric;
+  v_ok boolean;
+  v_new_upg integer;
+
+  v_item_tier integer;
+  v_barn_items jsonb;
+  v_new_barn_items jsonb;
+  v_mat record;
+  v_mat_tier integer;
+  v_mat_id text;
+  v_have integer;
+  v_required_materials jsonb := '[]'::jsonb;
+  v_missing_materials jsonb := '[]'::jsonb;
+BEGIN
+  IF v_uid IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  IF p_item_id IS NULL OR length(trim(p_item_id)) < 2 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Nieprawidłowy przedmiot');
+  END IF;
+
+  IF p_current_upg IS NULL OR p_current_upg < 0 OR p_current_upg >= 10 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Nieprawidłowy poziom ulepszenia');
+  END IF;
+
+  SELECT item_id, item_name, slot, unlock_level
+  INTO v_item
+  FROM public.equipment_item_defs
+  WHERE item_id = p_item_id;
+
+  IF v_item IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'Nieznany przedmiot');
+  END IF;
+
+  v_target_upg := p_current_upg + 1;
+
+  v_base_cost := CASE v_target_upg
+    WHEN 1 THEN 50
+    WHEN 2 THEN 100
+    WHEN 3 THEN 250
+    WHEN 4 THEN 500
+    WHEN 5 THEN 1200
+    WHEN 6 THEN 2500
+    WHEN 7 THEN 5000
+    WHEN 8 THEN 10000
+    WHEN 9 THEN 20000
+    WHEN 10 THEN 40000
+    ELSE 0
+  END;
+
+  v_tier_mult := CASE
+    WHEN v_item.unlock_level <= 3 THEN 1.0
+    WHEN v_item.unlock_level <= 6 THEN 1.3
+    WHEN v_item.unlock_level <= 9 THEN 1.6
+    WHEN v_item.unlock_level <= 12 THEN 2.0
+    WHEN v_item.unlock_level <= 15 THEN 2.5
+    WHEN v_item.unlock_level <= 18 THEN 3.0
+    WHEN v_item.unlock_level <= 21 THEN 4.0
+    WHEN v_item.unlock_level <= 25 THEN 5.0
+    ELSE 7.0
+  END;
+
+  v_item_tier := CASE
+    WHEN v_item.unlock_level <= 3 THEN 1
+    WHEN v_item.unlock_level <= 6 THEN 2
+    WHEN v_item.unlock_level <= 9 THEN 3
+    WHEN v_item.unlock_level <= 12 THEN 4
+    WHEN v_item.unlock_level <= 15 THEN 5
+    WHEN v_item.unlock_level <= 18 THEN 6
+    WHEN v_item.unlock_level <= 21 THEN 7
+    WHEN v_item.unlock_level <= 25 THEN 8
+    ELSE 9
+  END;
+
+  v_slot_mult := CASE
+    WHEN v_item.slot = 'glowa' THEN 1.3
+    ELSE 1.0
+  END;
+
+  v_cost := ROUND(v_base_cost * v_tier_mult * v_slot_mult);
+
+  v_chance := CASE v_target_upg
+    WHEN 1 THEN 1.00
+    WHEN 2 THEN 0.95
+    WHEN 3 THEN 0.90
+    WHEN 4 THEN 0.90
+    WHEN 5 THEN 0.85
+    WHEN 6 THEN 0.80
+    WHEN 7 THEN 0.70
+    WHEN 8 THEN 0.60
+    WHEN 9 THEN 0.45
+    WHEN 10 THEN 0.35
+    ELSE 0
+  END;
+
+  p_luck := LEAST(100, GREATEST(0, COALESCE(p_luck, 0)));
+  v_luck_bonus := LEAST(0.05, p_luck * 0.0005);
+  v_chance := LEAST(1, v_chance + v_luck_bonus);
+
+  SELECT id, money, barn_items
+  INTO v_profile
+  FROM public.profiles
+  WHERE id = v_uid
+  FOR UPDATE;
+
+  IF v_profile IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_profile');
+  END IF;
+
+  v_barn_items := COALESCE(v_profile.barn_items, '{}'::jsonb);
+  v_new_barn_items := v_barn_items;
+
+  IF COALESCE(v_profile.money, 0) < v_cost THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'Za mało złota na ulepszenie',
+      'need', v_cost
+    );
+  END IF;
+
+  FOR v_mat IN
+    SELECT target_upg, tier_offset, qty, min_tier
+    FROM public.equipment_upgrade_material_defs
+    WHERE target_upg = v_target_upg
+      AND min_tier <= v_item_tier
+    ORDER BY tier_offset
+  LOOP
+    v_mat_tier := LEAST(10, GREATEST(1, v_item_tier + v_mat.tier_offset));
+
+    SELECT mat_id
+    INTO v_mat_id
+    FROM public.equipment_tier_materials
+    WHERE tier = v_mat_tier;
+
+    IF v_mat_id IS NULL THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'Brak definicji materiału');
+    END IF;
+
+    v_have := COALESCE((v_new_barn_items ->> v_mat_id)::integer, 0);
+
+    v_required_materials := v_required_materials || jsonb_build_array(
+      jsonb_build_object(
+        'mat_id', v_mat_id,
+        'qty', v_mat.qty,
+        'have', v_have
+      )
+    );
+
+    IF v_have < v_mat.qty THEN
+      v_missing_materials := v_missing_materials || jsonb_build_array(
+        jsonb_build_object(
+          'mat_id', v_mat_id,
+          'need', v_mat.qty,
+          'have', v_have
+        )
+      );
+    END IF;
+  END LOOP;
+
+  IF jsonb_array_length(v_missing_materials) > 0 THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'Brakuje materiałów do ulepszenia',
+      'materials', v_required_materials,
+      'missing_materials', v_missing_materials
+    );
+  END IF;
+
+  FOR v_mat IN
+    SELECT target_upg, tier_offset, qty, min_tier
+    FROM public.equipment_upgrade_material_defs
+    WHERE target_upg = v_target_upg
+      AND min_tier <= v_item_tier
+    ORDER BY tier_offset
+  LOOP
+    v_mat_tier := LEAST(10, GREATEST(1, v_item_tier + v_mat.tier_offset));
+
+    SELECT mat_id
+    INTO v_mat_id
+    FROM public.equipment_tier_materials
+    WHERE tier = v_mat_tier;
+
+    v_have := COALESCE((v_new_barn_items ->> v_mat_id)::integer, 0);
+
+    v_new_barn_items := jsonb_set(
+      v_new_barn_items,
+      ARRAY[v_mat_id],
+      to_jsonb(v_have - v_mat.qty),
+      true
+    );
+  END LOOP;
+
+  v_ok := random() < v_chance;
+
+  IF v_ok THEN
+    v_new_upg := v_target_upg;
+  ELSIF p_current_upg <= 6 THEN
+    v_new_upg := p_current_upg;
+  ELSE
+    v_new_upg := p_current_upg - 1;
+  END IF;
+
+  UPDATE public.profiles
+  SET
+    money = ROUND((COALESCE(money, 0) - v_cost) * 100) / 100,
+    barn_items = v_new_barn_items,
+    last_played_at = NOW()
+  WHERE id = v_uid;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'item_id', p_item_id,
+    'item_name', v_item.item_name,
+    'slot', v_item.slot,
+    'current_upg', p_current_upg,
+    'target_upg', v_target_upg,
+    'new_upg', v_new_upg,
+    'success', v_ok,
+    'cost', v_cost,
+    'chance', v_chance,
+    'materials', v_required_materials,
+    'barn_items', v_new_barn_items
+  );
+END;
