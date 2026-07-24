@@ -1270,7 +1270,17 @@ export default function Page() {
     const loadedOwned = dbOwned ?? lsOwned ?? {};
     setOwnedEqItems(loadedOwned);
     if (dbOwned && uid) { try { localStorage.setItem(lsKey(OWNED_EQ_KEY, uid), JSON.stringify(dbOwned)); } catch { /* ignore */ } }
-    if (!dbOwned && lsOwned && uid) { void supabase.from("profiles").update({ owned_eq_items: lsOwned as unknown as Record<string,unknown> }).eq("id", uid); }
+    // Migracja: używamy RPC (nie bezpośredniego update) żeby ominąć ewentualne RLS na kolumnie
+    if (!dbOwned && lsOwned && uid) {
+      const migrIds = Object.keys(lsOwned);
+      if (migrIds.length > 0) {
+        console.log("[Plonopolis] Migracja owned_eq_items → DB via RPC:", migrIds);
+        void supabase.rpc("game_grant_eq_items", { p_item_ids: migrIds }).then(({ error }) => {
+          if (error) console.error("[Plonopolis] Migracja owned_eq_items błąd:", error);
+          else console.log("[Plonopolis] Migracja owned_eq_items OK");
+        });
+      }
+    }
 
     // extra_eq_items: DB autorytatywne, localStorage jako fallback + migracja jednorazowa
     const dbExtra = Array.isArray(source.extra_eq_items) ? source.extra_eq_items as ExtraEqEntry[] : null;
@@ -1278,7 +1288,13 @@ export default function Page() {
     const loadedExtra = dbExtra ?? lsExtra ?? [];
     setExtraEqItems(loadedExtra);
     if (dbExtra && uid) { try { localStorage.setItem(lsKey(EXTRA_EQ_KEY, uid), JSON.stringify(dbExtra)); } catch { /* ignore */ } }
-    if (!dbExtra && lsExtra && uid) { void supabase.from("profiles").update({ extra_eq_items: lsExtra as unknown[] }).eq("id", uid); }
+    if (!dbExtra && lsExtra && lsExtra.length > 0 && uid) {
+      console.log("[Plonopolis] Migracja extra_eq_items → DB:", lsExtra.length, "itemów");
+      void supabase.from("profiles").update({ extra_eq_items: lsExtra as unknown[] }).eq("id", uid).then(({ error }) => {
+        if (error) console.error("[Plonopolis] Migracja extra_eq_items błąd:", error);
+        else console.log("[Plonopolis] Migracja extra_eq_items OK");
+      });
+    }
     setSlotBoxCustom(lsLoadMigrate(SLOT_BOX_KEY, uid, s => JSON.parse(s) as Record<string,{top:number;left:number;width:number;height:number}>, () => ({ ...DEFAULT_SLOT_BOX })));
     const _loadedSettings = lsLoadMigrate(SETTINGS_KEY, uid, s => { const p = JSON.parse(s) as Partial<GameSettings>; return { ...DEFAULT_GAME_SETTINGS, ...p }; }, () => ({ ...DEFAULT_GAME_SETTINGS }));
     setGameSettings(_loadedSettings);
