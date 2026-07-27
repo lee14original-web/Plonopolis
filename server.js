@@ -40,6 +40,28 @@ http.createServer((req, res) => {
   const parsed   = url.parse(req.url);
   const pathname = parsed.pathname;
 
+  // ── Diagnostyka: czy Node.js w kontenerze dosięga Supabase? ─────────────
+  if (pathname === '/sb-test') {
+    const testReq = https.request(
+      { hostname: SUPABASE_HOST, path: '/auth/v1/health', method: 'GET',
+        headers: { host: SUPABASE_HOST } },
+      (testRes) => {
+        let body = '';
+        testRes.on('data', d => body += d);
+        testRes.on('end', () => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, status: testRes.statusCode, body }));
+        });
+      },
+    );
+    testReq.on('error', (err) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message, code: err.code }));
+    });
+    testReq.end();
+    return;
+  }
+
   // ── Supabase proxy ──────────────────────────────────────────────────────
   if (pathname.startsWith('/sb-proxy/')) {
     const upstream = pathname.replace(/^\/sb-proxy/, '') + (parsed.search || '');
