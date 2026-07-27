@@ -27,10 +27,10 @@ timeoutMs = 20000
 [userenv]
 
 [userenv.shared]
-NEXT_PUBLIC_SUPABASE_URL = "https://yfiatxngpdkjzzmddnqm.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaWF0eG5ncGRranp6bWRkbnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTg4MTAsImV4cCI6MjA4OTg3NDgxMH0.1Fw6sbeWvcSzJxoG2tmGzn1_7uSgc9GM61Z4e8HUJ0A"
-VITE_SUPABASE_URL = "https://yfiatxngpdkjzzmddnqm.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmaWF0eG5ncGRranp6bWRkbnFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyOTg4MTAsImV4cCI6MjA4OTg3NDgxMH0.1Fw6sbeWvcSzJxoG2tmGzn1_7uSgc9GM61Z4e8HUJ0A"
+NEXT_PUBLIC_SUPABASE_URL = "https://vmgfoevjlligsgmqascg.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_ikeRxy6AzoNQuIeoeF9aww_4FideNeP"
+VITE_SUPABASE_URL = "https://vmgfoevjlligsgmqascg.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_ikeRxy6AzoNQuIeoeF9aww_4FideNeP"
 
 [nix]
 channel = "stable-25_05"
