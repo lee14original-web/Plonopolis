@@ -1,19 +1,16 @@
 /**
  * Production server for Plonopolis:
  *  - Serves the Vite build from ./public
- *  - Proxies /sb-proxy/* → Supabase (bypasses Brave/Opera tracker blocking)
  *  - SPA fallback: unknown paths → index.html
  */
 
-const http  = require('http');
-const https = require('https');
-const fs    = require('fs');
-const path  = require('path');
-const url   = require('url');
+const http = require('http');
+const fs   = require('fs');
+const path = require('path');
+const url  = require('url');
 
-const PORT         = process.env.PORT || 3000;
-const STATIC_DIR   = path.join(__dirname, 'public');
-const SUPABASE_HOST = 'yfiatxngpdkjzzmddnqm.supabase.co';
+const PORT       = process.env.PORT || 3000;
+const STATIC_DIR = path.join(__dirname, 'public');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -37,77 +34,9 @@ const MIME = {
 };
 
 http.createServer((req, res) => {
-  const parsed   = url.parse(req.url);
-  const pathname = parsed.pathname;
-
-  // ── Diagnostyka: czy Node.js w kontenerze dosięga Supabase? ─────────────
-  if (pathname === '/sb-test') {
-    const testReq = https.request(
-      { hostname: SUPABASE_HOST, path: '/auth/v1/health', method: 'GET',
-        headers: { host: SUPABASE_HOST } },
-      (testRes) => {
-        let body = '';
-        testRes.on('data', d => body += d);
-        testRes.on('end', () => {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true, status: testRes.statusCode, body }));
-        });
-      },
-    );
-    testReq.on('error', (err) => {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: false, error: err.message, code: err.code }));
-    });
-    testReq.end();
-    return;
-  }
-
-  // ── Supabase proxy ──────────────────────────────────────────────────────
-  if (pathname.startsWith('/sb-proxy/')) {
-    const upstream = pathname.replace(/^\/sb-proxy/, '') + (parsed.search || '');
-
-    // Buduj nagłówki – usuń accept-encoding żeby Supabase nie kompresował odpowiedzi
-    const proxyHeaders = {};
-    for (const [k, v] of Object.entries(req.headers)) {
-      if (k === 'host') continue;              // nadpiszemy poniżej
-      if (k === 'accept-encoding') continue;   // zapobiegamy gzip w odpowiedzi
-      proxyHeaders[k] = v;
-    }
-    proxyHeaders['host'] = SUPABASE_HOST;
-
-    const proxyReq = https.request(
-      {
-        hostname: SUPABASE_HOST,
-        path:     upstream,
-        method:   req.method,
-        headers:  proxyHeaders,
-      },
-      (proxyRes) => {
-        // Prześlij status i nagłówki (bez transfer-encoding które może kolidować)
-        const headers = {};
-        for (const [k, v] of Object.entries(proxyRes.headers)) {
-          if (k === 'transfer-encoding') continue;
-          headers[k] = v;
-        }
-        res.writeHead(proxyRes.statusCode, headers);
-        proxyRes.pipe(res, { end: true });
-      },
-    );
-
-    proxyReq.on('error', (err) => {
-      console.error('[proxy error]', err.message);
-      if (!res.headersSent) {
-        res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'proxy_error', detail: err.message }));
-      }
-    });
-
-    req.pipe(proxyReq, { end: true });
-    return;
-  }
-
-  // ── Static files ─────────────────────────────────────────────────────────
+  const pathname = url.parse(req.url).pathname;
   const filePath = path.join(STATIC_DIR, pathname);
+
   fs.stat(filePath, (err, stat) => {
     if (!err && stat.isFile()) {
       const ext  = path.extname(filePath).toLowerCase();
