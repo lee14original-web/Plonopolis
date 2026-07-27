@@ -17,6 +17,12 @@ RUN pnpm install --no-frozen-lockfile
 # Copy remaining source files
 COPY . .
 
+# Vite bakes VITE_* vars at build time — declare as ARGs so Railway passes them in
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 # Build
 RUN pnpm --filter @workspace/plonopolis run build
 
