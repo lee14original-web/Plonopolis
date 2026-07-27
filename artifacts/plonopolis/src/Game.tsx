@@ -4019,7 +4019,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Błędne logowanie",
-        text: `[DBG] msg="${error.message}" status=${error.status} name=${error.name}`,
+        text: translateAuthError(error.message),
       });
       return;
     }
