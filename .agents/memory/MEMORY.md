@@ -1,3 +1,4 @@
+- [Railway deployment](railway-deployment.md) — Dockerfile+nginx required; VITE_* must be ARGs; serve caused status:0; pnpm@10.26.1 needed.
 - [Game.tsx modularization](game-modularization.md) — Etap 2D zakończony: CustomersModal + MarketModal wydzielone; Game.tsx: 12403 linii; typecheck czysty.
 - [Inventory structure](inventory-structure.md) — seed_inventory vs barn_items — różne miejsca dla różnych przedmiotów.
 - [Harvest session EXP tracking](plonopolis-harvest-session-exp.md) — "Bieżąca sesja" vs "Zbiory dzisiaj" to niezależne źródła EXP; sesja resetuje się na "Do miasta"/refresh/wylogowanie.
