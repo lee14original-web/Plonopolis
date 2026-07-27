@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/plonopolis run build"
+buildCommand = "rm -rf node_modules/.cache && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/plonopolis run build"
 
 [deploy]
 startCommand = "npx serve -s artifacts/plonopolis/dist/public -l $PORT"
