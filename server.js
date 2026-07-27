@@ -1,5 +1,5 @@
 /**
- * Lightweight production server for Plonopolis:
+ * Production server for Plonopolis:
  *  - Serves the Vite build from ./public
  *  - Proxies /sb-proxy/* → Supabase (bypasses Brave/Opera tracker blocking)
  *  - SPA fallback: unknown paths → index.html
@@ -11,8 +11,8 @@ const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
 
-const PORT        = process.env.PORT || 3000;
-const STATIC_DIR  = path.join(__dirname, 'public');
+const PORT         = process.env.PORT || 3000;
+const STATIC_DIR   = path.join(__dirname, 'public');
 const SUPABASE_HOST = 'yfiatxngpdkjzzmddnqm.supabase.co';
 
 const MIME = {
@@ -43,23 +43,43 @@ http.createServer((req, res) => {
   // ── Supabase proxy ──────────────────────────────────────────────────────
   if (pathname.startsWith('/sb-proxy/')) {
     const upstream = pathname.replace(/^\/sb-proxy/, '') + (parsed.search || '');
+
+    // Buduj nagłówki – usuń accept-encoding żeby Supabase nie kompresował odpowiedzi
+    const proxyHeaders = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (k === 'host') continue;              // nadpiszemy poniżej
+      if (k === 'accept-encoding') continue;   // zapobiegamy gzip w odpowiedzi
+      proxyHeaders[k] = v;
+    }
+    proxyHeaders['host'] = SUPABASE_HOST;
+
     const proxyReq = https.request(
       {
         hostname: SUPABASE_HOST,
         path:     upstream,
         method:   req.method,
-        headers:  { ...req.headers, host: SUPABASE_HOST },
+        headers:  proxyHeaders,
       },
       (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        // Prześlij status i nagłówki (bez transfer-encoding które może kolidować)
+        const headers = {};
+        for (const [k, v] of Object.entries(proxyRes.headers)) {
+          if (k === 'transfer-encoding') continue;
+          headers[k] = v;
+        }
+        res.writeHead(proxyRes.statusCode, headers);
         proxyRes.pipe(res, { end: true });
       },
     );
+
     proxyReq.on('error', (err) => {
       console.error('[proxy error]', err.message);
-      res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'proxy_error', detail: err.message }));
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'proxy_error', detail: err.message }));
+      }
     });
+
     req.pipe(proxyReq, { end: true });
     return;
   }
