@@ -11,7 +11,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY artifacts/plonopolis/package.json ./artifacts/plonopolis/
 COPY lib/ ./lib/
 
-# Install dependencies (no frozen lockfile — lockfile was made on NixOS)
+# Install dependencies
 RUN pnpm install --no-frozen-lockfile
 
 # Copy remaining source files
@@ -26,13 +26,15 @@ ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 # Build
 RUN pnpm --filter @workspace/plonopolis run build
 
-# ─── Production image ───────────────────────────────────────────────────────
-FROM node:22-slim AS runner
-WORKDIR /app
+# ─── Production image (nginx) ────────────────────────────────────────────────
+FROM nginx:alpine AS runner
 
-RUN npm install -g serve
+# envsubst replaces $PORT in nginx.conf at runtime
+RUN apk add --no-cache gettext
 
-COPY --from=builder /app/artifacts/plonopolis/dist/public ./public
+COPY --from=builder /app/artifacts/plonopolis/dist/public /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf.template
 
-EXPOSE 3000
-CMD serve -s public -l tcp://0.0.0.0:${PORT:-3000}
+# Railway sets $PORT dynamically; default 8080
+EXPOSE 8080
+CMD ["/bin/sh", "-c", "export PORT=${PORT:-8080} && envsubst '$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
