@@ -3167,18 +3167,27 @@ export default function Page() {
   }, [tutorialStep, tutorialPlotIds, plotCrops]);
 
   // ─── Tutorial krok 9: advance do step 10 gdy wszystkie tutorialowe marchewki faktycznie gotowe ───
-  // plotCrops w deps: efekt ponownie odpala gdy plantedAt zmieni się (np. po speedupie),
-  // co zapewnia świeżą closure dla isCropReady.
+  // Natychmiastowy check używa isCropReady (świeże closure przy każdym renderze).
+  // Interwał używa plotCropsRef.current + GROWTH_GLOBAL_MIN_MULT by uniknąć stale-closure
+  // na effectiveStats / charEquipped / hiveData — które NIE są w deps tablicy.
   useEffect(() => {
     if (tutorialStep !== 9 || tutorialPlotIds.length === 0 || !profile?.id) return;
-    // Natychmiastowe sprawdzenie ze świeżą closure
+    // Natychmiastowe sprawdzenie ze świeżą closure renderowania
     if (tutorialPlotIds.every(id => isCropReady(id))) {
       void advanceTutorialStep(10);
       return;
     }
-    // Polling co 500 ms — backup dla czasu wzrostu (~5 s po speedupie)
+    // Polling co 500 ms — używa ref + minimalnego czasu wzrostu (niezależny od stale closure)
     const _iv = setInterval(() => {
-      if (tutorialPlotIds.every(id => isCropReady(id))) void advanceTutorialStep(10);
+      const _allReady = tutorialPlotIds.every(id => {
+        const _p = plotCropsRef.current[id];
+        if (!_p?.cropId || !_p?.plantedAt) return false;
+        const _crop = CROPS.find(c => c.id === _p.cropId);
+        if (!_crop) return false;
+        // Dolne ograniczenie czasu wzrostu — jeśli minGrowthMs minął, uprawa jest na pewno gotowa
+        return Date.now() - _p.plantedAt >= Math.round(_crop.growthTimeMs * GROWTH_GLOBAL_MIN_MULT);
+      });
+      if (_allReady) void advanceTutorialStep(10);
     }, 500);
     return () => clearInterval(_iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
