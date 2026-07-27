@@ -1,7 +1,6 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "rm -rf node_modules/.cache && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/plonopolis run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npx serve -s artifacts/plonopolis/dist/public -l $PORT"
 healthcheckPath = "/"
