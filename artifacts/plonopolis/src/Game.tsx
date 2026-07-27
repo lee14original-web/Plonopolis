@@ -680,7 +680,7 @@ export default function Page() {
     const uid = profile?.id ?? "";
     if (uid) {
       try { localStorage.setItem(lsKey(CHAR_EQUIP_KEY, uid), JSON.stringify(next)); } catch { /* ignore */ }
-      await supabase.from("profiles").update({ char_equipped: next as unknown as Record<string, unknown> }).eq("id", uid);
+      await supabase.rpc("game_save_char_equipped", { p_char_equipped: next as unknown as Record<string, unknown> });
     }
   };
   const saveItemUpg = (reg: Record<string,number>) => {
@@ -688,7 +688,7 @@ export default function Page() {
     const uid = profile?.id ?? "";
     if (uid) {
       try { localStorage.setItem(lsKey(ITEM_UPG_KEY, uid), JSON.stringify(reg)); } catch { /* ignore */ }
-      void supabase.from("profiles").update({ item_upg_registry: reg as unknown as Record<string, unknown> }).eq("id", uid);
+      void supabase.rpc("game_save_item_upg_registry", { p_registry: reg as unknown as Record<string, unknown> });
     }
   };
   const getItemUpg = (id: string) => itemUpgRegistry[id] ?? 0;
@@ -2414,7 +2414,7 @@ export default function Page() {
     if (farmPowerTimerRef.current) clearTimeout(farmPowerTimerRef.current);
     farmPowerTimerRef.current = setTimeout(async () => {
       const fp = computeFarmPower(playerStats, charEquipped, hiveData.level, orchardState, barnState);
-      await supabase.from("profiles").update({ farm_power: fp }).eq("id", profile.id);
+      await supabase.rpc("game_save_farm_power", { p_farm_power: fp });
     }, 1500);
     return () => { if (farmPowerTimerRef.current) clearTimeout(farmPowerTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4640,16 +4640,12 @@ export default function Page() {
     const _nextPlot = nextPlot;
     const _nextInv = nextInv;
     compostWriteChainRef.current = compostWriteChainRef.current.then(async () => {
-      const { data: _freshRowC } = await supabase
-        .from("profiles")
-        .select("plot_crops")
-        .eq("id", _profileId)
-        .single();
-      const _safePlotsC = { ...parsePlotCrops(_freshRowC?.plot_crops), [plotId]: _nextPlot };
-      await supabase.from("profiles").update({
-        plot_crops: serializePlotCrops(_safePlotsC) as unknown as Record<string,unknown>,
-        seed_inventory: _nextInv,
-      }).eq("id", _profileId);
+      await supabase.rpc("game_apply_compost_to_plot", {
+        p_plot_id: plotId,
+        p_compost_key: compostKey,
+        p_compost_type: t,
+        p_compost_value: value,
+      });
     });
     // Notice
     setCompostNotice({ type: t, value, plotId });
@@ -4688,24 +4684,19 @@ export default function Page() {
       setSeedInventory(nextInv);
       seedInventoryRef.current = { ...seedInventoryRef.current, guide_compost: (seedInventoryRef.current["guide_compost"] ?? 0) - 1 };
       if (ranOut) setSelectedSeedId(prev => prev === "guide_compost" ? null : prev);
-      // Persist — race condition guard: pobierz świeży plot_crops z DB, zmerguj tylko [plotId]
-      // Chroni tutorial step 4: szybkie kliknięcie 3 pól nie nadpisuje poprzednich compostBonusów.
-      const { data: _freshRowG } = await supabase
-        .from("profiles")
-        .select("plot_crops")
-        .eq("id", profile.id)
-        .single();
-      const _safePlotsG = { ...parsePlotCrops(_freshRowG?.plot_crops), [plotId]: nextPlot };
-      await supabase.from("profiles").update({
-        plot_crops: serializePlotCrops(_safePlotsG) as unknown as Record<string,unknown>,
-        seed_inventory: nextInv,
-      }).eq("id", profile.id);
+      // Persist — atomicznie przez RPC (waliduje własność kompostu + aktualizuje plot_crops i seed_inventory)
+      await supabase.rpc("game_apply_compost_to_plot", {
+        p_plot_id: plotId,
+        p_compost_key: "guide_compost",
+        p_compost_type: "guide",
+        p_compost_value: 75,
+      });
       // Powiadomienie — reużywamy compostNotice (COMPOST_DEFS["guide"] już istnieje)
       setCompostNotice({ type: "guide", value: 75, plotId });
       setTimeout(() => setCompostNotice(null), 5000);
       if (tutorialStep === 4) {
-        // Licz faktyczne pola z guide z AKTUALNEGO (świeżego) plot_crops — nie stale closure
-        const _guidePlots = Object.entries(_safePlotsG)
+        // Licz pola z guide z aktualnie ustawionych nextPlots
+        const _guidePlots = Object.entries(nextPlots)
           .filter(([, p]) => p.compostBonus?.type === "guide")
           .map(([id]) => Number(id));
         const _nextIds = Array.from(new Set([...tutorialPlotIds, ..._guidePlots]));
@@ -4760,7 +4751,7 @@ export default function Page() {
       setSeedInventory(nextInv);
       saveKompostBatch(batch);
       if (profile?.id) {
-        await supabase.from("profiles").update({ seed_inventory: nextInv }).eq("id", profile.id);
+        await supabase.rpc("game_deposit_to_kompost", { p_seed_key: seedKey, p_amount: added });
       }
     } finally {
       kompostBusyRef.current = false;
@@ -4898,7 +4889,15 @@ export default function Page() {
       .map(r => r.itemId!);
     if (_grantedKompostIds.length > 0) await grantEqItemsServer(_grantedKompostIds);
     if (profile?.id) {
-      await supabase.from("profiles").update({ seed_inventory: inv }).eq("id", profile.id);
+      // Oblicz deltę (tylko dodane nagrody) — RPC dodaje atomicznie, nigdy nie nadpisuje całości
+      const _seedsDelta: Record<string, number> = {};
+      for (const key of Object.keys(inv)) {
+        const added = (inv[key] ?? 0) - (seedInventory[key] ?? 0);
+        if (added > 0) _seedsDelta[key] = added;
+      }
+      if (Object.keys(_seedsDelta).length > 0) {
+        await supabase.rpc("game_add_seeds_to_inventory", { p_seeds_delta: _seedsDelta });
+      }
     }
     setKompostDropHistory(prev => {
       const now = Date.now();
@@ -4961,17 +4960,14 @@ export default function Page() {
     setSeedInventory(newInv);
     seedInventoryRef.current = { ...seedInventoryRef.current, [compostKey]: (seedInventoryRef.current[compostKey] ?? 0) - used };
     if ((seedInventoryRef.current[compostKey] ?? 0) <= 0 && selectedSeedId === compostKey) setSelectedSeedId(null);
-    const _pid = profile.id;
-    const _pu = { ...plotUpdates };
-    const _ni = newInv;
+    const _plotIdArr = Object.keys(plotUpdates).map(Number);
     compostWriteChainRef.current = compostWriteChainRef.current.then(async () => {
-      const { data: _fr } = await supabase.from("profiles").select("plot_crops").eq("id", _pid).single();
-      const _sp = { ...parsePlotCrops(_fr?.plot_crops) };
-      for (const [id, ps] of Object.entries(_pu)) _sp[Number(id)] = ps;
-      await supabase.from("profiles").update({
-        plot_crops: serializePlotCrops(_sp) as unknown as Record<string, unknown>,
-        seed_inventory: _ni,
-      }).eq("id", _pid);
+      await supabase.rpc("game_apply_bulk_compost", {
+        p_plot_ids: _plotIdArr,
+        p_compost_key: compostKey,
+        p_compost_type: t,
+        p_compost_value: value,
+      });
     });
     setMessage({ fieldOnly: true, type:"success", title:"🚜 Ciągnik", text:`Zastosowano kompost na ${used} pol${used === 1 ? "u" : "ach"}.` });
   }
@@ -8634,10 +8630,10 @@ export default function Page() {
                       // Wymuś zapis do DB i POCZEKAJ przed loadProfile — inaczej loadProfile
                       // czyta stare dane i item wraca do poprzedniego poziomu po odświeżeniu
                       if (profile?.id) {
-                        await supabase.from("profiles").update({
-                          char_equipped:      newCharEq    as unknown as Record<string, unknown>,
-                          item_upg_registry:  newItemUpg   as unknown as Record<string, unknown>,
-                        }).eq("id", profile.id);
+                        await Promise.all([
+                          supabase.rpc("game_save_char_equipped",      { p_char_equipped: newCharEq   as unknown as Record<string, unknown> }),
+                          supabase.rpc("game_save_item_upg_registry",  { p_registry:      newItemUpg  as unknown as Record<string, unknown> }),
+                        ]);
                       }
                       await loadProfile(profile!.id);
                       setCharEquipped(newCharEq);
@@ -8983,9 +8979,7 @@ export default function Page() {
                               saveExtraEqItems(newExtra);
                               saveItemUpg(newItemUpgE);
                               // Wymuś zapis do DB i POCZEKAJ przed loadProfile
-                              await supabase.from("profiles").update({
-                                item_upg_registry: newItemUpgE as unknown as Record<string, unknown>,
-                              }).eq("id", profile.id);
+                              await supabase.rpc("game_save_item_upg_registry", { p_registry: newItemUpgE as unknown as Record<string, unknown> });
                               await loadProfile(profile.id);
                               setExtraEqItems(newExtra);
                               setItemUpgRegistry(newItemUpgE);
@@ -9005,9 +8999,7 @@ export default function Page() {
                               }
                               // Wymuś awaited zapis item_upg do DB
                               if (profile?.id) {
-                                await supabase.from("profiles").update({
-                                  item_upg_registry: newItemUpgSwap as unknown as Record<string, unknown>,
-                                }).eq("id", profile.id);
+                                await supabase.rpc("game_save_item_upg_registry", { p_registry: newItemUpgSwap as unknown as Record<string, unknown> });
                               }
                               setMessage({ type:"success", title:"🔄 Zamieniono!", text:`Główny: +${entry.upg} ↔ Dodatkowy: +${mainUpg}` });
                             };
