@@ -435,7 +435,7 @@ BEGIN
     -- item drop: 10% base + różnorodność (max +5%) + miód (+1% / słoik)
     v_item_chance := 10.0
       + LEAST(5, floor(v_diversity::numeric / 2))
-      + LEAST(50, v_honey_cnt::numeric);  -- miód dodaje max +50% (50 słoików)
+      + v_honey_cnt::numeric; -- miód: max +10% (10 słoików = pełna partia)
     IF random() * 100 < v_item_chance THEN
       v_tier_chances := CASE v_quality
         WHEN 'very_weak' THEN ARRAY[90, 10,  0,  0,  0]
