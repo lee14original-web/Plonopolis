@@ -9776,7 +9776,7 @@ export default function Page() {
                       return (
                         <div className="mt-4">
                           <p className="text-[11px] font-bold text-gray-400 mb-2">🍂 Zgniłe owoce (nie do sprzedaży)</p>
-                          <div className="grid grid-cols-5 gap-2">
+                          <div className="flex flex-wrap gap-2">
                             {sortedFruits.map(([fruitKey, amount]) => {
                               const fid = fruitKey.slice(0, fruitKey.lastIndexOf("_"));
                               const tree = TREES.find(t => t.fruitId === fid);
@@ -9788,12 +9788,12 @@ export default function Page() {
                                   onClick={() => void depositFruitToCompost(fruitKey, qty)}
                                   disabled={batchFull}
                                   title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                  className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1">
-                                  <span className="text-5xl">{tree.fruitIcon}</span>
-                                  <span className="mt-0.5 text-[10px] font-bold text-white truncate w-full text-center">{tree.fruitName}</span>
-                                  <span className="text-[9px] font-black text-white">Zgniłe</span>
-                                  <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-gray-300">×{amount}</span>
-                                  <span className="absolute bottom-1 right-1 rounded bg-gray-700/80 px-1 text-[9px] font-black text-white">+{qty}</span>
+                                  className="group relative flex flex-col items-center rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[72px]">
+                                  <span className="text-3xl leading-none">{tree.fruitIcon}</span>
+                                  <span className="mt-0.5 text-[9px] font-bold text-white truncate w-full text-center leading-tight">{tree.fruitName}</span>
+                                  <span className="text-[8px] font-black text-white/70 leading-tight">Zgniłe</span>
+                                  <span className="absolute top-0.5 right-0.5 rounded bg-black/60 px-0.5 text-[9px] font-black text-gray-300">×{amount}</span>
+                                  <span className="absolute bottom-0.5 right-0.5 rounded bg-gray-700/80 px-0.5 text-[8px] font-black text-white">+{qty}</span>
                                 </button>
                               );
                             })}
