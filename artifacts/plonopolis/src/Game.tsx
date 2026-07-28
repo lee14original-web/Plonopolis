@@ -1126,6 +1126,7 @@ export default function Page() {
     // Nigdy nie cofaj kroku tutorialu — zapobiega race condition gdy RPC zwraca stare dane z DB
     // przed zakończeniem async zapisu (advanceTutorialStep pisze do DB po setTutorialStep)
     setTutorialStep(prev => Math.max(prev, _loadedTStep));
+    console.warn("[applyProfileState] tutorial_step from DB:", _loadedTStep, "| tutorial_started:", source.tutorial_started, "| tutorial_completed:", source.tutorial_completed, "| tutorial_skipped:", source.tutorial_skipped);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     const _loadedPlots = parsePlotCrops(source.plot_crops);
     setPlotCrops(_loadedPlots);
@@ -3194,6 +3195,49 @@ export default function Page() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, tutorialPlotIds.length, profile?.id, plotCrops]);
+
+  // ─── Tutorial krok 8: auto-advance do 9 (lub 10 gdy gotowe) gdy marchewki podlane / gotowe ───
+  // Zabezpieczenie: jeśli gracz odszedł od gry zanim kliknął konewkę, a marchewki urosły.
+  useEffect(() => {
+    if (tutorialStep !== 8 || tutorialPlotIds.length === 0 || !profile?.id) return;
+    console.warn("[tut8] effect fired", {
+      tutorialPlotIds,
+      readiness: tutorialPlotIds.map(id => ({ id, ready: isCropReady(id), watered: plotCrops[id]?.watered })),
+    });
+    const _allReady = tutorialPlotIds.every(id => isCropReady(id));
+    const _allWatered = tutorialPlotIds.every(id => !!plotCrops[id]?.watered);
+    if (_allReady) {
+      console.warn("[tut8] wszystkie gotowe → advance do 10");
+      void advanceTutorialStep(10);
+      return;
+    }
+    if (_allWatered) {
+      console.warn("[tut8] wszystkie podlane → advance do 9");
+      void advanceTutorialStep(9);
+      return;
+    }
+    // Polling co 500 ms
+    const _iv = setInterval(() => {
+      const _plots = plotCropsRef.current;
+      const _rdy = tutorialPlotIds.every(id => {
+        const _p = _plots[id];
+        if (!_p?.cropId || !_p?.plantedAt) return false;
+        const _crop = CROPS.find(c => c.id === _p.cropId);
+        if (!_crop) return false;
+        return Date.now() - _p.plantedAt >= Math.round(_crop.growthTimeMs * GROWTH_GLOBAL_MIN_MULT);
+      });
+      const _wat = tutorialPlotIds.every(id => !!_plots[id]?.watered);
+      if (_rdy) {
+        console.warn("[tut8] polling: gotowe → advance do 10");
+        void advanceTutorialStep(10);
+      } else if (_wat) {
+        console.warn("[tut8] polling: podlane → advance do 9");
+        void advanceTutorialStep(9);
+      }
+    }, 500);
+    return () => clearInterval(_iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, tutorialPlotIds, profile?.id, plotCrops]);
 
   // ─── Tutorial krok 9: advance do step 10 gdy wszystkie tutorialowe marchewki faktycznie gotowe ───
   useEffect(() => {
