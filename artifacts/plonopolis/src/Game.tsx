@@ -4912,52 +4912,14 @@ export default function Page() {
     const _luckItemBonus = Math.min(5, (effectiveStats.szczescie ?? 0) * 0.05);
     const itemDropChance = 10 + diversityItemBonus + _luckItemBonus;
 
+    // ── Zawsze 5 kompostów (gwarantowane) ──
+    const compostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality];
     for (let rIdx = 0; rIdx < KOMPOST_REWARDS_PER_BATCH; rIdx++) {
-      // Jackpot 0.5% — legendarny item bez względu na jakość partii
-      if (Math.random() * 100 < JACKPOT_CHANCE) {
-        const jackpotPool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= 21 && it.unlockLevel <= playerLvl);
-        const jpFallback = jackpotPool.length > 0 ? jackpotPool : CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
-        if (jpFallback.length > 0) {
-          const item = jpFallback[Math.floor(Math.random() * jpFallback.length)];
-          if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
-          else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
-          rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
-          newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨", ts: Date.now(), count: 1 });
-          continue;
-        }
-      }
-
-      const roll = Math.random() * 100;
-      if (roll < itemDropChance) {
-        let rolledTierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]);
-        if (diversityTierBoost && rolledTierIdx < 4 && Math.random() < 0.30) rolledTierIdx += 1;
-        const minLvl = rolledTierIdx * 5 + 1;
-        const maxLvl = rolledTierIdx * 5 + 5;
-        let pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
-        if (pool.length === 0) {
-          for (let t = rolledTierIdx - 1; t >= 0; t--) {
-            pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= t*5+1 && it.unlockLevel <= t*5+5 && it.unlockLevel <= playerLvl);
-            if (pool.length > 0) break;
-          }
-        }
-        if (pool.length > 0) {
-          const item = pool[Math.floor(Math.random() * pool.length)];
-          const rarityDef = ITEM_TIER_RARITY[Math.min(4, rolledTierIdx)];
-          if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
-          else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
-          rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
-          newHistoryEntries.push({ label: item.name, color: rarityDef.border, icon: item.icon, ts: Date.now(), count: 1 });
-          continue;
-        }
-        // Brak dostępnego przedmiotu → fallback do kompostu
-      }
-      // Kompost growth/yield/exp — równe szanse, tier deterministyczny wg jakości
       let compostType: CompostType;
       const r2 = Math.random() * 100;
       if (r2 < 33.3) compostType = "growth";
       else if (r2 < 66.6) compostType = "yield";
       else compostType = "exp";
-      const compostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality];
       const value = COMPOST_DEFS[compostType].bonusValues[compostTierIdx];
       const key = compostKeyFor(compostType, value);
       inv = { ...inv, [key]: (inv[key] ?? 0) + 1 };
@@ -4965,6 +4927,42 @@ export default function Page() {
       const cDef = COMPOST_DEFS[compostType];
       const tColor = compostTierIdx === 0 ? "#9ca3af" : compostTierIdx === 1 ? "#22c55e" : "#a78bfa";
       newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon, ts: Date.now(), count: 1 });
+    }
+
+    // ── Osobny roll: Jackpot 0.5% ──
+    if (Math.random() * 100 < JACKPOT_CHANCE) {
+      const jackpotPool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= 21 && it.unlockLevel <= playerLvl);
+      const jpFallback = jackpotPool.length > 0 ? jackpotPool : CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
+      if (jpFallback.length > 0) {
+        const item = jpFallback[Math.floor(Math.random() * jpFallback.length)];
+        if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
+        else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
+        rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+        newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨", ts: Date.now(), count: 1 });
+      }
+    }
+
+    // ── Osobny roll: przedmiot z ekwipunku (itemDropChance%) ──
+    if (Math.random() * 100 < itemDropChance) {
+      let rolledTierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]);
+      if (diversityTierBoost && rolledTierIdx < 4 && Math.random() < 0.30) rolledTierIdx += 1;
+      const minLvl = rolledTierIdx * 5 + 1;
+      const maxLvl = rolledTierIdx * 5 + 5;
+      let pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
+      if (pool.length === 0) {
+        for (let t = rolledTierIdx - 1; t >= 0; t--) {
+          pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= t*5+1 && it.unlockLevel <= t*5+5 && it.unlockLevel <= playerLvl);
+          if (pool.length > 0) break;
+        }
+      }
+      if (pool.length > 0) {
+        const item = pool[Math.floor(Math.random() * pool.length)];
+        const rarityDef = ITEM_TIER_RARITY[Math.min(4, rolledTierIdx)];
+        if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
+        else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
+        rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
+        newHistoryEntries.push({ label: item.name, color: rarityDef.border, icon: item.icon, ts: Date.now(), count: 1 });
+      }
     }
 
     // Reset partii po odebraniu
@@ -9414,9 +9412,10 @@ export default function Page() {
                       <div className="text-[12px] text-[#dfcfab]/90 leading-relaxed mb-3 flex flex-col gap-1">
                         <p>• Wrzuć <span className="font-black text-white">100 upraw lub zgniłych owoców</span> aby zapełnić partię.</p>
                         <p>• Im lepsze wrzutki, tym wyższy <span className="font-black text-amber-300">score</span> partii = lepsze nagrody.</p>
-                        <p>• Za pełną partię losowane jest <span className="font-black text-yellow-300">5 nagród</span> jednocześnie.</p>
+                        <p>• Za pełną partię dostajesz <span className="font-black text-yellow-300">5 kompostów zawsze</span> (tier zależy od jakości partii).</p>
+                        <p>• <span className="font-black text-amber-300">Osobny roll na przedmiot z ekwipunku</span> — szansa bazowa 10%, niezależna od kompostów.</p>
                         <p>• <span className="font-black text-purple-300">Różnorodność</span> gatunków w jednej partii zwiększa szansę na ekwipunek (+1% co 2 gatunki, maks +5%; 6+ gatunków = bonus tier).</p>
-                        <p>• <span className="font-black text-yellow-300">Jackpot 0.5%</span> per losowanie — legendarny item niezależnie od jakości.</p>
+                        <p>• <span className="font-black text-yellow-300">Jackpot 0.5%</span> — osobny roll, legendarny item niezależnie od jakości.</p>
                       </div>
 
                       {/* Tabela rzadkości */}
@@ -9492,7 +9491,7 @@ export default function Page() {
                       <span className="text-4xl">🌿</span>
                       <div className="flex-1">
                         <h2 className="text-2xl font-black text-[#dfcfab]">Kompostownik</h2>
-                        <p className="text-sm font-bold text-[#8b6a3e] mt-0.5">Zapełnij partię 100 wrzutami — im lepsze uprawy, tym silniejsze nagrody. Za każdą pełną partię: 5 nagród.</p>
+                        <p className="text-sm font-bold text-[#8b6a3e] mt-0.5">Zapełnij partię 100 wrzutami — im lepsze uprawy, tym silniejsze nagrody. Za każdą pełną partię: 5 kompostów + szansa na przedmiot.</p>
                       </div>
                     </div>
 
@@ -9558,14 +9557,14 @@ export default function Page() {
 
                     {/* Prognoza nagród — 3 sekcje */}
                     <div className="mb-3 rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 pt-3 pb-2 flex flex-col gap-2">
-                      <p className="text-[12px] font-black text-[#dfcfab]/80 uppercase tracking-wider">Możliwe nagrody <span className="normal-case font-bold text-[#8b6a3e]">(per losowanie, 5 losowań na partię)</span></p>
+                      <p className="text-[12px] font-black text-[#dfcfab]/80 uppercase tracking-wider">Nagrody za partię <span className="normal-case font-bold text-[#8b6a3e]">(kompost zawsze · item osobny roll)</span></p>
 
-                      {/* Blok 1 — Kompost */}
+                      {/* Blok 1 — Kompost (zawsze 5 szt.) */}
                       <div className="rounded-lg border border-emerald-900/50 bg-emerald-950/30 px-3 py-2">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-[15px]">🌱</span>
                           <span className="text-[15px] font-black text-emerald-300">Kompost</span>
-                          <span className="ml-auto text-[17px] font-black text-emerald-300">{100 - itemDropChancePct}%</span>
+                          <span className="ml-auto text-[13px] font-black text-emerald-400 bg-emerald-900/40 border border-emerald-600/40 rounded-full px-2 py-0.5">5 szt. zawsze</span>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {(["growth","yield","exp"] as const).map(ct => {
@@ -9635,7 +9634,7 @@ export default function Page() {
                           : "border-[#8b6a3e]/30 bg-black/30 text-[#8b6a3e]/40 shadow-none cursor-not-allowed"
                       }`}>
                       {isReady
-                        ? `🎲 Odbierz 5 nagród! (partia gotowa)`
+                        ? `🎲 Odbierz nagrody! (5 kompostów + szansa na item)`
                         : `🎲 Jeszcze ${KOMPOST_BATCH_SIZE - batch.fill} wrzutów do odbioru`}
                     </button>
                   </div>
