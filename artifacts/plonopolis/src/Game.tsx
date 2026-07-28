@@ -4148,6 +4148,18 @@ export default function Page() {
     await loadProfile(profile.id);
   }
 
+  function handleAddAllEq(upgLevel: number) {
+    const ownedNext: Record<string, true> = {};
+    const upgNext: Record<string, number> = {};
+    for (const item of CHAR_EQUIP_ITEMS) {
+      ownedNext[item.id] = true;
+      upgNext[item.id] = upgLevel;
+    }
+    saveOwnedEqItems(ownedNext);
+    saveItemUpg(upgNext);
+    setMessage({ type: "success", title: `EQ +${upgLevel} dodane!`, text: `Wszystkie ${CHAR_EQUIP_ITEMS.length} przedmiotów wyposażenia na poziomie +${upgLevel}.` });
+  }
+
   async function handleAddSeeds(amount: number) {
     if (!profile?.id) return;
     const { data, error } = await supabase.rpc("dev_add_test_items", { p_mode: "seeds_all", p_amount: amount });
@@ -8125,7 +8137,7 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">💰 Dodaj Gold</p>
                     <div className="flex flex-wrap gap-2">
-                      {[1000,10000,250000,999999999].map(amt => (
+                      {[1000,10000,250000,9999999].map(amt => (
                         <button key={amt} onClick={() => handleAddGold(amt)}
                           className="rounded-xl border border-yellow-500/60 bg-yellow-900/30 px-3 py-2 text-xs font-black text-yellow-200 hover:bg-yellow-900/50">
                           +{amt >= 1000000 ? amt.toLocaleString("pl-PL") : amt.toLocaleString("pl-PL")} 💰
@@ -8218,6 +8230,19 @@ export default function Page() {
                       className="rounded-xl border border-green-500/60 bg-green-900/30 px-4 py-2 text-xs font-black text-green-200 hover:bg-green-900/50">
                       🔓 Odblokuj wszystkie epickie avatary
                     </button>
+                  </div>
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-300">⚔️ Dodaj całe EQ (wszystkie przedmioty)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[0,1,2,3,4,5,6,7,8,9].map(lvl => (
+                        <button key={lvl} onClick={() => handleAddAllEq(lvl)}
+                          className="rounded-xl border border-blue-500/60 bg-blue-900/30 px-3 py-2 text-xs font-black text-blue-200 hover:bg-blue-900/50"
+                          style={{ borderColor: ["#9CA3AF","#86EFAC","#22C55E","#14B8A6","#3B82F6","#8B5CF6","#D946EF","#EC4899","#F97316","#FACC15"][lvl] + "99", color: ["#9CA3AF","#86EFAC","#22C55E","#14B8A6","#93C5FD","#C4B5FD","#F0ABFC","#F9A8D4","#FED7AA","#FEF08A"][lvl] }}>
+                          Całe EQ +{lvl}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[#8b6a3e]">{CHAR_EQUIP_ITEMS.length} przedmiotów (dłonie · nogi · głowa) — lokalne, nie wymaga DB</p>
                   </div>
                   <div className="pt-2 border-t border-[#8b6a3e]/30">
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-red-400">⚠️ Niebezpieczne</p>
