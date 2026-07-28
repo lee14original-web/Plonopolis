@@ -3196,13 +3196,28 @@ export default function Page() {
   }, [tutorialStep, tutorialPlotIds.length, profile?.id, plotCrops]);
 
   // ─── Tutorial krok 9: advance do step 10 gdy wszystkie tutorialowe marchewki faktycznie gotowe ───
-  // Natychmiastowy check używa isCropReady (świeże closure przy każdym renderze).
-  // Interwał używa plotCropsRef.current + GROWTH_GLOBAL_MIN_MULT by uniknąć stale-closure
-  // na effectiveStats / charEquipped / hiveData — które NIE są w deps tablicy.
   useEffect(() => {
-    if (tutorialStep !== 9 || tutorialPlotIds.length === 0 || !profile?.id) return;
+    if (tutorialStep !== 9 || !profile?.id) return;
+
+    // Diagnostyka — pomaga zrozumieć dlaczego krok 9 się nie przesuwa
+    console.debug("[tut9] effect fired", {
+      tutorialPlotIds,
+      profileId: profile.id,
+      tutorialStarted: profile.tutorial_started,
+      tutorialCompleted: profile.tutorial_completed,
+      tutorialSkipped: profile.tutorial_skipped,
+      readiness: tutorialPlotIds.map(id => ({ id, ready: isCropReady(id), plot: plotCropsRef.current[id] })),
+    });
+
+    if (tutorialPlotIds.length === 0) {
+      console.debug("[tut9] tutorialPlotIds empty — czekam na recovery");
+      return;
+    }
     // Natychmiastowe sprawdzenie ze świeżą closure renderowania
-    if (tutorialPlotIds.every(id => isCropReady(id))) {
+    const _immediateReady = tutorialPlotIds.every(id => isCropReady(id));
+    console.debug("[tut9] immediate check:", _immediateReady, tutorialPlotIds.map(id => isCropReady(id)));
+    if (_immediateReady) {
+      console.debug("[tut9] calling advanceTutorialStep(10)");
       void advanceTutorialStep(10);
       return;
     }
@@ -3213,10 +3228,12 @@ export default function Page() {
         if (!_p?.cropId || !_p?.plantedAt) return false;
         const _crop = CROPS.find(c => c.id === _p.cropId);
         if (!_crop) return false;
-        // Dolne ograniczenie czasu wzrostu — jeśli minGrowthMs minął, uprawa jest na pewno gotowa
         return Date.now() - _p.plantedAt >= Math.round(_crop.growthTimeMs * GROWTH_GLOBAL_MIN_MULT);
       });
-      if (_allReady) void advanceTutorialStep(10);
+      if (_allReady) {
+        console.debug("[tut9] polling: all ready → advancing");
+        void advanceTutorialStep(10);
+      }
     }, 500);
     return () => clearInterval(_iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4751,11 +4768,16 @@ export default function Page() {
 
   // ─── TUTORIAL: zaawansuj krok (nie cofa, zapis do DB) ───
   async function advanceTutorialStep(nextStep: number) {
-    if (!profile?.id) return;
-    if (!profile.tutorial_started || profile.tutorial_completed || profile.tutorial_skipped) return;
-    if (nextStep <= tutorialStep) return;
+    if (!profile?.id) { console.debug("[advanceTutorialStep] brak profile.id"); return; }
+    if (!profile.tutorial_started || profile.tutorial_completed || profile.tutorial_skipped) {
+      console.debug("[advanceTutorialStep] zablokowany przez flagi", { started: profile.tutorial_started, completed: profile.tutorial_completed, skipped: profile.tutorial_skipped });
+      return;
+    }
+    if (nextStep <= tutorialStep) { console.debug("[advanceTutorialStep] nextStep<=tutorialStep", nextStep, tutorialStep); return; }
+    console.debug("[advanceTutorialStep] advancing to", nextStep);
     setTutorialStep(nextStep);
-    await supabase.from("profiles").update({ tutorial_step: nextStep }).eq("id", profile.id);
+    const { error } = await supabase.from("profiles").update({ tutorial_step: nextStep }).eq("id", profile.id);
+    if (error) console.error("[advanceTutorialStep] DB write failed:", error.message);
   }
 
   // ─── KOMPOSTOWNIK: wrzuć plon → +1 do bieżącej partii + dolicz wartość (base × rzadkość) do scoreSum ───
