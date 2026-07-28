@@ -1133,7 +1133,18 @@ export default function Page() {
     const _cachedIds = _loadedTStep >= 5 && _loadedTStep <= 13
       ? loadTutorialPlotIdsFromStorage(nextProfile.id)
       : [] as number[];
-    const _finalTutorialIds = Array.from(new Set([..._cachedIds, ..._guidePlotIds]));
+    let _finalTutorialIds = Array.from(new Set([..._cachedIds, ..._guidePlotIds]));
+    // Recovery dla kroków 8–11: gdy cache i guide-compost zawiodły, szukaj marchewek na polu
+    if (_finalTutorialIds.length === 0 && _loadedTStep >= 8 && _loadedTStep <= 11) {
+      const _carrotFallback = Object.entries(_loadedPlots)
+        .filter(([, p]) => p.cropId === "carrot" || p.cropId === "test_nasiono")
+        .map(([id]) => Number(id))
+        .slice(0, 3);
+      if (_carrotFallback.length > 0) {
+        _finalTutorialIds = _carrotFallback;
+        saveTutorialPlotIdsToStorage(nextProfile.id, _carrotFallback);
+      }
+    }
     setTutorialPlotIds(_finalTutorialIds);
     setTutorialPlantedIds(_finalTutorialIds.filter(id => _loadedPlots[id]?.cropId != null));
     setTutorialWateredIds(_loadedTStep === 9
@@ -3165,6 +3176,21 @@ export default function Page() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorialStep, tutorialPlotIds, plotCrops]);
+
+  // ─── Tutorial kroków 8–11: recovery tutorialPlotIds gdy stan lokalny zaginął ───
+  // Działa gdy user dotarł do kroku 8+ ale tutorialPlotIds jest puste (np. edge-case w flow).
+  useEffect(() => {
+    if (tutorialStep < 8 || tutorialStep > 11 || tutorialPlotIds.length > 0 || !profile?.id) return;
+    const _carrotFallback = Object.entries(plotCrops)
+      .filter(([, p]) => p.cropId === "carrot" || p.cropId === "test_nasiono")
+      .map(([id]) => Number(id))
+      .slice(0, 3);
+    if (_carrotFallback.length > 0) {
+      setTutorialPlotIds(_carrotFallback);
+      saveTutorialPlotIdsToStorage(profile.id, _carrotFallback);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tutorialStep, tutorialPlotIds.length, profile?.id, plotCrops]);
 
   // ─── Tutorial krok 9: advance do step 10 gdy wszystkie tutorialowe marchewki faktycznie gotowe ───
   // Natychmiastowy check używa isCropReady (świeże closure przy każdym renderze).
