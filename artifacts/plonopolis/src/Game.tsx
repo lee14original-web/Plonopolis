@@ -728,7 +728,7 @@ export default function Page() {
   };
   const makeExtraUid = () => `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   // ─── Kompostownik ───
-  const [kompostBatch, setKompostBatch] = React.useState<CompostBatch>({ fill: 0, scoreSum: 0, cropIds: [] });
+  const [kompostBatch, setKompostBatch] = React.useState<CompostBatch>({ fill: 0, scoreSum: 0, cropIds: [], honeyCount: 0 });
   // Flaga przeciw race conditions: blokuje równoległe deposit/claim (np. szybkie podwójne kliknięcia)
   const kompostBusyRef = React.useRef(false);
   // Chroni applyGuideCompostToPlot przed podwójnym kliknięciem (plotId w toku)
@@ -742,6 +742,7 @@ export default function Page() {
       fill: Math.max(0, Math.min(KOMPOST_BATCH_SIZE, Math.floor(batch.fill))),
       scoreSum: Math.max(0, batch.scoreSum),
       cropIds: Array.isArray(batch.cropIds) ? batch.cropIds : [],
+      honeyCount: Math.max(0, Math.floor(batch.honeyCount ?? 0)),
     };
     setKompostBatch(clean);
     if (uid) try {
@@ -1387,11 +1388,13 @@ export default function Page() {
       const dbFill = Math.max(0, Math.min(KOMPOST_BATCH_SIZE, Math.floor(Number(dbBatch.fill) || 0)));
       const dbScore = Math.max(0, Number(dbBatch.scoreSum) || 0);
       const dbCropIds = Array.isArray(dbBatch.cropIds) ? dbBatch.cropIds.filter((x): x is string => typeof x === "string") : [];
+      const dbHoneyCount = Math.max(0, Math.floor(Number((dbBatch as Record<string,unknown>).honeyCount) || 0));
       if (dbFill > loadedBatch.fill) {
         // Serwer ma nowszy (wyższy) stan — użyj serwera
         loadedBatch.fill = dbFill;
         loadedBatch.scoreSum = dbScore;
         loadedBatch.cropIds = dbCropIds;
+        loadedBatch.honeyCount = dbHoneyCount;
       } else if (loadedBatch.fill > dbFill && loadedBatch.fill > 0) {
         // localStorage ma nowszy stan — zsynchronizuj serwer (fire-and-forget)
         if (uid) {
@@ -4921,7 +4924,41 @@ export default function Page() {
     }
   }
 
-  // ─── KOMPOSTOWNIK: odbierz nagrody — partia (fill=100)
+  // ─── KOMPOSTOWNIK: wrzuć słoiki miodu → +10 pkt za słoik, +1% szansy na item za słoik ───
+  async function depositHoneyToCompost(count: number = 1) {
+    if (kompostBusyRef.current) return;
+    kompostBusyRef.current = true;
+    try {
+      const have = hiveData.honey_jars;
+      if (have <= 0) return;
+      const room = KOMPOST_BATCH_SIZE - kompostBatch.fill;
+      if (room <= 0) return;
+      // Każdy słoik = 10 pkt fill; limitujemy przez dostępne miejsce
+      const maxByRoom = Math.floor(room / 10) + (room % 10 > 0 ? 1 : 0); // tyle słoików ile zmieści
+      const added = Math.min(Math.min(count, have), maxByRoom);
+      if (added <= 0) return;
+      const fillAdded = Math.min(room, added * 10);
+
+      const batch: CompostBatch = {
+        fill: kompostBatch.fill + fillAdded,
+        scoreSum: kompostBatch.scoreSum,
+        cropIds: Array.isArray(kompostBatch.cropIds) ? [...kompostBatch.cropIds] : [],
+        honeyCount: (kompostBatch.honeyCount ?? 0) + added,
+      };
+      const nextHive = { ...hiveData, honey_jars: have - added };
+      setHiveData(nextHive);
+      saveKompostBatch(batch);
+      if (profile?.id) {
+        await supabase.rpc("game_deposit_honey_to_kompost", {
+          p_amount: added,
+        });
+      }
+    } finally {
+      kompostBusyRef.current = false;
+    }
+  }
+
+    // ─── KOMPOSTOWNIK: odbierz nagrody — partia (fill=100)
   //     Serwer jest autorytatywny: rolling 5 kompostów + osobny EQ item roll
   //     Serwer zwraca item_tier (-1=brak, 0-4=tier, 5=jackpot); klient losuje konkretny item z tieru
   async function claimKompostReward() {
@@ -4935,11 +4972,12 @@ export default function Page() {
     // Wywołaj serwer — rolling po stronie serwera
     const { data: rpcRaw, error: rpcErr } = await supabase.rpc("game_claim_kompost_reward", {
       p_player_level: playerLvl,
+      p_honey_count:  batch.honeyCount ?? 0,
     });
     if (rpcErr || !rpcRaw) {
       // Fallback: batch mógł być już zresetowany lub błąd — wyczyść lokalnie
-      saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
-      setKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
+      saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [], honeyCount: 0 });
+      setKompostBatch({ fill: 0, scoreSum: 0, cropIds: [], honeyCount: 0 });
       return;
     }
     const rpc = rpcRaw as {
@@ -5005,7 +5043,7 @@ export default function Page() {
     setSeedInventory(serverInv);
     saveOwnedEqItems(owned);
     saveExtraEqItems(extras);
-    const emptyBatch: CompostBatch = { fill: 0, scoreSum: 0, cropIds: [] };
+    const emptyBatch: CompostBatch = { fill: 0, scoreSum: 0, cropIds: [], honeyCount: 0 };
     saveKompostBatch(emptyBatch);
     setKompostBatch(emptyBatch);
 
@@ -9381,7 +9419,8 @@ export default function Page() {
             const diversityItemBonusUI = Math.min(5, Math.floor(diversityCountUI / 2));
             const diversityTierBoostUI = diversityCountUI >= 6;
             const _luckItemBonusUI = Math.min(5, (effectiveStats.szczescie ?? 0) * 0.05);
-            const itemDropChancePct = parseFloat((10 + diversityItemBonusUI + _luckItemBonusUI).toFixed(1));
+            const honeyItemBonusUI = batch.honeyCount ?? 0;
+            const itemDropChancePct = parseFloat((10 + diversityItemBonusUI + _luckItemBonusUI + honeyItemBonusUI).toFixed(1));
             const currentTierChances = ITEM_TIER_BY_QUALITY[currentQuality];
             const QTY_OPTIONS: Array<1|5|10|100|"max"> = [1,5,10,100,"max"];
             const FILTER_OPTIONS: Array<{ id: typeof kompostFilter; label: string; color: string }> = [
@@ -9803,6 +9842,37 @@ export default function Page() {
                     })()}
                   </div>
 
+
+                    {/* Słoiki miodu */}
+                    {hiveData.honey_jars > 0 && (
+                      <div className="mt-4">
+                        <p className="text-[11px] font-bold text-amber-400 mb-2">🍯 Słoiki miodu <span className="text-amber-300/70 font-normal">(10 pkt / słoik · +1% szansa na item / słoik)</span></p>
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                            const have = hiveData.honey_jars;
+                            const room = KOMPOST_BATCH_SIZE - batch.fill;
+                            const maxByRoom = room > 0 ? Math.min(have, Math.ceil(room / 10)) : 0;
+                            const qty = kompostQty === "max" ? maxByRoom : Math.min(
+                              kompostQty === 1 ? 1 : kompostQty === 5 ? 5 : kompostQty === 10 ? 10 : kompostQty === 100 ? 100 : 1,
+                              maxByRoom
+                            );
+                            return (
+                              <button
+                                onClick={() => void depositHoneyToCompost(qty)}
+                                disabled={batchFull || maxByRoom <= 0}
+                                title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} słoik(ów) (+${Math.min(room, qty * 10)} pkt, +${qty}% szansy)`}
+                                className="group relative flex flex-col items-center rounded-xl border border-amber-600/60 bg-amber-950/30 hover:border-amber-400/80 hover:bg-amber-900/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[170px]">
+                                <img src="/przedmioty/jar_honey.png" alt="Słoik miodu" className="w-24 h-24 object-contain" style={{imageRendering:"pixelated"}} />
+                                <span className="mt-0.5 text-[10px] font-bold text-amber-300 truncate w-full text-center leading-tight">Słoik miodu</span>
+                                <span className="text-[9px] font-black text-amber-400/80 leading-tight">+{Math.min(room, qty * 10)} pkt · +{qty}% item</span>
+                                <span className="absolute top-0.5 right-0.5 rounded bg-black/60 px-0.5 text-[9px] font-black text-amber-300">×{have}</span>
+                                <span className="absolute bottom-0.5 right-0.5 rounded bg-amber-800/80 px-0.5 text-[8px] font-black text-white">+{qty}</span>
+                              </button>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   <div className="px-6 py-3 border-t border-[#8b6a3e]/30 text-center">
                     <p className="text-[11px] text-[#8b6a3e]/70">
                       Rodzaje kompostu: ⚡ Wzrost (-5/10/15% czasu) · 🌾 Urodzaj (+1/2/3 plon) · ⭐ Nauka (+10/20/30% EXP)
