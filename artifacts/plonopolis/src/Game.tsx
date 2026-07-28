@@ -9741,11 +9741,11 @@ export default function Page() {
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
                                 disabled={batchFull}
                                 title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                className="group relative flex flex-col items-center rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[72px]"
+                                className="group relative flex flex-col items-center rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[100px]"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={sprite} alt={crop.name} className="w-12 h-12 object-contain" />
+                                  <img src={sprite} alt={crop.name} className="w-16 h-16 object-contain" />
                                 ) : (
                                   <span className="text-3xl">🌱</span>
                                 )}
@@ -9788,8 +9788,8 @@ export default function Page() {
                                   onClick={() => void depositFruitToCompost(fruitKey, qty)}
                                   disabled={batchFull}
                                   title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                  className="group relative flex flex-col items-center rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[72px]">
-                                  <span className="text-3xl leading-none">{tree.fruitIcon}</span>
+                                  className="group relative flex flex-col items-center rounded-xl border border-white/40 bg-white/5 hover:border-white/70 hover:bg-white/10 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[100px]">
+                                  <span className="text-4xl leading-none">{tree.fruitIcon}</span>
                                   <span className="mt-0.5 text-[9px] font-bold text-white truncate w-full text-center leading-tight">{tree.fruitName}</span>
                                   <span className="text-[8px] font-black text-white/70 leading-tight">Zgniłe</span>
                                   <span className="absolute top-0.5 right-0.5 rounded bg-black/60 px-0.5 text-[9px] font-black text-gray-300">×{amount}</span>
