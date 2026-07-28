@@ -9724,7 +9724,7 @@ export default function Page() {
                         return aLv !== bLv ? aLv - bLv : (a.quality ?? "").localeCompare(b.quality ?? "");
                       });
                       return (
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {sorted.map(([seedKey, amount]) => {
                             const { baseCropId, quality } = parseQualityKey(seedKey);
                             const crop = CROPS.find(c => c.id === baseCropId);
@@ -9741,18 +9741,18 @@ export default function Page() {
                                 onClick={() => void depositCropToCompost(seedKey, qty)}
                                 disabled={batchFull}
                                 title={batchFull ? "Partia pełna — odbierz nagrody" : `Wrzuć ${qty} szt.`}
-                                className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1"
+                                className="group relative flex flex-col items-center rounded-xl border border-[#8b6a3e]/50 bg-black/30 hover:border-[#dfcfab]/60 hover:bg-[#8b6a3e]/20 hover:scale-105 transition disabled:opacity-40 disabled:cursor-not-allowed p-1.5 w-[72px]"
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={sprite} alt={crop.name} className="w-24 h-24 object-contain" />
+                                  <img src={sprite} alt={crop.name} className="w-12 h-12 object-contain" />
                                 ) : (
-                                  <span className="text-5xl">🌱</span>
+                                  <span className="text-3xl">🌱</span>
                                 )}
-                                <span className="mt-0.5 text-[10px] font-bold text-[#dfcfab] truncate w-full text-center">{crop.name}</span>
-                                {qDef && <span className="text-[9px] font-black" style={{ color: qDef.borderColor }}>{qDef.label}</span>}
-                                <span className="absolute top-1 right-1 rounded bg-black/60 px-1 text-[10px] font-black text-[#dfcfab]">×{amount}</span>
-                                <span className="absolute bottom-1 right-1 rounded bg-[#8b6a3e]/80 px-1 text-[9px] font-black text-white">+{qty}</span>
+                                <span className="mt-0.5 text-[9px] font-bold text-[#dfcfab] truncate w-full text-center leading-tight">{crop.name}</span>
+                                {qDef && <span className="text-[8px] font-black leading-tight" style={{ color: qDef.borderColor }}>{qDef.label}</span>}
+                                <span className="absolute top-0.5 right-0.5 rounded bg-black/60 px-0.5 text-[9px] font-black text-[#dfcfab]">×{amount}</span>
+                                <span className="absolute bottom-0.5 right-0.5 rounded bg-[#8b6a3e]/80 px-0.5 text-[8px] font-black text-white">+{qty}</span>
                               </button>
                             );
                           })}
