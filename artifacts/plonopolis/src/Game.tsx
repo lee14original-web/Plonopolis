@@ -1126,7 +1126,6 @@ export default function Page() {
     // Nigdy nie cofaj kroku tutorialu — zapobiega race condition gdy RPC zwraca stare dane z DB
     // przed zakończeniem async zapisu (advanceTutorialStep pisze do DB po setTutorialStep)
     setTutorialStep(prev => Math.max(prev, _loadedTStep));
-    console.warn("[applyProfileState] tutorial_step from DB:", _loadedTStep, "| tutorial_started:", source.tutorial_started, "| tutorial_completed:", source.tutorial_completed, "| tutorial_skipped:", source.tutorial_skipped);
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     const _loadedPlots = parsePlotCrops(source.plot_crops);
     setPlotCrops(_loadedPlots);
@@ -3200,19 +3199,13 @@ export default function Page() {
   // Zabezpieczenie: jeśli gracz odszedł od gry zanim kliknął konewkę, a marchewki urosły.
   useEffect(() => {
     if (tutorialStep !== 8 || tutorialPlotIds.length === 0 || !profile?.id) return;
-    console.warn("[tut8] effect fired", {
-      tutorialPlotIds,
-      readiness: tutorialPlotIds.map(id => ({ id, ready: isCropReady(id), watered: plotCrops[id]?.watered })),
-    });
     const _allReady = tutorialPlotIds.every(id => isCropReady(id));
     const _allWatered = tutorialPlotIds.every(id => !!plotCrops[id]?.watered);
     if (_allReady) {
-      console.warn("[tut8] wszystkie gotowe → advance do 10");
       void advanceTutorialStep(10);
       return;
     }
     if (_allWatered) {
-      console.warn("[tut8] wszystkie podlane → advance do 9");
       void advanceTutorialStep(9);
       return;
     }
@@ -3228,10 +3221,8 @@ export default function Page() {
       });
       const _wat = tutorialPlotIds.every(id => !!_plots[id]?.watered);
       if (_rdy) {
-        console.warn("[tut8] polling: gotowe → advance do 10");
         void advanceTutorialStep(10);
       } else if (_wat) {
-        console.warn("[tut8] polling: podlane → advance do 9");
         void advanceTutorialStep(9);
       }
     }, 500);
@@ -3243,29 +3234,14 @@ export default function Page() {
   useEffect(() => {
     if (tutorialStep !== 9 || !profile?.id) return;
 
-    // Diagnostyka — pomaga zrozumieć dlaczego krok 9 się nie przesuwa
-    console.log("[tut9] effect fired", {
-      tutorialPlotIds,
-      profileId: profile.id,
-      tutorialStarted: profile.tutorial_started,
-      tutorialCompleted: profile.tutorial_completed,
-      tutorialSkipped: profile.tutorial_skipped,
-      readiness: tutorialPlotIds.map(id => ({ id, ready: isCropReady(id), plot: plotCropsRef.current[id] })),
-    });
-
-    if (tutorialPlotIds.length === 0) {
-      console.log("[tut9] tutorialPlotIds empty — czekam na recovery");
-      return;
-    }
-    // Tylko pola które MAJĄ uprawę — puste pola ignorujemy
+    if (tutorialPlotIds.length === 0) return;
+    // Tylko pola które MAJĄ uprawę — puste pola w tutorialPlotIds nie blokują przejścia
     const _withCrop = tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId);
-    console.log("[tut9] immediate check:", _withCrop.map(id => isCropReady(id)), "| withCrop:", _withCrop);
     if (_withCrop.length > 0 && _withCrop.every(id => isCropReady(id))) {
-      console.log("[tut9] calling advanceTutorialStep(10)");
       void advanceTutorialStep(10);
       return;
     }
-    // Polling co 500 ms — używa ref + minimalnego czasu wzrostu (niezależny od stale closure)
+    // Polling co 500 ms — używa ref (niezależny od stale closure)
     const _iv = setInterval(() => {
       const _plots = plotCropsRef.current;
       const _active = tutorialPlotIds.filter(id => !!_plots[id]?.cropId);
@@ -3277,10 +3253,7 @@ export default function Page() {
         if (!_crop) return false;
         return Date.now() - _p.plantedAt >= Math.round(_crop.growthTimeMs * GROWTH_GLOBAL_MIN_MULT);
       });
-      if (_allReady) {
-        console.log("[tut9] polling: all ready → advancing");
-        void advanceTutorialStep(10);
-      }
+      if (_allReady) void advanceTutorialStep(10);
     }, 500);
     return () => clearInterval(_iv);
   // eslint-disable-next-line react-hooks/exhaustive-deps
