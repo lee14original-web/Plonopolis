@@ -3121,6 +3121,75 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [showLogoutConfirm]);
 
+  // ─── Przycisk "wstecz" na Androidzie — działa jak Escape (zamknij modal) ──
+  // Technika: pushState gdy jakikolwiek modal się otwiera; popstate → zamknij
+  const _mobileBackRef = React.useRef({ pushed: false, ignoreNextPop: false });
+  const _anyModalOpen =
+    showKompostModal || showDomModal || showStodolaModal || showSadModal ||
+    showLadaModal || showShopModal || showUlModal || showMarketModal ||
+    showMessagePanel || showGildiaPanel || showMisjePanel || showSkinModal ||
+    (epicPurchaseTarget !== null) || showTestModal || showRankingPanel ||
+    showSettingsModal || showLogoutConfirm || (customerLootDrop !== null) ||
+    isFvHarvestModalOpen;
+
+  React.useEffect(() => {
+    if (_anyModalOpen && !_mobileBackRef.current.pushed) {
+      history.pushState({ plonopolisModal: true }, "");
+      _mobileBackRef.current.pushed = true;
+    } else if (!_anyModalOpen && _mobileBackRef.current.pushed) {
+      _mobileBackRef.current.pushed = false;
+      if (!_mobileBackRef.current.ignoreNextPop) {
+        history.go(-1);
+      }
+      _mobileBackRef.current.ignoreNextPop = false;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_anyModalOpen]);
+
+  React.useEffect(() => {
+    const onPop = () => {
+      if (!_mobileBackRef.current.pushed) return;
+      _mobileBackRef.current.pushed = false;
+      _mobileBackRef.current.ignoreNextPop = true;
+      // Zamknij najwyższy otwarty modal (ta sama kolejność priorytetu co Escape)
+      if (kompostRewards)           { setKompostRewards(null); return; }
+      if (showKompostModal)         { setShowKompostModal(false); return; }
+      if (customerLootDrop)         { setCustomerLootDrop(null); setLootHoverIdx(null); return; }
+      if (showShopModal)            { setShowShopModal(false); setShopCart({}); setShopError(""); return; }
+      if (showUlModal)              { setShowUlModal(false); return; }
+      if (isFvHarvestModalOpen)     { setIsFvHarvestModalOpen(false); return; }
+      if (showMessagePanel)         { if (showCompose) setShowCompose(false); else setShowMessagePanel(false); return; }
+      if (showGildiaPanel)          { setShowGildiaPanel(false); return; }
+      if (showMisjePanel)           { setShowMisjePanel(false); return; }
+      if (showSkinModal)            { setShowSkinModal(false); return; }
+      if (epicPurchaseTarget !== null) { setEpicPurchaseTarget(null); return; }
+      if (showTestModal)            { setShowTestModal(false); return; }
+      if (showLadaModal)            {
+        if (showLadaInfo) setShowLadaInfo(false);
+        else if (ladaDetailIdx !== null) setLadaDetailIdx(null);
+        else setShowLadaModal(false);
+        return;
+      }
+      if (marketPickerOpen)         { setMarketPickerOpen(false); return; }
+      if (showMarketModal)          { setShowMarketModal(false); return; }
+      if (showRankingPanel)         { setShowRankingPanel(false); return; }
+      if (showDomModal)             { setShowDomModal(false); return; }
+      if (showSadModal)             { setShowSadModal(false); return; }
+      if (showStodolaModal)         { setShowStodolaModal(false); return; }
+      if (showSettingsModal)        { setShowSettingsModal(false); return; }
+      if (showLogoutConfirm)        { setShowLogoutConfirm(false); return; }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    kompostRewards, showKompostModal, customerLootDrop, showShopModal, showUlModal,
+    isFvHarvestModalOpen, showMessagePanel, showCompose, showGildiaPanel, showMisjePanel,
+    showSkinModal, epicPurchaseTarget, showTestModal, showLadaModal, showLadaInfo,
+    ladaDetailIdx, marketPickerOpen, showMarketModal, showRankingPanel, showDomModal,
+    showSadModal, showStodolaModal, showSettingsModal, showLogoutConfirm,
+  ]);
+
   React.useEffect(() => {
     if (!showUlModal) return;
     const t = setInterval(() => setHiveNow(Date.now() + hiveClockOffsetRef.current), 1000);
