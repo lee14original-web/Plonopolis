@@ -4564,6 +4564,7 @@ export default function Page() {
       "Kontynuować?"
     )) return;
     if (!confirm("Ostatnie potwierdzenie — na pewno chcesz zresetować całe konto?")) return;
+    const _uid = profile.id;
     const _login = (profile as { login?: string }).login ?? null;
     const { data, error } = await supabase.rpc("dev_reset_account");
     if (error) { setMessage({ type: "error", title: "Błąd resetu", text: error.message }); return; }
@@ -4571,9 +4572,14 @@ export default function Page() {
     if (response?.ok === false) { setMessage({ type: "error", title: "Błąd resetu", text: response.error ?? "Nieznany błąd" }); return; }
     // Reset tutoriala w DB — czekamy przed przeładowaniem strony
     if (_login) { await supabase.rpc("admin_reset_tutorial_test_account", { p_login: _login }); }
+    // Wyczyść ekwipunek w DB — dev_reset_account tego nie czyści, a applyProfileState migruje LS→DB
+    await supabase.from("profiles").update({
+      owned_eq_items: {},
+      item_upg_registry: {},
+      extra_eq_items: [],
+    }).eq("id", _uid);
     // Wyczyść localStorage dla tego gracza (ekwipunek, statystyki, stodoła, sad, kompost...)
     // Dane są zapisane jako `klucz_${uid}` — clearPerSessionLocalStorage() tego nie oczyści
-    const _uid = profile.id;
     const _lsResetKeys = [
       "plonopolis_char_equipped", "plonopolis_item_upg_reg", "plonopolis_owned_eq", "plonopolis_extra_eq",
       "plonopolis_kompost_charges", "plonopolis_kompost_batches", "plonopolis_slot_box", "plonopolis_settings",
@@ -8126,7 +8132,7 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">➕ Dodaj EXP</p>
                     <div className="flex flex-wrap gap-2">
-                      {[250,1000,25000,500000].map(amt => (
+                      {[250,1000,25000,500000,10000000].map(amt => (
                         <button key={amt} onClick={() => handleAddExp(amt)}
                           className="rounded-xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-3 py-2 text-xs font-black text-[#2f1b0c]">
                           +{amt.toLocaleString("pl-PL")} EXP
@@ -8137,7 +8143,7 @@ export default function Page() {
                   <div>
                     <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#8b6a3e]">💰 Dodaj Gold</p>
                     <div className="flex flex-wrap gap-2">
-                      {[1000,10000,250000,9999999].map(amt => (
+                      {[1000,10000,250000,9999999,10000000].map(amt => (
                         <button key={amt} onClick={() => handleAddGold(amt)}
                           className="rounded-xl border border-yellow-500/60 bg-yellow-900/30 px-3 py-2 text-xs font-black text-yellow-200 hover:bg-yellow-900/50">
                           +{amt >= 1000000 ? amt.toLocaleString("pl-PL") : amt.toLocaleString("pl-PL")} 💰
