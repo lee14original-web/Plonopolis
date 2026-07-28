@@ -4,3 +4,4 @@
 - [Harvest session EXP tracking](plonopolis-harvest-session-exp.md) — "Bieżąca sesja" vs "Zbiory dzisiaj" to niezależne źródła EXP; sesja resetuje się na "Do miasta"/refresh/wylogowanie.
 - [Fixed-position + scale bug](plonopolis-fixed-position-scale-bug.md) — `position:fixed` overlays inside the scaled `<main>` double-scale; portal them to `document.body`.
 - [Tutorial step advance race](tutorial-step-advance-race.md) — applyProfileState must use Math.max to never downgrade tutorialStep; stale RPC data resets local state.
+- [Tutorial step 9 advance bug](tutorial-step9-advance.md) — tutorialPlotIds accumulates empty slots; filter to withCrop before every(isCropReady). Step 8 also needs auto-advance useEffect.
