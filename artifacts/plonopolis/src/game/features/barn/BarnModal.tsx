@@ -165,22 +165,32 @@ export function BarnModal({ displayLevel, displayMoney, barnState, effectiveStat
                 </div>
 
                 {/* Siatka zwierząt — tyle obrazków ile gracz posiada */}
-                <div className="flex justify-center mb-5">
-                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#8b6a3e]/40 bg-black/30 px-6 py-5 w-full max-w-lg">
-                    {st.owned > 0 ? (
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {Array.from({ length: st.owned }).map((_, i) => (
-                          <div key={i} className="flex flex-col items-center gap-1 rounded-xl border border-[#8b6a3e]/50 bg-black/30 p-2">
-                            <AnimalImg id={a.id} icon={a.icon} className="h-16 w-16 text-5xl" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <AnimalImg id={a.id} icon={a.icon} className="h-24 w-24 text-[6rem] opacity-40" />
-                    )}
-                    <p className="text-base font-black text-[#f9e7b2]">{a.name} <span className="text-[#8b6a3e] font-normal text-sm">({st.owned} szt.)</span></p>
-                  </div>
-                </div>
+                {(() => {
+                  // Rozmiar obrazka: duży gdy mało zwierząt, mniejszy gdy dużo
+                  const imgCls = st.owned <= 4
+                    ? "h-24 w-24 text-[6rem]"
+                    : st.owned <= 9
+                    ? "h-16 w-16 text-5xl"
+                    : "h-12 w-12 text-4xl";
+                  return (
+                    <div className="flex flex-col items-center gap-3 mb-5">
+                      {st.owned > 0 ? (
+                        <div className="flex flex-wrap justify-center gap-2">
+                          {Array.from({ length: st.owned }).map((_, i) => (
+                            <div key={i} className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 p-2">
+                              <AnimalImg id={a.id} icon={a.icon} className={imgCls} />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-[#8b6a3e]/50 bg-black/30 p-2">
+                          <AnimalImg id={a.id} icon={a.icon} className="h-24 w-24 text-[6rem] opacity-40" />
+                        </div>
+                      )}
+                      <p className="text-base font-black text-[#f9e7b2]">{a.name} <span className="text-[#8b6a3e] font-normal text-sm">({st.owned} szt.)</span></p>
+                    </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-2 gap-4">
                   {/* Lewa kolumna */}
