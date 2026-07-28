@@ -1381,6 +1381,27 @@ export default function Page() {
         localStorage.removeItem(legacyKey); localStorage.removeItem(KOMPOST_KEY);
       }
     } catch {}
+    // Merge z serwerową wersją batcha (DB jest autorytatywna — używamy wyższego fill)
+    const dbBatch = source.kompost_batch;
+    if (dbBatch && typeof dbBatch === "object" && "fill" in dbBatch) {
+      const dbFill = Math.max(0, Math.min(KOMPOST_BATCH_SIZE, Math.floor(Number(dbBatch.fill) || 0)));
+      const dbScore = Math.max(0, Number(dbBatch.scoreSum) || 0);
+      const dbCropIds = Array.isArray(dbBatch.cropIds) ? dbBatch.cropIds.filter((x): x is string => typeof x === "string") : [];
+      if (dbFill > loadedBatch.fill) {
+        // Serwer ma nowszy (wyższy) stan — użyj serwera
+        loadedBatch.fill = dbFill;
+        loadedBatch.scoreSum = dbScore;
+        loadedBatch.cropIds = dbCropIds;
+      } else if (loadedBatch.fill > dbFill && loadedBatch.fill > 0) {
+        // localStorage ma nowszy stan — zsynchronizuj serwer (fire-and-forget)
+        if (uid) {
+          void supabase.rpc("game_update_kompost_batch", {
+            p_fill_delta: loadedBatch.fill - dbFill,
+            p_score_delta: Math.max(0, loadedBatch.scoreSum - dbScore),
+          });
+        }
+      }
+    }
     setKompostBatch(loadedBatch);
 
     return nextProfile;
@@ -4843,7 +4864,12 @@ export default function Page() {
       setSeedInventory(nextInv);
       saveKompostBatch(batch);
       if (profile?.id) {
-        await supabase.rpc("game_deposit_to_kompost", { p_seed_key: seedKey, p_amount: added });
+        await supabase.rpc("game_deposit_to_kompost", {
+          p_seed_key:    seedKey,
+          p_amount:      added,
+          p_score_delta: added * valuePerCrop,
+          p_crop_id:     baseCropId ?? null,
+        });
       }
     } finally {
       kompostBusyRef.current = false;
@@ -4881,14 +4907,23 @@ export default function Page() {
       saveFruitInventory(nextInv);
       saveKompostBatch(batch);
       if (profile?.id) {
-        await supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: nextInv });
+        await Promise.all([
+          supabase.rpc("sync_fruit_inventory", { p_user_id: profile.id, p_items: nextInv }),
+          supabase.rpc("game_update_kompost_batch", {
+            p_fill_delta:  added,
+            p_score_delta: added * valuePerFruit,
+            p_crop_id:     fruitSpeciesKey,
+          }),
+        ]);
       }
     } finally {
       kompostBusyRef.current = false;
     }
   }
 
-  // ─── KOMPOSTOWNIK: odbierz nagrody — partia (fill=100) = 5 nagród z TIEREM zależnym od score ───
+  // ─── KOMPOSTOWNIK: odbierz nagrody — partia (fill=100)
+  //     Serwer jest autorytatywny: rolling 5 kompostów + osobny EQ item roll
+  //     Serwer zwraca item_tier (-1=brak, 0-4=tier, 5=jackpot); klient losuje konkretny item z tieru
   async function claimKompostReward() {
     if (kompostBusyRef.current) return;
     kompostBusyRef.current = true;
@@ -4896,41 +4931,44 @@ export default function Page() {
     const batch = kompostBatch;
     if (batch.fill < KOMPOST_BATCH_SIZE) return;
     const playerLvl = profile?.level ?? 1;
+
+    // Wywołaj serwer — rolling po stronie serwera
+    const { data: rpcRaw, error: rpcErr } = await supabase.rpc("game_claim_kompost_reward", {
+      p_player_level: playerLvl,
+    });
+    if (rpcErr || !rpcRaw) {
+      // Fallback: batch mógł być już zresetowany lub błąd — wyczyść lokalnie
+      saveKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
+      setKompostBatch({ fill: 0, scoreSum: 0, cropIds: [] });
+      return;
+    }
+    const rpc = rpcRaw as {
+      ok: boolean; quality: string; compost_tier: number;
+      rewards: Array<{kind: string; type: string; value: number}>;
+      item_tier: number; seed_inventory: Record<string, number>;
+    };
+    if (!rpc.ok) return;
+
     const rewards: KompostRewardEntry[] = [];
-    let inv = { ...seedInventory };
     let owned = { ...ownedEqItems };
-    let upgReg = { ...itemUpgRegistry };
     let extras = [...extraEqItems];
     const newHistoryEntries: Array<{label: string; color: string; icon: string; ts?: number; count?: number}> = [];
 
-    const score = batch.scoreSum / KOMPOST_BATCH_SIZE;
-    const quality = getCompostQualityFromScore(score);
-    // Bonus różnorodności z tej partii
-    const diversityCount = (batch.cropIds ?? []).length;
-    const diversityItemBonus = Math.min(5, Math.floor(diversityCount / 2));
-    const diversityTierBoost = diversityCount >= 6;
-    const _luckItemBonus = Math.min(5, (effectiveStats.szczescie ?? 0) * 0.05);
-    const itemDropChance = 10 + diversityItemBonus + _luckItemBonus;
-
-    // ── Zawsze 5 kompostów (gwarantowane) ──
-    const compostTierIdx = COMPOST_TIER_FIXED_BY_QUALITY[quality];
-    for (let rIdx = 0; rIdx < KOMPOST_REWARDS_PER_BATCH; rIdx++) {
-      let compostType: CompostType;
-      const r2 = Math.random() * 100;
-      if (r2 < 33.3) compostType = "growth";
-      else if (r2 < 66.6) compostType = "yield";
-      else compostType = "exp";
-      const value = COMPOST_DEFS[compostType].bonusValues[compostTierIdx];
-      const key = compostKeyFor(compostType, value);
-      inv = { ...inv, [key]: (inv[key] ?? 0) + 1 };
-      rewards.push({ kind:"compost", compostType, value });
-      const cDef = COMPOST_DEFS[compostType];
+    // ── 5 kompostów z serwera (już zapisane w seed_inventory) ──
+    const compostTierIdx = rpc.compost_tier;
+    for (const r of rpc.rewards) {
+      if (r.kind !== "compost") continue;
+      const ct = r.type as CompostType;
+      rewards.push({ kind:"compost", compostType: ct, value: r.value });
+      const cDef = COMPOST_DEFS[ct];
       const tColor = compostTierIdx === 0 ? "#9ca3af" : compostTierIdx === 1 ? "#22c55e" : "#a78bfa";
-      newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(value)})`, color: tColor, icon: cDef.icon, ts: Date.now(), count: 1 });
+      newHistoryEntries.push({ label: `${cDef.name} (${cDef.tierName(r.value)})`, color: tColor, icon: cDef.icon, ts: Date.now(), count: 1 });
     }
 
-    // ── Osobny roll: Jackpot 0.5% ──
-    if (Math.random() * 100 < JACKPOT_CHANCE) {
+    // ── Klient losuje konkretny item z tieru autoryzowanego przez serwer ──
+    const itemTier = rpc.item_tier;
+    if (itemTier === 5) {
+      // Jackpot — legendarny item z puli lvl 21+
       const jackpotPool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= 21 && it.unlockLevel <= playerLvl);
       const jpFallback = jackpotPool.length > 0 ? jackpotPool : CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel <= playerLvl);
       if (jpFallback.length > 0) {
@@ -4940,24 +4978,20 @@ export default function Page() {
         rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
         newHistoryEntries.push({ label: `JACKPOT! ${item.name}`, color: "#fbbf24", icon: "✨", ts: Date.now(), count: 1 });
       }
-    }
-
-    // ── Osobny roll: przedmiot z ekwipunku (itemDropChance%) ──
-    if (Math.random() * 100 < itemDropChance) {
-      let rolledTierIdx = rollFromChances(ITEM_TIER_BY_QUALITY[quality]);
-      if (diversityTierBoost && rolledTierIdx < 4 && Math.random() < 0.30) rolledTierIdx += 1;
-      const minLvl = rolledTierIdx * 5 + 1;
-      const maxLvl = rolledTierIdx * 5 + 5;
+    } else if (itemTier >= 0 && itemTier <= 4) {
+      // Zwykły item — losuj z tieru autoryzowanego przez serwer
+      const minLvl = itemTier * 5 + 1;
+      const maxLvl = itemTier * 5 + 5;
       let pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= minLvl && it.unlockLevel <= maxLvl && it.unlockLevel <= playerLvl);
       if (pool.length === 0) {
-        for (let t = rolledTierIdx - 1; t >= 0; t--) {
+        for (let t = itemTier - 1; t >= 0; t--) {
           pool = CHAR_EQUIP_ITEMS.filter(it => it.unlockLevel >= t*5+1 && it.unlockLevel <= t*5+5 && it.unlockLevel <= playerLvl);
           if (pool.length > 0) break;
         }
       }
       if (pool.length > 0) {
         const item = pool[Math.floor(Math.random() * pool.length)];
-        const rarityDef = ITEM_TIER_RARITY[Math.min(4, rolledTierIdx)];
+        const rarityDef = ITEM_TIER_RARITY[Math.min(4, itemTier)];
         if (!owned[item.id]) { owned = { ...owned, [item.id]: true as const }; }
         else { extras = [...extras, { uid: makeExtraUid(), id: item.id, upg: 0 }]; }
         rewards.push({ kind:"item", itemId: item.id, itemName: item.name, itemIcon: item.icon });
@@ -4965,30 +4999,22 @@ export default function Page() {
       }
     }
 
-    // Reset partii po odebraniu
-    const emptyBatch: CompostBatch = { fill: 0, scoreSum: 0, cropIds: [] };
-    seedInventoryRef.current = inv;
-    setSeedInventory(inv);
+    // ── Zapisz stan lokalny (seed_inventory z serwera, batch reset) ──
+    const serverInv = rpc.seed_inventory as Record<string, number>;
+    seedInventoryRef.current = serverInv;
+    setSeedInventory(serverInv);
     saveOwnedEqItems(owned);
-    saveItemUpg(upgReg);
     saveExtraEqItems(extras);
+    const emptyBatch: CompostBatch = { fill: 0, scoreSum: 0, cropIds: [] };
     saveKompostBatch(emptyBatch);
-    // Serwerowy zapis przedmiotów — serwer jest autorytatywny
-    const _grantedKompostIds = (rewards as Array<{kind:string;itemId?:string}>)
+    setKompostBatch(emptyBatch);
+
+    // ── Serwerowy zapis EQ itemów ──
+    const _grantedIds = (rewards as Array<{kind:string;itemId?:string}>)
       .filter(r => r.kind === "item" && r.itemId)
       .map(r => r.itemId!);
-    if (_grantedKompostIds.length > 0) await grantEqItemsServer(_grantedKompostIds);
-    if (profile?.id) {
-      // Oblicz deltę (tylko dodane nagrody) — RPC dodaje atomicznie, nigdy nie nadpisuje całości
-      const _seedsDelta: Record<string, number> = {};
-      for (const key of Object.keys(inv)) {
-        const added = (inv[key] ?? 0) - (seedInventory[key] ?? 0);
-        if (added > 0) _seedsDelta[key] = added;
-      }
-      if (Object.keys(_seedsDelta).length > 0) {
-        await supabase.rpc("game_add_seeds_to_inventory", { p_seeds_delta: _seedsDelta });
-      }
-    }
+    if (_grantedIds.length > 0) await grantEqItemsServer(_grantedIds);
+
     setKompostDropHistory(prev => {
       const now = Date.now();
       const WINDOW = 15 * 60 * 1000;

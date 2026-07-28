@@ -54,4 +54,5 @@ export type Profile = {
   owned_eq_items?: Record<string, unknown> | null;
   extra_eq_items?: unknown[] | null;
   item_upg_registry?: Record<string, unknown> | null;
+  kompost_batch?: { fill: number; scoreSum: number; cropIds: string[] } | null;
 };
