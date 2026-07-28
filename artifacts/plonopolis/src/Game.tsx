@@ -3257,18 +3257,21 @@ export default function Page() {
       console.log("[tut9] tutorialPlotIds empty — czekam na recovery");
       return;
     }
-    // Natychmiastowe sprawdzenie ze świeżą closure renderowania
-    const _immediateReady = tutorialPlotIds.every(id => isCropReady(id));
-    console.log("[tut9] immediate check:", _immediateReady, tutorialPlotIds.map(id => isCropReady(id)));
-    if (_immediateReady) {
+    // Tylko pola które MAJĄ uprawę — puste pola ignorujemy
+    const _withCrop = tutorialPlotIds.filter(id => !!plotCrops[id]?.cropId);
+    console.log("[tut9] immediate check:", _withCrop.map(id => isCropReady(id)), "| withCrop:", _withCrop);
+    if (_withCrop.length > 0 && _withCrop.every(id => isCropReady(id))) {
       console.log("[tut9] calling advanceTutorialStep(10)");
       void advanceTutorialStep(10);
       return;
     }
     // Polling co 500 ms — używa ref + minimalnego czasu wzrostu (niezależny od stale closure)
     const _iv = setInterval(() => {
-      const _allReady = tutorialPlotIds.every(id => {
-        const _p = plotCropsRef.current[id];
+      const _plots = plotCropsRef.current;
+      const _active = tutorialPlotIds.filter(id => !!_plots[id]?.cropId);
+      if (_active.length === 0) return;
+      const _allReady = _active.every(id => {
+        const _p = _plots[id];
         if (!_p?.cropId || !_p?.plantedAt) return false;
         const _crop = CROPS.find(c => c.id === _p.cropId);
         if (!_crop) return false;
