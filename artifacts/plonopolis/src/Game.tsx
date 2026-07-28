@@ -1097,6 +1097,7 @@ export default function Page() {
         setBarnItems_({});
         setOrchardState_(defaultOrchardState());
         setFruitInventory_({});
+        setTutorialStep(0); // reset dla nowego konta — Math.max poniżej poprawnie ustawi wartość z DB
       }
       localStorage.setItem(ACTIVE_USER_KEY, source.id);
     } catch { /* ignore */ }
@@ -1122,7 +1123,9 @@ export default function Page() {
 
     setProfile(nextProfile);
     const _loadedTStep = typeof source.tutorial_step === "number" ? source.tutorial_step : 0;
-    setTutorialStep(_loadedTStep);
+    // Nigdy nie cofaj kroku tutorialu — zapobiega race condition gdy RPC zwraca stare dane z DB
+    // przed zakończeniem async zapisu (advanceTutorialStep pisze do DB po setTutorialStep)
+    setTutorialStep(prev => Math.max(prev, _loadedTStep));
     setUnlockedPlots(parseUnlockedPlots(source.unlocked_plots));
     const _loadedPlots = parsePlotCrops(source.plot_crops);
     setPlotCrops(_loadedPlots);
