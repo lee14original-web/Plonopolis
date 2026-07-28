@@ -809,10 +809,6 @@ export default function Page() {
   const isProfileLoadedRef = React.useRef(false);
   const mapCrossfadeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapCrossfade, setMapCrossfade] = React.useState<{ from: string; to: string } | null>(null);
-  const [showFarmSlider, setShowFarmSlider] = React.useState<{ from: string; to: string } | null>(null);
-  const [sliderX, setSliderX] = React.useState(50);
-  const sliderDragRef = React.useRef(false);
-  const sliderContainerRef = React.useRef<HTMLDivElement>(null);
   const [barnItems, setBarnItems_] = React.useState<BarnItems>({});
   const saveBarnState = (next: BarnState) => { barnStateRef.current = next; setBarnState_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_STATE_KEY, uid), JSON.stringify(next)); } catch {} };
   const saveBarnItems = (next: BarnItems) => { setBarnItems_(next); const uid = profile?.id ?? ""; if (uid) try { localStorage.setItem(lsKey(BARN_ITEMS_KEY, uid), JSON.stringify(next)); } catch {} };
@@ -3040,8 +3036,6 @@ export default function Page() {
     // Uruchom crossfade
     if (mapCrossfadeTimerRef.current) clearTimeout(mapCrossfadeTimerRef.current);
     setMapCrossfade({ from: prev, to: currentMap });
-    setSliderX(50);
-    setShowFarmSlider({ from: prev, to: currentMap });
     mapCrossfadeTimerRef.current = setTimeout(() => setMapCrossfade(null), 13000);
 
     return () => {
@@ -6091,95 +6085,6 @@ export default function Page() {
             />
           )}
         </div>
-        {/* Before/after slider modal — awans rancza */}
-        {showFarmSlider && isOnFarmMap && (() => {
-          const { from, to } = showFarmSlider;
-          return (
-            <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/65 backdrop-blur-sm">
-              <div className="flex w-full flex-col items-center gap-5 px-4">
-                {/* Nagłówek */}
-                <div className="text-center">
-                  <h2 className="text-4xl font-black text-[#f9e7b2] drop-shadow-lg">Ranczo się rozwija!</h2>
-                  <p className="mt-1 text-base text-[#d8ba7a]">Przeciągnij suwak, aby zobaczyć zmiany.</p>
-                </div>
-
-                {/* Kontener slidera — responsywny, proporcja 16:9 */}
-                <div
-                  ref={sliderContainerRef}
-                  className="relative overflow-hidden rounded-2xl border-2 border-[#8b6a3e] shadow-2xl select-none"
-                  style={{
-                    width: "100%",
-                    maxWidth: "min(92vw, calc(72vh * 16 / 9))",
-                    aspectRatio: "16 / 9",
-                    background: "rgba(40,24,12,0.95)",
-                    cursor: "ew-resize",
-                  }}
-                  onPointerMove={e => {
-                    if (!sliderDragRef.current || !sliderContainerRef.current) return;
-                    const rect = sliderContainerRef.current.getBoundingClientRect();
-                    const pct = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
-                    setSliderX(pct);
-                  }}
-                  onPointerUp={() => { sliderDragRef.current = false; }}
-                  onPointerLeave={() => { sliderDragRef.current = false; }}
-                >
-                  {/* Nowa mapa — dolna warstwa, pełna */}
-                  <img
-                    src={`/mapy/${to}.png`}
-                    alt="Nowe ranczo"
-                    draggable={false}
-                    className="pointer-events-none absolute inset-0 w-full h-full"
-                    style={{ objectFit: "contain", objectPosition: "center", imageRendering: "pixelated" }}
-                  />
-
-                  {/* Stara mapa — clipping przez clip-path */}
-                  <div
-                    className="absolute inset-0"
-                    style={{ clipPath: `inset(0 ${100 - sliderX}% 0 0)` }}
-                  >
-                    <img
-                      src={`/mapy/${from}.png`}
-                      alt="Stare ranczo"
-                      draggable={false}
-                      className="pointer-events-none w-full h-full"
-                      style={{ objectFit: "contain", objectPosition: "center", imageRendering: "pixelated" }}
-                    />
-                  </div>
-
-                  {/* Separator z uchwytem */}
-                  <div
-                    className="absolute top-0 bottom-0 z-20 flex items-center justify-center"
-                    style={{ left: `${sliderX}%`, transform: "translateX(-50%)", width: 48, cursor: "ew-resize" }}
-                    onPointerDown={e => { sliderDragRef.current = true; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
-                  >
-                    <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[3px] shadow-[0_0_12px_rgba(244,207,120,0.8)]" style={{ background: "#f4cf78" }} />
-                    <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#f4cf78] bg-[rgba(20,12,5,0.95)] shadow-[0_0_16px_rgba(244,207,120,0.6)] text-[#f4cf78] font-black text-base select-none">
-                      ⟺
-                    </div>
-                  </div>
-
-                  {/* Etykieta Przed */}
-                  <span className="pointer-events-none absolute left-4 top-3 z-30 rounded-full border border-[#d4a64f]/60 bg-[rgba(60,30,10,0.90)] px-3 py-1 text-sm font-black uppercase tracking-widest text-[#f4cf78]">
-                    Przed
-                  </span>
-                  {/* Etykieta Po */}
-                  <span className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[#7ecb5e]/60 bg-[rgba(20,50,15,0.90)] px-3 py-1 text-sm font-black uppercase tracking-widest text-[#7ecb5e]">
-                    Po
-                  </span>
-                </div>
-
-                {/* Przycisk zamknięcia */}
-                <button
-                  type="button"
-                  onClick={() => setShowFarmSlider(null)}
-                  className="rounded-2xl border border-[#f4cf78]/70 bg-[rgba(212,166,79,0.15)] px-12 py-3 text-lg font-black text-[#f9e7b2] shadow-lg transition hover:border-[#f4cf78] hover:bg-[rgba(212,166,79,0.30)]"
-                >
-                  Super, przejdź dalej
-                </button>
-              </div>
-            </div>
-          );
-        })()}
         {/* Overlay ładowania — statyczny (nie przesuwa się) */}
         {isMapLoading && (
           <div className="pointer-events-none absolute inset-0 z-[200] flex flex-col items-center justify-center gap-8">
