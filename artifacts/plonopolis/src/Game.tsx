@@ -3200,7 +3200,7 @@ export default function Page() {
     if (tutorialStep !== 9 || !profile?.id) return;
 
     // Diagnostyka — pomaga zrozumieć dlaczego krok 9 się nie przesuwa
-    console.debug("[tut9] effect fired", {
+    console.log("[tut9] effect fired", {
       tutorialPlotIds,
       profileId: profile.id,
       tutorialStarted: profile.tutorial_started,
@@ -3210,14 +3210,14 @@ export default function Page() {
     });
 
     if (tutorialPlotIds.length === 0) {
-      console.debug("[tut9] tutorialPlotIds empty — czekam na recovery");
+      console.log("[tut9] tutorialPlotIds empty — czekam na recovery");
       return;
     }
     // Natychmiastowe sprawdzenie ze świeżą closure renderowania
     const _immediateReady = tutorialPlotIds.every(id => isCropReady(id));
-    console.debug("[tut9] immediate check:", _immediateReady, tutorialPlotIds.map(id => isCropReady(id)));
+    console.log("[tut9] immediate check:", _immediateReady, tutorialPlotIds.map(id => isCropReady(id)));
     if (_immediateReady) {
-      console.debug("[tut9] calling advanceTutorialStep(10)");
+      console.log("[tut9] calling advanceTutorialStep(10)");
       void advanceTutorialStep(10);
       return;
     }
@@ -3231,7 +3231,7 @@ export default function Page() {
         return Date.now() - _p.plantedAt >= Math.round(_crop.growthTimeMs * GROWTH_GLOBAL_MIN_MULT);
       });
       if (_allReady) {
-        console.debug("[tut9] polling: all ready → advancing");
+        console.log("[tut9] polling: all ready → advancing");
         void advanceTutorialStep(10);
       }
     }, 500);
