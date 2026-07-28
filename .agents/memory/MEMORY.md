@@ -3,3 +3,4 @@
 - [Inventory structure](inventory-structure.md) — seed_inventory vs barn_items — różne miejsca dla różnych przedmiotów.
 - [Harvest session EXP tracking](plonopolis-harvest-session-exp.md) — "Bieżąca sesja" vs "Zbiory dzisiaj" to niezależne źródła EXP; sesja resetuje się na "Do miasta"/refresh/wylogowanie.
 - [Fixed-position + scale bug](plonopolis-fixed-position-scale-bug.md) — `position:fixed` overlays inside the scaled `<main>` double-scale; portal them to `document.body`.
+- [Tutorial step advance race](tutorial-step-advance-race.md) — applyProfileState must use Math.max to never downgrade tutorialStep; stale RPC data resets local state.
