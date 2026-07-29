@@ -1897,11 +1897,20 @@ export default function Page() {
     // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
     const _preservedCompostBonus = plot.compostBonus ?? null;
 
+    // OPTIMISTIC UPDATE — oznacz pole jako podlane natychmiast (eliminuje lag po animacji)
+    const _optPrevWater = plotCropsRef.current[plotId];
+    const _optWatered = { ..._optPrevWater, watered: true };
+    plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optWatered };
+    setPlotCrops(prev => ({ ...prev, [plotId]: _optWatered }));
+
     const { data, error } = await supabase.rpc("game_water_plot", {
       p_plot_id: plotId,
     });
 
     if (error) {
+      // Rollback optymistycznej aktualizacji
+      plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevWater };
+      setPlotCrops(prev => _optPrevWater ? { ...prev, [plotId]: _optPrevWater } : prev);
       setMessage({ fieldOnly: true,
         type: "error",
         title: "Błąd podlewania",
@@ -2162,6 +2171,19 @@ export default function Page() {
       const _hiveMultPlant = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
       const _frozenStatMult = _wiedzaMultPlant * _hiveMultPlant;
 
+      // OPTIMISTIC UPDATE — pokaż uprawę na polu natychmiast, zanim RPC odpowie
+      const _optPrevPlant = plotCropsRef.current[plotId];
+      const _optPlantState: PlotCropState = {
+        cropId: _baseCropId,
+        plantedAt: Date.now(),
+        watered: false,
+        frozenStatMult: _frozenStatMult,
+        plantedQuality: _seedQuality ?? "good",
+        ..._preservedCompostBonus ? { compostBonus: _preservedCompostBonus } : {},
+      };
+      plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPlantState };
+      setPlotCrops(prev => ({ ...prev, [plotId]: _optPlantState }));
+
       const { data, error } = await supabase.rpc("game_plant_crop", {
         p_plot_id: plotId,
         p_crop_id: _baseCropId,
@@ -2170,6 +2192,9 @@ export default function Page() {
         p_frozen_stat_mult: _frozenStatMult,
       });
       if (error) {
+        // Rollback optimistic plant update
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevPlant! };
+        setPlotCrops(prev => _optPrevPlant ? { ...prev, [plotId]: _optPrevPlant } : ((() => { const n = {...prev}; delete n[plotId]; return n; })()));
         _restoreSeed();
         // Pole nie jest odblokowane w DB — zsynchronizuj lokalny stan z DB
         if (error.message?.includes("nie jest odblokowane") && profile?.id) {
@@ -5354,6 +5379,13 @@ export default function Page() {
 
     const previousLevel = displayLevel;
 
+    // OPTIMISTIC UPDATE — wyczyść pole natychmiast, zanim RPC odpowie
+    const _optPrevHarvest = plotCropsRef.current[plotId];
+    const _optHarvestPlots = { ...plotCropsRef.current };
+    delete _optHarvestPlots[plotId];
+    plotCropsRef.current = _optHarvestPlots;
+    setPlotCrops(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+
     const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
     // Jakość zasadzonego nasiona (z pola w DB — decyduje o ścieżce EXP i popup)
     const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
@@ -5395,6 +5427,11 @@ export default function Page() {
       p_exp_bonus_pct:       _expBonusPctForRpc,
     });
     if (error) {
+      // Rollback optimistic harvest update
+      if (_optPrevHarvest) {
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevHarvest };
+        setPlotCrops(prev => ({ ...prev, [plotId]: _optPrevHarvest }));
+      }
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
     }
