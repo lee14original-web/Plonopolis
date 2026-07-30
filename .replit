@@ -34,3 +34,7 @@ VITE_SUPABASE_ANON_KEY = "sb_publishable_ikeRxy6AzoNQuIeoeF9aww_4FideNeP"
 
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 22294
+externalPort = 80
