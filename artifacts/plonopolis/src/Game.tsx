@@ -643,6 +643,13 @@ export default function Page() {
   const plantProcessingRef   = React.useRef(false);
   const waterProcessingRef   = React.useRef(false);
   const harvestProcessingRef = React.useRef(false);
+  // Parametry zbioru zapisane przed optymistycznym usunięciem pola (używane w skipTimer path)
+  const harvestParamsRef = React.useRef<Record<number, {
+    cropId: string;
+    effectiveGrowMs: number;
+    plantedQuality: "good"|"epic"|"rotten"|"legendary";
+    compostBonus: CompostBonus | null;
+  }>>({});
   const [tutorialArrow, setTutorialArrow] = React.useState<{ cx: number; top: number; bottom: number; left: number; right: number; width: number; height: number } | null>(null);
   const [showShopModal, setShowShopModal] = React.useState(false);
   const [shopCart, setShopCart] = React.useState<Record<string,number>>({});
@@ -1870,6 +1877,10 @@ export default function Page() {
           setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
           return;
         }
+        // OPTIMISTIC: oznacz pole jako podlane PRZED animacją — użytkownik widzi zmianę natychmiast
+        const _optWateredQ = { ..._fp, watered: true };
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optWateredQ };
+        setPlotCrops(prev => ({ ...prev, [plotId]: _optWateredQ }));
         setPendingFieldActions(prev => ({ ...prev, [plotId]: { kind: "water", startMs: Date.now(), durationMs: BASE_WATER_MS } }));
         await new Promise<void>(resolve => setTimeout(resolve, BASE_WATER_MS));
         await handleWaterPlot(plotId, true);
@@ -1880,8 +1891,17 @@ export default function Page() {
     // ─── _skipTimer = true — timer dobiegł końca, fresh check przed RPC ───
     {
       const _fp = plotCropsRef.current[plotId];
-      if (!_fp?.cropId || _fp.watered || isCropReady(plotId)) {
+      if (!_fp?.cropId || isCropReady(plotId)) {
+        // Pole bez uprawy lub uprawa gotowa — anuluj RPC (stan już ustawiony optymistycznie w queue callback)
         if (process.env.NODE_ENV !== "production") console.debug("[water overlay] clear (skip-fresh)", { plotId, fp: _fp });
+        setPlotCrops(prev => {
+          const curr = prev[plotId];
+          if (!curr) return prev;
+          return { ...prev, [plotId]: { ...curr, watered: false } };
+        });
+        if (plotCropsRef.current[plotId]) {
+          plotCropsRef.current = { ...plotCropsRef.current, [plotId]: { ...plotCropsRef.current[plotId], watered: false } };
+        }
         setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         return;
       }
@@ -1897,20 +1917,20 @@ export default function Page() {
     // Zachowaj bonus kompostu z pola PRZED wywołaniem RPC (na wypadek gdyby serwer go zgubił)
     const _preservedCompostBonus = plot.compostBonus ?? null;
 
-    // OPTIMISTIC UPDATE — oznacz pole jako podlane natychmiast (eliminuje lag po animacji)
-    const _optPrevWater = plotCropsRef.current[plotId];
-    const _optWatered = { ..._optPrevWater, watered: true };
-    plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optWatered };
-    setPlotCrops(prev => ({ ...prev, [plotId]: _optWatered }));
-
     const { data, error } = await supabase.rpc("game_water_plot", {
       p_plot_id: plotId,
     });
 
     if (error) {
-      // Rollback optymistycznej aktualizacji
-      plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevWater };
-      setPlotCrops(prev => _optPrevWater ? { ...prev, [plotId]: _optPrevWater } : prev);
+      // Rollback optymistycznej aktualizacji (watered → false)
+      setPlotCrops(prev => {
+        const curr = prev[plotId];
+        if (!curr) return prev;
+        return { ...prev, [plotId]: { ...curr, watered: false } };
+      });
+      if (plotCropsRef.current[plotId]) {
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: { ...plotCropsRef.current[plotId], watered: false } };
+      }
       setMessage({ fieldOnly: true,
         type: "error",
         title: "Błąd podlewania",
@@ -2055,6 +2075,22 @@ export default function Page() {
       }
       // Odlicz nasiono w UI dopiero teraz — gdy kolejka dochodzi do tego pola
       setSeedInventory(prev => ({ ...prev, [effectiveSeedId]: (prev[effectiveSeedId] ?? 0) - 1 }));
+      // OPTIMISTIC: pokaż uprawę na polu PRZED animacją — natychmiastowy feedback
+      {
+        const _wiedzaEffQ = effectiveStats.wiedza + getEquipFlatBonus(" pkt Wiedzy", charEquipped);
+        const _wiedzaMultQ = Math.max(WIEDZA_MULT_MIN, 1 - calcStatEffect(_wiedzaEffQ, WIEDZA_RATE) / 100);
+        const _hiveMultQ = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
+        const _optPlantQ: PlotCropState = {
+          cropId: _baseCropId,
+          plantedAt: Date.now(),
+          watered: false,
+          frozenStatMult: _wiedzaMultQ * _hiveMultQ,
+          plantedQuality: _seedQuality ?? "good",
+          ...(_fp?.compostBonus ? { compostBonus: _fp.compostBonus } : {}),
+        };
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPlantQ };
+        setPlotCrops(prev => ({ ...prev, [plotId]: _optPlantQ }));
+      }
       setPendingFieldActions(prev => ({
         ...prev,
         [plotId]: { kind: "plant", startMs: Date.now(), durationMs: _plantDurMs, seedId: effectiveSeedId },
@@ -2133,8 +2169,12 @@ export default function Page() {
       // Re-walidacja po upływie timera (gracz mógł w międzyczasie coś zmienić)
       // Używamy refs do FRESH state zamiast captured closures
       const _freshPlot: PlotCropState | undefined = plotCropsRef.current[plotId];
-      if (_freshPlot?.cropId) {
+      if (_freshPlot?.cropId && _freshPlot.cropId !== _baseCropId) {
+        // Pole zajęte przez INNĄ uprawę (nie tę, którą optymistycznie posadziliśmy)
         setMessage({ fieldOnly: true, type: "info", title: "Pole zajęte", text: "Pole zostało zajęte zanim akcja się zakończyła." });
+        setPlotCrops(prev => { const n = { ...prev }; delete n[plotId]; return n; });
+        plotCropsRef.current = { ...plotCropsRef.current };
+        delete plotCropsRef.current[plotId];
         _restoreSeed();
         return;
       }
@@ -2171,19 +2211,6 @@ export default function Page() {
       const _hiveMultPlant = Math.max(HIVE_MULT_MIN, 1 - hiveData.level * 0.02);
       const _frozenStatMult = _wiedzaMultPlant * _hiveMultPlant;
 
-      // OPTIMISTIC UPDATE — pokaż uprawę na polu natychmiast, zanim RPC odpowie
-      const _optPrevPlant = plotCropsRef.current[plotId];
-      const _optPlantState: PlotCropState = {
-        cropId: _baseCropId,
-        plantedAt: Date.now(),
-        watered: false,
-        frozenStatMult: _frozenStatMult,
-        plantedQuality: _seedQuality ?? "good",
-        ..._preservedCompostBonus ? { compostBonus: _preservedCompostBonus } : {},
-      };
-      plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPlantState };
-      setPlotCrops(prev => ({ ...prev, [plotId]: _optPlantState }));
-
       const { data, error } = await supabase.rpc("game_plant_crop", {
         p_plot_id: plotId,
         p_crop_id: _baseCropId,
@@ -2192,9 +2219,10 @@ export default function Page() {
         p_frozen_stat_mult: _frozenStatMult,
       });
       if (error) {
-        // Rollback optimistic plant update
-        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevPlant! };
-        setPlotCrops(prev => _optPrevPlant ? { ...prev, [plotId]: _optPrevPlant } : ((() => { const n = {...prev}; delete n[plotId]; return n; })()));
+        // Rollback: usuń uprawę posadzoną optymistycznie w queue callback
+        plotCropsRef.current = { ...plotCropsRef.current };
+        delete plotCropsRef.current[plotId];
+        setPlotCrops(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         _restoreSeed();
         // Pole nie jest odblokowane w DB — zsynchronizuj lokalny stan z DB
         if (error.message?.includes("nie jest odblokowane") && profile?.id) {
@@ -5349,6 +5377,19 @@ export default function Page() {
           setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
           return;
         }
+        // Zapisz parametry PRZED optymistycznym usunięciem pola (skipTimer path ich potrzebuje)
+        const _hpFp = plotCropsRef.current[plotId];
+        const _hpQualRaw = _hpFp?.plantedQuality ?? "good";
+        harvestParamsRef.current[plotId] = {
+          cropId: _hpFp?.cropId ?? "",
+          effectiveGrowMs: getEffectiveGrowthTimeMs(plotId),
+          plantedQuality: (["good","epic","rotten","legendary"].includes(_hpQualRaw) ? _hpQualRaw : "good") as "good"|"epic"|"rotten"|"legendary",
+          compostBonus: _hpFp?.compostBonus ?? null,
+        };
+        // OPTIMISTIC: wyczyść pole PRZED animacją — natychmiastowy feedback
+        plotCropsRef.current = { ...plotCropsRef.current };
+        delete plotCropsRef.current[plotId];
+        setPlotCrops(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         setPendingFieldActions(prev => ({
           ...prev,
           [plotId]: { kind: "harvest", startMs: Date.now(), durationMs: _harvestDurMs, bonusesSnapshot: _harvestBonusesSnapshot },
@@ -5358,10 +5399,14 @@ export default function Page() {
       });
       return;
     }
-    // Timer dobiegł końca — sprawdź FRESH state (gracz mógł zmienić w międzyczasie)
+    // Timer dobiegł końca — sprawdź FRESH state
+    // Pole może być puste (bo my je optymistycznie wyczyściliśmy w queue callback),
+    // ale wtedy harvestParamsRef.current[plotId] powinno istnieć.
     {
       const _freshPlot = plotCropsRef.current[plotId];
-      if (!_freshPlot?.cropId) {
+      const _savedParams = harvestParamsRef.current[plotId];
+      if (!_freshPlot?.cropId && !_savedParams) {
+        // Uprawa zniknęła przez kogoś innego (nie przez nasz optimistic delete)
         setPendingFieldActions(prev => { const n = { ...prev }; delete n[plotId]; return n; });
         setMessage({ type: "info", title: "Pole opróżnione", text: "Uprawa zniknęła zanim akcja się zakończyła." });
         return;
@@ -5379,27 +5424,14 @@ export default function Page() {
 
     const previousLevel = displayLevel;
 
-    // OPTIMISTIC UPDATE — wyczyść pole natychmiast, zanim RPC odpowie
-    const _optPrevHarvest = plotCropsRef.current[plotId];
-    const _optHarvestPlots = { ...plotCropsRef.current };
-    delete _optHarvestPlots[plotId];
-    plotCropsRef.current = _optHarvestPlots;
-    setPlotCrops(prev => { const n = { ...prev }; delete n[plotId]; return n; });
-
-    const effectiveGrowMs = getEffectiveGrowthTimeMs(plotId);
-    // Jakość zasadzonego nasiona (z pola w DB — decyduje o ścieżce EXP i popup)
-    const _plantedQualityRaw = getPlotCrop(plotId).plantedQuality ?? "good";
+    // Użyj parametrów zapisanych w queue callback (pole jest już wyczyśczone optymistycznie)
+    const _savedHarvestParams = harvestParamsRef.current[plotId];
+    const effectiveGrowMs = _savedHarvestParams?.effectiveGrowMs ?? getEffectiveGrowthTimeMs(plotId);
+    // Jakość zasadzonego nasiona
+    const _plantedQualityRaw = _savedHarvestParams?.plantedQuality ?? getPlotCrop(plotId).plantedQuality ?? "good";
     const _plantedQuality = (["good","epic","rotten","legendary"].includes(_plantedQualityRaw) ? _plantedQualityRaw : "good") as "good"|"epic"|"rotten"|"legendary";
-
-    // ─── Legendarny drop: SQL liczy server-side (eliminuje race condition) ───
-    // _legExpMult usuwamy — SQL zwraca legendary_exp_mult w odpowiedzi RPC
-
-    // ─── Epicki EXP — SQL oblicza ×3-6 server-side (uwzględnia rotten roll → 0 EXP) ───
-
-    // ─── Parametry bonusów do RPC (atomicznie po stronie SQL — anti-race) ───
-    // Dla legendarnych: zerujemy compost/extra/bonusDrop (klient sam aplikuje legendarny dropy).
-    const _plotPreRpc = getPlotCrop(plotId);
-    const _compostBonusForRpc = _plotPreRpc.compostBonus ?? null;
+    // Bonus kompostu
+    const _compostBonusForRpc = _savedHarvestParams?.compostBonus ?? null;
     const _compostYieldExtraForRpc = (_plantedQuality !== "legendary" && _compostBonusForRpc?.type === "yield")
       ? (_compostBonusForRpc.value ?? 0)
       : 0;
@@ -5427,14 +5459,25 @@ export default function Page() {
       p_exp_bonus_pct:       _expBonusPctForRpc,
     });
     if (error) {
-      // Rollback optimistic harvest update
-      if (_optPrevHarvest) {
-        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _optPrevHarvest };
-        setPlotCrops(prev => ({ ...prev, [plotId]: _optPrevHarvest }));
+      // Rollback: przywróć pole z zapisanych parametrów (usunięte optymistycznie w queue callback)
+      if (_savedHarvestParams?.cropId) {
+        const _rollbackPlot: PlotCropState = {
+          cropId: _savedHarvestParams.cropId,
+          plantedAt: Date.now() - _savedHarvestParams.effectiveGrowMs, // ~ już dojrzała
+          watered: false,
+          frozenStatMult: 1,
+          plantedQuality: _savedHarvestParams.plantedQuality,
+          ...(_savedHarvestParams.compostBonus ? { compostBonus: _savedHarvestParams.compostBonus } : {}),
+        };
+        plotCropsRef.current = { ...plotCropsRef.current, [plotId]: _rollbackPlot };
+        setPlotCrops(prev => ({ ...prev, [plotId]: _rollbackPlot }));
       }
+      delete harvestParamsRef.current[plotId];
       setMessage({ type: "error", title: "Błąd zbioru", text: error.message });
       return;
     }
+    // Sukces — wyczyść zapisane parametry
+    delete harvestParamsRef.current[plotId];
 
     // Usuń zamrożony mult statystyk — pole wyczyszczone po zbiorze
     if (typeof window !== "undefined" && profile?.id) {
