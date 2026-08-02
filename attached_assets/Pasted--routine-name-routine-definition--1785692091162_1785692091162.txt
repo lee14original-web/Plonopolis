@@ -1,0 +1,155 @@
+| routine_name            | routine_definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _npc_fruit_qty_range    | 
+  SELECT t.qmin, t.qmax FROM (VALUES
+    ('zwykly',   'low',  6, 20), ('zwykly',   'high', 1, 6),
+    ('soczysty', 'low',  3,  8), ('soczysty', 'high', 1, 3),
+    ('zloty',    'low',  1,  3), ('zloty',    'high', 1, 1)
+  ) AS t(q, band, qmin, qmax)
+  WHERE t.q = p_quality AND t.band = (CASE WHEN p_unlock <= 16 THEN 'low' ELSE 'high' END);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| _roll_fruit_quality_srv | 
+DECLARE
+  v_r        NUMERIC;
+  v_lf       NUMERIC;
+  v_zloty    NUMERIC;
+  v_soczysty NUMERIC;
+BEGIN
+  v_r := random();
+  IF v_r < 0.10 THEN RETURN 'zgnile'; END IF;
+  v_lf       := 1.0 + GREATEST(0, p_luck_pct) / 100.0;
+  v_zloty    := LEAST(0.50, 0.03 * v_lf);
+  v_soczysty := LEAST(0.60, 0.12 * v_lf);
+  IF (v_r - 0.10) / 0.90 < v_zloty              THEN RETURN 'zloty';    END IF;
+  IF (v_r - 0.10) / 0.90 < v_zloty + v_soczysty THEN RETURN 'soczysty'; END IF;
+  RETURN 'zwykly';
+END                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| _fruit_quality_mult_srv | 
+  SELECT CASE p_quality
+    WHEN 'zloty'    THEN 5
+    WHEN 'soczysty' THEN 2
+    WHEN 'zwykly'   THEN 1
+    ELSE 0
+  END::NUMERIC
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| _npc_fruits_data        | 
+  SELECT * FROM (VALUES
+    ('jablko',10,20.0),('gruszka',12,35.0),('sliwka',14,55.0),('wisnia',16,80.0),
+    ('czeresnia',18,110.0),('brzoskwinia',20,150.0),('morela',22,220.0),
+    ('pomarancza',23,320.0),('cytryna',25,500.0)
+  ) AS t(fruit_id, unlock_lvl, base_price);
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| sell_fruits             | 
+DECLARE
+  v_profile   RECORD;
+  v_fruit_inv JSONB;
+  v_zgnile    JSONB;
+  v_total_val NUMERIC;
+  v_key       TEXT;
+  v_qty_txt   TEXT;
+  v_qty       INT;
+  v_quality   TEXT;
+  v_fruit_id  TEXT;
+  v_tree      RECORD;
+  v_new_money NUMERIC;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  SELECT * INTO v_profile FROM profiles WHERE id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Profil nie znaleziony'; END IF;
+
+  v_fruit_inv := COALESCE(v_profile.fruit_inventory, '{}'::JSONB);
+  v_zgnile    := '{}'::JSONB;
+  v_total_val := 0;
+
+  FOR v_key, v_qty_txt IN SELECT key, value FROM jsonb_each_text(v_fruit_inv) LOOP
+    v_qty := COALESCE(v_qty_txt::INT, 0);
+    IF v_qty <= 0 THEN CONTINUE; END IF;
+
+    v_quality  := regexp_replace(v_key, '^.+_', '');
+    v_fruit_id := regexp_replace(v_key, '_[^_]+$', '');
+
+    IF v_quality = 'zgnile' THEN
+      v_zgnile := jsonb_set(v_zgnile, ARRAY[v_key], to_jsonb(v_qty));
+      CONTINUE;
+    END IF;
+
+    SELECT price_per_fruit INTO v_tree FROM _trees_data_srv() WHERE fruit_id = v_fruit_id;
+    IF NOT FOUND THEN CONTINUE; END IF;
+
+    v_total_val := v_total_val + v_qty * v_tree.price_per_fruit * _fruit_quality_mult_srv(v_quality);
+  END LOOP;
+
+  IF v_total_val = 0 THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'Brak owoców do sprzedaży (zgniłe nie mają wartości)');
+  END IF;
+
+  v_new_money := ROUND((COALESCE(v_profile.money, 0) + v_total_val)::NUMERIC, 2);
+
+  UPDATE profiles SET
+    money           = v_new_money,
+    fruit_inventory = v_zgnile
+  WHERE id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'ok',                  true,
+    'sold_value',          v_total_val,
+    'new_money',           v_new_money,
+    'new_fruit_inventory', v_zgnile
+  );
+END  |
+| sync_fruit_inventory    | 
+DECLARE
+  v_key     TEXT;
+  v_val_txt TEXT;
+  v_val     NUMERIC;
+  v_old_val NUMERIC;
+  v_old_inv JSONB;
+  v_total   NUMERIC := 0;
+BEGIN
+  IF p_user_id IS NULL THEN RAISE EXCEPTION 'p_user_id required'; END IF;
+  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'object' THEN
+    RAISE EXCEPTION 'p_items musi być obiektem JSONB';
+  END IF;
+
+  SELECT COALESCE(fruit_inventory, '{}'::JSONB) INTO v_old_inv
+    FROM profiles WHERE id = p_user_id;
+
+  FOR v_key, v_val_txt IN SELECT key, value FROM jsonb_each_text(p_items) LOOP
+    IF v_key !~ '^(jablko|gruszka|sliwka|wisnia|czeresnia|brzoskwinia|morela|pomarancza|cytryna)_(zwykly|soczysty|zloty|zgnile)$' THEN
+      RAISE EXCEPTION 'Nieprawidłowy klucz owocu: %', v_key;
+    END IF;
+
+    BEGIN v_val := v_val_txt::NUMERIC;
+    EXCEPTION WHEN others THEN
+      RAISE EXCEPTION 'Wartość nie jest liczbą dla klucza %: %', v_key, v_val_txt;
+    END;
+
+    IF v_val < 0 OR v_val != FLOOR(v_val) THEN
+      RAISE EXCEPTION 'Wartość musi być nieujemną liczbą całkowitą: %=%', v_key, v_val;
+    END IF;
+
+    v_old_val := COALESCE((v_old_inv->>v_key)::NUMERIC, 0);
+
+    IF v_val > v_old_val THEN
+      RAISE EXCEPTION
+        'sync_fruit_inventory: wzrost klucza "%" (% → %) jest BEZWZGLĘDNIE niedozwolony. '
+        'Owoce dodaje WYŁĄCZNIE serwer przez harvest_tree() / harvest_all_trees().',
+        v_key, v_old_val, v_val;
+    END IF;
+
+    v_total := v_total + v_val;
+  END LOOP;
+
+  IF v_total > 50000 THEN
+    RAISE EXCEPTION 'Łączna liczba owoców (%) przekracza maksimum 50 000', v_total;
+  END IF;
+
+  UPDATE profiles SET fruit_inventory = p_items WHERE id = p_user_id;
+  RETURN TRUE;
+END                                                                     |
