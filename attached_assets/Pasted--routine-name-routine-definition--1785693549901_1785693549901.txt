@@ -1,0 +1,211 @@
+| routine_name      | routine_definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| harvest_all_trees | 
+DECLARE
+  v_profile     RECORD;
+  v_orch        JSONB;
+  v_ts          JSONB;
+  v_tree        RECORD;
+  v_owned       INT;
+  v_prod_ms     BIGINT;
+  v_now_ms      BIGINT;
+  v_elapsed     BIGINT;
+  v_cycles      INT;
+  v_new_pstart  BIGINT;
+  v_added_t     JSONB;
+  v_added_all   JSONB := '{}'::JSONB;
+  v_fruit_inv   JSONB;
+  v_results     JSONB := '[]'::JSONB;
+  v_storage_cap INT   := 5;
+  v_quality     TEXT;
+  v_roll        FLOAT;
+  v_key         TEXT;
+  v_val_txt     TEXT;
+BEGIN
+  IF auth.uid() IS DISTINCT FROM p_user_id THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  SELECT id, orchard_state, fruit_inventory
+  INTO v_profile
+  FROM profiles WHERE id = p_user_id FOR UPDATE;
+
+  IF v_profile IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_profile');
+  END IF;
+
+  v_orch      := COALESCE(v_profile.orchard_state, '{}'::JSONB);
+  v_fruit_inv := COALESCE(v_profile.fruit_inventory, '{}'::JSONB);
+  v_now_ms    := EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())::BIGINT * 1000;
+
+  FOR v_tree IN SELECT * FROM orchard_tree_defs LOOP
+    v_ts    := COALESCE(v_orch->v_tree.tree_id, '{}'::JSONB);
+    v_owned := COALESCE((v_ts->>'owned')::INT, 0);
+    IF v_owned = 0 THEN CONTINUE; END IF;
+
+    v_prod_ms := COALESCE((v_ts->>'prodStart')::BIGINT, 0);
+
+    IF v_prod_ms = 0 OR v_now_ms < v_prod_ms THEN
+      v_ts   := jsonb_set(v_ts, ARRAY['prodStart'], to_jsonb(v_now_ms));
+      v_orch := jsonb_set(v_orch, ARRAY[v_tree.tree_id], v_ts);
+      CONTINUE;
+    END IF;
+
+    v_elapsed := v_now_ms - v_prod_ms;
+    v_cycles  := LEAST(FLOOR(v_elapsed / v_tree.growth_time_ms)::INT, v_storage_cap);
+    IF v_cycles <= 0 THEN CONTINUE; END IF;
+
+    v_added_t := '{}'::JSONB;
+    FOR i IN 1..v_cycles LOOP
+      FOR j IN 1..v_owned LOOP
+        FOR k IN 1..(v_tree.drop_min + FLOOR(random() * (v_tree.drop_max - v_tree.drop_min + 1))::INT) LOOP
+          v_roll := random();
+          IF    v_roll < 0.02 THEN v_quality := v_tree.fruit_id || '_zloty';
+          ELSIF v_roll < 0.12 THEN v_quality := v_tree.fruit_id || '_soczysty';
+          ELSIF v_roll < 0.15 THEN v_quality := v_tree.fruit_id || '_zgnile';
+          ELSE                     v_quality := v_tree.fruit_id || '_zwykly';
+          END IF;
+          v_added_t := jsonb_set(v_added_t, ARRAY[v_quality],
+            to_jsonb(COALESCE((v_added_t->>v_quality)::INT, 0) + 1));
+        END LOOP;
+      END LOOP;
+    END LOOP;
+
+    FOR v_key, v_val_txt IN SELECT key, value FROM jsonb_each_text(v_added_t) LOOP
+      v_fruit_inv  := jsonb_set(v_fruit_inv, ARRAY[v_key],
+                       to_jsonb(COALESCE((v_fruit_inv->>v_key)::INT, 0) + v_val_txt::INT));
+      v_added_all  := jsonb_set(v_added_all, ARRAY[v_key],
+                       to_jsonb(COALESCE((v_added_all->>v_key)::INT, 0) + v_val_txt::INT));
+    END LOOP;
+
+    -- SMART RESET: pełny → reset do now; niepełny → zachowaj postęp cyklu
+    IF v_cycles >= v_storage_cap THEN
+      v_new_pstart := v_now_ms;
+    ELSE
+      v_new_pstart := v_now_ms - (v_elapsed % v_tree.growth_time_ms);
+    END IF;
+
+    v_ts   := jsonb_set(v_ts, ARRAY['prodStart'], to_jsonb(v_new_pstart));
+    v_orch := jsonb_set(v_orch, ARRAY[v_tree.tree_id], v_ts);
+
+    v_results := v_results || jsonb_build_array(
+      jsonb_build_object(
+        'tree_id',        v_tree.tree_id,
+        'added',          v_added_t,
+        'new_prod_start', v_new_pstart
+      )
+    );
+  END LOOP;
+
+  UPDATE profiles SET
+    fruit_inventory = v_fruit_inv,
+    orchard_state   = v_orch
+  WHERE id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'ok',                  true,
+    'results',             v_results,
+    'added_all',           v_added_all,
+    'new_fruit_inventory', v_fruit_inv
+  );
+END  |
+| harvest_tree      | 
+DECLARE
+  v_profile        RECORD;
+  v_orch           JSONB;
+  v_ts             JSONB;
+  v_tree           RECORD;
+  v_owned          INT;
+  v_prod_ms        BIGINT;
+  v_now_ms         BIGINT;
+  v_elapsed        BIGINT;
+  v_cycles         INT;
+  v_new_pstart     BIGINT;
+  v_added          JSONB := '{}'::JSONB;
+  v_fruit_inv      JSONB;
+  v_storage_cap    INT := 5;
+  v_quality        TEXT;
+  v_roll           FLOAT;
+BEGIN
+  IF auth.uid() IS DISTINCT FROM p_user_id THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'unauthorized');
+  END IF;
+
+  SELECT id, orchard_state, fruit_inventory
+  INTO v_profile
+  FROM profiles WHERE id = p_user_id FOR UPDATE;
+
+  IF v_profile IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'no_profile');
+  END IF;
+
+  v_orch      := COALESCE(v_profile.orchard_state, '{}'::JSONB);
+  v_fruit_inv := COALESCE(v_profile.fruit_inventory, '{}'::JSONB);
+  v_ts        := COALESCE(v_orch->p_tree_id, '{}'::JSONB);
+
+  SELECT * INTO v_tree FROM orchard_tree_defs WHERE tree_id = p_tree_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok', false, 'error', 'bad_tree'); END IF;
+
+  v_owned   := COALESCE((v_ts->>'owned')::INT, 0);
+  IF v_owned = 0 THEN RETURN jsonb_build_object('ok', false, 'error', 'no_trees'); END IF;
+
+  v_now_ms  := EXTRACT(EPOCH FROM CLOCK_TIMESTAMP())::BIGINT * 1000;
+  v_prod_ms := COALESCE((v_ts->>'prodStart')::BIGINT, 0);
+
+  IF v_prod_ms = 0 OR v_now_ms < v_prod_ms THEN
+    v_ts   := jsonb_set(v_ts, ARRAY['prodStart'], to_jsonb(v_now_ms));
+    v_orch := jsonb_set(v_orch, ARRAY[p_tree_id], v_ts);
+    UPDATE profiles SET orchard_state = v_orch WHERE id = p_user_id;
+    RETURN jsonb_build_object('ok', false, 'error', 'not_ready',
+      'new_prod_start', v_now_ms,
+      'new_fruit_inventory', v_fruit_inv);
+  END IF;
+
+  v_elapsed := v_now_ms - v_prod_ms;
+  v_cycles  := LEAST(FLOOR(v_elapsed / v_tree.growth_time_ms)::INT, v_storage_cap);
+
+  IF v_cycles <= 0 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_ready',
+      'new_prod_start', v_prod_ms,
+      'new_fruit_inventory', v_fruit_inv);
+  END IF;
+
+  FOR i IN 1..v_cycles LOOP
+    FOR j IN 1..v_owned LOOP
+      FOR k IN 1..(v_tree.drop_min + FLOOR(random() * (v_tree.drop_max - v_tree.drop_min + 1))::INT) LOOP
+        v_roll := random();
+        IF    v_roll < 0.02 THEN v_quality := v_tree.fruit_id || '_zloty';
+        ELSIF v_roll < 0.12 THEN v_quality := v_tree.fruit_id || '_soczysty';
+        ELSIF v_roll < 0.15 THEN v_quality := v_tree.fruit_id || '_zgnile';
+        ELSE                     v_quality := v_tree.fruit_id || '_zwykly';
+        END IF;
+        v_added := jsonb_set(v_added, ARRAY[v_quality],
+          to_jsonb(COALESCE((v_added->>v_quality)::INT, 0) + 1));
+        v_fruit_inv := jsonb_set(v_fruit_inv, ARRAY[v_quality],
+          to_jsonb(COALESCE((v_fruit_inv->>v_quality)::INT, 0) + 1));
+      END LOOP;
+    END LOOP;
+  END LOOP;
+
+  -- SMART RESET: pełny → reset do now; niepełny → zachowaj postęp cyklu
+  IF v_cycles >= v_storage_cap THEN
+    v_new_pstart := v_now_ms;
+  ELSE
+    v_new_pstart := v_now_ms - (v_elapsed % v_tree.growth_time_ms);
+  END IF;
+
+  v_ts   := jsonb_set(v_ts, ARRAY['prodStart'], to_jsonb(v_new_pstart));
+  v_orch := jsonb_set(v_orch, ARRAY[p_tree_id], v_ts);
+
+  UPDATE profiles SET
+    fruit_inventory = v_fruit_inv,
+    orchard_state   = v_orch
+  WHERE id = p_user_id;
+
+  RETURN jsonb_build_object(
+    'ok',                  true,
+    'added',               v_added,
+    'new_prod_start',      v_new_pstart,
+    'new_fruit_inventory', v_fruit_inv
+  );
+END                                                                                                                                                                                      |
