@@ -1266,6 +1266,17 @@ export default function Page() {
       const prevLevel = (source.prev_level !== null && source.prev_level !== undefined && source.prev_level > 0)
         ? source.prev_level : prevLevelRef.current;
       if (prevLevel > prevLevelRef.current) prevLevelRef.current = prevLevel;
+      // Synchronizuj player_stats z DB przy każdym loadProfile — zapobiega desync
+      // między localStorage a DB (np. po zmianie urządzenia lub błędzie zapisu).
+      if (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats)) {
+        const dbStats = source.player_stats as PlayerStatsMap;
+        setPlayerStats(dbStats);
+        const _d = loadAvatarDataLS(source.id);
+        saveAvatarDataLS(source.id, avatarSkin, dbStats, freeSkillPoints, prevLevelRef.current, _d.changeCount, _d.lastChangeAt);
+      }
+      if (source.free_skill_points !== null && source.free_skill_points !== undefined) {
+        setFreeSkillPoints(source.free_skill_points as number);
+      }
     }
 
     // Załaduj dane z localStorage per-userId (izolacja kont — każde konto ma swoje klucze)
@@ -8780,10 +8791,17 @@ export default function Page() {
                                               p_stat_key: def.key,
                                               p_amount: paidCount,
                                             });
-                                            if (error) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: error.message }); return; }
+                                            if (error) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: error.message }); await loadProfile(profile.id); return; }
                                             const response = data as { ok?: boolean; error?: string; stat_key?: string; amount?: number; cost?: number; player_stats?: PlayerStatsMap; free_skill_points?: number } | null;
-                                            if (response?.ok === false) { setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return; }
-                                            const newStats: PlayerStatsMap = { ...curStats, [def.key]: (curStats[def.key] as number) + paidCount };
+                                            if (response?.ok === false) {
+                                              // Synchronizuj stats z DB — mogły być nieaktualne (desync localStorage↔DB)
+                                              await loadProfile(profile.id);
+                                              setMessage({ type: "error", title: "Błąd zakupu statystyki", text: response.error ?? "Nieznany błąd." }); return;
+                                            }
+                                            // Używaj player_stats z odpowiedzi serwera jako źródła prawdy
+                                            const newStats: PlayerStatsMap = response?.player_stats
+                                              ? { ...curStats, ...response.player_stats }
+                                              : { ...curStats, [def.key]: (curStats[def.key] as number) + paidCount };
                                             const newFsp = curFsp;
                                             setPlayerStats(newStats);
                                             setFreeSkillPoints(newFsp);
