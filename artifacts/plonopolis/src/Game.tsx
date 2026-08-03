@@ -10697,6 +10697,23 @@ export default function Page() {
                     ✕
                   </button>
 
+                  {/* ─── Przycisk Do miasta (dostępny też podczas kolejki zbiorów) ─── */}
+                  {(profile?.level ?? 1) >= CITY_UNLOCK_LVL && (
+                    <button
+                      onClick={() => {
+                        if (tutorialStep >= 1 && tutorialStep <= 11) {
+                          setMessage({ type: "info", title: "Przewodnik aktywny", text: "Najpierw wykonaj krok przewodnika." });
+                          return;
+                        }
+                        void handleChangeMap("city");
+                      }}
+                      className="absolute right-20 top-4 z-[100] flex h-14 items-center gap-2 rounded-full border-2 border-sky-500/70 bg-sky-950/70 px-4 text-sm font-black text-sky-100 shadow-2xl transition hover:bg-sky-800/90 hover:scale-110 active:scale-95"
+                      aria-label="Do miasta"
+                    >
+                      🏙️ Miasto
+                    </button>
+                  )}
+
                   {/* ─── Przycisk edycji hitboxów narzędzi (tylko tester/admin/owner) ─── */}
                   {canEditHitboxes && (
                   <button
