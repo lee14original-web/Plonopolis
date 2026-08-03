@@ -1117,12 +1117,13 @@ export default function Page() {
       current_map: (() => {
         const _lm = getMapForLevel(source.level);
         const _sm = source.current_map;
-        // Jeśli RPC zwraca mapę farmy ale gracz już nawigował do miasta (lub innej nie-farmowej
-        // lokacji) — nie cofaj go. currentMapRef.current jest zawsze aktualny (bez problemu
-        // stale closure w async setTimeout callbackach).
-        if (_sm?.startsWith("farm") && !currentMapRef.current.startsWith("farm")) {
+        // Po pierwszym załadowaniu profilu (lastLoadedUserIdRef ustawiony) zawsze
+        // respektuj current_map gracza (currentMapRef) — nie pozwalaj RPC z kolejki
+        // zbiorów lub innym async callom zmieniać mapy w żadną stronę.
+        if (lastLoadedUserIdRef.current === source.id) {
           return currentMapRef.current;
         }
+        // Pierwsze załadowanie — użyj mapy z DB
         if (!_sm) return _lm;
         if (_sm.startsWith("farm")) {
           const _fo = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
