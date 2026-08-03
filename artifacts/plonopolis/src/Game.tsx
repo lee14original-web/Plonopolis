@@ -5884,6 +5884,9 @@ export default function Page() {
         img.src = `/${targetBg}.png`;
       });
 
+      // Ustaw currentMapRef przed applyProfileState — guard w applyProfileState
+      // zwróci tę wartość zamiast mapy z DB (blokuje cofanie przez async harvest RPC).
+      currentMapRef.current = targetMap;
       await applyProfileState(extractRpcProfile(rpcData));
       setIsMapLoading(false);
       setIsFieldViewOpen(false);
