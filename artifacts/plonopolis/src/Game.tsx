@@ -813,6 +813,7 @@ export default function Page() {
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
   const barnStateRef = React.useRef<BarnState>(barnState);
   const lastFarmMapRef = React.useRef<string>("farm1");
+  const currentMapRef = React.useRef<string>("farm1");
   const prevFarmMapForTransitionRef = React.useRef<string | null>(null);
   const isProfileLoadedRef = React.useRef(false);
   const mapCrossfadeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1116,6 +1117,12 @@ export default function Page() {
       current_map: (() => {
         const _lm = getMapForLevel(source.level);
         const _sm = source.current_map;
+        // Jeśli RPC zwraca mapę farmy ale gracz już nawigował do miasta (lub innej nie-farmowej
+        // lokacji) — nie cofaj go. currentMapRef.current jest zawsze aktualny (bez problemu
+        // stale closure w async setTimeout callbackach).
+        if (_sm?.startsWith("farm") && !currentMapRef.current.startsWith("farm")) {
+          return currentMapRef.current;
+        }
         if (!_sm) return _lm;
         if (_sm.startsWith("farm")) {
           const _fo = ["farm1","farm5","farm10","farm15","farm20","farm25","farm30"];
@@ -3084,8 +3091,9 @@ export default function Page() {
     return () => window.removeEventListener("keydown", handler);
   }, [currentMap, showMarketModal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── Zapamiętaj ostatnią mapę farmy ──────────────────────────────────────
+  // ─── Zapamiętaj ostatnią mapę farmy + aktualną mapę (ref zawsze świeży) ──
   React.useEffect(() => {
+    currentMapRef.current = currentMap;
     if (currentMap.startsWith("farm")) lastFarmMapRef.current = currentMap;
   }, [currentMap]);
 
