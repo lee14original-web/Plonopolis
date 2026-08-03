@@ -30,7 +30,7 @@ import { CHAR_EQUIP_ITEMS, EQUIP_SLOT_META, DEFAULT_CHAR_EQUIPPED, TIER_MATERIAL
 import { DEFAULT_HIVE_DATA, HIVE_MAX_HONEY, HIVE_UPGRADE_BEES, HIVE_SUCCESS_CHANCE, HIVE_BEE_ACCEPT_CHANCE, HONEY_MS_PER_PT, HONEY_JAR_PRICE } from "./game/constants/hive";
 import { HIVE_UNLOCK_LVL, BARN_UNLOCK_LVL, SAD_UNLOCK_LVL, LADA_UNLOCK_LVL, KOMPOST_UNLOCK_LVL, CITY_UNLOCK_LVL, HIVE_BUY_COST, BEE_COST, HIVE_MIN_BEES_TO_PRODUCE, BASE_PLANT_MS, BASE_HARVEST_MS, BASE_WATER_MS, GROWTH_GLOBAL_MIN_MULT, WIEDZA_RATE, ZARADNOSC_RATE, WIEDZA_MULT_MIN, HIVE_MULT_MIN, EQUIP_GROWTH_MULT_MIN, COMPOST_MULT_MIN, WATER_BASE, WATER_MULT_MIN } from "./game/constants/unlock";
 import { SKINS_MALE, SKINS_FEMALE, EPIC_SKINS, EPIC_SKIN_START, ALL_SKINS, NON_EPIC_SKINS, AVATAR_BONUSES, AVATAR_META, AVATAR_CHANGE_TIERS } from "./game/constants/avatars";
-import { CHAR_EQUIP_KEY, ITEM_UPG_KEY, OWNED_EQ_KEY, EXTRA_EQ_KEY, KOMPOST_KEY, KOMPOST_BATCHES_KEY, SLOT_BOX_KEY, SETTINGS_KEY, ACTIVE_USER_KEY, BARN_STATE_KEY, BARN_ITEMS_KEY, ORCHARD_STATE_KEY, DP_LS_KEY, PER_SESSION_KEYS, DEFAULT_SLOT_BOX, HUNGER_DECAY_PER_MS } from "./game/constants/storage-keys";
+import { CHAR_EQUIP_KEY, ITEM_UPG_KEY, OWNED_EQ_KEY, EXTRA_EQ_KEY, KOMPOST_KEY, KOMPOST_BATCHES_KEY, KOMPOST_HISTORY_KEY, SLOT_BOX_KEY, SETTINGS_KEY, ACTIVE_USER_KEY, BARN_STATE_KEY, BARN_ITEMS_KEY, ORCHARD_STATE_KEY, DP_LS_KEY, PER_SESSION_KEYS, DEFAULT_SLOT_BOX, HUNGER_DECAY_PER_MS } from "./game/constants/storage-keys";
 import { BASE_W, BASE_H, TH_IMAGE_W, TH_IMAGE_H, TH_SCALE, TH_MAX_CAM_X, TH_CENTER_CAM_X, FARM_MAP_W, FARM_MAP_H, FARM_IMG_W, FARM_IMG_H, FARM_SCALE, FARM_RENDERED_W, FARM_MAX_PAN, FARM_CENTER_PAN } from "./game/constants/map";
 import { FARM_PLOTS, FIELD_VIEW_PLOTS, CHWASTY_IMGS, KRET_IMGS, PIEN_IMGS, DRZEWO_IMGS, KAMIENIE_IMGS, OBSTACLE_DEFS, OBSTACLE_FIXED_COSTS } from "./game/constants/field";
 import { KOMPOST_PER_REWARD, KOMPOST_BATCH_SIZE, KOMPOST_REWARDS_PER_BATCH, JACKPOT_CHANCE, MAX_LEGENDARY_EXP_MULT, COMPOST_DEFS, COMPOST_TIER_WEIGHTS, GUIDE_COMPOST_DEF, COMPOST_BASE_VALUE_BY_LEVEL, COMPOST_RARITY_MULT, ITEM_TIER_BY_QUALITY, ITEM_TIER_RARITY, COMPOST_TIER_FIXED_BY_QUALITY } from "./game/constants/compost";
@@ -1237,6 +1237,15 @@ export default function Page() {
       prevLevelRef.current = prevLevel;
       setAvatarChangeCount(d.changeCount);
       setLastAvatarChangeAt(d.lastChangeAt);
+      // Historia nagród kompostownika — wczytaj z localStorage (persystencja między sesjami)
+      try {
+        const _rawHist = localStorage.getItem(lsKey(KOMPOST_HISTORY_KEY, source.id));
+        if (_rawHist) {
+          const _parsed = JSON.parse(_rawHist) as Array<{label: string; color: string; icon: string; ts: number; count: number}>;
+          const _cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000; // 30 dni
+          setKompostDropHistory(_parsed.filter(e => e.ts > _cutoff));
+        }
+      } catch { /* ignore */ }
       // Ekwipunek
       const hasEqSlotsLS = localStorage.getItem(`plonopolis_eqslots_${source.id}`) !== null;
       const hasEqLS = localStorage.getItem(`plonopolis_eq_${source.id}`) !== null;
@@ -5197,16 +5206,21 @@ export default function Page() {
 
     setKompostDropHistory(prev => {
       const now = Date.now();
-      const WINDOW = 15 * 60 * 1000;
+      const WINDOW = 30 * 24 * 60 * 60 * 1000; // 30 dni
+      const MAX_ENTRIES = 50;
       let updated = prev.filter(e => now - e.ts <= WINDOW);
       for (const ne of newHistoryEntries) {
         const idx = updated.findIndex(e => e.label === ne.label);
         if (idx !== -1) {
           updated = [{ ...updated[idx], count: updated[idx].count + 1, ts: now }, ...updated.filter((_, i) => i !== idx)];
         } else {
-          updated = [{ ...ne, ts: ne.ts ?? Date.now(), count: ne.count ?? 1 }, ...updated];
+          updated = [{ ...ne, ts: ne.ts ?? now, count: ne.count ?? 1 }, ...updated];
         }
       }
+      updated = updated.slice(0, MAX_ENTRIES);
+      // Persystencja między sesjami
+      const _uid = profile?.id;
+      if (_uid) try { localStorage.setItem(lsKey(KOMPOST_HISTORY_KEY, _uid), JSON.stringify(updated)); } catch { /* ignore */ }
       return updated;
     });
     setKompostRewards(rewards);

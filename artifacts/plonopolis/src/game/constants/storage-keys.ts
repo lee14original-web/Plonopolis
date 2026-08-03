@@ -4,6 +4,7 @@ export const OWNED_EQ_KEY      = "plonopolis_owned_eq";
 export const EXTRA_EQ_KEY      = "plonopolis_extra_eq";
 export const KOMPOST_KEY       = "plonopolis_kompost_charges";
 export const KOMPOST_BATCHES_KEY = "plonopolis_kompost_batches";
+export const KOMPOST_HISTORY_KEY = "plonopolis_kompost_history";
 export const SLOT_BOX_KEY      = "plonopolis_slot_box";
 export const SETTINGS_KEY      = "plonopolis_settings";
 export const ACTIVE_USER_KEY   = "plonopolis_active_user";
