@@ -6532,7 +6532,7 @@ export default function Page() {
     onMouseLeave={() => setHoveredPolaUprawne(false)}
     data-zone="polaUprawne"
     data-tutorial-target="pola-uprawne"
-    className="group pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl"
+     className="pointer-events-auto absolute transition-all duration-300 hover:scale-105 rounded-xl hover:shadow-[0_0_38px_18px_rgba(255,228,100,0.42),0_0_70px_35px_rgba(255,215,60,0.16)]"
     style={{
       left: `${activeHitboxPos.polaUprawne.left}%`,
       top: `${activeHitboxPos.polaUprawne.top}%`,
@@ -6543,10 +6543,8 @@ export default function Page() {
       borderRadius: tutorialStep === 1 ? "14px" : undefined,
       boxShadow: tutorialStep === 1 ? "0 0 0 6px rgba(251,191,36,0.25), 0 0 45px rgba(251,191,36,0.85), 0 0 90px rgba(251,191,36,0.45)" : undefined,
     }}
-    title=""
-  >
-    <span className="pointer-events-none absolute inset-[-10%] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background:'radial-gradient(ellipse at 50% 42%, rgba(255,239,180,0.62) 0%, rgba(255,239,180,0.22) 52%, transparent 76%)', clipPath:'polygon(50% 5%, 97% 30%, 50% 55%, 3% 30%)', filter:'blur(1px)' }} />
-  </button>
+     title=""
+   />
 )}
 
                   {currentMap.startsWith("farm") && (
