@@ -6717,19 +6717,7 @@ export default function Page() {
                           />
                         );
                       })()}
-                      {/* Etykiety nawigacyjne — niezależne od hitboxów */}
-                      {(["dom","stodola","doMiasta","polaUprawne","ul","lada","kompostownik","sad"] as const).map(id => {
-                        const labels: Record<string,string> = {dom:"Dom",stodola:"Stodoła",doMiasta:"Do miasta",polaUprawne:"Pola uprawne",ul:"Ul",lada:"Lada",kompostownik:"Kompostownik",sad:"Sad"};
-                        const lp = activeLabelPos[id];
-                        return (
-                          <div key={`lbl${id}`} className="pointer-events-none absolute select-none"
-                            style={{left:`${lp.left}%`, top:`${lp.top}%`, transform:"translateX(-50%)", zIndex:22}}>
-                            <span className="rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,8,0.92)] px-5 py-3 text-xl font-black text-[#f3e6c8] shadow-2xl whitespace-nowrap">
-                              {labels[id]}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      {/* Etykiety nawigacyjne usunięte — zastąpione bocznym menu pod avatarem */}
                     </>
                   )}
 
@@ -7878,6 +7866,52 @@ export default function Page() {
                           </span>}
                     </button>
                     <p className="mt-1 w-[134px] truncate text-center text-[16px] font-black text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
+
+                    {/* ── Boczne menu nawigacyjne farmy ── */}
+                    {isOnFarmMap && profile && (() => {
+                      const lvl = displayLevel;
+                      const barnOk   = lvl >= BARN_UNLOCK_LVL;
+                      const kompostOk= lvl >= KOMPOST_UNLOCK_LVL;
+                      const sadOk    = lvl >= SAD_UNLOCK_LVL;
+                      const ulOk     = lvl >= HIVE_UNLOCK_LVL;
+                      const ladaOk   = lvl >= LADA_UNLOCK_LVL;
+                      const cityOk   = lvl >= CITY_UNLOCK_LVL;
+                      type NavItem = { icon: string; label: string; locked: boolean; lockLvl?: number; action: () => void };
+                      const items: NavItem[] = [
+                        { icon:"🏠", label:"Dom",           locked:false,    action:() => { setShowDomModal(true); setDomTab("profil"); } },
+                        { icon:"🌾", label:"Pola uprawne",  locked:false,    action:() => { fieldViewOpenedAtRef.current = Date.now(); setIsFieldViewOpen(true); setSelectedPlotId(p => p ?? 1); if (tutorialStep === 1) void advanceTutorialStep(2); } },
+                        { icon:"🏚", label:"Stodoła",       locked:!barnOk,   lockLvl:BARN_UNLOCK_LVL,    action:() => { if (!barnOk) { setMessage({ type:"error", title:"🔒 Stodoła zablokowana", text:`Odblokowuje się od ${BARN_UNLOCK_LVL} poziomu.` }); } else { setShowStodolaModal(true); } } },
+                        { icon:"♻️", label:"Kompostownik",  locked:!kompostOk,lockLvl:KOMPOST_UNLOCK_LVL, action:() => { if (!kompostOk) { setMessage({ type:"error", title:"🔒 Kompostownik", text:`Odblokowuje się od ${KOMPOST_UNLOCK_LVL} poziomu.` }); } else { setShowKompostModal(true); } } },
+                        { icon:"🌳", label:"Sad",           locked:!sadOk,    lockLvl:SAD_UNLOCK_LVL,     action:() => { if (!sadOk) { setMessage({ type:"error", title:"🔒 Sad zablokowany", text:`Odblokowuje się od ${SAD_UNLOCK_LVL} poziomu.` }); } else { setShowSadModal(true); } } },
+                        { icon:"🐝", label:"Ul",            locked:!ulOk,     lockLvl:HIVE_UNLOCK_LVL,    action:() => { if (!ulOk) { setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu.` }); } else { setShowUlModal(true); } } },
+                        { icon:"🍽", label:"Lada",          locked:!ladaOk,   lockLvl:LADA_UNLOCK_LVL,    action:() => { if (!ladaOk) { setMessage({ type:"error", title:"🔒 Lada zablokowana", text:`Odblokowuje się od ${LADA_UNLOCK_LVL} poziomu.` }); } else { setShowLadaModal(true); } } },
+                        { icon:"🏙", label:"Do miasta",     locked:!cityOk,   lockLvl:CITY_UNLOCK_LVL,    action:() => { if (!cityOk) { setMessage({ type:"error", title:"Miasto zablokowane", text:`Odblokowuje się od ${CITY_UNLOCK_LVL} poziomu.` }); } else { handleChangeMap("city"); } } },
+                      ];
+                      return (
+                        <div className="mt-2 flex w-[134px] flex-col gap-[3px]">
+                          {items.map(item => (
+                            <button
+                              key={item.label}
+                              type="button"
+                              data-no-map-drag="true"
+                              onClick={item.action}
+                              className={`flex w-full items-center gap-1.5 rounded-xl border px-2 py-[5px] text-left text-[12px] font-bold transition-all duration-150 ${
+                                item.locked
+                                  ? "cursor-not-allowed border-[#5a3e20]/50 bg-[rgba(20,12,6,0.70)] text-[#7a5a30] opacity-70"
+                                  : "border-[#8b6a3e]/70 bg-[rgba(28,16,8,0.88)] text-[#f3e6c8] hover:border-[#c9952f] hover:bg-[rgba(48,28,12,0.96)] hover:text-[#ffe09a] active:scale-95"
+                              }`}
+                            >
+                              <span className="shrink-0 text-[13px] leading-none">{item.icon}</span>
+                              <span className="flex-1 truncate leading-tight">{item.label}</span>
+                              {item.locked && item.lockLvl && (
+                                <span className="shrink-0 rounded-md bg-[#3a1e08]/80 px-1 text-[9px] font-black text-[#c9952f]">Lv{item.lockLvl}</span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
                     {/* Panel plecaka — przeniesiony do Dom → zakładka Plecak */}
                     <div className="hidden">
                       <div
@@ -11975,110 +12009,7 @@ export default function Page() {
           <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: ul kosztuje {HIVE_BUY_COST} zł, pszczoła {BEE_COST} zł.</p>
         </div>
       )}
-    {/* Tooltip Stodoła — zablokowana */}
-      {hoveredBarnLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-amber-400">Stodoła — zablokowana</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-amber-400">{BARN_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: pierwsze zwierzę to Kura (600 zł).</p>
-        </div>
-      )}
-    {/* Tooltip Sad — zablokowany */}
-      {hoveredSadLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-green-400">Sad — zablokowany</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-green-400">{SAD_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie po odblokowaniu.</p>
-        </div>
-      )}
-    {/* Tooltip Stodoła (odblokowana) */}
-      {hoveredStodola && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-amber-700/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-amber-400">Stodoła</p>
-          <p className="mb-1 text-[18px]">Hoduj zwierzęta i zbieraj ich produkty.</p>
-          <p className="text-[16px] text-[#8b6a3e]">Kury, świnie, krowy i inne — każde zwierzę daje inne surowce.</p>
-        </div>
-      )}
-    {/* Tooltip Ul (odblokowany) */}
-      {hoveredUl && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-yellow-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-yellow-300">Ul</p>
-          <p className="mb-1 text-[18px]">Hoduj pszczoły i produkuj miód.</p>
-          <p className="text-[16px] text-[#8b6a3e]">Miód sprzedasz klientom przy Ladzie lub w Targu w mieście.</p>
-        </div>
-      )}
-    {/* Tooltip Sad (odblokowany) */}
-      {hoveredSad && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-green-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-green-400">Sad</p>
-          <p className="mb-1 text-[18px]">Uprawiaj drzewa owocowe i zbieraj owoce.</p>
-          <p className="text-[16px] text-[#8b6a3e]">Drzewa kupisz w Sklepie — jabłonie, grusze, śliwy i inne.</p>
-        </div>
-      )}
-    {/* Tooltip Lada — zablokowana */}
-      {hoveredLadaLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-orange-300">Lada dla klientów — zablokowana</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-orange-300">{LADA_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: obsługuj klientów i zdobywaj złoto, EXP oraz bonusy.</p>
-        </div>
-      )}
-    {/* Tooltip Lada dla klientów */}
-      {hoveredLada && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-[320px] rounded-[18px] border border-orange-500/80 bg-[rgba(28,16,8,0.97)] p-5 text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 text-xl font-black text-orange-300">Lada dla klientów</p>
-          <p className="mb-1 text-[19px]">Obsługuj klientów i sprzedawaj miód.</p>
-          <p className="text-[17px] text-[#8b6a3e]">Klienci przychodzą regularnie — odpowiadaj na zamówienia i sprzedawaj im swoje produkty.</p>
-        </div>
-      )}
-    {/* Tooltip Dom */}
-      {hoveredDom && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-rose-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-rose-300">Dom gracza</p>
-          <p className="mb-1 text-[18px]">Twój profil, statystyki i ekwipunek.</p>
-          <p className="text-[16px] text-[#8b6a3e]">Znajdziesz tu poziom, EXP, PLN oraz zarządzanie postacią.</p>
-        </div>
-      )}
-    {/* Tooltip Kompostownik — zablokowany */}
-      {hoveredKompostLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-teal-300">Kompostownik — zablokowany</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-teal-300">{KOMPOST_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: przerabiaj resztki i zgniłe plony na kompost.</p>
-        </div>
-      )}
-    {/* Tooltip Kompostownik */}
-      {hoveredKompostownik && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-teal-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-teal-300">Kompostownik</p>
-          <p className="mb-1 text-[18px]">Przetwarzaj odpadki w kompost.</p>
-          <p className="mb-1 text-[16px] text-[#8b6a3e]">Kompost przyspiesza wzrost upraw i zwiększa plony na polu.</p>
-          <p className="text-[16px] text-teal-600">Każde użycie daje % szansę na losowy przedmiot specjalny.</p>
-        </div>
-      )}
-    {/* Tooltip Pola uprawne */}
-      {hoveredPolaUprawne && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-lime-400">Pola uprawne</p>
-          <p className="text-[18px]">Sadź, podlewaj i zbieraj plony.</p>
-        </div>
-      )}
-    {/* Tooltip Do miasta — zablokowane */}
-      {hoveredCityLock && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-600/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-sky-300">Miasto — zablokowane</p>
-          <p className="mb-1">Wymaga: <span className="font-bold text-sky-300">{CITY_UNLOCK_LVL} poziom gracza</span></p>
-          <p className="mt-2 text-[16px] text-[#8b6a3e]">Po odblokowaniu: odwiedzisz sklep, targ, bank i ranking.</p>
-        </div>
-      )}
-    {/* Tooltip Do miasta */}
-      {hoveredDoMiasta && isOnFarmMap && !!profile && (
-        <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-sky-500/80 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
-          <p className="mb-2 font-black text-sky-300">Do miasta</p>
-          <p className="mb-1 text-[18px]">Przejdź do centrum Plonopolis.</p>
-          <p className="text-[16px] text-[#8b6a3e]">W mieście znajdziesz Sklep, Targ, Bank i Ratusz.</p>
-        </div>
-      )}
+    {/* Tooltipy budynków farmy usunięte — zastąpione bocznym menu nawigacyjnym */}
     {/* Tooltips — Miasto */}
       {hoveredNaFarme && currentMap === "city" && !!profile && (
         <div className="pointer-events-none fixed z-[999] w-72 rounded-[18px] border border-lime-600 bg-[rgba(28,16,8,0.97)] p-4 text-[21px] text-[#dfcfab] shadow-2xl backdrop-blur-sm" style={ttStyle(mousePos.x, mousePos.y)}>
