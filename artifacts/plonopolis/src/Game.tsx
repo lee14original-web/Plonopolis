@@ -7895,16 +7895,15 @@ export default function Page() {
                               type="button"
                               data-no-map-drag="true"
                               onClick={item.action}
-                              className={`flex w-full items-center gap-1.5 rounded-xl border px-2 py-[5px] text-left text-[12px] font-bold transition-all duration-150 ${
+                              className={`flex w-full items-center gap-1.5 rounded-xl border px-2 py-[8px] text-left text-[18px] font-bold transition-all duration-150 ${
                                 item.locked
                                   ? "cursor-not-allowed border-[#5a3e20]/50 bg-[rgba(20,12,6,0.70)] text-[#7a5a30] opacity-70"
                                   : "border-[#8b6a3e]/70 bg-[rgba(28,16,8,0.88)] text-[#f3e6c8] hover:border-[#c9952f] hover:bg-[rgba(48,28,12,0.96)] hover:text-[#ffe09a] active:scale-95"
                               }`}
                             >
-                              <span className="shrink-0 text-[13px] leading-none">{item.icon}</span>
                               <span className="flex-1 truncate leading-tight">{item.label}</span>
                               {item.locked && item.lockLvl && (
-                                <span className="shrink-0 rounded-md bg-[#3a1e08]/80 px-1 text-[9px] font-black text-[#c9952f]">Lv{item.lockLvl}</span>
+                                <span className="shrink-0 rounded-md bg-[#3a1e08]/80 px-1 text-[11px] font-black text-[#c9952f]">Lv{item.lockLvl}</span>
                               )}
                             </button>
                           ))}
