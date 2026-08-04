@@ -7859,13 +7859,13 @@ export default function Page() {
                       aria-label="Otwórz profil"
                     >
                       {avatarSkin >= 0
-                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[268px] w-[268px] object-cover" style={{imageRendering:"pixelated"}} />
-                        : <span className="flex h-[268px] w-[268px] flex-col items-center justify-center gap-0.5 animate-pulse">
+                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[227px] w-[227px] object-cover" style={{imageRendering:"pixelated"}} />
+                        : <span className="flex h-[227px] w-[227px] flex-col items-center justify-center gap-0.5 animate-pulse">
                             <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
                             <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
                           </span>}
                     </button>
-                    <p className="mt-1 w-[268px] truncate text-center text-[16px] font-black text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
+                    <p className="mt-1 w-[227px] truncate text-center text-[16px] font-black text-[#d8ba7a] drop-shadow">{profile?.login ?? ""}</p>
 
                     {/* ── Boczne menu nawigacyjne farmy ── */}
                     {isOnFarmMap && profile && (() => {
@@ -7888,7 +7888,7 @@ export default function Page() {
                         { icon:"🏙", label:"Do miasta",     locked:!cityOk,   lockLvl:CITY_UNLOCK_LVL,    action:() => { if (!cityOk) { setMessage({ type:"error", title:"Miasto zablokowane", text:`Odblokowuje się od ${CITY_UNLOCK_LVL} poziomu.` }); } else { handleChangeMap("city"); } } },
                       ];
                       return (
-                        <div className="mt-2 flex w-[268px] flex-col gap-[3px]">
+                        <div className="mt-2 flex w-[227px] flex-col gap-[3px]">
                           {items.map(item => (
                             <button
                               key={item.label}
