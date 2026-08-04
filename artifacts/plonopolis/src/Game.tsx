@@ -3537,7 +3537,7 @@ export default function Page() {
       }
     }
     const eq = CHAR_EQUIP_ITEMS.find(i => i.id === id);
-    if (eq) return { name: eq.name, icon: eq.icon };
+    if (eq) return { name: eq.name, icon: eq.icon, spritePath: eq.img };
     if (id.startsWith('eq_tier_')) {
       const tier = Number(id.split('_').pop()) || 0;
       const minL = tier * 5 + 1, maxL = tier * 5 + 5;
