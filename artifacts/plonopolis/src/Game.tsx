@@ -3017,11 +3017,20 @@ export default function Page() {
       if (e.key === "Escape") {
         setHoveredSickle(false);
         setHoveredWateringCan(false);
+        setCardTip(null);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // Wyczyść cardTip przy każdej zmianie stanu modali — zapobiega "przyklejeniu"
+  // tooltipu gdy modal zamknie się zanim onMouseLeave zdąży zadziałać.
+  React.useEffect(() => { setCardTip(null); }, [
+    showDomModal, showStodolaModal, showSadModal, showUlModal,
+    showKompostModal, showShopModal, showSkinModal, showRankingPanel,
+    showGildiaPanel, showMisjePanel, epicPurchaseTarget,
+  ]);
 
   // ─── Esc: wiadomości + compose ───────────────────────────────────────────
   React.useEffect(() => {
@@ -5877,6 +5886,7 @@ export default function Page() {
       setHoveredSadLock(false);
       setHoveredWateringCan(false);
       setHoveredSickle(false);
+      setCardTip(null);
 
       setIsMapLoading(true);
 
