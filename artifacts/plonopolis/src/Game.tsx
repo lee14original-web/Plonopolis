@@ -1615,7 +1615,7 @@ export default function Page() {
   const panToBuilding = React.useCallback((id: string, action: () => void) => {
     const now = Date.now();
     const last = lastNavClickRef.current;
-    if (last && last.id === id && now - last.time < 500) {
+    if (last && last.id === id && now - last.time < 1200) {
       lastNavClickRef.current = null;
       action();
       return;
