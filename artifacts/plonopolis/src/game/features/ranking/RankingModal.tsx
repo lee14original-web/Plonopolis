@@ -261,11 +261,33 @@ export function RankingModal({
               ) : (
                 <div className="flex flex-col p-5 gap-5">
 
-                  {/* ── Avatar + name + badges ── */}
-                  <div className="flex items-end gap-5">
+                  {/* ── Avatar (wycentrowany) + info od lewej ── */}
+                  <div className="flex items-center gap-4">
+                    {/* Info — lewa strona */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[22px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
+                      <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[14px] font-black text-[#f2ca69] w-fit">
+                          ⭐ Poziom {selectedPlayer.level}
+                        </span>
+                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[14px] font-bold text-[#a8e890] w-fit">
+                          ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
+                        </span>
+                        {selectedPlayer.user_id !== profile?.id && (
+                          <button
+                            onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
+                            className="mt-1 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)] w-fit">
+                            ✉️ Wyślij wiadomość
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Avatar — wycentrowany pionowo */}
                     <div
-                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl"
-                      style={{ width: 130, height: 195 }}>
+                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl self-center"
+                      style={{ width: 120, height: 180 }}>
                       <img
                         src={ALL_SKINS[
                           selectedPlayer.user_id === profile?.id
@@ -278,26 +300,6 @@ export function RankingModal({
                         className="w-full h-full object-cover object-top"
                         style={{ imageRendering: "pixelated" }}
                       />
-                    </div>
-
-                    <div className="flex-1 min-w-0 pb-1">
-                      <p className="text-[24px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
-                      <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[15px] font-black text-[#f2ca69]">
-                          ⭐ Poziom {selectedPlayer.level}
-                        </span>
-                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[15px] font-bold text-[#a8e890]">
-                          ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
-                        </span>
-                      </div>
-                      {selectedPlayer.user_id !== profile?.id && (
-                        <button
-                          onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
-                          className="mt-3 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
-                          ✉️ Wyślij wiadomość
-                        </button>
-                      )}
                     </div>
                   </div>
 
@@ -313,11 +315,11 @@ export function RankingModal({
 
                       return (
                         <div key={slot} className="group relative flex flex-col items-center">
-                          {/* Frame */}
+                          {/* Frame — kwadratowy, przedmiot wypełnia 95% */}
                           <div
                             className="relative w-full overflow-hidden flex items-center justify-center"
                             style={{
-                              aspectRatio: "2/3",
+                              aspectRatio: "1/1",
                               background: itemDef
                                 ? "linear-gradient(160deg, rgba(60,38,12,0.90) 0%, rgba(28,16,4,0.95) 100%)"
                                 : "rgba(10,6,2,0.70)",
@@ -344,8 +346,8 @@ export function RankingModal({
                               <img
                                 src={itemDef.img}
                                 alt={itemDef.name}
-                                className="w-[80%] h-[80%] object-contain"
-                                style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
+                                className="w-[95%] h-[95%] object-contain"
+                                style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.85))" }}
                                 draggable={false}
                               />
                             ) : (
@@ -377,28 +379,28 @@ export function RankingModal({
                             )}
                           </div>
 
-                          {/* Hover tooltip */}
+                          {/* Hover tooltip — powiększony o 80% */}
                           {itemDef && (
-                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-[500] opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-[220px]">
-                              <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl"
-                                style={{ boxShadow: `0 0 24px ${upgColor}30` }}>
-                                <p className="text-[15px] font-black text-[#f9e7b2] leading-tight">{itemDef.name}</p>
-                                <p className="text-[11px] text-[#8b6a3e] mt-0.5">
+                            <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-[500] opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-[396px]">
+                              <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-6 py-4 shadow-2xl"
+                                style={{ boxShadow: `0 0 36px ${upgColor}35` }}>
+                                <p className="text-[27px] font-black text-[#f9e7b2] leading-tight">{itemDef.name}</p>
+                                <p className="text-[20px] text-[#8b6a3e] mt-1">
                                   {EQUIP_SLOT_META[slot].label} · lvl {itemDef.unlockLevel}
                                 </p>
                                 {upg > 0 && (
-                                  <p className="text-[12px] font-black mt-1" style={{ color: upgColor }}>
+                                  <p className="text-[22px] font-black mt-1.5" style={{ color: upgColor }}>
                                     Ulepszenie +{upg}
                                   </p>
                                 )}
-                                <div className="h-px bg-[#8b6a3e]/30 my-1.5" />
-                                <p className="text-[12px] font-bold text-cyan-300">{bonusLine(itemDef.bonuses, upg)}</p>
+                                <div className="h-px bg-[#8b6a3e]/30 my-2" />
+                                <p className="text-[21px] font-bold text-cyan-300">{bonusLine(itemDef.bonuses, upg)}</p>
                                 {itemDef.desc && (
-                                  <p className="mt-1.5 text-[11px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
+                                  <p className="mt-2 text-[19px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
                                 )}
                               </div>
                               {/* Arrow */}
-                              <div className="absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-3 h-3 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] w-4 h-4 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
                             </div>
                           )}
                         </div>
