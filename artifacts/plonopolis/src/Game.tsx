@@ -808,6 +808,11 @@ export default function Page() {
   const [barnNow, setBarnNow] = React.useState(Date.now());
   const [panX, setPanX] = React.useState(FARM_CENTER_PAN);
   const [panY, setPanY] = React.useState(0);
+  const [highlightedBuilding, setHighlightedBuilding] = React.useState<string|null>(null);
+  const [navPanActive, setNavPanActive] = React.useState(false);
+  const lastNavClickRef = React.useRef<{id:string,time:number}|null>(null);
+  const highlightTimerRef = React.useRef<ReturnType<typeof setTimeout>|null>(null);
+  const navPanTimerRef = React.useRef<ReturnType<typeof setTimeout>|null>(null);
   const [isPanDragging, setIsPanDragging] = React.useState(false);
   const panDragRef = React.useRef({ active: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0, moved: false });
   const [barnState, setBarnState_] = React.useState<BarnState>(defaultBarnState());
@@ -1607,6 +1612,28 @@ export default function Page() {
   };
   const activeHitboxPos = FARM_HITBOX_OVERRIDES[backgroundMap] ?? navHitboxPos;
   const activeLabelPos  = FARM_LABEL_OVERRIDES[backgroundMap]  ?? navLabelPos;
+  const panToBuilding = React.useCallback((id: string, action: () => void) => {
+    const now = Date.now();
+    const last = lastNavClickRef.current;
+    if (last && last.id === id && now - last.time < 500) {
+      lastNavClickRef.current = null;
+      action();
+      return;
+    }
+    lastNavClickRef.current = { id, time: now };
+    const hb = (activeHitboxPos as Record<string,{left:number,top:number,width:number,height:number}>)[id];
+    if (hb) {
+      const centerX = ((hb.left + hb.width / 2) / 100) * FARM_RENDERED_W;
+      const targetPan = Math.max(-FARM_MAX_PAN, Math.min(0, -(centerX - BASE_W / 2)));
+      setNavPanActive(true);
+      setPanX(targetPan);
+      if (navPanTimerRef.current) clearTimeout(navPanTimerRef.current);
+      navPanTimerRef.current = setTimeout(() => setNavPanActive(false), 800);
+    }
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    setHighlightedBuilding(id);
+    highlightTimerRef.current = setTimeout(() => setHighlightedBuilding(null), 2600);
+  }, [activeHitboxPos]);
   React.useEffect(() => {
     if ((currentMap === "city_townhall" || currentMap === "city_liga") && rankingData.length === 0 && !rankingLoading) {
       void loadRanking();
@@ -6335,6 +6362,7 @@ export default function Page() {
           width: isOnPanMap ? `${FARM_RENDERED_W}px` : "100%",
           height: isOnPanMap ? `${BASE_H}px` : "100%",
           transform: isOnPanMap ? `translateX(${panX}px)` : undefined,
+          transition: (isOnPanMap && navPanActive) ? "transform 0.75s cubic-bezier(0.4,0,0.2,1)" : undefined,
         }}>
           {/* A1+A2: brak imageRendering:pixelated — bilinear filtering; wymiary finalne zamiast źródłowych */}
           <img
@@ -6514,9 +6542,15 @@ export default function Page() {
                   position:"absolute", top:0, left:0,
                   width:`${FARM_IMG_W}px`, height:`${FARM_IMG_H}px`,
                   transform:`translateX(${panX}px) scale(${FARM_SCALE})`,
+                  transition: navPanActive ? "transform 0.75s cubic-bezier(0.4,0,0.2,1)" : undefined,
                   transformOrigin:"top left",
                   zIndex:20,
                 }}>
+                  <style>{`@keyframes nav-bld-pulse{0%{box-shadow:0 0 0 3px rgba(255,228,60,1),0 0 36px 16px rgba(255,200,0,0.65),0 0 70px 35px rgba(255,175,0,0.30)}100%{box-shadow:0 0 0 6px rgba(255,228,60,0.5),0 0 60px 28px rgba(255,200,0,0.35),0 0 110px 55px rgba(255,175,0,0.12)}}`}</style>
+                  {highlightedBuilding && (activeHitboxPos as Record<string,{left:number,top:number,width:number,height:number}>)[highlightedBuilding] && (() => {
+                    const _hb = (activeHitboxPos as Record<string,{left:number,top:number,width:number,height:number}>)[highlightedBuilding!];
+                    return (<div className="pointer-events-none absolute" style={{ left:`${_hb.left}%`, top:`${_hb.top}%`, width:`${_hb.width}%`, height:`${_hb.height}%`, borderRadius:18, zIndex:55, animation:"nav-bld-pulse 0.85s ease-in-out infinite alternate" }} />);
+                  })()}
                   {isOnFarmMap && (
   <button
     type="button"
@@ -7876,16 +7910,16 @@ export default function Page() {
                       const ulOk     = lvl >= HIVE_UNLOCK_LVL;
                       const ladaOk   = lvl >= LADA_UNLOCK_LVL;
                       const cityOk   = lvl >= CITY_UNLOCK_LVL;
-                      type NavItem = { icon: string; label: string; locked: boolean; lockLvl?: number; action: () => void };
+                      type NavItem = { icon: string; label: string; locked: boolean; lockLvl?: number; action: () => void; buildingId: string };
                       const items: NavItem[] = [
-                        { icon:"🏠", label:"Dom",           locked:false,    action:() => { setShowDomModal(true); setDomTab("profil"); } },
-                        { icon:"🌾", label:"Pola uprawne",  locked:false,    action:() => { fieldViewOpenedAtRef.current = Date.now(); setIsFieldViewOpen(true); setSelectedPlotId(p => p ?? 1); if (tutorialStep === 1) void advanceTutorialStep(2); } },
-                        { icon:"🏚", label:"Stodoła",       locked:!barnOk,   lockLvl:BARN_UNLOCK_LVL,    action:() => { if (!barnOk) { setMessage({ type:"error", title:"🔒 Stodoła zablokowana", text:`Odblokowuje się od ${BARN_UNLOCK_LVL} poziomu.` }); } else { setShowStodolaModal(true); } } },
-                        { icon:"♻️", label:"Kompostownik",  locked:!kompostOk,lockLvl:KOMPOST_UNLOCK_LVL, action:() => { if (!kompostOk) { setMessage({ type:"error", title:"🔒 Kompostownik", text:`Odblokowuje się od ${KOMPOST_UNLOCK_LVL} poziomu.` }); } else { setShowKompostModal(true); } } },
-                        { icon:"🌳", label:"Sad",           locked:!sadOk,    lockLvl:SAD_UNLOCK_LVL,     action:() => { if (!sadOk) { setMessage({ type:"error", title:"🔒 Sad zablokowany", text:`Odblokowuje się od ${SAD_UNLOCK_LVL} poziomu.` }); } else { setShowSadModal(true); } } },
-                        { icon:"🐝", label:"Ul",            locked:!ulOk,     lockLvl:HIVE_UNLOCK_LVL,    action:() => { if (!ulOk) { setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu.` }); } else { setShowUlModal(true); } } },
-                        { icon:"🍽", label:"Lada",          locked:!ladaOk,   lockLvl:LADA_UNLOCK_LVL,    action:() => { if (!ladaOk) { setMessage({ type:"error", title:"🔒 Lada zablokowana", text:`Odblokowuje się od ${LADA_UNLOCK_LVL} poziomu.` }); } else { setShowLadaModal(true); } } },
-                        { icon:"🏙", label:"Do miasta",     locked:!cityOk,   lockLvl:CITY_UNLOCK_LVL,    action:() => { if (!cityOk) { setMessage({ type:"error", title:"Miasto zablokowane", text:`Odblokowuje się od ${CITY_UNLOCK_LVL} poziomu.` }); } else { handleChangeMap("city"); } } },
+                        { icon:"🏠", label:"Dom",           locked:false,    buildingId:"dom",          action:() => { setShowDomModal(true); setDomTab("profil"); } },
+                        { icon:"🌾", label:"Pola uprawne",  locked:false,    buildingId:"polaUprawne",  action:() => { fieldViewOpenedAtRef.current = Date.now(); setIsFieldViewOpen(true); setSelectedPlotId(p => p ?? 1); if (tutorialStep === 1) void advanceTutorialStep(2); } },
+                        { icon:"🏚", label:"Stodoła",       locked:!barnOk,   lockLvl:BARN_UNLOCK_LVL,    buildingId:"stodola",      action:() => { if (!barnOk) { setMessage({ type:"error", title:"🔒 Stodoła zablokowana", text:`Odblokowuje się od ${BARN_UNLOCK_LVL} poziomu.` }); } else { setShowStodolaModal(true); } } },
+                        { icon:"♻️", label:"Kompostownik",  locked:!kompostOk,lockLvl:KOMPOST_UNLOCK_LVL, buildingId:"kompostownik", action:() => { if (!kompostOk) { setMessage({ type:"error", title:"🔒 Kompostownik", text:`Odblokowuje się od ${KOMPOST_UNLOCK_LVL} poziomu.` }); } else { setShowKompostModal(true); } } },
+                        { icon:"🌳", label:"Sad",           locked:!sadOk,    lockLvl:SAD_UNLOCK_LVL,     buildingId:"sad",          action:() => { if (!sadOk) { setMessage({ type:"error", title:"🔒 Sad zablokowany", text:`Odblokowuje się od ${SAD_UNLOCK_LVL} poziomu.` }); } else { setShowSadModal(true); } } },
+                        { icon:"🐝", label:"Ul",            locked:!ulOk,     lockLvl:HIVE_UNLOCK_LVL,    buildingId:"ul",           action:() => { if (!ulOk) { setMessage({ type:"error", title:"🔒 Ul zablokowany", text:`Odblokowuje się od ${HIVE_UNLOCK_LVL} poziomu.` }); } else { setShowUlModal(true); } } },
+                        { icon:"🍽", label:"Lada",          locked:!ladaOk,   lockLvl:LADA_UNLOCK_LVL,    buildingId:"lada",         action:() => { if (!ladaOk) { setMessage({ type:"error", title:"🔒 Lada zablokowana", text:`Odblokowuje się od ${LADA_UNLOCK_LVL} poziomu.` }); } else { setShowLadaModal(true); } } },
+                        { icon:"🏙", label:"Do miasta",     locked:!cityOk,   lockLvl:CITY_UNLOCK_LVL,    buildingId:"doMiasta",     action:() => { if (!cityOk) { setMessage({ type:"error", title:"Miasto zablokowane", text:`Odblokowuje się od ${CITY_UNLOCK_LVL} poziomu.` }); } else { handleChangeMap("city"); } } },
                       ];
                       return (
                         <div className="mt-2 flex w-[227px] flex-col gap-[3px]">
@@ -7894,7 +7928,7 @@ export default function Page() {
                               key={item.label}
                               type="button"
                               data-no-map-drag="true"
-                              onClick={item.action}
+                              onClick={() => panToBuilding(item.buildingId, item.action)}
                               className={`flex w-full items-center gap-1.5 rounded-xl border px-3 py-[11px] text-left text-[20px] font-bold transition-all duration-150 ${
                                 item.locked
                                   ? "cursor-not-allowed border-[#5a3e20]/50 bg-[rgba(20,12,6,0.70)] text-[#7a5a30] opacity-70"
