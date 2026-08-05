@@ -7846,7 +7846,7 @@ export default function Page() {
 
 
                 {(isOnFarmMap || currentMap === "city_shop" || currentMap === "city_market") && (
-                <div className={`fixed left-4 top-1/2 -translate-y-1/2 z-[95] transition-opacity duration-150 ${isFieldViewOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}>
+                <div className={`fixed left-4 top-4 z-[95] transition-opacity duration-150 ${isFieldViewOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}>
                   <div className="flex flex-col items-start">
                     {/* Avatar gracza — kliknięcie otwiera Dom */}
                     <button
