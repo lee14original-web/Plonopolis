@@ -3,6 +3,7 @@ import type { RankingPlayer, Profile } from "../../types/profile";
 import { ALL_SKINS } from "../../constants/avatars";
 import { STATS_DEFS } from "../../types/stats";
 import { CHAR_EQUIP_ITEMS, EQUIP_SLOT_META, UPG_COLOR } from "../../constants/equipment";
+import { bonusLine } from "../../utils/equipment";
 import type { CharEquipped, EquipSlot } from "../../types/equipment";
 import { supabase } from "@/lib/supabase";
 
@@ -35,6 +36,13 @@ interface RankingModalProps {
 
 const SLOT_ORDER: EquipSlot[] = ["glowa", "dlonie", "nogi"];
 
+// Slot label without emoji
+const SLOT_LABEL: Record<EquipSlot, string> = {
+  glowa: "Głowa",
+  dlonie: "Dłonie",
+  nogi: "Nogi",
+};
+
 export function RankingModal({
   onClose,
   rankingData,
@@ -64,14 +72,12 @@ export function RankingModal({
     setPlayerDetail(null);
     setDetailLoading(true);
     try {
-      // Używamy RPC z SECURITY DEFINER żeby ominąć RLS
       const { data, error } = await supabase.rpc("get_public_player_profile", {
         p_user_id: p.user_id,
       });
       if (error) throw error;
       setPlayerDetail(data as PlayerDetail | null);
     } catch {
-      // Fallback: bezpośredni odczyt (tylko własny profil przejdzie RLS)
       try {
         const { data } = await supabase
           .from("profiles")
@@ -257,7 +263,6 @@ export function RankingModal({
 
                   {/* ── Avatar + name + badges ── */}
                   <div className="flex items-end gap-5">
-                    {/* Portrait avatar — same aspect ratio as skin picker (2:3) */}
                     <div
                       className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl"
                       style={{ width: 130, height: 195 }}>
@@ -296,117 +301,137 @@ export function RankingModal({
                     </div>
                   </div>
 
-                  {/* ── Ekwipunek (na górze, bez zakładki) ── */}
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#8b6a3e] mb-2">⚔️ Ekwipunek</p>
-                    <div className="flex flex-col gap-2">
-                      {SLOT_ORDER.map(slot => {
-                        const slotMeta = EQUIP_SLOT_META[slot];
-                        const equipped = (playerDetail?.char_equipped as CharEquipped | null | undefined)?.[slot];
-                        const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
-                        const upg = equipped
-                          ? ((playerDetail?.item_upg_registry as Record<string, number> | null | undefined)?.[equipped.id] ?? equipped.upg ?? 0)
-                          : 0;
-                        const upgColor = UPG_COLOR[upg] ?? "#9CA3AF";
+                  {/* ── Ekwipunek — 3 slot frames ── */}
+                  <div className="grid grid-cols-3 gap-3">
+                    {SLOT_ORDER.map(slot => {
+                      const equipped = (playerDetail?.char_equipped as CharEquipped | null | undefined)?.[slot];
+                      const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
+                      const upg = equipped
+                        ? ((playerDetail?.item_upg_registry as Record<string, number> | null | undefined)?.[equipped.id] ?? equipped.upg ?? 0)
+                        : 0;
+                      const upgColor = UPG_COLOR[upg] ?? "#9CA3AF";
 
-                        return (
-                          <div key={slot}
-                            className={`rounded-2xl border p-3 transition ${itemDef ? "border-[#8b6a3e]/50 bg-[rgba(38,24,14,0.60)]" : "border-[#8b6a3e]/20 bg-black/10 opacity-50"}`}>
-                            <div className="flex items-start gap-3">
-                              {/* Slot icon / item image */}
-                              <div className="relative shrink-0 w-14 h-14 rounded-xl border border-[#8b6a3e]/50 bg-black/30 overflow-hidden flex items-center justify-center">
-                                {itemDef?.img ? (
-                                  <img src={itemDef.img} alt={itemDef.name}
-                                    className="w-full h-full object-cover"
-                                    style={{ imageRendering: "pixelated" }}
-                                    onError={e => {
-                                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                                      const fb = e.currentTarget.nextElementSibling as HTMLElement | null;
-                                      if (fb) fb.style.display = "flex";
-                                    }} />
-                                ) : null}
-                                <span className={`text-2xl ${itemDef?.img ? "hidden" : "flex"} items-center justify-center`}>
-                                  {itemDef?.icon ?? slotMeta.icon}
-                                </span>
-                                {upg > 0 && (
-                                  <div className="absolute bottom-0 right-0 rounded-tl-lg px-1 py-0.5 text-[10px] font-black"
-                                    style={{ background: "rgba(0,0,0,0.85)", color: upgColor, border: `1px solid ${upgColor}40` }}>
-                                    +{upg}
-                                  </div>
-                                )}
-                              </div>
+                      return (
+                        <div key={slot} className="group relative flex flex-col items-center">
+                          {/* Frame */}
+                          <div
+                            className="relative w-full overflow-hidden flex items-center justify-center"
+                            style={{
+                              aspectRatio: "2/3",
+                              background: itemDef
+                                ? "linear-gradient(160deg, rgba(60,38,12,0.90) 0%, rgba(28,16,4,0.95) 100%)"
+                                : "rgba(10,6,2,0.70)",
+                              border: itemDef
+                                ? `2px solid ${upgColor}70`
+                                : "2px solid rgba(139,106,62,0.30)",
+                              borderRadius: "12px",
+                              boxShadow: itemDef
+                                ? `0 0 18px ${upgColor}22, inset 0 0 24px rgba(0,0,0,0.5)`
+                                : "inset 0 0 16px rgba(0,0,0,0.4)",
+                            }}
+                          >
+                            {/* Corner ornaments */}
+                            {itemDef && (
+                              <>
+                                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: `${upgColor}80` }} />
+                                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: `${upgColor}80` }} />
+                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: `${upgColor}80` }} />
+                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: `${upgColor}80` }} />
+                              </>
+                            )}
 
-                              {/* Item info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-[13px] font-black text-[#f9e7b2] leading-tight">
-                                    {itemDef ? itemDef.name : <span className="text-[#8b6a3e]">{slotMeta.label} — brak</span>}
-                                  </p>
-                                  {upg > 0 && (
-                                    <span className="text-[11px] font-black px-1.5 py-0.5 rounded-md"
-                                      style={{ color: upgColor, background: `${upgColor}18`, border: `1px solid ${upgColor}50` }}>
-                                      +{upg}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-[#8b6a3e] mt-0.5">{slotMeta.label} · Wymagany lvl {itemDef?.unlockLevel ?? "—"}</p>
-                                {itemDef && (
-                                  <div className="mt-1 flex flex-wrap gap-1">
-                                    {itemDef.bonuses.map((b, bi) => {
-                                      const total = upg > 0 ? +(b.base * (1 + upg * 0.1)).toFixed(1) : b.base;
-                                      return (
-                                        <span key={bi} className="text-[11px] font-bold rounded px-1.5 py-0.5 bg-green-900/30 border border-green-600/30 text-green-300">
-                                          +{total}{b.label}
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                                {itemDef?.desc && (
-                                  <p className="mt-1 text-[11px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
-                                )}
+                            {itemDef?.img ? (
+                              <img
+                                src={itemDef.img}
+                                alt={itemDef.name}
+                                className="w-[80%] h-[80%] object-contain"
+                                style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.8))" }}
+                                draggable={false}
+                              />
+                            ) : (
+                              <span className="text-[#8b6a3e]/40 text-[10px] font-bold uppercase tracking-wider text-center px-2">
+                                {SLOT_LABEL[slot]}
+                              </span>
+                            )}
+
+                            {/* Upgrade badge */}
+                            {upg > 0 && (
+                              <div
+                                className="absolute top-1.5 right-1.5 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-black"
+                                style={{
+                                  background: "rgba(0,0,0,0.88)",
+                                  color: upgColor,
+                                  border: `1.5px solid ${upgColor}70`,
+                                  textShadow: `0 0 6px ${upgColor}`,
+                                }}>
+                                +{upg}
                               </div>
-                            </div>
+                            )}
                           </div>
-                        );
-                      })}
-                      {!playerDetail?.char_equipped && !detailLoading && (
-                        <p className="text-center text-sm text-[#8b6a3e] py-2">Brak danych o ekwipunku</p>
-                      )}
-                    </div>
+
+                          {/* Slot label + item name */}
+                          <div className="mt-1.5 text-center w-full px-0.5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e] leading-none">{SLOT_LABEL[slot]}</p>
+                            {itemDef && (
+                              <p className="text-[11px] font-black text-[#f3e6c8] mt-0.5 truncate leading-tight">{itemDef.name}</p>
+                            )}
+                          </div>
+
+                          {/* Hover tooltip */}
+                          {itemDef && (
+                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 z-[500] opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-[220px]">
+                              <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-4 py-3 shadow-2xl"
+                                style={{ boxShadow: `0 0 24px ${upgColor}30` }}>
+                                <p className="text-[15px] font-black text-[#f9e7b2] leading-tight">{itemDef.name}</p>
+                                <p className="text-[11px] text-[#8b6a3e] mt-0.5">
+                                  {EQUIP_SLOT_META[slot].label} · lvl {itemDef.unlockLevel}
+                                </p>
+                                {upg > 0 && (
+                                  <p className="text-[12px] font-black mt-1" style={{ color: upgColor }}>
+                                    Ulepszenie +{upg}
+                                  </p>
+                                )}
+                                <div className="h-px bg-[#8b6a3e]/30 my-1.5" />
+                                <p className="text-[12px] font-bold text-cyan-300">{bonusLine(itemDef.bonuses, upg)}</p>
+                                {itemDef.desc && (
+                                  <p className="mt-1.5 text-[11px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
+                                )}
+                              </div>
+                              {/* Arrow */}
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-[-6px] w-3 h-3 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  {/* ── Statystyki (pod ekwipunkiem) ── */}
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-[#8b6a3e] mb-2">📊 Statystyki</p>
-                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-5">
-                      {STATS_DEFS.map(s => {
-                        const val = (playerDetail?.player_stats?.[s.key] ?? 0);
-                        return (
-                          <div key={s.key} className="flex flex-col gap-0.5">
-                            <p className="text-[13px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">
-                              {s.icon} {s.label}
-                            </p>
-                            <p className="text-[32px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
+                  {/* ── Statystyki (bez ikon, czyste liczby) ── */}
+                  <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-4">
+                    {STATS_DEFS.map(s => {
+                      const val = (playerDetail?.player_stats?.[s.key] ?? 0);
+                      return (
+                        <div key={s.key} className="flex flex-col gap-0">
+                          <p className="text-[12px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+                          <p className="text-[30px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                    {/* Klienci + Pieniądze */}
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
-                        <p className="text-[12px] text-[#8b6a3e] font-bold uppercase tracking-wide">😊 Klienci</p>
-                        <p className="text-[28px] font-black text-emerald-400 tabular-nums">
-                          {(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
-                        <p className="text-[12px] text-[#8b6a3e] font-bold uppercase tracking-wide">💰 Pieniądze</p>
-                        <p className="text-[22px] font-black text-[#a8e890] tabular-nums">
-                          {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(selectedPlayer.money)}
-                        </p>
-                      </div>
+                  {/* ── Klienci + Pieniądze ── */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
+                      <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
+                      <p className="text-[28px] font-black text-emerald-400 tabular-nums">
+                        {(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
+                      <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
+                      <p className="text-[20px] font-black text-[#a8e890] tabular-nums">
+                        {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(selectedPlayer.money)}
+                      </p>
                     </div>
                   </div>
 
