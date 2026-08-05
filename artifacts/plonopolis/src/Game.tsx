@@ -7859,8 +7859,8 @@ export default function Page() {
                       aria-label="Otwórz profil"
                     >
                       {avatarSkin >= 0
-                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[227px] w-[227px] object-cover" style={{imageRendering:"pixelated"}} />
-                        : <span className="flex h-[227px] w-[227px] flex-col items-center justify-center gap-0.5 animate-pulse">
+                        ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="h-[341px] w-[227px] object-cover object-top" style={{imageRendering:"pixelated"}} />
+                        : <span className="flex h-[341px] w-[227px] flex-col items-center justify-center gap-0.5 animate-pulse">
                             <span className="text-[#f9e7b2] text-[11px] font-black leading-tight text-center">Wybierz Avatar</span>
                             <span className="text-[#c9952f] text-[10px] font-bold">(kliknij)</span>
                           </span>}
@@ -7895,7 +7895,7 @@ export default function Page() {
                               type="button"
                               data-no-map-drag="true"
                               onClick={item.action}
-                              className={`flex w-full items-center gap-1.5 rounded-xl border px-2 py-[8px] text-left text-[18px] font-bold transition-all duration-150 ${
+                              className={`flex w-full items-center gap-1.5 rounded-xl border px-3 py-[11px] text-left text-[20px] font-bold transition-all duration-150 ${
                                 item.locked
                                   ? "cursor-not-allowed border-[#5a3e20]/50 bg-[rgba(20,12,6,0.70)] text-[#7a5a30] opacity-70"
                                   : "border-[#8b6a3e]/70 bg-[rgba(28,16,8,0.88)] text-[#f3e6c8] hover:border-[#c9952f] hover:bg-[rgba(48,28,12,0.96)] hover:text-[#ffe09a] active:scale-95"
@@ -8643,7 +8643,7 @@ export default function Page() {
                         {avatarFrame.animated ? (
                           <>
                             <style>{`@keyframes _legendary-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} ._legendary-ring{animation:_legendary-spin 4s linear infinite;transform-origin:center}`}</style>
-                            <div className="relative h-64 w-64 shrink-0 cursor-pointer" onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}>
+                            <div className="relative h-96 w-64 shrink-0 cursor-pointer" onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}>
                               <div className="absolute inset-0 overflow-hidden rounded-[32px]">
                                 <div className="_legendary-ring absolute" style={{width:"300%",height:"300%",top:"-100%",left:"-100%",background:"conic-gradient(from 0deg,#f0abfc,#818cf8,#67e8f9,#34d399,#fbbf24,#f87171,#f0abfc)"}} />
                               </div>
@@ -8659,7 +8659,7 @@ export default function Page() {
                           </>
                         ) : (
                           <button onClick={() => { setShowDomModal(false); setShowSkinModal(true); }}
-                            className="flex h-64 w-64 shrink-0 items-center justify-center rounded-[32px] bg-[rgba(38,24,14,0.8)] overflow-hidden transition hover:opacity-90"
+                            className="flex h-96 w-64 shrink-0 items-center justify-center rounded-[32px] bg-[rgba(38,24,14,0.8)] overflow-hidden transition hover:opacity-90"
                             style={{ border: avatarFrame.border, boxShadow: avatarFrame.shadow || undefined }}>
                             {avatarSkin >= 0
                               ? <img src={ALL_SKINS[avatarSkin]} alt="Avatar" className="w-full h-full object-cover" style={{imageRendering:"pixelated"}} />
