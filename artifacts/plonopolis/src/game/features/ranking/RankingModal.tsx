@@ -53,7 +53,6 @@ export function RankingModal({
   const [selectedPlayer, setSelectedPlayer] = useState<RankingPlayer | null>(null);
   const [playerDetail, setPlayerDetail] = useState<PlayerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailTab, setDetailTab] = useState<"stats" | "equip">("stats");
 
   const handleSelectPlayer = useCallback(async (p: RankingPlayer) => {
     if (selectedPlayer?.user_id === p.user_id) {
@@ -65,14 +64,24 @@ export function RankingModal({
     setPlayerDetail(null);
     setDetailLoading(true);
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("player_stats, char_equipped, item_upg_registry, avatar_skin, level, login")
-        .eq("id", p.user_id)
-        .single();
+      // Używamy RPC z SECURITY DEFINER żeby ominąć RLS
+      const { data, error } = await supabase.rpc("get_public_player_profile", {
+        p_user_id: p.user_id,
+      });
+      if (error) throw error;
       setPlayerDetail(data as PlayerDetail | null);
     } catch {
-      setPlayerDetail(null);
+      // Fallback: bezpośredni odczyt (tylko własny profil przejdzie RLS)
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("player_stats, char_equipped, item_upg_registry, avatar_skin, level, login")
+          .eq("id", p.user_id)
+          .single();
+        setPlayerDetail(data as PlayerDetail | null);
+      } catch {
+        setPlayerDetail(null);
+      }
     } finally {
       setDetailLoading(false);
     }
@@ -145,7 +154,7 @@ export function RankingModal({
 
           {/* Table */}
           <div ref={rankingScrollRef}
-            className={`overflow-y-auto px-6 py-4 transition-all duration-300 ${showPanel ? "w-[58%] border-r border-[#8b6a3e]/30" : "w-full"}`}>
+            className={`overflow-y-auto px-6 py-4 transition-all duration-300 ${showPanel ? "w-[55%] border-r border-[#8b6a3e]/30" : "w-full"}`}>
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -235,7 +244,7 @@ export function RankingModal({
 
           {/* ── Player Profile Panel ── */}
           {showPanel && (
-            <div className="w-[42%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)]">
+            <div className="w-[45%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)]">
               {detailLoading ? (
                 <div className="flex flex-1 items-center justify-center">
                   <div className="text-center">
@@ -244,12 +253,14 @@ export function RankingModal({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col p-5 gap-4">
+                <div className="flex flex-col p-5 gap-5">
 
-                  {/* Avatar + name + level */}
-                  <div className="flex items-end gap-4">
-                    <div className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl"
-                      style={{ width: 100, height: 150 }}>
+                  {/* ── Avatar + name + badges ── */}
+                  <div className="flex items-end gap-5">
+                    {/* Portrait avatar — same aspect ratio as skin picker (2:3) */}
+                    <div
+                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl"
+                      style={{ width: 130, height: 195 }}>
                       <img
                         src={ALL_SKINS[
                           selectedPlayer.user_id === profile?.id
@@ -263,87 +274,44 @@ export function RankingModal({
                         style={{ imageRendering: "pixelated" }}
                       />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[22px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
+
+                    <div className="flex-1 min-w-0 pb-1">
+                      <p className="text-[24px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
                       <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1 text-sm font-black text-[#f2ca69]">
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[15px] font-black text-[#f2ca69]">
                           ⭐ Poziom {selectedPlayer.level}
                         </span>
-                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1 text-sm font-bold text-[#a8e890]">
+                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[15px] font-bold text-[#a8e890]">
                           ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
                         </span>
                       </div>
-                      {/* Wiadomość */}
                       {selectedPlayer.user_id !== profile?.id && (
                         <button
                           onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
-                          className="mt-2 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
+                          className="mt-3 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
                           ✉️ Wyślij wiadomość
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Tabs */}
-                  <div className="flex gap-1 border-b border-[#8b6a3e]/30 pb-0">
-                    {([["stats", "📊 Statystyki"], ["equip", "⚔️ Ekwipunek"]] as const).map(([tab, label]) => (
-                      <button key={tab} onClick={() => setDetailTab(tab)}
-                        className={`px-4 py-2 text-sm font-bold rounded-t-xl transition ${detailTab === tab ? "bg-[#d4a64f]/20 border border-[#d4a64f]/50 border-b-transparent text-[#f9e7b2]" : "text-[#8b6a3e] hover:text-[#f1dfb5]"}`}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Tab: Statystyki */}
-                  {detailTab === "stats" && (
+                  {/* ── Ekwipunek (na górze, bez zakładki) ── */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#8b6a3e] mb-2">⚔️ Ekwipunek</p>
                     <div className="flex flex-col gap-2">
-                      <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-2 grid grid-cols-2 gap-x-4 gap-y-3">
-                        {STATS_DEFS.map(s => {
-                          const val = (playerDetail?.player_stats?.[s.key] ?? 0);
-                          return (
-                            <div key={s.key} className="flex items-center gap-2">
-                              <img src={s.img} alt={s.label}
-                                className="w-7 h-7 shrink-0 rounded-lg border border-[#8b6a3e]/40 object-cover"
-                                style={{ imageRendering: "pixelated" }}
-                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-                              <div className="min-w-0">
-                                <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
-                                <p className="text-[16px] font-black text-[#f9e7b2] leading-tight">{val}</p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* Dodatkowe info */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
-                          <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">😊 Klienci</p>
-                          <p className="text-[18px] font-black text-emerald-400">{(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}</p>
-                        </div>
-                        <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
-                          <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">💰 Pieniądze</p>
-                          <p className="text-[16px] font-black text-[#a8e890]">
-                            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(selectedPlayer.money)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tab: Ekwipunek */}
-                  {detailTab === "equip" && (
-                    <div className="flex flex-col gap-3">
                       {SLOT_ORDER.map(slot => {
                         const slotMeta = EQUIP_SLOT_META[slot];
                         const equipped = (playerDetail?.char_equipped as CharEquipped | null | undefined)?.[slot];
                         const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
-                        const upg = equipped ? ((playerDetail?.item_upg_registry as Record<string, number> | null | undefined)?.[equipped.id] ?? equipped.upg ?? 0) : 0;
+                        const upg = equipped
+                          ? ((playerDetail?.item_upg_registry as Record<string, number> | null | undefined)?.[equipped.id] ?? equipped.upg ?? 0)
+                          : 0;
                         const upgColor = UPG_COLOR[upg] ?? "#9CA3AF";
 
                         return (
                           <div key={slot}
-                            className={`rounded-2xl border p-3 transition ${itemDef ? "border-[#8b6a3e]/50 bg-[rgba(38,24,14,0.60)]" : "border-[#8b6a3e]/20 bg-black/10 opacity-60"}`}>
+                            className={`rounded-2xl border p-3 transition ${itemDef ? "border-[#8b6a3e]/50 bg-[rgba(38,24,14,0.60)]" : "border-[#8b6a3e]/20 bg-black/10 opacity-50"}`}>
                             <div className="flex items-start gap-3">
                               {/* Slot icon / item image */}
                               <div className="relative shrink-0 w-14 h-14 rounded-xl border border-[#8b6a3e]/50 bg-black/30 overflow-hidden flex items-center justify-center">
@@ -360,7 +328,6 @@ export function RankingModal({
                                 <span className={`text-2xl ${itemDef?.img ? "hidden" : "flex"} items-center justify-center`}>
                                   {itemDef?.icon ?? slotMeta.icon}
                                 </span>
-                                {/* Upgrade badge */}
                                 {upg > 0 && (
                                   <div className="absolute bottom-0 right-0 rounded-tl-lg px-1 py-0.5 text-[10px] font-black"
                                     style={{ background: "rgba(0,0,0,0.85)", color: upgColor, border: `1px solid ${upgColor}40` }}>
@@ -373,7 +340,7 @@ export function RankingModal({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-[13px] font-black text-[#f9e7b2] leading-tight">
-                                    {itemDef?.name ?? <span className="text-[#8b6a3e]">{slotMeta.label} — brak</span>}
+                                    {itemDef ? itemDef.name : <span className="text-[#8b6a3e]">{slotMeta.label} — brak</span>}
                                   </p>
                                   {upg > 0 && (
                                     <span className="text-[11px] font-black px-1.5 py-0.5 rounded-md"
@@ -383,7 +350,6 @@ export function RankingModal({
                                   )}
                                 </div>
                                 <p className="text-[11px] text-[#8b6a3e] mt-0.5">{slotMeta.label} · Wymagany lvl {itemDef?.unlockLevel ?? "—"}</p>
-                                {/* Bonusy */}
                                 {itemDef && (
                                   <div className="mt-1 flex flex-wrap gap-1">
                                     {itemDef.bonuses.map((b, bi) => {
@@ -396,9 +362,8 @@ export function RankingModal({
                                     })}
                                   </div>
                                 )}
-                                {/* Opis */}
                                 {itemDef?.desc && (
-                                  <p className="mt-1.5 text-[11px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
+                                  <p className="mt-1 text-[11px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
                                 )}
                               </div>
                             </div>
@@ -406,10 +371,44 @@ export function RankingModal({
                         );
                       })}
                       {!playerDetail?.char_equipped && !detailLoading && (
-                        <p className="text-center text-sm text-[#8b6a3e] py-4">Brak danych o ekwipunku</p>
+                        <p className="text-center text-sm text-[#8b6a3e] py-2">Brak danych o ekwipunku</p>
                       )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* ── Statystyki (pod ekwipunkiem) ── */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#8b6a3e] mb-2">📊 Statystyki</p>
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-5">
+                      {STATS_DEFS.map(s => {
+                        const val = (playerDetail?.player_stats?.[s.key] ?? 0);
+                        return (
+                          <div key={s.key} className="flex flex-col gap-0.5">
+                            <p className="text-[13px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">
+                              {s.icon} {s.label}
+                            </p>
+                            <p className="text-[32px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Klienci + Pieniądze */}
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
+                        <p className="text-[12px] text-[#8b6a3e] font-bold uppercase tracking-wide">😊 Klienci</p>
+                        <p className="text-[28px] font-black text-emerald-400 tabular-nums">
+                          {(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
+                        <p className="text-[12px] text-[#8b6a3e] font-bold uppercase tracking-wide">💰 Pieniądze</p>
+                        <p className="text-[22px] font-black text-[#a8e890] tabular-nums">
+                          {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(selectedPlayer.money)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Close hint */}
                   <button onClick={() => { setSelectedPlayer(null); setPlayerDetail(null); }}
