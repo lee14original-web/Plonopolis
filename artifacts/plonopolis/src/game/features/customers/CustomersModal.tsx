@@ -88,7 +88,10 @@ import { isCompostKey, compostTypeFromKey, compostValueFromKey } from "../../uti
     if (type === 'market_chain')          return { name: 'Kupcy miejscy',           icon: '🏛️' };
     if (type === 'distribution_center')   return { name: 'Centrum skupu',           icon: '🏗️' };
     if (type === 'international_contract')return { name: 'Kontrakt międzynarodowy', icon: '🌍' };
-    return { name: type, icon: '👤' };
+    // Aliasy dla starszych typów (game_give_starter_customers)
+    if (type === 'Gość' || type === 'gosc' || type === 'guest') return { name: 'Sąsiad', icon: '🧑‍🌾' };
+    if (type === 'Sąsiad')                return { name: 'Sąsiad',                  icon: '🧑‍🌾' };
+    return { name: 'Gość', icon: '🧑‍🌾' };
   }
 
 interface Props {
