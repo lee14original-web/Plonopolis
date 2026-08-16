@@ -302,22 +302,34 @@ export default function Page() {
   const dragPlantedFieldsRef = React.useRef<Set<number>>(new Set());
   const dragEndedRef = React.useRef(false);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [isMobileLayout, setIsMobileLayout] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   // TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych
   const [rotateNoticeDismissed, setRotateNoticeDismissed] = useState(false);
   const [showRotateNotice, setShowRotateNotice] = useState(false);
   // Inteligentny domyślny zoom: na małych ekranach automatycznie większy,
   // żeby gra zajmowała ~90% ekranu niezależnie od rozdzielczości.
+  // Na mobile (< 768px) zakres zooma rozszerzony do 3.0×.
+  const ZOOM_MAX_DESKTOP = 1.60;
+  const ZOOM_MAX_MOBILE  = 3.00;
+  const ZOOM_MIN         = 0.70;
+  function getZoomMax(): number {
+    if (typeof window === "undefined") return ZOOM_MAX_DESKTOP;
+    return window.innerWidth < 768 ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
+  }
   function computeSmartDefaultZoom(): number {
     if (typeof window === "undefined") return 1;
+    const mobile = window.innerWidth < 768;
     const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    return Math.min(1.60, Math.max(0.70, 0.90 / raw));
+    // Na mobile celujemy w 100% wypełnienia (zoom = 1/raw), na desktop 90%
+    const target = mobile ? 1.00 : 0.90;
+    return Math.min(getZoomMax(), Math.max(ZOOM_MIN, target / raw));
   }
   const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
     const stored = localStorage.getItem("plonopolis_zoom");
     if (stored === null) return computeSmartDefaultZoom();
     const v = parseFloat(stored);
-    return isNaN(v) ? computeSmartDefaultZoom() : Math.max(0.70, Math.min(1.60, v));
+    return isNaN(v) ? computeSmartDefaultZoom() : Math.max(ZOOM_MIN, Math.min(getZoomMax(), v));
   });
   const userZoomFactorRef = React.useRef(userZoomFactor);
   const [gameScale, setGameScale] = useState(() => {
@@ -325,9 +337,9 @@ export default function Page() {
     const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     const stored = localStorage.getItem("plonopolis_zoom");
     const zoom = stored === null
-      ? Math.min(1.60, Math.max(0.70, 0.90 / raw))
-      : Math.max(0.70, Math.min(1.60, parseFloat(stored) || 1));
-    return Math.max(0.40, Math.min(1.60, raw * zoom));
+      ? computeSmartDefaultZoom()
+      : Math.max(ZOOM_MIN, Math.min(getZoomMax(), parseFloat(stored) || 1));
+    return Math.max(0.20, raw * zoom);
   });
   const gameScaleRef = React.useRef(gameScale);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
@@ -2696,8 +2708,11 @@ export default function Page() {
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
   useEffect(() => { userZoomFactorRef.current = userZoomFactor; }, [userZoomFactor]);
   useEffect(() => {
+    const mobile = window.innerWidth < 768;
     const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    const s = Math.max(0.40, Math.min(1.60, raw * userZoomFactor));
+    const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
+    const clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactor));
+    const s = Math.max(0.20, raw * clamped);
     setGameScale(s);
     gameScaleRef.current = s;
   }, [userZoomFactor]);
@@ -2726,10 +2741,13 @@ export default function Page() {
 
   useEffect(() => {
     const checkScreen = () => {
-      const isSmall = window.innerWidth < 1024;
-      setIsDesktop(!isSmall);
+      const mobile = window.innerWidth < 768;
+      setIsMobileLayout(mobile);
+      setIsDesktop(window.innerWidth >= 1024);
       const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-      const s = Math.max(0.40, Math.min(1.60, raw * userZoomFactorRef.current));
+      const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
+      const clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactorRef.current));
+      const s = Math.max(0.20, raw * clamped);
       setGameScale(s);
       gameScaleRef.current = s;
     };
@@ -6263,7 +6281,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#000" }}>
+    <div style={{ position: "fixed", inset: 0, overflow: isMobileLayout ? "auto" : "hidden", background: "#000" }}>
       <style>{`
         @keyframes plono-map-fade-out {
           0%   { opacity: 1; }
@@ -6289,7 +6307,9 @@ export default function Page() {
       )}
         <main
           className="overflow-hidden"
-          style={{ width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2, zIndex: 1 }}
+          style={isMobileLayout
+            ? { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, zIndex: 1 }
+            : { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2, zIndex: 1 }}
           onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); setMouseScreenPos({ x: e.clientX, y: e.clientY }); }}
         >
         <div
@@ -11962,6 +11982,7 @@ export default function Page() {
               onOpenLogout={() => { setShowSettingsModal(false); setShowLogoutConfirm(true); }}
               userZoomFactor={userZoomFactor}
               setUserZoomFactor={setUserZoomFactor}
+              isMobileLayout={isMobileLayout}
             />
           )}
 
