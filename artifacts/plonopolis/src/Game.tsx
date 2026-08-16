@@ -305,17 +305,28 @@ export default function Page() {
   // TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych
   const [rotateNoticeDismissed, setRotateNoticeDismissed] = useState(false);
   const [showRotateNotice, setShowRotateNotice] = useState(false);
+  // Inteligentny domyślny zoom: na małych ekranach automatycznie większy,
+  // żeby gra zajmowała ~90% ekranu niezależnie od rozdzielczości.
+  function computeSmartDefaultZoom(): number {
+    if (typeof window === "undefined") return 1;
+    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    return Math.min(1.60, Math.max(0.70, 0.90 / raw));
+  }
   const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
-    const v = parseFloat(localStorage.getItem("plonopolis_zoom") ?? "1");
-    return isNaN(v) ? 1 : Math.max(0.80, Math.min(1.30, v));
+    const stored = localStorage.getItem("plonopolis_zoom");
+    if (stored === null) return computeSmartDefaultZoom();
+    const v = parseFloat(stored);
+    return isNaN(v) ? computeSmartDefaultZoom() : Math.max(0.70, Math.min(1.60, v));
   });
   const userZoomFactorRef = React.useRef(userZoomFactor);
   const [gameScale, setGameScale] = useState(() => {
     if (typeof window === "undefined") return 1;
     const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    const v = parseFloat(localStorage.getItem("plonopolis_zoom") ?? "1");
-    const zoom = isNaN(v) ? 1 : Math.max(0.80, Math.min(1.30, v));
+    const stored = localStorage.getItem("plonopolis_zoom");
+    const zoom = stored === null
+      ? Math.min(1.60, Math.max(0.70, 0.90 / raw))
+      : Math.max(0.70, Math.min(1.60, parseFloat(stored) || 1));
     return Math.max(0.40, Math.min(1.60, raw * zoom));
   });
   const gameScaleRef = React.useRef(gameScale);

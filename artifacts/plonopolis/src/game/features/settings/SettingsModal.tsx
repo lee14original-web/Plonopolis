@@ -92,26 +92,29 @@ export function SettingsModal({ gameSettings, saveGameSettings, onClose, onOpenL
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setUserZoomFactor(prev => Math.max(0.80, Math.round((prev - 0.05) * 100) / 100))}
-              disabled={userZoomFactor <= 0.80}
+              onClick={() => setUserZoomFactor(prev => Math.max(0.70, Math.round((prev - 0.05) * 100) / 100))}
+              disabled={userZoomFactor <= 0.70}
               className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
             >−</button>
             <span className="flex-1 text-center text-lg font-black tabular-nums text-[#f9e7b2]">{Math.round(userZoomFactor * 100)}%</span>
             <button
               type="button"
-              onClick={() => setUserZoomFactor(prev => Math.min(1.30, Math.round((prev + 0.05) * 100) / 100))}
-              disabled={userZoomFactor >= 1.30}
+              onClick={() => setUserZoomFactor(prev => Math.min(1.60, Math.round((prev + 0.05) * 100) / 100))}
+              disabled={userZoomFactor >= 1.60}
               className="h-9 w-9 shrink-0 rounded-lg border border-[#8b6a3e]/40 bg-black/20 text-xl font-black text-[#dfcfab] transition hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
             >+</button>
           </div>
-          <p className="mt-2 text-xs text-[#8b6a3e]">Zmienia rozmiar świata gry. Panel i okna dialogowe zostają bez zmian.</p>
-          {userZoomFactor !== 1.00 && (
-            <button
-              type="button"
-              onClick={() => setUserZoomFactor(1.00)}
-              className="mt-2 w-full rounded-lg border border-[#8b6a3e]/30 bg-black/10 py-1.5 text-xs font-bold text-[#8b6a3e] transition hover:text-[#dfcfab] hover:border-[#8b6a3e]/60"
-            >Domyślny (100%)</button>
-          )}
+          <p className="mt-2 text-xs text-[#8b6a3e]">Zmienia rozmiar gry (70–160%). Na laptopach warto ustawić wyższy poziom.</p>
+          <button
+            type="button"
+            onClick={() => {
+              const raw = typeof window !== "undefined"
+                ? Math.min(window.innerWidth / 1920, window.innerHeight / 1280)
+                : 1;
+              setUserZoomFactor(Math.min(1.60, Math.max(0.70, 0.90 / raw)));
+            }}
+            className="mt-2 w-full rounded-lg border border-[#8b6a3e]/30 bg-black/10 py-1.5 text-xs font-bold text-[#8b6a3e] transition hover:text-[#dfcfab] hover:border-[#8b6a3e]/60"
+          >Dopasuj do ekranu</button>
         </div>
 
         {/* ─── Inne ─── */}
