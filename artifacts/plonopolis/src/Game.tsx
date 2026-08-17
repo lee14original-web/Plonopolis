@@ -3180,8 +3180,16 @@ export default function Page() {
   // ─── Zapamiętaj ostatnią mapę farmy + aktualną mapę (ref zawsze świeży) ──
   React.useEffect(() => {
     currentMapRef.current = currentMap;
-    if (currentMap.startsWith("farm")) lastFarmMapRef.current = currentMap;
-  }, [currentMap]);
+    if (currentMap.startsWith("farm")) {
+      lastFarmMapRef.current = currentMap;
+    } else if (profile && lastFarmMapRef.current === "farm1") {
+      // Jeśli jesteśmy w mieście a lastFarmMapRef to domyślne "farm1",
+      // ustaw na mapę odpowiednią dla poziomu gracza — zapobiega cofaniu
+      // do farm1 po kliknięciu "Do farmy" po starcie w mieście.
+      lastFarmMapRef.current = getMapForLevel(profile.level);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMap, profile?.id]);
 
   // ─── Crossfade mapy po level-upie farmy ──────────────────────────────────
   React.useEffect(() => {
