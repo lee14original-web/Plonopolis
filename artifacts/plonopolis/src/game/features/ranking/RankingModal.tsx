@@ -265,7 +265,7 @@ export function RankingModal({
 
           {/* Table */}
           <div ref={rankingScrollRef}
-            className={`overflow-y-auto px-6 py-4 transition-all duration-300 ${showPanel ? "w-[55%] border-r border-[#8b6a3e]/30" : "w-full"}`}>
+            className={`overflow-y-auto px-6 py-4 transition-all duration-300 ${comparing ? "hidden" : showPanel ? "w-[55%] border-r border-[#8b6a3e]/30" : "w-full"}`}>
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
