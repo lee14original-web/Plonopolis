@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import type { RankingPlayer, Profile } from "../../types/profile";
 import { ALL_SKINS } from "../../constants/avatars";
@@ -160,26 +160,53 @@ export function RankingModal({
   avatarSkin,
   openComposeTo,
 }: RankingModalProps) {
+  // null = showing own profile; non-null = showing another player
   const [selectedPlayer, setSelectedPlayer] = useState<RankingPlayer | null>(null);
   const [playerDetail, setPlayerDetail] = useState<PlayerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [comparing, setComparing] = useState(false);
+  const didInitialScroll = useRef(false);
 
-  const handleSelectPlayer = useCallback(async (p: RankingPlayer) => {
-    if (selectedPlayer?.user_id === p.user_id) {
-      setSelectedPlayer(null);
-      setPlayerDetail(null);
-      setComparing(false);
-      return;
-    }
-    setComparing(false);
-    setSelectedPlayer(p);
-    setPlayerDetail(null);
+  const isViewingOther = selectedPlayer !== null && selectedPlayer.user_id !== profile?.id;
+
+  const sorted = [...rankingData].sort((a, b) => {
+    if (rankingSort === "level") return (b.ranking_score ?? 0) - (a.ranking_score ?? 0);
+    if (rankingSort === "money") return b.money - a.money;
+    if (rankingSort === "customers") return (b.customer_orders_completed ?? 0) - (a.customer_orders_completed ?? 0);
+    return (b.farm_power ?? 0) - (a.farm_power ?? 0);
+  }).filter(p =>
+    rankingSearch.trim() === "" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())
+  );
+
+  // Auto-scroll to logged-in player on first data load — show ±5 rows around them
+  useEffect(() => {
+    if (rankingLoading || didInitialScroll.current || sorted.length === 0) return;
+    const myIndex = sorted.findIndex(p => p.user_id === profile?.id);
+    if (myIndex === -1) return;
+    didInitialScroll.current = true;
+
+    // Small delay to let DOM render
+    setTimeout(() => {
+      const el = document.getElementById("ranking-me-row");
+      const container = rankingScrollRef.current;
+      if (!el || !container) return;
+      // Scroll so that the player row is roughly in the upper-third of the visible area
+      // (showing ~5 rows above + their row = top context)
+      let elTop = 0;
+      let node: HTMLElement | null = el as HTMLElement;
+      while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
+      const rowH = el.offsetHeight;
+      const visibleRows = 5; // how many rows above to show
+      container.scrollTop = Math.max(0, elTop - rowH * visibleRows);
+    }, 120);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rankingLoading, sorted.length, profile?.id]);
+
+  const loadPlayerDetail = useCallback(async (p: RankingPlayer) => {
     setDetailLoading(true);
+    setPlayerDetail(null);
     try {
-      const { data, error } = await supabase.rpc("get_public_player_profile", {
-        p_user_id: p.user_id,
-      });
+      const { data, error } = await supabase.rpc("get_public_player_profile", { p_user_id: p.user_id });
       if (error) throw error;
       setPlayerDetail(data as PlayerDetail | null);
     } catch {
@@ -196,18 +223,35 @@ export function RankingModal({
     } finally {
       setDetailLoading(false);
     }
-  }, [selectedPlayer?.user_id]);
+  }, []);
 
-  const sorted = [...rankingData].sort((a, b) => {
-    if (rankingSort === "level") return (b.ranking_score ?? 0) - (a.ranking_score ?? 0);
-    if (rankingSort === "money") return b.money - a.money;
-    if (rankingSort === "customers") return (b.customer_orders_completed ?? 0) - (a.customer_orders_completed ?? 0);
-    return (b.farm_power ?? 0) - (a.farm_power ?? 0);
-  }).filter(p =>
-    rankingSearch.trim() === "" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())
-  );
+  const handleSelectPlayer = useCallback((p: RankingPlayer) => {
+    setComparing(false);
+    if (p.user_id === profile?.id) {
+      // Clicking own row → back to own profile
+      setSelectedPlayer(null);
+      setPlayerDetail(null);
+      return;
+    }
+    if (selectedPlayer?.user_id === p.user_id) {
+      // Clicking already-selected other player → back to own profile
+      setSelectedPlayer(null);
+      setPlayerDetail(null);
+      return;
+    }
+    setSelectedPlayer(p);
+    void loadPlayerDetail(p);
+  }, [selectedPlayer?.user_id, profile?.id, loadPlayerDetail]);
 
-  const showPanel = selectedPlayer !== null;
+  const goBackToMe = () => {
+    setSelectedPlayer(null);
+    setPlayerDetail(null);
+    setComparing(false);
+  };
+
+  // The "displayed" player — what appears in the panel
+  const displayedRow = isViewingOther ? selectedPlayer : (rankingData.find(r => r.user_id === profile?.id) ?? null);
+  const isOwnPanel = !isViewingOther;
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(22,13,8,0.99)]">
@@ -260,12 +304,12 @@ export function RankingModal({
           </div>
         </div>
 
-        {/* ── Main area: table + optional player panel ── */}
+        {/* ── Main area: table (left, fixed ~55%) + player panel (right, fixed ~45%) ── */}
         <div className="flex flex-1 min-h-0">
 
-          {/* Table */}
+          {/* ── Ranking table — always visible, always narrow ── */}
           <div ref={rankingScrollRef}
-            className={`overflow-y-auto px-6 py-4 transition-all duration-300 ${comparing ? "hidden" : showPanel ? "w-[55%] border-r border-[#8b6a3e]/30" : "w-full"}`}>
+            className={`overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 ${comparing ? "hidden" : "w-[55%]"}`}>
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -276,72 +320,54 @@ export function RankingModal({
             ) : (
               <table className="w-full border-collapse table-fixed">
                 <colgroup>
-                  <col style={{ width: "52px" }} />
+                  <col style={{ width: "44px" }} />
                   <col />
-                  {!showPanel && <col style={{ width: "14%" }} />}
-                  <col style={{ width: "90px" }} />
-                  {!showPanel && <col style={{ width: "90px" }} />}
-                  {!showPanel && <col style={{ width: "16%" }} />}
-                  <col style={{ width: "100px" }} />
+                  <col style={{ width: "80px" }} />
+                  <col style={{ width: "92px" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b-2 border-[#8b6a3e]/50 text-left text-[11px] uppercase tracking-widest text-[#a08060]">
                     <th className="pb-3 pt-2 pr-2">#</th>
                     <th className="pb-3 pt-2 pr-3">Gracz</th>
-                    {!showPanel && <th className="pb-3 pt-2 pr-3">Gildia</th>}
                     <th className="pb-3 pt-2 pr-2 text-right">Poziom</th>
-                    {!showPanel && <th className="pb-3 pt-2 pr-2 text-right">😊 Klienci</th>}
-                    {!showPanel && <th className="pb-3 pt-2 pr-2 text-right">Pieniądze</th>}
                     <th className="pb-3 pt-2 text-right">Moc farmy</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sorted.map((p, i) => {
                     const isMe = p.user_id === profile?.id;
-                    const isSelected = p.user_id === selectedPlayer?.user_id;
+                    const isSelected = isViewingOther && p.user_id === selectedPlayer?.user_id;
                     const highlighted = rankingHighlightMe && isMe;
                     return (
                       <tr key={p.user_id} id={isMe ? "ranking-me-row" : undefined}
-                        onClick={() => void handleSelectPlayer(p)}
+                        onClick={() => handleSelectPlayer(p)}
                         className={`border-b border-[#8b6a3e]/20 cursor-pointer transition-colors duration-100
                           ${isSelected ? "bg-[#d4a64f]/20 outline outline-2 outline-[#d4a64f]/70"
+                            : isMe && !isViewingOther ? "bg-yellow-500/10 outline outline-1 outline-yellow-400/30"
                             : highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60"
                             : "hover:bg-white/5"}`}>
-                        <td className="py-3 pr-2 font-black text-[#d8ba7a] text-base w-[52px]">
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="text-[15px]">{i + 1}</span>}
+                        <td className="py-3 pr-2 font-black text-[#d8ba7a] text-base">
+                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="text-[14px]">{i + 1}</span>}
                         </td>
                         <td className="py-3 pr-3">
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
                             <img
                               src={ALL_SKINS[isMe ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
                               alt={p.player_name}
-                              className="h-12 w-12 shrink-0 rounded-full object-cover object-top border-2 border-[#8b6a3e]/60"
+                              className="h-10 w-10 shrink-0 rounded-full object-cover object-top border-2 border-[#8b6a3e]/60"
                               style={{ imageRendering: "pixelated" }}
                             />
                             <div className="min-w-0">
-                              <span className={`text-[15px] font-bold truncate block ${isSelected ? "text-[#f9e7b2]" : highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>
+                              <span className={`text-[14px] font-bold truncate block ${isSelected ? "text-[#f9e7b2]" : isMe ? "text-yellow-200" : highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>
                                 {p.player_name}
                               </span>
-                              {showPanel && <span className="text-xs text-[#a08060] truncate block">{p.guild_name || "Brak gildii"}</span>}
+                              <span className="text-[11px] text-[#a08060] truncate block">{p.guild_name || "Brak gildii"}</span>
                             </div>
                           </div>
                         </td>
-                        {!showPanel && <td className="py-3 pr-3 italic text-[#a08060] truncate text-[14px]">{p.guild_name || "—"}</td>}
-                        <td className="py-3 pr-2 text-right font-black text-[#f2ca69] text-[15px]">⭐ {p.level}</td>
-                        {!showPanel && (
-                          <td className="py-3 pr-2 text-right">
-                            <span className={`font-bold tabular-nums text-[15px] ${(p.customer_orders_completed ?? 0) > 0 ? "text-emerald-400" : "text-[#8b6a3e]"}`}>
-                              {(p.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
-                            </span>
-                          </td>
-                        )}
-                        {!showPanel && (
-                          <td className="py-3 pr-2 text-right text-[#a8e890] tabular-nums text-[14px]">
-                            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(p.money)}
-                          </td>
-                        )}
+                        <td className="py-3 pr-2 text-right font-black text-[#f2ca69] text-[14px]">⭐ {p.level}</td>
                         <td className="py-3 text-right tabular-nums">
-                          <span className={`font-black text-[16px] ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
+                          <span className={`font-black text-[14px] ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
                             {(p.farm_power ?? 0).toLocaleString("pl-PL")}
                           </span>
                         </td>
@@ -353,9 +379,9 @@ export function RankingModal({
             )}
           </div>
 
-          {/* ── Player Profile Panel ── */}
-          {showPanel && !comparing && (
-            <div className="w-[45%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)]">
+          {/* ── Player Profile Panel — always visible ── */}
+          {!comparing && (
+            <div className="w-[45%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)] border-l border-[#8b6a3e]/20">
               {detailLoading ? (
                 <div className="flex flex-1 items-center justify-center">
                   <div className="text-center">
@@ -363,52 +389,77 @@ export function RankingModal({
                     <p className="text-sm text-[#8b6a3e]">Ładowanie profilu...</p>
                   </div>
                 </div>
+              ) : rankingLoading && !displayedRow ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-3xl animate-spin mb-2">⚙️</div>
+                    <p className="text-sm text-[#8b6a3e]">Ładowanie...</p>
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col p-5 gap-5">
+                <div className="flex flex-col p-5 gap-4">
+
+                  {/* Header — own profile or selected player, with back button */}
+                  <div className="flex items-center justify-between gap-2 shrink-0">
+                    <p className="text-[11px] uppercase tracking-widest font-bold text-[#8b6a3e]">
+                      {isOwnPanel ? "👤 Twój profil" : "👤 Profil gracza"}
+                    </p>
+                    {isViewingOther && (
+                      <button onClick={goBackToMe}
+                        className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
+                        ← Twój profil
+                      </button>
+                    )}
+                  </div>
 
                   {/* ── Avatar + info ── */}
                   <div className="flex items-center gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[22px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
-                      <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
+                      <p className="text-[20px] font-black text-[#f9e7b2] leading-tight truncate">
+                        {isOwnPanel ? (displayedRow?.player_name ?? profile?.login ?? "Ty") : selectedPlayer!.player_name}
+                      </p>
+                      <p className="text-sm text-[#8b6a3e] mt-0.5">
+                        {isOwnPanel ? (displayedRow?.guild_name || "Brak gildii") : (selectedPlayer!.guild_name || "Brak gildii")}
+                      </p>
                       <div className="mt-2 flex flex-col gap-1.5">
-                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[14px] font-black text-[#f2ca69] w-fit">
-                          ⭐ Poziom {selectedPlayer.level}
+                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[13px] font-black text-[#f2ca69] w-fit">
+                          ⭐ Poziom {isOwnPanel ? (displayedRow?.level ?? profile?.level ?? "?") : selectedPlayer!.level}
                         </span>
-                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[14px] font-bold text-[#a8e890] w-fit">
-                          ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
+                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[13px] font-bold text-[#a8e890] w-fit">
+                          ⚡ {((isOwnPanel ? displayedRow?.farm_power : selectedPlayer?.farm_power) ?? 0).toLocaleString("pl-PL")} mocy
                         </span>
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedPlayer.user_id !== profile?.id && (
+                        {isViewingOther && (
+                          <div className="flex gap-2 flex-wrap">
                             <button
-                              onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
-                              className="mt-1 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
+                              onClick={() => openComposeTo(selectedPlayer!.user_id, selectedPlayer!.player_name)}
+                              className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
                               ✉️ Wyślij wiadomość
                             </button>
-                          )}
-                          {selectedPlayer.user_id !== profile?.id && (
                             <button
                               onClick={() => setComparing(true)}
-                              className="mt-1 rounded-xl border border-[#d4a64f]/60 bg-[rgba(212,166,79,0.12)] px-3 py-1.5 text-xs font-bold text-[#f2ca69] transition hover:border-[#d4a64f] hover:bg-[rgba(212,166,79,0.22)]">
+                              className="rounded-xl border border-[#d4a64f]/60 bg-[rgba(212,166,79,0.12)] px-3 py-1.5 text-xs font-bold text-[#f2ca69] transition hover:border-[#d4a64f] hover:bg-[rgba(212,166,79,0.22)]">
                               ⚔️ Porównaj
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     <div
-                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl self-center"
-                      style={{ width: 120, height: 180 }}>
+                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 shadow-xl self-center"
+                      style={{
+                        width: 100, height: 150,
+                        borderColor: isOwnPanel ? "rgba(250,204,21,0.5)" : "rgba(139,106,62,0.8)",
+                      }}>
                       <img
                         src={ALL_SKINS[
-                          selectedPlayer.user_id === profile?.id
+                          isOwnPanel
                             ? (avatarSkin >= 0 ? avatarSkin : 0)
-                            : ((playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0
-                              ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0)
+                            : ((playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? -1) >= 0
+                              ? (playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? 0)
                               : 0)
                         ] ?? ALL_SKINS[0]}
-                        alt={selectedPlayer.player_name}
+                        alt={isOwnPanel ? "Ty" : (selectedPlayer?.player_name ?? "")}
                         className="w-full h-full object-cover object-top"
                         style={{ imageRendering: "pixelated" }}
                       />
@@ -416,16 +467,31 @@ export function RankingModal({
                   </div>
 
                   {/* ── Ekwipunek ── */}
-                  <EquipSlots charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined} itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined} slot_order={SLOT_ORDER} slot_label={SLOT_LABEL} />
+                  <EquipSlots
+                    charEquipped={
+                      isOwnPanel
+                        ? (profile?.char_equipped as CharEquipped | null | undefined)
+                        : (playerDetail?.char_equipped as CharEquipped | null | undefined)
+                    }
+                    itemUpgRegistry={
+                      isOwnPanel
+                        ? (profile?.item_upg_registry as Record<string,number> | null | undefined)
+                        : (playerDetail?.item_upg_registry as Record<string,number> | null | undefined)
+                    }
+                    slot_order={SLOT_ORDER}
+                    slot_label={SLOT_LABEL}
+                  />
 
                   {/* ── Statystyki ── */}
-                  <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-4">
+                  <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-3">
                     {STATS_DEFS.map(s => {
-                      const val = (playerDetail?.player_stats?.[s.key] ?? 0);
+                      const val = isOwnPanel
+                        ? ((profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0)
+                        : (playerDetail?.player_stats?.[s.key] ?? 0);
                       return (
                         <div key={s.key} className="flex flex-col gap-0">
-                          <p className="text-[12px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
-                          <p className="text-[30px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+                          <p className="text-[26px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
                         </div>
                       );
                     })}
@@ -435,29 +501,27 @@ export function RankingModal({
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
                       <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
-                      <p className="text-[28px] font-black text-emerald-400 tabular-nums">
-                        {(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
+                      <p className="text-[24px] font-black text-emerald-400 tabular-nums">
+                        {((isOwnPanel ? displayedRow?.customer_orders_completed : selectedPlayer?.customer_orders_completed) ?? 0).toLocaleString("pl-PL")}
                       </p>
                     </div>
                     <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
                       <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
-                      <p className="text-[20px] font-black text-[#a8e890] tabular-nums">
-                        {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(selectedPlayer.money)}
+                      <p className="text-[18px] font-black text-[#a8e890] tabular-nums">
+                        {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(
+                          isOwnPanel ? (profile?.money ?? 0) : (selectedPlayer?.money ?? 0)
+                        )}
                       </p>
                     </div>
                   </div>
 
-                  <button onClick={() => { setSelectedPlayer(null); setPlayerDetail(null); setComparing(false); }}
-                    className="mt-auto self-center text-xs text-[#8b6a3e] hover:text-[#f1dfb5] transition py-1">
-                    ✕ Zamknij panel
-                  </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* ── Tryb porównania ── */}
-          {showPanel && comparing && (
+          {/* ── Tryb porównania — pełna szerokość ── */}
+          {comparing && selectedPlayer && (
             <div className="flex-1 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.80)]">
               {/* Nagłówek porównania */}
               <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[#8b6a3e]/30">
@@ -474,7 +538,6 @@ export function RankingModal({
                   <div className="text-3xl animate-spin">⚙️</div>
                 </div>
               ) : (
-                /* Scroll poziomy — każda kolumna ma min-w-[420px], czyli tę samą szerokość co normalny panel */
                 <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
                   {/* Lewa kolumna — ja */}
                   {(() => {
@@ -572,13 +635,6 @@ export function RankingModal({
             </div>
           )}
 
-          {/* ── Empty hint when no player selected ── */}
-          {!showPanel && !rankingLoading && (
-            <div className="pointer-events-none absolute right-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col items-center gap-2 opacity-30">
-              <span className="text-4xl">👆</span>
-              <p className="text-sm text-[#8b6a3e] font-bold">Kliknij gracza</p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
