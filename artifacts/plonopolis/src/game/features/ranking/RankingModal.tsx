@@ -370,11 +370,11 @@ export function RankingModal({
           )}
         </div>
 
-        {/* ── Main area: table 50% | profile 50% — compare hides table and goes full-width ── */}
-        <div className="flex flex-1 min-h-0">
+        {/* ── Main area: table 50% + profile 50% always in DOM; compare is absolute overlay ── */}
+        <div className="flex flex-1 min-h-0 relative">
 
-          {/* ── Left: ranking table — hidden during compare ── */}
-          {!comparing && <div ref={rankingScrollRef} className="w-[50%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
+          {/* ── Left: ranking table — always rendered ── */}
+          <div ref={rankingScrollRef} className="w-[50%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -442,10 +442,10 @@ export function RankingModal({
                 </tbody>
               </table>
             )}
-          </div>}
+          </div>
 
-          {/* ── Right panel — w-[50%] normally, flex-1 (full width) during compare ── */}
-          <div className={`${comparing ? "flex-1" : "w-[50%]"} flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]`}>
+          {/* ── Right panel — always w-[50%] ── */}
+          <div className="w-[50%] flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]">
 
             {/* ── Normal profile view ── */}
             {!comparing && (
@@ -580,52 +580,52 @@ export function RankingModal({
               </div>
             )}
 
-            {/* ── Compare view — same w-[45%] container, horizontal scroll for two columns ── */}
-            {comparing && selectedPlayer && (
-              <div className="flex flex-col flex-1 overflow-hidden">
-                {detailLoading ? (
-                  <div className="flex flex-1 items-center justify-center">
-                    <div className="text-3xl animate-spin">⚙️</div>
-                  </div>
-                ) : (
-                  <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-                    <CompareColumn
-                      name={myRow?.player_name ?? profile?.login ?? "Ty"}
-                      guild={myRow?.guild_name ?? ""}
-                      level={profile?.level ?? "?"}
-                      farmPower={myRow?.farm_power ?? 0}
-                      skinIndex={avatarSkin >= 0 ? avatarSkin : 0}
-                      borderColor="rgba(250,204,21,0.5)"
-                      charEquipped={profile?.char_equipped as CharEquipped | null | undefined}
-                      itemUpgRegistry={profile?.item_upg_registry as Record<string,number> | null | undefined}
-                      playerStats={myStats}
-                      customers={myRow?.customer_orders_completed ?? 0}
-                      money={profile?.money ?? 0}
-                      opponentStats={theirStats}
-                      isLeft={true}
-                    />
-                    <CompareColumn
-                      name={selectedPlayer.player_name}
-                      guild={selectedPlayer.guild_name ?? ""}
-                      level={selectedPlayer.level}
-                      farmPower={selectedPlayer.farm_power ?? 0}
-                      skinIndex={(playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0
-                        ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0) : 0}
-                      borderColor="rgba(139,106,62,0.8)"
-                      charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined}
-                      itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined}
-                      playerStats={theirStats}
-                      customers={selectedPlayer.customer_orders_completed ?? 0}
-                      money={selectedPlayer.money}
-                      opponentStats={myStats}
-                      isLeft={false}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+          </div>{/* end right panel */}
 
-          </div>{/* end right panel w-[45%] */}
+          {/* ── Compare overlay — absolute inset-0, no layout shift ── */}
+          {comparing && selectedPlayer && (
+            <div className="absolute inset-0 bg-[rgba(22,13,8,0.99)] flex overflow-hidden z-10">
+              {detailLoading ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="text-3xl animate-spin">⚙️</div>
+                </div>
+              ) : (
+                <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+                  <CompareColumn
+                    name={myRow?.player_name ?? profile?.login ?? "Ty"}
+                    guild={myRow?.guild_name ?? ""}
+                    level={profile?.level ?? "?"}
+                    farmPower={myRow?.farm_power ?? 0}
+                    skinIndex={avatarSkin >= 0 ? avatarSkin : 0}
+                    borderColor="rgba(250,204,21,0.5)"
+                    charEquipped={profile?.char_equipped as CharEquipped | null | undefined}
+                    itemUpgRegistry={profile?.item_upg_registry as Record<string,number> | null | undefined}
+                    playerStats={myStats}
+                    customers={myRow?.customer_orders_completed ?? 0}
+                    money={profile?.money ?? 0}
+                    opponentStats={theirStats}
+                    isLeft={true}
+                  />
+                  <CompareColumn
+                    name={selectedPlayer.player_name}
+                    guild={selectedPlayer.guild_name ?? ""}
+                    level={selectedPlayer.level}
+                    farmPower={selectedPlayer.farm_power ?? 0}
+                    skinIndex={(playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0
+                      ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0) : 0}
+                    borderColor="rgba(139,106,62,0.8)"
+                    charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined}
+                    itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined}
+                    playerStats={theirStats}
+                    customers={selectedPlayer.customer_orders_completed ?? 0}
+                    money={selectedPlayer.money}
+                    opponentStats={myStats}
+                    isLeft={false}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
         </div>{/* end main area */}
 
