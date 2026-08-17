@@ -327,34 +327,47 @@ export function RankingModal({
 
         {/* ── Sort tabs + search ── */}
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#8b6a3e]/30 px-6 py-3">
-          {([["farmpower","Moc farmy"],["level","Poziom"],["money","Pieniądze"],["customers","😊 Klienci"]] as [RankingSort, string][]).map(([s, label]) => (
-            <button key={s} onClick={() => setRankingSort(s)}
-              className={rankingSort === s ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
-              {label}
-            </button>
-          ))}
-          <div className="ml-auto flex items-center gap-2">
-            <input type="text" value={rankingSearch} onChange={e => setRankingSearch(e.target.value)}
-              placeholder="🔍 Szukaj nicku..."
-              className="rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d4a64f]/80 w-44" />
-            <button onClick={() => {
-              setRankingHighlightMe(v => {
-                const next = !v;
-                if (next) setTimeout(() => {
-                  const el = document.getElementById("ranking-me-row");
-                  const container = rankingScrollRef.current;
-                  if (!el || !container) return;
-                  let elTop = 0;
-                  let node: HTMLElement | null = el as HTMLElement;
-                  while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
-                  container.scrollTop = elTop - container.clientHeight / 2 + el.offsetHeight / 2;
-                }, 120);
-                return next;
-              });
-            }} className={`rounded-xl px-4 py-2 text-sm font-bold transition border ${rankingHighlightMe ? "border-yellow-400 bg-yellow-500/20 text-yellow-300" : "border-[#8b6a3e]/50 bg-black/20 text-[#f1dfb5] hover:bg-white/5"}`}>
-              🎯 Znajdź mnie
-            </button>
-          </div>
+          {comparing ? (
+            /* Compare mode: show label on left, Wróć on right — same height as normal bar */
+            <>
+              <span className="text-[#f2ca69] font-black text-sm">⚔️ Porównanie</span>
+              <button onClick={() => setComparing(false)}
+                className="ml-auto rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-2 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
+                ← Wróć
+              </button>
+            </>
+          ) : (
+            <>
+              {([["farmpower","Moc farmy"],["level","Poziom"],["money","Pieniądze"],["customers","😊 Klienci"]] as [RankingSort, string][]).map(([s, label]) => (
+                <button key={s} onClick={() => setRankingSort(s)}
+                  className={rankingSort === s ? "rounded-xl bg-[#d4a64f] px-4 py-2 text-sm font-bold text-[#2b180c]" : "rounded-xl px-4 py-2 text-sm font-bold text-[#f1dfb5] hover:bg-white/5"}>
+                  {label}
+                </button>
+              ))}
+              <div className="ml-auto flex items-center gap-2">
+                <input type="text" value={rankingSearch} onChange={e => setRankingSearch(e.target.value)}
+                  placeholder="🔍 Szukaj nicku..."
+                  className="rounded-xl border border-[#8b6a3e]/60 bg-black/30 px-3 py-2 text-sm text-[#f3e6c8] placeholder-[#8b6a3e] outline-none focus:border-[#d4a64f]/80 w-44" />
+                <button onClick={() => {
+                  setRankingHighlightMe(v => {
+                    const next = !v;
+                    if (next) setTimeout(() => {
+                      const el = document.getElementById("ranking-me-row");
+                      const container = rankingScrollRef.current;
+                      if (!el || !container) return;
+                      let elTop = 0;
+                      let node: HTMLElement | null = el as HTMLElement;
+                      while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
+                      container.scrollTop = elTop - container.clientHeight / 2 + el.offsetHeight / 2;
+                    }, 120);
+                    return next;
+                  });
+                }} className={`rounded-xl px-4 py-2 text-sm font-bold transition border ${rankingHighlightMe ? "border-yellow-400 bg-yellow-500/20 text-yellow-300" : "border-[#8b6a3e]/50 bg-black/20 text-[#f1dfb5] hover:bg-white/5"}`}>
+                  🎯 Znajdź mnie
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* ── Main area: table 50% | profile 50% — compare hides table and goes full-width ── */}
@@ -570,15 +583,6 @@ export function RankingModal({
             {/* ── Compare view — same w-[45%] container, horizontal scroll for two columns ── */}
             {comparing && selectedPlayer && (
               <div className="flex flex-col flex-1 overflow-hidden">
-                {/* Header */}
-                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/30">
-                  <p className="text-[#f2ca69] font-black text-[14px]">⚔️ Porównanie</p>
-                  <button onClick={() => setComparing(false)}
-                    className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
-                    ← Wróć
-                  </button>
-                </div>
-
                 {detailLoading ? (
                   <div className="flex flex-1 items-center justify-center">
                     <div className="text-3xl animate-spin">⚙️</div>
