@@ -169,25 +169,25 @@ export function RankingModal({
                 </div>
               </div>
             ) : (
-              <table className="w-full border-collapse text-sm table-fixed">
+              <table className="w-full border-collapse table-fixed">
                 <colgroup>
-                  <col style={{ width: "44px" }} />
+                  <col style={{ width: "52px" }} />
                   <col />
                   {!showPanel && <col style={{ width: "14%" }} />}
-                  <col style={{ width: "80px" }} />
-                  {!showPanel && <col style={{ width: "90px" }} />}
-                  {!showPanel && <col style={{ width: "15%" }} />}
                   <col style={{ width: "90px" }} />
+                  {!showPanel && <col style={{ width: "90px" }} />}
+                  {!showPanel && <col style={{ width: "16%" }} />}
+                  <col style={{ width: "100px" }} />
                 </colgroup>
                 <thead>
-                  <tr className="border-b border-[#8b6a3e]/40 text-left text-xs uppercase tracking-widest text-[#8b6a3e]">
-                    <th className="py-3 pr-2">#</th>
-                    <th className="py-3 pr-3">Gracz</th>
-                    {!showPanel && <th className="py-3 pr-3">Gildia</th>}
-                    <th className="py-3 pr-2 text-right">Lvl</th>
-                    {!showPanel && <th className="py-3 pr-2 text-right">😊</th>}
-                    {!showPanel && <th className="py-3 pr-2 text-right">Pieniądze</th>}
-                    <th className="py-3 text-right">Moc</th>
+                  <tr className="border-b-2 border-[#8b6a3e]/50 text-left text-[11px] uppercase tracking-widest text-[#a08060]">
+                    <th className="pb-3 pt-2 pr-2">#</th>
+                    <th className="pb-3 pt-2 pr-3">Gracz</th>
+                    {!showPanel && <th className="pb-3 pt-2 pr-3">Gildia</th>}
+                    <th className="pb-3 pt-2 pr-2 text-right">Poziom</th>
+                    {!showPanel && <th className="pb-3 pt-2 pr-2 text-right">😊 Klienci</th>}
+                    {!showPanel && <th className="pb-3 pt-2 pr-2 text-right">Pieniądze</th>}
+                    <th className="pb-3 pt-2 text-right">Moc farmy</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -202,41 +202,41 @@ export function RankingModal({
                           ${isSelected ? "bg-[#d4a64f]/20 outline outline-2 outline-[#d4a64f]/70"
                             : highlighted ? "bg-yellow-500/20 outline outline-2 outline-yellow-400/60"
                             : "hover:bg-white/5"}`}>
-                        <td className="py-2.5 pr-2 font-black text-[#d8ba7a] text-sm">
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                        <td className="py-3 pr-2 font-black text-[#d8ba7a] text-base w-[52px]">
+                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : <span className="text-[15px]">{i + 1}</span>}
                         </td>
-                        <td className="py-2.5 pr-3">
-                          <div className="flex items-center gap-2 min-w-0">
+                        <td className="py-3 pr-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <img
                               src={ALL_SKINS[isMe ? (avatarSkin >= 0 ? avatarSkin : 0) : ((p.avatar_skin ?? -1) >= 0 ? (p.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
                               alt={p.player_name}
-                              className="h-10 w-10 shrink-0 rounded-full object-cover object-top border-2 border-[#8b6a3e]/60"
+                              className="h-12 w-12 shrink-0 rounded-full object-cover object-top border-2 border-[#8b6a3e]/60"
                               style={{ imageRendering: "pixelated" }}
                             />
                             <div className="min-w-0">
-                              <span className={`text-sm font-bold truncate block ${isSelected ? "text-[#f9e7b2]" : highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>
+                              <span className={`text-[15px] font-bold truncate block ${isSelected ? "text-[#f9e7b2]" : highlighted ? "text-yellow-200" : "text-[#f3e6c8]"}`}>
                                 {p.player_name}
                               </span>
-                              {showPanel && <span className="text-xs text-[#8b6a3e] truncate block">{p.guild_name || "Brak gildii"}</span>}
+                              {showPanel && <span className="text-xs text-[#a08060] truncate block">{p.guild_name || "Brak gildii"}</span>}
                             </div>
                           </div>
                         </td>
-                        {!showPanel && <td className="py-2.5 pr-3 italic text-[#8b6a3e] truncate text-sm">{p.guild_name}</td>}
-                        <td className="py-2.5 pr-2 text-right font-black text-[#f2ca69] text-sm">⭐ {p.level}</td>
+                        {!showPanel && <td className="py-3 pr-3 italic text-[#a08060] truncate text-[14px]">{p.guild_name || "—"}</td>}
+                        <td className="py-3 pr-2 text-right font-black text-[#f2ca69] text-[15px]">⭐ {p.level}</td>
                         {!showPanel && (
-                          <td className="py-2.5 pr-2 text-right">
-                            <span className={`font-bold tabular-nums text-sm ${(p.customer_orders_completed ?? 0) > 0 ? "text-emerald-400" : "text-[#8b6a3e]"}`}>
+                          <td className="py-3 pr-2 text-right">
+                            <span className={`font-bold tabular-nums text-[15px] ${(p.customer_orders_completed ?? 0) > 0 ? "text-emerald-400" : "text-[#8b6a3e]"}`}>
                               {(p.customer_orders_completed ?? 0).toLocaleString("pl-PL")}
                             </span>
                           </td>
                         )}
                         {!showPanel && (
-                          <td className="py-2.5 pr-2 text-right text-[#a8e890] tabular-nums text-sm">
+                          <td className="py-3 pr-2 text-right text-[#a8e890] tabular-nums text-[14px]">
                             {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(p.money)}
                           </td>
                         )}
-                        <td className="py-2.5 text-right tabular-nums text-sm">
-                          <span className={`font-bold ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
+                        <td className="py-3 text-right tabular-nums">
+                          <span className={`font-black text-[16px] ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
                             {(p.farm_power ?? 0).toLocaleString("pl-PL")}
                           </span>
                         </td>
