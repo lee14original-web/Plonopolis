@@ -73,7 +73,7 @@ function EquipSlots({ charEquipped, itemUpgRegistry, slot_order, slot_label }: {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         {slot_order.map(slot => {
           const equipped = charEquipped?.[slot];
           const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
@@ -89,53 +89,53 @@ function EquipSlots({ charEquipped, itemUpgRegistry, slot_order, slot_label }: {
                   aspectRatio: "1/1",
                   background: itemDef ? "linear-gradient(160deg,rgba(60,38,12,0.90) 0%,rgba(28,16,4,0.95) 100%)" : "rgba(10,6,2,0.70)",
                   border: itemDef ? `2px solid ${upgColor}70` : "2px solid rgba(139,106,62,0.30)",
-                  borderRadius: "12px",
+                  borderRadius: "10px",
                   boxShadow: itemDef ? `0 0 18px ${upgColor}22,inset 0 0 24px rgba(0,0,0,0.5)` : "inset 0 0 16px rgba(0,0,0,0.4)",
                 }}
               >
                 {itemDef && (
                   <>
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: `${upgColor}80` }} />
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: `${upgColor}80` }} />
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: `${upgColor}80` }} />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: `${upgColor}80` }} />
+                    <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: `${upgColor}80` }} />
+                    <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: `${upgColor}80` }} />
+                    <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: `${upgColor}80` }} />
+                    <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: `${upgColor}80` }} />
                   </>
                 )}
                 {itemDef?.img ? (
-                  <img src={itemDef.img} alt={itemDef.name} className="w-[95%] h-[95%] object-contain" style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.85))" }} draggable={false} />
+                  <img src={itemDef.img} alt={itemDef.name} className="w-[90%] h-[90%] object-contain" style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.85))" }} draggable={false} />
                 ) : (
-                  <span className="text-[#8b6a3e]/40 text-[10px] font-bold uppercase tracking-wider text-center px-2">{slot_label[slot]}</span>
+                  <span className="text-[#8b6a3e]/40 text-[9px] font-bold uppercase tracking-wider text-center px-1">{slot_label[slot]}</span>
                 )}
                 {upg > 0 && (
-                  <div className="absolute top-1.5 right-1.5 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-black"
+                  <div className="absolute top-1 right-1 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-black"
                     style={{ background: "rgba(0,0,0,0.88)", color: upgColor, border: `1.5px solid ${upgColor}70`, textShadow: `0 0 6px ${upgColor}` }}>
                     +{upg}
                   </div>
                 )}
               </div>
-              <div className="mt-1.5 text-center w-full px-0.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e] leading-none">{slot_label[slot]}</p>
-                {itemDef && <p className="text-[11px] font-black text-[#f3e6c8] mt-0.5 truncate leading-tight">{itemDef.name}</p>}
+              <div className="mt-1 text-center w-full px-0.5">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-[#8b6a3e] leading-none">{slot_label[slot]}</p>
+                {itemDef && <p className="text-[10px] font-black text-[#f3e6c8] mt-0.5 truncate leading-tight">{itemDef.name}</p>}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Tooltip portaled to document.body — never clipped by overflow */}
+      {/* Tooltip portaled to document.body */}
       {tooltip && ReactDOM.createPortal(
         <div
           className="pointer-events-none fixed z-[9999]"
           style={{ left: tooltip.x, top: tooltip.y - 12, transform: "translate(-50%, -100%)" }}
         >
-          <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-6 py-4 shadow-2xl w-[340px]"
+          <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-6 py-4 shadow-2xl w-[320px]"
             style={{ boxShadow: `0 0 36px ${tooltip.upgColor}35` }}>
-            <p className="text-[22px] font-black text-[#f9e7b2] leading-tight">{tooltip.itemDef.name}</p>
-            <p className="text-[16px] text-[#8b6a3e] mt-1">{EQUIP_SLOT_META[tooltip.slot].label} · lvl {tooltip.itemDef.unlockLevel}</p>
-            {tooltip.upg > 0 && <p className="text-[18px] font-black mt-1.5" style={{ color: tooltip.upgColor }}>Ulepszenie +{tooltip.upg}</p>}
+            <p className="text-[20px] font-black text-[#f9e7b2] leading-tight">{tooltip.itemDef.name}</p>
+            <p className="text-[14px] text-[#8b6a3e] mt-1">{EQUIP_SLOT_META[tooltip.slot].label} · lvl {tooltip.itemDef.unlockLevel}</p>
+            {tooltip.upg > 0 && <p className="text-[16px] font-black mt-1.5" style={{ color: tooltip.upgColor }}>Ulepszenie +{tooltip.upg}</p>}
             <div className="h-px bg-[#8b6a3e]/30 my-2" />
-            <p className="text-[17px] font-bold text-cyan-300">{bonusLine(tooltip.itemDef.bonuses, tooltip.upg)}</p>
-            {tooltip.itemDef.desc && <p className="mt-2 text-[15px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{tooltip.itemDef.desc}&rdquo;</p>}
+            <p className="text-[15px] font-bold text-cyan-300">{bonusLine(tooltip.itemDef.bonuses, tooltip.upg)}</p>
+            {tooltip.itemDef.desc && <p className="mt-2 text-[13px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{tooltip.itemDef.desc}&rdquo;</p>}
           </div>
           <div className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] w-4 h-4 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
         </div>,
@@ -178,26 +178,20 @@ export function RankingModal({
     rankingSearch.trim() === "" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())
   );
 
-  // Auto-scroll to logged-in player on first data load — show ±5 rows around them
+  // Auto-scroll to logged-in player on first data load
   useEffect(() => {
     if (rankingLoading || didInitialScroll.current || sorted.length === 0) return;
     const myIndex = sorted.findIndex(p => p.user_id === profile?.id);
     if (myIndex === -1) return;
     didInitialScroll.current = true;
-
-    // Small delay to let DOM render
     setTimeout(() => {
       const el = document.getElementById("ranking-me-row");
       const container = rankingScrollRef.current;
       if (!el || !container) return;
-      // Scroll so that the player row is roughly in the upper-third of the visible area
-      // (showing ~5 rows above + their row = top context)
       let elTop = 0;
       let node: HTMLElement | null = el as HTMLElement;
       while (node && node !== container) { elTop += node.offsetTop; node = node.offsetParent as HTMLElement | null; }
-      const rowH = el.offsetHeight;
-      const visibleRows = 5; // how many rows above to show
-      container.scrollTop = Math.max(0, elTop - rowH * visibleRows);
+      container.scrollTop = Math.max(0, elTop - el.offsetHeight * 5);
     }, 120);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rankingLoading, sorted.length, profile?.id]);
@@ -227,14 +221,7 @@ export function RankingModal({
 
   const handleSelectPlayer = useCallback((p: RankingPlayer) => {
     setComparing(false);
-    if (p.user_id === profile?.id) {
-      // Clicking own row → back to own profile
-      setSelectedPlayer(null);
-      setPlayerDetail(null);
-      return;
-    }
-    if (selectedPlayer?.user_id === p.user_id) {
-      // Clicking already-selected other player → back to own profile
+    if (p.user_id === profile?.id || selectedPlayer?.user_id === p.user_id) {
       setSelectedPlayer(null);
       setPlayerDetail(null);
       return;
@@ -249,9 +236,75 @@ export function RankingModal({
     setComparing(false);
   };
 
-  // The "displayed" player — what appears in the panel
-  const displayedRow = isViewingOther ? selectedPlayer : (rankingData.find(r => r.user_id === profile?.id) ?? null);
+  const displayedRow = isViewingOther
+    ? selectedPlayer
+    : (rankingData.find(r => r.user_id === profile?.id) ?? null);
   const isOwnPanel = !isViewingOther;
+
+  // ─── Reusable player column for compare mode ───────────────────────────────
+  const CompareColumn = ({
+    name, guild, level, farmPower, skinIndex, borderColor,
+    charEquipped: ce, itemUpgRegistry: iur, playerStats: ps,
+    customers, money,
+    opponentStats,
+    isLeft,
+  }: {
+    name: string; guild: string; level: number | string; farmPower: number;
+    skinIndex: number; borderColor: string;
+    charEquipped: CharEquipped | null | undefined;
+    itemUpgRegistry: Record<string, number> | null | undefined;
+    playerStats: Record<string, number> | null | undefined;
+    customers: number; money: number;
+    opponentStats: Record<string, number> | null | undefined;
+    isLeft: boolean;
+  }) => (
+    <div className={`min-w-[240px] w-1/2 overflow-y-auto flex flex-col p-4 gap-4 ${isLeft ? "border-r border-[#8b6a3e]/30" : ""}`}>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className={`text-[16px] font-black leading-tight truncate ${isLeft ? "text-yellow-200" : "text-[#f9e7b2]"}`}>{name}</p>
+          <p className="text-xs text-[#8b6a3e] mt-0.5 truncate">{guild || "Brak gildii"}</p>
+          <span className="mt-1.5 inline-block rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-2 py-1 text-[12px] font-black text-[#f2ca69]">
+            ⭐ {level}
+          </span>
+        </div>
+        <div className="relative shrink-0 overflow-hidden rounded-xl shadow-xl self-center"
+          style={{ width: 64, height: 96, border: `2px solid ${borderColor}` }}>
+          <img src={ALL_SKINS[skinIndex] ?? ALL_SKINS[0]} alt={name}
+            className="w-full h-full object-cover object-top" style={{ imageRendering: "pixelated" }} />
+        </div>
+      </div>
+      <EquipSlots charEquipped={ce} itemUpgRegistry={iur} slot_order={SLOT_ORDER} slot_label={SLOT_LABEL} />
+      <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-3">
+        {STATS_DEFS.map(s => {
+          const myVal = ps?.[s.key] ?? 0;
+          const oppVal = opponentStats?.[s.key] ?? 0;
+          const better = myVal > oppVal, worse = myVal < oppVal;
+          return (
+            <div key={s.key} className="flex flex-col">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+              <p className={`text-[22px] font-black leading-tight tabular-nums ${better ? "text-emerald-400" : worse ? "text-red-400" : "text-[#f9e7b2]"}`}>{myVal}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-2 text-center">
+          <p className="text-[10px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
+          <p className="text-[20px] font-black text-emerald-400 tabular-nums">{customers.toLocaleString("pl-PL")}</p>
+        </div>
+        <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-2 text-center">
+          <p className="text-[10px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
+          <p className="text-[14px] font-black text-[#a8e890] tabular-nums">
+            {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(money)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const myRow = rankingData.find(r => r.user_id === profile?.id);
+  const myStats = profile?.player_stats as Record<string, number> | null | undefined;
+  const theirStats = playerDetail?.player_stats;
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col overflow-hidden bg-[rgba(22,13,8,0.99)]">
@@ -304,12 +357,11 @@ export function RankingModal({
           </div>
         </div>
 
-        {/* ── Main area: table (left, fixed ~55%) + player panel (right, fixed ~45%) ── */}
+        {/* ── Main area: table 55% + right panel 45% — SIZES NEVER CHANGE ── */}
         <div className="flex flex-1 min-h-0">
 
-          {/* ── Ranking table — always visible, always narrow ── */}
-          <div ref={rankingScrollRef}
-            className={`overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 ${comparing ? "hidden" : "w-[55%]"}`}>
+          {/* ── Left: ranking table — always w-[55%] ── */}
+          <div ref={rankingScrollRef} className="w-[55%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -379,263 +431,199 @@ export function RankingModal({
             )}
           </div>
 
-          {/* ── Player Profile Panel — always visible ── */}
-          {!comparing && (
-            <div className="w-[45%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)] border-l border-[#8b6a3e]/20">
-              {detailLoading ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl animate-spin mb-2">⚙️</div>
-                    <p className="text-sm text-[#8b6a3e]">Ładowanie profilu...</p>
-                  </div>
-                </div>
-              ) : rankingLoading && !displayedRow ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl animate-spin mb-2">⚙️</div>
-                    <p className="text-sm text-[#8b6a3e]">Ładowanie...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col p-5 gap-4">
+          {/* ── Right panel — always w-[45%], content switches between profile and compare ── */}
+          <div className="w-[45%] shrink-0 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]">
 
-                  {/* Header — own profile or selected player, with back button */}
-                  <div className="flex items-center justify-between gap-2 shrink-0">
-                    <p className="text-[11px] uppercase tracking-widest font-bold text-[#8b6a3e]">
-                      {isOwnPanel ? "👤 Twój profil" : "👤 Profil gracza"}
-                    </p>
-                    {isViewingOther && (
-                      <button onClick={goBackToMe}
-                        className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
-                        ← Twój profil
-                      </button>
-                    )}
-                  </div>
-
-                  {/* ── Avatar + info ── */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[20px] font-black text-[#f9e7b2] leading-tight truncate">
-                        {isOwnPanel ? (displayedRow?.player_name ?? profile?.login ?? "Ty") : selectedPlayer!.player_name}
-                      </p>
-                      <p className="text-sm text-[#8b6a3e] mt-0.5">
-                        {isOwnPanel ? (displayedRow?.guild_name || "Brak gildii") : (selectedPlayer!.guild_name || "Brak gildii")}
-                      </p>
-                      <div className="mt-2 flex flex-col gap-1.5">
-                        <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[13px] font-black text-[#f2ca69] w-fit">
-                          ⭐ Poziom {isOwnPanel ? (displayedRow?.level ?? profile?.level ?? "?") : selectedPlayer!.level}
-                        </span>
-                        <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[13px] font-bold text-[#a8e890] w-fit">
-                          ⚡ {((isOwnPanel ? displayedRow?.farm_power : selectedPlayer?.farm_power) ?? 0).toLocaleString("pl-PL")} mocy
-                        </span>
-                        {isViewingOther && (
-                          <div className="flex gap-2 flex-wrap">
-                            <button
-                              onClick={() => openComposeTo(selectedPlayer!.user_id, selectedPlayer!.player_name)}
-                              className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
-                              ✉️ Wyślij wiadomość
-                            </button>
-                            <button
-                              onClick={() => setComparing(true)}
-                              className="rounded-xl border border-[#d4a64f]/60 bg-[rgba(212,166,79,0.12)] px-3 py-1.5 text-xs font-bold text-[#f2ca69] transition hover:border-[#d4a64f] hover:bg-[rgba(212,166,79,0.22)]">
-                              ⚔️ Porównaj
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div
-                      className="relative shrink-0 overflow-hidden rounded-2xl border-2 shadow-xl self-center"
-                      style={{
-                        width: 100, height: 150,
-                        borderColor: isOwnPanel ? "rgba(250,204,21,0.5)" : "rgba(139,106,62,0.8)",
-                      }}>
-                      <img
-                        src={ALL_SKINS[
-                          isOwnPanel
-                            ? (avatarSkin >= 0 ? avatarSkin : 0)
-                            : ((playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? -1) >= 0
-                              ? (playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? 0)
-                              : 0)
-                        ] ?? ALL_SKINS[0]}
-                        alt={isOwnPanel ? "Ty" : (selectedPlayer?.player_name ?? "")}
-                        className="w-full h-full object-cover object-top"
-                        style={{ imageRendering: "pixelated" }}
-                      />
+            {/* ── Normal profile view ── */}
+            {!comparing && (
+              <div className="flex flex-col flex-1 overflow-y-auto">
+                {detailLoading ? (
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-3xl animate-spin mb-2">⚙️</div>
+                      <p className="text-sm text-[#8b6a3e]">Ładowanie profilu...</p>
                     </div>
                   </div>
-
-                  {/* ── Ekwipunek ── */}
-                  <EquipSlots
-                    charEquipped={
-                      isOwnPanel
-                        ? (profile?.char_equipped as CharEquipped | null | undefined)
-                        : (playerDetail?.char_equipped as CharEquipped | null | undefined)
-                    }
-                    itemUpgRegistry={
-                      isOwnPanel
-                        ? (profile?.item_upg_registry as Record<string,number> | null | undefined)
-                        : (playerDetail?.item_upg_registry as Record<string,number> | null | undefined)
-                    }
-                    slot_order={SLOT_ORDER}
-                    slot_label={SLOT_LABEL}
-                  />
-
-                  {/* ── Statystyki ── */}
-                  <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                    {STATS_DEFS.map(s => {
-                      const val = isOwnPanel
-                        ? ((profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0)
-                        : (playerDetail?.player_stats?.[s.key] ?? 0);
-                      return (
-                        <div key={s.key} className="flex flex-col gap-0">
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
-                          <p className="text-[26px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Klienci + Pieniądze ── */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
-                      <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
-                      <p className="text-[24px] font-black text-emerald-400 tabular-nums">
-                        {((isOwnPanel ? displayedRow?.customer_orders_completed : selectedPlayer?.customer_orders_completed) ?? 0).toLocaleString("pl-PL")}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
-                      <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
-                      <p className="text-[18px] font-black text-[#a8e890] tabular-nums">
-                        {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(
-                          isOwnPanel ? (profile?.money ?? 0) : (selectedPlayer?.money ?? 0)
-                        )}
-                      </p>
+                ) : rankingLoading && !displayedRow ? (
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-3xl animate-spin mb-2">⚙️</div>
+                      <p className="text-sm text-[#8b6a3e]">Ładowanie...</p>
                     </div>
                   </div>
+                ) : (
+                  <div className="flex flex-col p-5 gap-4">
 
-                </div>
-              )}
-            </div>
-          )}
+                    {/* Label + back button */}
+                    <div className="flex items-center justify-between gap-2 shrink-0">
+                      <p className="text-[11px] uppercase tracking-widest font-bold text-[#8b6a3e]">
+                        {isOwnPanel ? "👤 Twój profil" : "👤 Profil gracza"}
+                      </p>
+                      {isViewingOther && (
+                        <button onClick={goBackToMe}
+                          className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
+                          ← Twój profil
+                        </button>
+                      )}
+                    </div>
 
-          {/* ── Tryb porównania — pełna szerokość ── */}
-          {comparing && selectedPlayer && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.80)]">
-              {/* Nagłówek porównania */}
-              <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[#8b6a3e]/30">
-                <p className="text-[#f2ca69] font-black text-[15px]">⚔️ Porównanie graczy</p>
-                <button
-                  onClick={() => setComparing(false)}
-                  className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-1.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
-                  ← Wróć
-                </button>
-              </div>
-
-              {detailLoading ? (
-                <div className="flex flex-1 items-center justify-center">
-                  <div className="text-3xl animate-spin">⚙️</div>
-                </div>
-              ) : (
-                <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-                  {/* Lewa kolumna — ja */}
-                  {(() => {
-                    const myRow = rankingData.find(r => r.user_id === profile?.id);
-                    return (
-                      <div className="min-w-[420px] w-1/2 overflow-y-auto border-r border-[#8b6a3e]/30 flex flex-col p-5 gap-5">
-                        <div className="flex items-center gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[22px] font-black text-yellow-200 leading-tight truncate">{myRow?.player_name ?? profile?.login ?? "Ty"}</p>
-                            <p className="text-sm text-[#8b6a3e] mt-0.5">{myRow?.guild_name || "Brak gildii"}</p>
-                            <div className="mt-2 flex flex-col gap-1.5">
-                              <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[14px] font-black text-[#f2ca69] w-fit">
-                                ⭐ Poziom {profile?.level ?? "?"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-yellow-400/60 shadow-xl self-center" style={{ width: 90, height: 135 }}>
-                            <img src={ALL_SKINS[avatarSkin >= 0 ? avatarSkin : 0] ?? ALL_SKINS[0]} alt="Ja" className="w-full h-full object-cover object-top" style={{ imageRendering: "pixelated" }} />
-                          </div>
-                        </div>
-                        <EquipSlots charEquipped={profile?.char_equipped as CharEquipped | null | undefined} itemUpgRegistry={profile?.item_upg_registry as Record<string,number> | null | undefined} slot_order={SLOT_ORDER} slot_label={SLOT_LABEL} />
-                        <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-4">
-                          {STATS_DEFS.map(s => {
-                            const myVal = (profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0;
-                            const theirVal = playerDetail?.player_stats?.[s.key] ?? 0;
-                            const better = myVal > theirVal, worse = myVal < theirVal;
-                            return (
-                              <div key={s.key} className="flex flex-col">
-                                <p className="text-[12px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
-                                <p className={`text-[30px] font-black leading-tight tabular-nums ${better ? "text-emerald-400" : worse ? "text-red-400" : "text-[#f9e7b2]"}`}>{myVal}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
-                            <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
-                            <p className="text-[28px] font-black text-emerald-400 tabular-nums">{(myRow?.customer_orders_completed ?? 0).toLocaleString("pl-PL")}</p>
-                          </div>
-                          <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
-                            <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
-                            <p className="text-[20px] font-black text-[#a8e890] tabular-nums">{new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(profile?.money ?? 0)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Prawa kolumna — wybrany gracz */}
-                  <div className="min-w-[420px] w-1/2 overflow-y-auto flex flex-col p-5 gap-5">
+                    {/* Avatar + info */}
                     <div className="flex items-center gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="text-[22px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
-                        <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
+                        <p className="text-[20px] font-black text-[#f9e7b2] leading-tight truncate">
+                          {isOwnPanel ? (displayedRow?.player_name ?? profile?.login ?? "Ty") : selectedPlayer!.player_name}
+                        </p>
+                        <p className="text-sm text-[#8b6a3e] mt-0.5">
+                          {isOwnPanel ? (displayedRow?.guild_name || "Brak gildii") : (selectedPlayer!.guild_name || "Brak gildii")}
+                        </p>
                         <div className="mt-2 flex flex-col gap-1.5">
-                          <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[14px] font-black text-[#f2ca69] w-fit">
-                            ⭐ Poziom {selectedPlayer.level}
+                          <span className="rounded-xl bg-[rgba(212,166,79,0.18)] border border-[#d4a64f]/40 px-3 py-1.5 text-[13px] font-black text-[#f2ca69] w-fit">
+                            ⭐ Poziom {isOwnPanel ? (displayedRow?.level ?? profile?.level ?? "?") : selectedPlayer!.level}
                           </span>
-                          <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[14px] font-bold text-[#a8e890] w-fit">
-                            ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
+                          <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[13px] font-bold text-[#a8e890] w-fit">
+                            ⚡ {((isOwnPanel ? displayedRow?.farm_power : selectedPlayer?.farm_power) ?? 0).toLocaleString("pl-PL")} mocy
                           </span>
+                          {isViewingOther && (
+                            <div className="flex gap-2 flex-wrap">
+                              <button
+                                onClick={() => openComposeTo(selectedPlayer!.user_id, selectedPlayer!.player_name)}
+                                className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
+                                ✉️ Wyślij wiadomość
+                              </button>
+                              <button
+                                onClick={() => setComparing(true)}
+                                className="rounded-xl border border-[#d4a64f]/60 bg-[rgba(212,166,79,0.12)] px-3 py-1.5 text-xs font-bold text-[#f2ca69] transition hover:border-[#d4a64f] hover:bg-[rgba(212,166,79,0.22)]">
+                                ⚔️ Porównaj
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl self-center" style={{ width: 90, height: 135 }}>
-                        <img src={ALL_SKINS[((playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0 ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]} alt={selectedPlayer.player_name} className="w-full h-full object-cover object-top" style={{ imageRendering: "pixelated" }} />
+
+                      <div
+                        className="relative shrink-0 overflow-hidden rounded-2xl border-2 shadow-xl self-center"
+                        style={{
+                          width: 100, height: 150,
+                          borderColor: isOwnPanel ? "rgba(250,204,21,0.5)" : "rgba(139,106,62,0.8)",
+                        }}>
+                        <img
+                          src={ALL_SKINS[
+                            isOwnPanel
+                              ? (avatarSkin >= 0 ? avatarSkin : 0)
+                              : ((playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? -1) >= 0
+                                ? (playerDetail?.avatar_skin ?? selectedPlayer?.avatar_skin ?? 0)
+                                : 0)
+                          ] ?? ALL_SKINS[0]}
+                          alt={isOwnPanel ? "Ty" : (selectedPlayer?.player_name ?? "")}
+                          className="w-full h-full object-cover object-top"
+                          style={{ imageRendering: "pixelated" }}
+                        />
                       </div>
                     </div>
-                    <EquipSlots charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined} itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined} slot_order={SLOT_ORDER} slot_label={SLOT_LABEL} />
-                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-4">
+
+                    {/* Ekwipunek */}
+                    <EquipSlots
+                      charEquipped={isOwnPanel ? (profile?.char_equipped as CharEquipped | null | undefined) : (playerDetail?.char_equipped as CharEquipped | null | undefined)}
+                      itemUpgRegistry={isOwnPanel ? (profile?.item_upg_registry as Record<string,number> | null | undefined) : (playerDetail?.item_upg_registry as Record<string,number> | null | undefined)}
+                      slot_order={SLOT_ORDER}
+                      slot_label={SLOT_LABEL}
+                    />
+
+                    {/* Statystyki */}
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-3">
                       {STATS_DEFS.map(s => {
-                        const myVal = (profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0;
-                        const theirVal = playerDetail?.player_stats?.[s.key] ?? 0;
-                        const better = theirVal > myVal, worse = theirVal < myVal;
+                        const val = isOwnPanel
+                          ? ((profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0)
+                          : (playerDetail?.player_stats?.[s.key] ?? 0);
                         return (
-                          <div key={s.key} className="flex flex-col">
-                            <p className="text-[12px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
-                            <p className={`text-[30px] font-black leading-tight tabular-nums ${better ? "text-emerald-400" : worse ? "text-red-400" : "text-[#f9e7b2]"}`}>{theirVal}</p>
+                          <div key={s.key} className="flex flex-col gap-0">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+                            <p className="text-[26px] font-black text-[#f9e7b2] leading-tight tabular-nums">{val}</p>
                           </div>
                         );
                       })}
                     </div>
+
+                    {/* Klienci + Pieniądze */}
                     <div className="grid grid-cols-2 gap-2">
                       <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-3 text-center">
                         <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Klienci</p>
-                        <p className="text-[28px] font-black text-emerald-400 tabular-nums">{(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}</p>
+                        <p className="text-[24px] font-black text-emerald-400 tabular-nums">
+                          {((isOwnPanel ? displayedRow?.customer_orders_completed : selectedPlayer?.customer_orders_completed) ?? 0).toLocaleString("pl-PL")}
+                        </p>
                       </div>
                       <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-3 text-center">
                         <p className="text-[11px] text-[#8b6a3e] font-bold uppercase tracking-wide">Pieniądze</p>
-                        <p className="text-[20px] font-black text-[#a8e890] tabular-nums">{new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(selectedPlayer.money)}</p>
+                        <p className="text-[18px] font-black text-[#a8e890] tabular-nums">
+                          {new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN", minimumFractionDigits: 0 }).format(
+                            isOwnPanel ? (profile?.money ?? 0) : (selectedPlayer?.money ?? 0)
+                          )}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
-        </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Compare view — same w-[45%] container, horizontal scroll for two columns ── */}
+            {comparing && selectedPlayer && (
+              <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Header */}
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[#8b6a3e]/30">
+                  <p className="text-[#f2ca69] font-black text-[14px]">⚔️ Porównanie</p>
+                  <button onClick={() => setComparing(false)}
+                    className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
+                    ← Wróć
+                  </button>
+                </div>
+
+                {detailLoading ? (
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className="text-3xl animate-spin">⚙️</div>
+                  </div>
+                ) : (
+                  <div className="flex flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+                    <CompareColumn
+                      name={myRow?.player_name ?? profile?.login ?? "Ty"}
+                      guild={myRow?.guild_name ?? ""}
+                      level={profile?.level ?? "?"}
+                      farmPower={myRow?.farm_power ?? 0}
+                      skinIndex={avatarSkin >= 0 ? avatarSkin : 0}
+                      borderColor="rgba(250,204,21,0.5)"
+                      charEquipped={profile?.char_equipped as CharEquipped | null | undefined}
+                      itemUpgRegistry={profile?.item_upg_registry as Record<string,number> | null | undefined}
+                      playerStats={myStats}
+                      customers={myRow?.customer_orders_completed ?? 0}
+                      money={profile?.money ?? 0}
+                      opponentStats={theirStats}
+                      isLeft={true}
+                    />
+                    <CompareColumn
+                      name={selectedPlayer.player_name}
+                      guild={selectedPlayer.guild_name ?? ""}
+                      level={selectedPlayer.level}
+                      farmPower={selectedPlayer.farm_power ?? 0}
+                      skinIndex={(playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0
+                        ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0) : 0}
+                      borderColor="rgba(139,106,62,0.8)"
+                      charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined}
+                      itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined}
+                      playerStats={theirStats}
+                      customers={selectedPlayer.customer_orders_completed ?? 0}
+                      money={selectedPlayer.money}
+                      opponentStats={myStats}
+                      isLeft={false}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>{/* end right panel w-[45%] */}
+
+        </div>{/* end main area */}
 
         {/* Footer */}
         <div className="shrink-0 border-t border-[#8b6a3e]/30 px-6 py-3 text-center text-xs text-[#8b6a3e]">
