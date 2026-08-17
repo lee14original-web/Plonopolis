@@ -36,12 +36,80 @@ interface RankingModalProps {
 
 const SLOT_ORDER: EquipSlot[] = ["glowa", "dlonie", "nogi"];
 
-// Slot label without emoji
 const SLOT_LABEL: Record<EquipSlot, string> = {
   glowa: "Głowa",
   dlonie: "Dłonie",
   nogi: "Nogi",
 };
+
+function EquipSlots({ charEquipped, itemUpgRegistry, slot_order, slot_label }: {
+  charEquipped: CharEquipped | null | undefined;
+  itemUpgRegistry: Record<string, number> | null | undefined;
+  slot_order: EquipSlot[];
+  slot_label: Record<EquipSlot, string>;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {slot_order.map(slot => {
+        const equipped = charEquipped?.[slot];
+        const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
+        const upg = equipped ? (itemUpgRegistry?.[equipped.id] ?? equipped.upg ?? 0) : 0;
+        const upgColor = UPG_COLOR[upg] ?? "#9CA3AF";
+        return (
+          <div key={slot} className="group relative flex flex-col items-center">
+            <div
+              className="relative w-full overflow-hidden flex items-center justify-center"
+              style={{
+                aspectRatio: "1/1",
+                background: itemDef ? "linear-gradient(160deg,rgba(60,38,12,0.90) 0%,rgba(28,16,4,0.95) 100%)" : "rgba(10,6,2,0.70)",
+                border: itemDef ? `2px solid ${upgColor}70` : "2px solid rgba(139,106,62,0.30)",
+                borderRadius: "12px",
+                boxShadow: itemDef ? `0 0 18px ${upgColor}22,inset 0 0 24px rgba(0,0,0,0.5)` : "inset 0 0 16px rgba(0,0,0,0.4)",
+              }}
+            >
+              {itemDef && (
+                <>
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: `${upgColor}80` }} />
+                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: `${upgColor}80` }} />
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: `${upgColor}80` }} />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: `${upgColor}80` }} />
+                </>
+              )}
+              {itemDef?.img ? (
+                <img src={itemDef.img} alt={itemDef.name} className="w-[95%] h-[95%] object-contain" style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.85))" }} draggable={false} />
+              ) : (
+                <span className="text-[#8b6a3e]/40 text-[10px] font-bold uppercase tracking-wider text-center px-2">{slot_label[slot]}</span>
+              )}
+              {upg > 0 && (
+                <div className="absolute top-1.5 right-1.5 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-black"
+                  style={{ background: "rgba(0,0,0,0.88)", color: upgColor, border: `1.5px solid ${upgColor}70`, textShadow: `0 0 6px ${upgColor}` }}>
+                  +{upg}
+                </div>
+              )}
+            </div>
+            <div className="mt-1.5 text-center w-full px-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e] leading-none">{slot_label[slot]}</p>
+              {itemDef && <p className="text-[11px] font-black text-[#f3e6c8] mt-0.5 truncate leading-tight">{itemDef.name}</p>}
+            </div>
+            {itemDef && (
+              <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-[500] opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-[360px]">
+                <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-6 py-4 shadow-2xl" style={{ boxShadow: `0 0 36px ${upgColor}35` }}>
+                  <p className="text-[24px] font-black text-[#f9e7b2] leading-tight">{itemDef.name}</p>
+                  <p className="text-[18px] text-[#8b6a3e] mt-1">{EQUIP_SLOT_META[slot].label} · lvl {itemDef.unlockLevel}</p>
+                  {upg > 0 && <p className="text-[20px] font-black mt-1.5" style={{ color: upgColor }}>Ulepszenie +{upg}</p>}
+                  <div className="h-px bg-[#8b6a3e]/30 my-2" />
+                  <p className="text-[19px] font-bold text-cyan-300">{bonusLine(itemDef.bonuses, upg)}</p>
+                  {itemDef.desc && <p className="mt-2 text-[17px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>}
+                </div>
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] w-4 h-4 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function RankingModal({
   onClose,
@@ -61,13 +129,16 @@ export function RankingModal({
   const [selectedPlayer, setSelectedPlayer] = useState<RankingPlayer | null>(null);
   const [playerDetail, setPlayerDetail] = useState<PlayerDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [comparing, setComparing] = useState(false);
 
   const handleSelectPlayer = useCallback(async (p: RankingPlayer) => {
     if (selectedPlayer?.user_id === p.user_id) {
       setSelectedPlayer(null);
       setPlayerDetail(null);
+      setComparing(false);
       return;
     }
+    setComparing(false);
     setSelectedPlayer(p);
     setPlayerDetail(null);
     setDetailLoading(true);
@@ -249,7 +320,7 @@ export function RankingModal({
           </div>
 
           {/* ── Player Profile Panel ── */}
-          {showPanel && (
+          {showPanel && !comparing && (
             <div className="w-[45%] flex flex-col overflow-y-auto bg-[rgba(18,10,4,0.60)]">
               {detailLoading ? (
                 <div className="flex flex-1 items-center justify-center">
@@ -261,9 +332,8 @@ export function RankingModal({
               ) : (
                 <div className="flex flex-col p-5 gap-5">
 
-                  {/* ── Avatar (wycentrowany) + info od lewej ── */}
+                  {/* ── Avatar + info ── */}
                   <div className="flex items-center gap-4">
-                    {/* Info — lewa strona */}
                     <div className="flex-1 min-w-0">
                       <p className="text-[22px] font-black text-[#f9e7b2] leading-tight truncate">{selectedPlayer.player_name}</p>
                       <p className="text-sm text-[#8b6a3e] mt-0.5">{selectedPlayer.guild_name || "Brak gildii"}</p>
@@ -274,17 +344,25 @@ export function RankingModal({
                         <span className="rounded-xl bg-[rgba(168,232,144,0.12)] border border-[#a8e890]/30 px-3 py-1.5 text-[14px] font-bold text-[#a8e890] w-fit">
                           ⚡ {(selectedPlayer.farm_power ?? 0).toLocaleString("pl-PL")} mocy
                         </span>
-                        {selectedPlayer.user_id !== profile?.id && (
-                          <button
-                            onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
-                            className="mt-1 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)] w-fit">
-                            ✉️ Wyślij wiadomość
-                          </button>
-                        )}
+                        <div className="flex gap-2 flex-wrap">
+                          {selectedPlayer.user_id !== profile?.id && (
+                            <button
+                              onClick={() => openComposeTo(selectedPlayer.user_id, selectedPlayer.player_name)}
+                              className="mt-1 rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-3 py-1.5 text-xs font-bold text-[#f3e6c8] transition hover:border-[#d8ba7a]/70 hover:bg-[rgba(80,50,10,0.5)]">
+                              ✉️ Wyślij wiadomość
+                            </button>
+                          )}
+                          {selectedPlayer.user_id !== profile?.id && (
+                            <button
+                              onClick={() => setComparing(true)}
+                              className="mt-1 rounded-xl border border-[#d4a64f]/60 bg-[rgba(212,166,79,0.12)] px-3 py-1.5 text-xs font-bold text-[#f2ca69] transition hover:border-[#d4a64f] hover:bg-[rgba(212,166,79,0.22)]">
+                              ⚔️ Porównaj
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Avatar — wycentrowany pionowo */}
                     <div
                       className="relative shrink-0 overflow-hidden rounded-2xl border-2 border-[#8b6a3e]/80 shadow-xl self-center"
                       style={{ width: 120, height: 180 }}>
@@ -303,112 +381,10 @@ export function RankingModal({
                     </div>
                   </div>
 
-                  {/* ── Ekwipunek — 3 slot frames ── */}
-                  <div className="grid grid-cols-3 gap-3">
-                    {SLOT_ORDER.map(slot => {
-                      const equipped = (playerDetail?.char_equipped as CharEquipped | null | undefined)?.[slot];
-                      const itemDef = equipped ? CHAR_EQUIP_ITEMS.find(i => i.id === equipped.id) : null;
-                      const upg = equipped
-                        ? ((playerDetail?.item_upg_registry as Record<string, number> | null | undefined)?.[equipped.id] ?? equipped.upg ?? 0)
-                        : 0;
-                      const upgColor = UPG_COLOR[upg] ?? "#9CA3AF";
+                  {/* ── Ekwipunek ── */}
+                  <EquipSlots charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined} itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined} slot_order={SLOT_ORDER} slot_label={SLOT_LABEL} />
 
-                      return (
-                        <div key={slot} className="group relative flex flex-col items-center">
-                          {/* Frame — kwadratowy, przedmiot wypełnia 95% */}
-                          <div
-                            className="relative w-full overflow-hidden flex items-center justify-center"
-                            style={{
-                              aspectRatio: "1/1",
-                              background: itemDef
-                                ? "linear-gradient(160deg, rgba(60,38,12,0.90) 0%, rgba(28,16,4,0.95) 100%)"
-                                : "rgba(10,6,2,0.70)",
-                              border: itemDef
-                                ? `2px solid ${upgColor}70`
-                                : "2px solid rgba(139,106,62,0.30)",
-                              borderRadius: "12px",
-                              boxShadow: itemDef
-                                ? `0 0 18px ${upgColor}22, inset 0 0 24px rgba(0,0,0,0.5)`
-                                : "inset 0 0 16px rgba(0,0,0,0.4)",
-                            }}
-                          >
-                            {/* Corner ornaments */}
-                            {itemDef && (
-                              <>
-                                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: `${upgColor}80` }} />
-                                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: `${upgColor}80` }} />
-                                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: `${upgColor}80` }} />
-                                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: `${upgColor}80` }} />
-                              </>
-                            )}
-
-                            {itemDef?.img ? (
-                              <img
-                                src={itemDef.img}
-                                alt={itemDef.name}
-                                className="w-[95%] h-[95%] object-contain"
-                                style={{ imageRendering: "pixelated", filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.85))" }}
-                                draggable={false}
-                              />
-                            ) : (
-                              <span className="text-[#8b6a3e]/40 text-[10px] font-bold uppercase tracking-wider text-center px-2">
-                                {SLOT_LABEL[slot]}
-                              </span>
-                            )}
-
-                            {/* Upgrade badge */}
-                            {upg > 0 && (
-                              <div
-                                className="absolute top-1.5 right-1.5 rounded-full w-6 h-6 flex items-center justify-center text-[11px] font-black"
-                                style={{
-                                  background: "rgba(0,0,0,0.88)",
-                                  color: upgColor,
-                                  border: `1.5px solid ${upgColor}70`,
-                                  textShadow: `0 0 6px ${upgColor}`,
-                                }}>
-                                +{upg}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Slot label + item name */}
-                          <div className="mt-1.5 text-center w-full px-0.5">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[#8b6a3e] leading-none">{SLOT_LABEL[slot]}</p>
-                            {itemDef && (
-                              <p className="text-[11px] font-black text-[#f3e6c8] mt-0.5 truncate leading-tight">{itemDef.name}</p>
-                            )}
-                          </div>
-
-                          {/* Hover tooltip — powiększony o 80% */}
-                          {itemDef && (
-                            <div className="pointer-events-none absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-[500] opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-[396px]">
-                              <div className="rounded-2xl border border-[#8b6a3e]/70 bg-[rgba(14,8,4,0.97)] px-6 py-4 shadow-2xl"
-                                style={{ boxShadow: `0 0 36px ${upgColor}35` }}>
-                                <p className="text-[27px] font-black text-[#f9e7b2] leading-tight">{itemDef.name}</p>
-                                <p className="text-[20px] text-[#8b6a3e] mt-1">
-                                  {EQUIP_SLOT_META[slot].label} · lvl {itemDef.unlockLevel}
-                                </p>
-                                {upg > 0 && (
-                                  <p className="text-[22px] font-black mt-1.5" style={{ color: upgColor }}>
-                                    Ulepszenie +{upg}
-                                  </p>
-                                )}
-                                <div className="h-px bg-[#8b6a3e]/30 my-2" />
-                                <p className="text-[21px] font-bold text-cyan-300">{bonusLine(itemDef.bonuses, upg)}</p>
-                                {itemDef.desc && (
-                                  <p className="mt-2 text-[19px] italic text-[#8b6a3e]/80 leading-snug">&ldquo;{itemDef.desc}&rdquo;</p>
-                                )}
-                              </div>
-                              {/* Arrow */}
-                              <div className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] w-4 h-4 rotate-45 bg-[rgba(14,8,4,0.97)] border-r border-b border-[#8b6a3e]/70" />
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Statystyki (bez ikon, czyste liczby) ── */}
+                  {/* ── Statystyki ── */}
                   <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-4 py-4 grid grid-cols-2 gap-x-6 gap-y-4">
                     {STATS_DEFS.map(s => {
                       const val = (playerDetail?.player_stats?.[s.key] ?? 0);
@@ -437,11 +413,132 @@ export function RankingModal({
                     </div>
                   </div>
 
-                  {/* Close hint */}
-                  <button onClick={() => { setSelectedPlayer(null); setPlayerDetail(null); }}
+                  <button onClick={() => { setSelectedPlayer(null); setPlayerDetail(null); setComparing(false); }}
                     className="mt-auto self-center text-xs text-[#8b6a3e] hover:text-[#f1dfb5] transition py-1">
                     ✕ Zamknij panel
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Tryb porównania ── */}
+          {showPanel && comparing && (
+            <div className="flex-1 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.80)]">
+              {/* Nagłówek porównania */}
+              <div className="shrink-0 flex items-center justify-between px-5 py-3 border-b border-[#8b6a3e]/30">
+                <p className="text-[#f2ca69] font-black text-[15px]">⚔️ Porównanie graczy</p>
+                <button
+                  onClick={() => setComparing(false)}
+                  className="rounded-xl border border-[#8b6a3e]/50 bg-black/20 px-4 py-1.5 text-sm font-bold text-[#f3e6c8] transition hover:border-[#d4a64f]/60 hover:text-[#f2ca69]">
+                  ← Wróć
+                </button>
+              </div>
+
+              {detailLoading ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="text-3xl animate-spin">⚙️</div>
+                </div>
+              ) : (
+                <div className="flex flex-1 min-h-0 overflow-hidden">
+                  {/* Lewa kolumna — ja */}
+                  <div className="w-1/2 overflow-y-auto border-r border-[#8b6a3e]/30 px-4 py-4 flex flex-col gap-4">
+                    {(() => {
+                      const myRow = rankingData.find(r => r.user_id === profile?.id);
+                      return (
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={ALL_SKINS[avatarSkin >= 0 ? avatarSkin : 0] ?? ALL_SKINS[0]}
+                            className="h-14 w-14 shrink-0 rounded-full object-cover object-top border-2 border-yellow-400/70"
+                            style={{ imageRendering: "pixelated" }}
+                            alt="Ja"
+                          />
+                          <div>
+                            <p className="text-[16px] font-black text-yellow-200 truncate">{myRow?.player_name ?? profile?.login ?? "Ty"}</p>
+                            <p className="text-xs text-[#a08060]">{myRow?.guild_name || "Brak gildii"}</p>
+                            <p className="text-[13px] font-black text-[#f2ca69] mt-0.5">⭐ Poziom {profile?.level ?? "?"}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <EquipSlots
+                      charEquipped={profile?.char_equipped as CharEquipped | null | undefined}
+                      itemUpgRegistry={profile?.item_upg_registry as Record<string,number> | null | undefined}
+                      slot_order={SLOT_ORDER}
+                      slot_label={SLOT_LABEL}
+                    />
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-3">
+                      {STATS_DEFS.map(s => {
+                        const myVal = (profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0;
+                        const theirVal = (playerDetail?.player_stats?.[s.key] ?? 0);
+                        const better = myVal > theirVal;
+                        const worse = myVal < theirVal;
+                        return (
+                          <div key={s.key} className="flex flex-col">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+                            <p className={`text-[24px] font-black leading-tight tabular-nums ${better ? "text-emerald-400" : worse ? "text-red-400" : "text-[#f9e7b2]"}`}>{myVal}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-2 text-center">
+                        <p className="text-[10px] text-[#8b6a3e] font-bold uppercase">Klienci</p>
+                        <p className="text-[20px] font-black text-emerald-400 tabular-nums">{(rankingData.find(r => r.user_id === profile?.id)?.customer_orders_completed ?? 0).toLocaleString("pl-PL")}</p>
+                      </div>
+                      <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-2 text-center">
+                        <p className="text-[10px] text-[#8b6a3e] font-bold uppercase">Pieniądze</p>
+                        <p className="text-[14px] font-black text-[#a8e890] tabular-nums">{new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(profile?.money ?? 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Prawa kolumna — wybrany gracz */}
+                  <div className="w-1/2 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={ALL_SKINS[((playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? -1) >= 0 ? (playerDetail?.avatar_skin ?? selectedPlayer.avatar_skin ?? 0) : 0)] ?? ALL_SKINS[0]}
+                        className="h-14 w-14 shrink-0 rounded-full object-cover object-top border-2 border-[#8b6a3e]/60"
+                        style={{ imageRendering: "pixelated" }}
+                        alt={selectedPlayer.player_name}
+                      />
+                      <div>
+                        <p className="text-[16px] font-black text-[#f9e7b2] truncate">{selectedPlayer.player_name}</p>
+                        <p className="text-xs text-[#a08060]">{selectedPlayer.guild_name || "Brak gildii"}</p>
+                        <p className="text-[13px] font-black text-[#f2ca69] mt-0.5">⭐ Poziom {selectedPlayer.level}</p>
+                      </div>
+                    </div>
+                    <EquipSlots
+                      charEquipped={playerDetail?.char_equipped as CharEquipped | null | undefined}
+                      itemUpgRegistry={playerDetail?.item_upg_registry as Record<string,number> | null | undefined}
+                      slot_order={SLOT_ORDER}
+                      slot_label={SLOT_LABEL}
+                    />
+                    <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 px-3 py-3 grid grid-cols-2 gap-x-4 gap-y-3">
+                      {STATS_DEFS.map(s => {
+                        const myVal = (profile?.player_stats as Record<string,number> | null | undefined)?.[s.key] ?? 0;
+                        const theirVal = (playerDetail?.player_stats?.[s.key] ?? 0);
+                        const better = theirVal > myVal;
+                        const worse = theirVal < myVal;
+                        return (
+                          <div key={s.key} className="flex flex-col">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-[#8b6a3e] leading-none">{s.label}</p>
+                            <p className={`text-[24px] font-black leading-tight tabular-nums ${better ? "text-emerald-400" : worse ? "text-red-400" : "text-[#f9e7b2]"}`}>{theirVal}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-2 text-center">
+                        <p className="text-[10px] text-[#8b6a3e] font-bold uppercase">Klienci</p>
+                        <p className="text-[20px] font-black text-emerald-400 tabular-nums">{(selectedPlayer.customer_orders_completed ?? 0).toLocaleString("pl-PL")}</p>
+                      </div>
+                      <div className="rounded-xl border border-[#a8e890]/20 bg-[rgba(168,232,144,0.05)] p-2 text-center">
+                        <p className="text-[10px] text-[#8b6a3e] font-bold uppercase">Pieniądze</p>
+                        <p className="text-[14px] font-black text-[#a8e890] tabular-nums">{new Intl.NumberFormat("pl-PL",{style:"currency",currency:"PLN",minimumFractionDigits:0}).format(selectedPlayer.money)}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
