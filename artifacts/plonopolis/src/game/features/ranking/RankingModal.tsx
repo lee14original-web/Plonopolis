@@ -357,11 +357,11 @@ export function RankingModal({
           </div>
         </div>
 
-        {/* ── Main area: table 55% + right panel 45% — SIZES NEVER CHANGE ── */}
+        {/* ── Main area: table 50% | profile 50% — compare hides table and goes full-width ── */}
         <div className="flex flex-1 min-h-0">
 
-          {/* ── Left: ranking table — always w-[35%] ── */}
-          <div ref={rankingScrollRef} className="w-[35%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
+          {/* ── Left: ranking table — hidden during compare ── */}
+          {!comparing && <div ref={rankingScrollRef} className="w-[50%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -429,10 +429,10 @@ export function RankingModal({
                 </tbody>
               </table>
             )}
-          </div>
+          </div>}
 
-          {/* ── Right panel — always w-[65%], content switches between profile and compare ── */}
-          <div className="w-[65%] shrink-0 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]">
+          {/* ── Right panel — w-[50%] normally, flex-1 (full width) during compare ── */}
+          <div className={`${comparing ? "flex-1" : "w-[50%]"} flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]`}>
 
             {/* ── Normal profile view ── */}
             {!comparing && (
