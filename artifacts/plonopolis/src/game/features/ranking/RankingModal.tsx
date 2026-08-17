@@ -360,8 +360,8 @@ export function RankingModal({
         {/* ── Main area: table 55% + right panel 45% — SIZES NEVER CHANGE ── */}
         <div className="flex flex-1 min-h-0">
 
-          {/* ── Left: ranking table — always w-[55%] ── */}
-          <div ref={rankingScrollRef} className="w-[55%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
+          {/* ── Left: ranking table — always w-[35%] ── */}
+          <div ref={rankingScrollRef} className="w-[35%] overflow-y-auto px-4 py-4 border-r border-[#8b6a3e]/30 shrink-0">
             {rankingLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
@@ -431,8 +431,8 @@ export function RankingModal({
             )}
           </div>
 
-          {/* ── Right panel — always w-[45%], content switches between profile and compare ── */}
-          <div className="w-[45%] shrink-0 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]">
+          {/* ── Right panel — always w-[65%], content switches between profile and compare ── */}
+          <div className="w-[65%] shrink-0 flex flex-col overflow-hidden bg-[rgba(18,10,4,0.60)]">
 
             {/* ── Normal profile view ── */}
             {!comparing && (
