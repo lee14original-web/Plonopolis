@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -53,23 +53,25 @@ import { computeFarmPower } from "./game/utils/farm-power";
 import { ttStyle, getLigaTier, compostTierColor, fmtK, fmtFull } from "./game/utils/ui";
 import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
-import { SettingsModal } from "./game/features/settings/SettingsModal";
-import { LogoutConfirmModal } from "./game/features/settings/LogoutConfirmModal";
-import { RankingModal } from "./game/features/ranking/RankingModal";
-import { MessagesModal } from "./game/features/messages/MessagesModal";
-import { SkinPickerModal } from "./game/features/avatar/SkinPickerModal";
-import { EpicPurchaseModal } from "./game/features/avatar/EpicPurchaseModal";
+// ─── Lazy-loaded modals (ładowane dopiero gdy gracz je otworzy) ───────────────
+const SettingsModal       = React.lazy(() => import("./game/features/settings/SettingsModal").then(m => ({ default: m.SettingsModal })));
+const LogoutConfirmModal  = React.lazy(() => import("./game/features/settings/LogoutConfirmModal").then(m => ({ default: m.LogoutConfirmModal })));
+const RankingModal        = React.lazy(() => import("./game/features/ranking/RankingModal").then(m => ({ default: m.RankingModal })));
+const MessagesModal       = React.lazy(() => import("./game/features/messages/MessagesModal").then(m => ({ default: m.MessagesModal })));
+const SkinPickerModal     = React.lazy(() => import("./game/features/avatar/SkinPickerModal").then(m => ({ default: m.SkinPickerModal })));
+const EpicPurchaseModal   = React.lazy(() => import("./game/features/avatar/EpicPurchaseModal").then(m => ({ default: m.EpicPurchaseModal })));
+const HiveModal           = React.lazy(() => import("./game/features/hive/HiveModal").then(m => ({ default: m.HiveModal })));
+const ShopModal           = React.lazy(() => import("./game/features/shop/ShopModal").then(m => ({ default: m.ShopModal })));
+const BarnModal           = React.lazy(() => import("./game/features/barn/BarnModal").then(m => ({ default: m.BarnModal })));
+const OrchardModal        = React.lazy(() => import("./game/features/orchard/OrchardModal").then(m => ({ default: m.OrchardModal })));
+const CustomersModal      = React.lazy(() => import("./game/features/customers/CustomersModal").then(m => ({ default: m.CustomersModal })));
+const MarketModal         = React.lazy(() => import("./game/features/market/MarketModal").then(m => ({ default: m.MarketModal })));
+const HarvestSessionModal = React.lazy(() => import("./game/features/field/HarvestSessionModal").then(m => ({ default: m.HarvestSessionModal })));
+const TutorialPanel       = React.lazy(() => import("./game/features/tutorial/TutorialPanel").then(m => ({ default: m.TutorialPanel })));
+// ─── Statyczne importy (małe / zawsze potrzebne) ─────────────────────────────
 import { CompostNotificationPopup } from "./game/features/compost/CompostNotificationPopup";
-import { HiveModal } from "./game/features/hive/HiveModal";
-import { ShopModal } from "./game/features/shop/ShopModal";
-import { BarnModal } from "./game/features/barn/BarnModal";
-import { OrchardModal } from "./game/features/orchard/OrchardModal";
-import { CustomersModal } from "./game/features/customers/CustomersModal";
-import { MarketModal } from "./game/features/market/MarketModal";
 import { SeedPicker } from "./game/features/field/SeedPicker";
 import { CompostPicker } from "./game/features/field/CompostPicker";
-import { HarvestSessionModal } from "./game/features/field/HarvestSessionModal";
-import { TutorialPanel } from "./game/features/tutorial/TutorialPanel";
 import { TutorialArrows } from "./game/features/tutorial/TutorialArrows";
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
@@ -8299,7 +8301,7 @@ export default function Page() {
           {/* ═══ TEST MODAL ═══ */}
           {/* ═══ MODAL RANKINGU ═══ */}
             {showRankingPanel && (
-              <RankingModal
+              <Suspense fallback={null}><RankingModal
                 onClose={() => setShowRankingPanel(false)}
                 rankingData={rankingData}
                 rankingLoading={rankingLoading}
@@ -8314,11 +8316,12 @@ export default function Page() {
                 avatarSkin={avatarSkin}
                 openComposeTo={openComposeTo}
               />
+              </Suspense>
             )}
 
           {/* ═══ MODAL WIADOMOŚCI ═══ */}
           {showMessagePanel && (
-            <MessagesModal
+            <Suspense fallback={null}><MessagesModal
               onClose={() => setShowMessagePanel(false)}
               showCompose={showCompose}
               setShowCompose={setShowCompose}
@@ -8357,6 +8360,7 @@ export default function Page() {
               unblockUser={unblockUser}
               openComposeTo={openComposeTo}
             />
+            </Suspense>
           )}
 
                       {/* ─── Modal startowy przewodnika dla nowego gracza ─── */}
@@ -8628,7 +8632,7 @@ export default function Page() {
 
           {/* ═══ SHOP MODAL ═══ */}
           {showShopModal && (
-            <ShopModal
+            <Suspense fallback={null}><ShopModal
               profileId={profile?.id}
               displayMoney={displayMoney}
               displayLevel={displayLevel}
@@ -8648,6 +8652,7 @@ export default function Page() {
               onBuyHiveItem={handleShopBuyHiveItem}
               onBuySeeds={handleShopBuySeeds}
             />
+            </Suspense>
           )}
 
           {/* ═══ DOM MODAL ═══ */}
@@ -10379,7 +10384,7 @@ export default function Page() {
           {compostNotice && <CompostNotificationPopup notice={compostNotice} />}
 
           {showUlModal && (
-            <HiveModal
+            <Suspense fallback={null}><HiveModal
               hiveData={hiveData}
               hiveNow={hiveNow}
               displayMoney={displayMoney}
@@ -10388,10 +10393,11 @@ export default function Page() {
               onAddBees={handleAddBees}
               onCollect={handleCollectHoney}
             />
+            </Suspense>
           )}
 
           {showLadaModal && (
-            <CustomersModal
+            <Suspense fallback={null}><CustomersModal
               showLadaInfo={showLadaInfo}
               ladaDetailIdx={ladaDetailIdx}
               ladaCardHoverIdx={ladaCardHoverIdx}
@@ -10421,6 +10427,7 @@ export default function Page() {
               setCarouselIdx={setCarouselIdx}
               completeCustomerOrder={completeCustomerOrder}
             />
+            </Suspense>
           )}
 
           {customerLootDrop && (() => {
@@ -10651,7 +10658,7 @@ export default function Page() {
           })()}
 
           {showStodolaModal && (
-            <BarnModal
+            <Suspense fallback={null}><BarnModal
               displayLevel={displayLevel}
               displayMoney={displayMoney}
               barnState={barnState}
@@ -10664,10 +10671,11 @@ export default function Page() {
               onCollect={handleBarnCollect}
               onCollectAll={handleBarnCollectAll}
             />
+            </Suspense>
           )}
 
           {showSadModal && (
-            <OrchardModal
+            <Suspense fallback={null}><OrchardModal
               displayLevel={displayLevel}
               orchardState={orchardState}
               orchardError={orchardError}
@@ -10679,10 +10687,11 @@ export default function Page() {
               onHarvestTree={handleOrchardHarvestTree}
               onHarvestAll={handleOrchardHarvestAll}
             />
+            </Suspense>
           )}
 
           {showSkinModal && (
-            <SkinPickerModal
+            <Suspense fallback={null}><SkinPickerModal
               onClose={() => setShowSkinModal(false)}
               avatarSkin={avatarSkin}
               avatarChangeCount={avatarChangeCount}
@@ -10697,6 +10706,7 @@ export default function Page() {
               setHoveredEpicSkin={setHoveredEpicSkin}
               setEpicPurchaseTarget={setEpicPurchaseTarget}
             />
+            </Suspense>
           )}
 
           {/* ═══ TOOLTIP EPICKIEGO SKINA ═══ */}
@@ -10799,13 +10809,14 @@ export default function Page() {
 
           {/* ═══ MODAL ZAKUPU EPICKIEGO AVATARA ═══ */}
           {epicPurchaseTarget !== null && (
-            <EpicPurchaseModal
+            <Suspense fallback={null}><EpicPurchaseModal
               epicPurchaseTarget={epicPurchaseTarget}
               onClose={() => setEpicPurchaseTarget(null)}
               seedInventory={seedInventory}
               playerMoney={profile?.money ?? 0}
               onConfirm={handleBuyEpicAvatar}
             />
+            </Suspense>
           )}
 
           {isFieldViewOpen && isOnFarmMap && (
@@ -11945,7 +11956,7 @@ export default function Page() {
 
           {/* ═══ MODAL — SESJA ZBIORÓW ═══ */}
           {isFvHarvestModalOpen && isFieldViewOpen && (
-            <HarvestSessionModal
+            <Suspense fallback={null}><HarvestSessionModal
               harvestLog={harvestLog}
               isDailyHarvestView={isDailyHarvestView}
               setIsDailyHarvestView={setIsDailyHarvestView}
@@ -11964,6 +11975,7 @@ export default function Page() {
               charEquipped={charEquipped}
               hiveData={hiveData}
             />
+            </Suspense>
           )}
 
           {/* Fixed tooltip dla ikon jakości w tutorialu krok 12 — fixed ignoruje overflow-hidden */}
@@ -11980,7 +11992,7 @@ export default function Page() {
 
           {/* ═══ POPUP POTWIERDZENIA WYLOGOWANIA (Esc na farmie) ═══ */}
           {showSettingsModal && (
-            <SettingsModal
+            <Suspense fallback={null}><SettingsModal
               gameSettings={gameSettings}
               saveGameSettings={saveGameSettings}
               onClose={() => setShowSettingsModal(false)}
@@ -11989,13 +12001,15 @@ export default function Page() {
               setUserZoomFactor={setUserZoomFactor}
               isMobileLayout={isMobileLayout}
             />
+            </Suspense>
           )}
 
           {showLogoutConfirm && (
-            <LogoutConfirmModal
+            <Suspense fallback={null}><LogoutConfirmModal
               onClose={() => setShowLogoutConfirm(false)}
               onConfirm={() => { setShowLogoutConfirm(false); void handleLogout(); }}
             />
+            </Suspense>
           )}
 
         </div>
@@ -12238,7 +12252,7 @@ export default function Page() {
       {/* ─── TARG GRACZY: przycisk wejścia — usunięty, otwiera się bezpośrednio ─── */}
 
       {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
-      <MarketModal
+      <Suspense fallback={null}><MarketModal
         showMarketModal={showMarketModal}
         marketPickerOpen={marketPickerOpen}
         marketTab={marketTab}
@@ -12295,12 +12309,12 @@ export default function Page() {
         handleClaimAllReturns={handleClaimAllReturns}
         buildSellableItems={buildSellableItems}
         getItemUpg={getItemUpg}
-      />
+      /></Suspense>
 
 
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
         {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && tutorialStep >= 1 && tutorialStep <= 13 && !showWelcome && (
-          <TutorialPanel
+          <Suspense fallback={null}><TutorialPanel
             tutorialStep={tutorialStep}
             tutorialPlotIds={tutorialPlotIds}
             plotCrops={plotCrops}
@@ -12315,7 +12329,7 @@ export default function Page() {
               await supabase.from("profiles").update({ tutorial_completed: true }).eq("id", profile.id);
               setProfile(p => p ? { ...p, tutorial_completed: true } : p);
             }}
-          />
+          /></Suspense>
         )}
 
         {/* Tutorial: delikatne przyciemnienie mapy na kroku 1 */}
