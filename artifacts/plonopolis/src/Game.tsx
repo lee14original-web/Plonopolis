@@ -116,10 +116,7 @@ export default function Page() {
     const t = setTimeout(() => setMessage(null), ms);
     return () => clearTimeout(t);
   }, [message]);
-  // Preloading grafik avatarów przy starcie gry — żeby modal otwierał się bez lagów
-  React.useEffect(() => {
-    ALL_SKINS.forEach(src => { const img = new Image(); img.src = src; });
-  }, []);
+  // Preload avatarów usunięty — przeglądarka cache'uje obrazy przy pierwszym renderze
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
@@ -6307,7 +6304,7 @@ export default function Page() {
       {(isOnFarmMap || isOnCityMap || !profile) && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
-          backgroundImage: `url(${(isOnFarmMap || isOnCityMap) ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"})`,
+          backgroundImage: `url(${(isOnFarmMap || isOnCityMap) ? `/mapy/${backgroundMap}.webp` : "/mapy/assetsmain-lobby.webp"})`,
           backgroundSize: "cover", backgroundPosition: "center",
           filter: "blur(18px) brightness(0.45)",
           transform: "scale(1.12)",
@@ -6408,7 +6405,7 @@ export default function Page() {
         }}>
           {/* A1+A2: brak imageRendering:pixelated — bilinear filtering; wymiary finalne zamiast źródłowych */}
           <img
-            src={profile ? `/mapy/${backgroundMap}.png` : "/mapy/assetsmain-lobby.png"}
+            src={profile ? `/mapy/${backgroundMap}.webp` : "/mapy/assetsmain-lobby.webp"}
             alt="Mapa gry"
             className="pointer-events-none absolute inset-0 h-full w-full select-none"
             draggable={false}
@@ -6418,7 +6415,7 @@ export default function Page() {
           {mapCrossfade && mapCrossfade.to === backgroundMap && (
             <img
               key={mapCrossfade.from}
-              src={`/mapy/${mapCrossfade.from}.png`}
+              src={`/mapy/${mapCrossfade.from}.webp`}
               alt=""
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 select-none"
@@ -7236,7 +7233,7 @@ export default function Page() {
                           {/* Panorama — przesuwa się z kamerą */}
                           <div
                             className="absolute top-0"
-                            style={{ width: TH_W, height: imageH, transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.png')", backgroundSize: `${imageW}px ${imageH}px`, backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
+                            style={{ width: TH_W, height: imageH, transform: `translateX(-${townHallCamX}px) scale(${townHallScale})`, transformOrigin: "top left", backgroundImage: "url('/mapy/city_townhall.webp')", backgroundSize: `${imageW}px ${imageH}px`, backgroundRepeat: "no-repeat", imageRendering: "pixelated" }}
                           >
                             {townHallHitboxes.map(hb => {
                               if (thHitboxEditMode && !(hb.action === "ranking" && thTextEditMode)) {
@@ -9092,7 +9089,7 @@ export default function Page() {
                         <div className="flex flex-col gap-3">
                           {/* Grafika postaci z hitboxami — plik: public/ekwip_postac.png */}
                           <div className="relative w-full rounded-xl overflow-hidden border border-[#8b6a3e]/30" style={{ aspectRatio:"1536/1024", background:"rgba(10,6,2,0.6)" }}>
-                            <img src="/ekwipunek/ekwip_postac.png" alt="Postać" draggable={false}
+                            <img src="/ekwipunek/ekwip_postac.webp" alt="Postać" draggable={false}
                               className="absolute inset-0 w-full h-full object-contain select-none pointer-events-none" />
                             {(["glowa","dlonie","nogi"] as EquipSlot[]).map(slot => {
                               const box = SLOT_BOX[slot];

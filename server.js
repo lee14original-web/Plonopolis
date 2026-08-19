@@ -10,6 +10,7 @@ const https = require('https');
 const fs    = require('fs');
 const path  = require('path');
 const url   = require('url');
+const zlib  = require('zlib');
 
 const PORT         = process.env.PORT || 3000;
 const STATIC_DIR   = path.join(__dirname, 'public');
@@ -98,17 +99,33 @@ http.createServer((req, res) => {
   }
 
   // ── Static files ─────────────────────────────────────────────────────────
+  const GZIP_TYPES = new Set([
+    'text/html; charset=utf-8', 'application/javascript',
+    'text/css', 'application/json', 'image/svg+xml',
+  ]);
   const filePath = path.join(STATIC_DIR, pathname);
   fs.stat(filePath, (err, stat) => {
     if (!err && stat.isFile()) {
       const ext  = path.extname(filePath).toLowerCase();
       const mime = MIME[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': mime });
-      fs.createReadStream(filePath).pipe(res, { end: true });
+      const acceptsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
+      if (acceptsGzip && GZIP_TYPES.has(mime)) {
+        res.writeHead(200, { 'Content-Type': mime, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding' });
+        fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res, { end: true });
+      } else {
+        res.writeHead(200, { 'Content-Type': mime });
+        fs.createReadStream(filePath).pipe(res, { end: true });
+      }
     } else {
       const idx = path.join(STATIC_DIR, 'index.html');
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      fs.createReadStream(idx).pipe(res, { end: true });
+      const acceptsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
+      if (acceptsGzip) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding' });
+        fs.createReadStream(idx).pipe(zlib.createGzip()).pipe(res, { end: true });
+      } else {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        fs.createReadStream(idx).pipe(res, { end: true });
+      }
     }
   });
 }).listen(PORT, '0.0.0.0', () => {

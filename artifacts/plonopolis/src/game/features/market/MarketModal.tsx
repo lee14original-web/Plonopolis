@@ -185,7 +185,7 @@ export function MarketModal({
     <>
       {showMarketModal && (
         <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden"
-          style={{ background: `url('/mapy/targ_tlo.png') center/cover no-repeat, rgba(18,10,5,0.99)` }}>
+          style={{ background: `url('/mapy/targ_tlo.webp') center/cover no-repeat, rgba(18,10,5,0.99)` }}>
           <div className="relative flex w-full flex-1 min-h-0 flex-col overflow-hidden">
             {/* Nagłówek */}
             <div className="flex shrink-0 items-center justify-between border-b border-[#8b6a3e] bg-[linear-gradient(180deg,rgba(110,73,35,0.97),rgba(76,48,23,0.97))] px-6 py-4">
