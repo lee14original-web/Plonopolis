@@ -162,7 +162,7 @@ export function HarvestSessionModal({
                                       ? { borderColor: _qd.borderColor, background: _qd.bgColor, animation: "legendaryPulse 2s ease-in-out infinite" }
                                       : { borderColor: _qd.borderColor, background: _qd.bgColor }}>
                                     {_sprite
-                                      ? <img src={_sprite} alt={_cropDef?.name ?? it.crop_id} className="h-full w-full object-contain p-1" />
+                                      ? <img src={_sprite} alt={_cropDef?.name ?? it.crop_id} className="h-full w-full object-contain p-1" loading="lazy" decoding="async" />
                                       : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
                                     }
                                     {it.quality === "legendary" && (
@@ -215,7 +215,7 @@ export function HarvestSessionModal({
                                         <span className="text-[13px] font-black text-sky-300 leading-none">XP</span>
                                       </span>
                                     : _sprite
-                                      ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" />
+                                      ? <img src={_sprite} alt={g.cropName} className="h-full w-full object-contain p-1" loading="lazy" decoding="async" />
                                       : <span className="flex h-full w-full items-center justify-center text-3xl">🌾</span>
                                   }
                                   {g.quality === "legendary" && !_isExpOnly && (
@@ -264,10 +264,10 @@ export function HarvestSessionModal({
                       {/* 4 ikony jakości marchewki — poglądowo */}
                       <div className="mb-5 flex gap-5 items-start">
                         {([
-                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.png",           label: "Popsuta",    expLabel: "+0",      chance: "~10%",   border: "#9ca3af" },
-                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.png", label: "Zwykła",     expLabel: "+6",      chance: "~87,5%", border: "#d1d5db" },
-                          { quality: "epic",      sprite: "/uprawy/carrot_epic.png",             label: "Epicka",     expLabel: "+18–36",  chance: "~2%",    border: "#22c55e" },
-                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.png",        label: "Legendarna", expLabel: "+60–120", chance: "~0,5%",  border: "#f59e0b" },
+                          { quality: "rotten",    sprite: "/uprawy/carrot_rotten.webp",           label: "Popsuta",    expLabel: "+0",      chance: "~10%",   border: "#9ca3af" },
+                          { quality: "good",      sprite: "/uprawy/carrot_icon_transparent.webp", label: "Zwykła",     expLabel: "+6",      chance: "~87,5%", border: "#d1d5db" },
+                          { quality: "epic",      sprite: "/uprawy/carrot_epic.webp",             label: "Epicka",     expLabel: "+18–36",  chance: "~2%",    border: "#22c55e" },
+                          { quality: "legendary", sprite: "/uprawy/carrot_legendary.webp",        label: "Legendarna", expLabel: "+60–120", chance: "~0,5%",  border: "#f59e0b" },
                         ] as { quality: string; sprite: string; label: string; expLabel: string; chance: string; border: string }[]).map(q => (
                           <div key={q.quality}
                             className="flex flex-col items-center gap-1.5 cursor-help"
@@ -275,7 +275,7 @@ export function HarvestSessionModal({
                             onMouseLeave={() => setFvQualityTip(null)}
                           >
                             <div className="w-[80px] h-[80px] rounded-xl border-2 flex items-center justify-center bg-[rgba(255,255,255,0.04)] overflow-hidden" style={{ borderColor: q.border }}>
-                              <img src={q.sprite} alt={q.label} className="w-14 h-14 object-contain" style={{ imageRendering: "pixelated" }} />
+                              <img src={q.sprite} alt={q.label} className="w-14 h-14 object-contain" style={{ imageRendering: "pixelated" }} loading="lazy" decoding="async" />
                             </div>
                             <span className="text-[13px] font-bold text-[#dfcfab] whitespace-nowrap">{q.label}</span>
                           </div>

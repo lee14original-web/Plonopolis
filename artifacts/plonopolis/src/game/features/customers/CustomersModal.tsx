@@ -467,7 +467,7 @@ return (<>
                           return (
                             <div key={it.id} className="flex items-center gap-2.5">
                               {d.spritePath ? (
-                                <img src={d.spritePath} alt={d.name} className="w-14 h-14 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} />
+                                <img src={d.spritePath} alt={d.name} className="w-14 h-14 object-contain shrink-0" style={{ imageRendering: 'pixelated' }} loading="lazy" decoding="async" />
                               ) : (
                                 <span className="text-3xl leading-none shrink-0">{d.icon}</span>
                               )}
@@ -617,7 +617,7 @@ return (<>
                               {/* Blok avatara */}
                               <div className={`relative w-full rounded-3xl overflow-hidden bg-black/40 ${ringCls}`} style={{ aspectRatio: '2 / 3' }}>
                                 {avatarPath
-                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" />
+                                  ? <img src={avatarPath} alt={cd.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                                   : <div className="w-full h-full flex items-center justify-center">
                                       <span className="text-9xl leading-none">{cd.icon}</span>
                                     </div>
@@ -769,7 +769,7 @@ return (<>
                     <div key={idx} className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${ok ? 'border-emerald-600/40 bg-emerald-950/20' : 'border-red-600/40 bg-red-950/15'}`}>
                       <span className="text-xl shrink-0">{ok ? '✅' : '❌'}</span>
                       {d.spritePath ? (
-                        <img src={d.spritePath} alt={d.name} className="w-10 h-10 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                        <img src={d.spritePath} alt={d.name} className="w-10 h-10 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} loading="lazy" decoding="async" />
                       ) : (
                         <span className="text-3xl shrink-0">{d.icon}</span>
                       )}
@@ -820,7 +820,7 @@ return (<>
                         <div key={idx} className="flex items-center gap-2">
                           <span className="text-sm font-black text-purple-300">+{b.qty}×</span>
                           {d.spritePath ? (
-                            <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                            <img src={d.spritePath} alt={d.name} className="w-7 h-7 object-contain shrink-0 drop-shadow" style={{ imageRendering: 'pixelated' }} loading="lazy" decoding="async" />
                           ) : (
                             <span className="text-xl shrink-0">{d.icon}</span>
                           )}

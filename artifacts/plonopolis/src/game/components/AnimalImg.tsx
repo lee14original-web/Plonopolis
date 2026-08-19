@@ -5,12 +5,14 @@ export function AnimalImg({ id, icon, className }: { id: string; icon: string; c
   if (err) return <span className={className}>{icon}</span>;
   return (
     <img
-      src={`/zwierzeta/${id}.png`}
+      src={`/zwierzeta/${id}.webp`}
       alt={id}
       onError={() => setErr(true)}
       className={className}
       style={{ objectFit: "contain" }}
       draggable={false}
+      loading="lazy"
+      decoding="async"
     />
   );
 }

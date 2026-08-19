@@ -7604,7 +7604,7 @@ export default function Page() {
                                         </span>
                                         <img src={ALL_SKINS[isMe?(avatarSkin>=0?avatarSkin:0):((p.avatar_skin??-1)>=0?(p.avatar_skin??0):0)]??ALL_SKINS[0]}
                                           alt={p.player_name} className="h-12 w-12 rounded-full border-2 object-cover shrink-0"
-                                          style={{borderColor:tier.border,imageRendering:"pixelated"}} />
+                                          style={{borderColor:tier.border,imageRendering:"pixelated"}} loading="lazy" decoding="async" />
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2">
                                             <span className={`font-bold truncate ${isMe?"text-yellow-200":"text-[#f3e6c8]"}`}>{p.player_name}</span>
@@ -8112,7 +8112,7 @@ export default function Page() {
                                                   ? { borderColor: _qDef2.borderColor, background: _qDef2.bgColor }
                                                   : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}
                                           >
-                                            <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                            <img src={_qualitySprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} loading="lazy" decoding="async" />
                                             {_bQuality === "legendary" && (
                                               <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
                                                 <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
@@ -9123,7 +9123,7 @@ export default function Page() {
                                   {eItem ? (
                                     <>
                                       {eItem.img
-                                        ? <img src={eItem.img} alt={eItem.name} className="absolute inset-0 w-full h-full object-cover rounded-lg" draggable={false} />
+                                        ? <img src={eItem.img} alt={eItem.name} className="absolute inset-0 w-full h-full object-cover rounded-lg" draggable={false} loading="lazy" decoding="async" />
                                         : <span className="text-xl leading-none">{eItem.icon}</span>}
                                       <span className="absolute bottom-0 left-0 right-0 z-10 text-center text-[14px] font-black text-[#f9e7b2] leading-tight px-1 py-1 truncate rounded-b-lg" style={{ background:"rgba(0,0,0,0.60)", textShadow:"0 1px 4px #000" }}>{eItem.name.split(" ")[0]}</span>
                                       {upg === 10
@@ -9287,7 +9287,7 @@ export default function Page() {
                                       className={`group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none ${isDragging?"opacity-40 cursor-grabbing":"cursor-pointer hover:brightness-125"}`}
                                       style={{ borderColor:isOn?uc:"#8b6a3e", background:isOn?"rgba(60,40,5,0.55)":"rgba(10,6,2,0.55)", boxShadow:isOn?`0 0 8px ${uc}44`:"none" }}>
                                       {item.img
-                                        ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
+                                        ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} loading="lazy" decoding="async" />
                                         : <span className="text-2xl leading-none">{item.icon}</span>}
                                       {isOn && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"33",color:uc}}>✓{curUpg>0?` +${curUpg}`:""}</span>}
                                       {!isOn && curUpg>0 && <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{curUpg}</span>}
@@ -9491,7 +9491,7 @@ export default function Page() {
                                         className="group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition select-none cursor-pointer hover:brightness-125"
                                         style={{ borderColor: isSel ? "#fbbf24" : "#8b6a3e", background: isSel ? "rgba(60,40,5,0.55)" : "rgba(10,6,2,0.55)", boxShadow: isSel ? "0 0 8px rgba(251,191,36,0.55)" : "none", opacity: isSel ? 1 : 0.92 }}>
                                         {item.img
-                                          ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} />
+                                          ? <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover rounded-xl" draggable={false} loading="lazy" decoding="async" />
                                           : <span className="text-2xl leading-none">{item.icon}</span>}
                                         <span className="absolute top-1 right-1 z-10 rounded text-[8px] font-black px-0.5" style={{background:uc+"22",color:uc}}>+{entry.upg}</span>
                                         {/* Tooltip */}
@@ -9596,7 +9596,7 @@ export default function Page() {
                                           : qDef
                                             ? { borderColor: qDef.borderColor, background: qDef.bgColor }
                                             : { borderColor: "#8b6a3e", background: "rgba(20,12,8,0.65)" }}>
-                                      <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} />
+                                      <img src={sprite} alt={crop.name} className="absolute inset-0 h-full w-full object-contain rounded-xl" style={{ imageRendering: "pixelated" }} loading="lazy" decoding="async" />
                                       {quality === "legendary" && (
                                         <span className="pointer-events-none absolute inset-0 rounded-xl overflow-hidden">
                                           <span className="absolute inset-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent" style={{ animation: "legendaryShimmer 2.4s ease-in-out infinite" }} />
@@ -10093,7 +10093,7 @@ export default function Page() {
                                 style={qDef ? { borderColor: qDef.borderColor + "88" } : undefined}>
                                 {sprite ? (
                                   // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={sprite} alt={crop.name} className="w-24 h-24 object-contain" />
+                                  <img src={sprite} alt={crop.name} className="w-24 h-24 object-contain" loading="lazy" decoding="async" />
                                 ) : (
                                   <span className="text-3xl">🌱</span>
                                 )}
@@ -10237,7 +10237,7 @@ export default function Page() {
                                       className="relative flex flex-col items-center justify-center aspect-square rounded-xl border-2 overflow-hidden transition cursor-help hover:brightness-110"
                                       style={{ borderColor: rarityDef.border, background: `rgba(0,0,0,0.5)`, boxShadow: `0 0 12px ${rarityDef.shadow}` }}>
                                       {it?.img
-                                        ? <img src={it.img} alt={it.name} className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+                                        ? <img src={it.img} alt={it.name} className="absolute inset-0 w-full h-full object-cover" draggable={false} loading="lazy" decoding="async" />
                                         : <span className="text-3xl">{r.itemIcon}</span>}
                                       <span className="relative z-10 mt-1 text-[10px] font-black truncate w-full text-center px-1" style={{ color: rarityDef.border, textShadow:"0 1px 3px #000" }}>{r.itemName}</span>
                                       <span className="relative z-10 text-[8px] font-bold" style={{ color: rarityDef.border, opacity:0.85, textShadow:"0 1px 2px #000" }}>{rarityDef.label}</span>
@@ -10529,7 +10529,7 @@ export default function Page() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         {d.spritePath ? (
-                          <img src={d.spritePath} alt={d.name} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} />
+                          <img src={d.spritePath} alt={d.name} className="w-8 h-8 object-contain" style={{ imageRendering: 'pixelated' }} loading="lazy" decoding="async" />
                         ) : (
                           <span className="text-2xl">🌱</span>
                         )}
@@ -10617,7 +10617,7 @@ export default function Page() {
                           >
                             <div className="flex items-center justify-center mb-1 h-12">
                               {d.spritePath ? (
-                                <img src={d.spritePath} alt={d.name} className="w-12 h-12 object-contain drop-shadow" style={{ imageRendering: 'pixelated' }} />
+                                <img src={d.spritePath} alt={d.name} className="w-12 h-12 object-contain drop-shadow" style={{ imageRendering: 'pixelated' }} loading="lazy" decoding="async" />
                               ) : (
                                 <span className="text-4xl">{d.icon}</span>
                               )}
@@ -10712,7 +10712,7 @@ export default function Page() {
                 {/* Podgląd skina */}
                 <div className="mb-3 flex justify-center">
                   <div className="relative h-32 w-32 overflow-hidden rounded-2xl border-2 border-green-500/60 shadow-[0_0_16px_rgba(34,197,94,0.3)]">
-                    <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(80%) brightness(0.5)" }} />
+                    <img src={es.path} alt={es.name} className="h-full w-full object-cover" style={{ imageRendering: "pixelated", filter: isUnlocked ? "none" : "grayscale(80%) brightness(0.5)" }} loading="lazy" decoding="async" />
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-4xl">🔒</span>
@@ -11488,7 +11488,7 @@ export default function Page() {
                                         alt={_plantedCrop?.name}
                                         className={`pointer-events-none absolute inset-[8%] h-[84%] w-[84%] object-contain${_isReady ? " animate-pulse" : ""}`}
                                         style={{ imageRendering: "pixelated" }}
-                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = _plantedCrop?.spritePath ?? "/uprawy/carrot.png"; }}
+                                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = _plantedCrop?.spritePath ?? "/uprawy/carrot.webp"; }}
                                       />
                                     );
                                   }
@@ -11496,7 +11496,7 @@ export default function Page() {
                                     <div
                                       className={`pointer-events-none absolute inset-[8%]${_isReady ? " animate-pulse" : ""}`}
                                       style={{
-                                        backgroundImage: `url('${_plantedCrop?.spritePath ?? "/uprawy/carrot.png"}')`,
+                                        backgroundImage: `url('${_plantedCrop?.spritePath ?? "/uprawy/carrot.webp"}')`,
                                         backgroundSize: "100% 100%",
                                         backgroundRepeat: "no-repeat",
                                         imageRendering: "pixelated",
