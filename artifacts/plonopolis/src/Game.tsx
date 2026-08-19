@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, Suspense } from "react";
+import React, { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -53,26 +53,24 @@ import { computeFarmPower } from "./game/utils/farm-power";
 import { ttStyle, getLigaTier, compostTierColor, fmtK, fmtFull } from "./game/utils/ui";
 import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
-// ─── Lazy-loaded modals (ładowane dopiero gdy gracz je otworzy) ───────────────
-const SettingsModal       = React.lazy(() => import("./game/features/settings/SettingsModal").then(m => ({ default: m.SettingsModal })));
-const LogoutConfirmModal  = React.lazy(() => import("./game/features/settings/LogoutConfirmModal").then(m => ({ default: m.LogoutConfirmModal })));
-const RankingModal        = React.lazy(() => import("./game/features/ranking/RankingModal").then(m => ({ default: m.RankingModal })));
-const MessagesModal       = React.lazy(() => import("./game/features/messages/MessagesModal").then(m => ({ default: m.MessagesModal })));
-const SkinPickerModal     = React.lazy(() => import("./game/features/avatar/SkinPickerModal").then(m => ({ default: m.SkinPickerModal })));
-const EpicPurchaseModal   = React.lazy(() => import("./game/features/avatar/EpicPurchaseModal").then(m => ({ default: m.EpicPurchaseModal })));
-const HiveModal           = React.lazy(() => import("./game/features/hive/HiveModal").then(m => ({ default: m.HiveModal })));
-const ShopModal           = React.lazy(() => import("./game/features/shop/ShopModal").then(m => ({ default: m.ShopModal })));
-const BarnModal           = React.lazy(() => import("./game/features/barn/BarnModal").then(m => ({ default: m.BarnModal })));
-const OrchardModal        = React.lazy(() => import("./game/features/orchard/OrchardModal").then(m => ({ default: m.OrchardModal })));
-const CustomersModal      = React.lazy(() => import("./game/features/customers/CustomersModal").then(m => ({ default: m.CustomersModal })));
-const MarketModal         = React.lazy(() => import("./game/features/market/MarketModal").then(m => ({ default: m.MarketModal })));
-const HarvestSessionModal = React.lazy(() => import("./game/features/field/HarvestSessionModal").then(m => ({ default: m.HarvestSessionModal })));
-const TutorialPanel       = React.lazy(() => import("./game/features/tutorial/TutorialPanel").then(m => ({ default: m.TutorialPanel })));
-// ─── Statyczne importy (małe / zawsze potrzebne) ─────────────────────────────
-import { CompostNotificationPopup } from "./game/features/compost/CompostNotificationPopup";
-import { SeedPicker } from "./game/features/field/SeedPicker";
-import { CompostPicker } from "./game/features/field/CompostPicker";
-import { TutorialArrows } from "./game/features/tutorial/TutorialArrows";
+const SettingsModal = lazy(() => import("./game/features/settings/SettingsModal").then(m => ({ default: m.SettingsModal })));
+const LogoutConfirmModal = lazy(() => import("./game/features/settings/LogoutConfirmModal").then(m => ({ default: m.LogoutConfirmModal })));
+const RankingModal = lazy(() => import("./game/features/ranking/RankingModal").then(m => ({ default: m.RankingModal })));
+const MessagesModal = lazy(() => import("./game/features/messages/MessagesModal").then(m => ({ default: m.MessagesModal })));
+const SkinPickerModal = lazy(() => import("./game/features/avatar/SkinPickerModal").then(m => ({ default: m.SkinPickerModal })));
+const EpicPurchaseModal = lazy(() => import("./game/features/avatar/EpicPurchaseModal").then(m => ({ default: m.EpicPurchaseModal })));
+const CompostNotificationPopup = lazy(() => import("./game/features/compost/CompostNotificationPopup").then(m => ({ default: m.CompostNotificationPopup })));
+const HiveModal = lazy(() => import("./game/features/hive/HiveModal").then(m => ({ default: m.HiveModal })));
+const ShopModal = lazy(() => import("./game/features/shop/ShopModal").then(m => ({ default: m.ShopModal })));
+const BarnModal = lazy(() => import("./game/features/barn/BarnModal").then(m => ({ default: m.BarnModal })));
+const OrchardModal = lazy(() => import("./game/features/orchard/OrchardModal").then(m => ({ default: m.OrchardModal })));
+const CustomersModal = lazy(() => import("./game/features/customers/CustomersModal").then(m => ({ default: m.CustomersModal })));
+const MarketModal = lazy(() => import("./game/features/market/MarketModal").then(m => ({ default: m.MarketModal })));
+const SeedPicker = lazy(() => import("./game/features/field/SeedPicker").then(m => ({ default: m.SeedPicker })));
+const CompostPicker = lazy(() => import("./game/features/field/CompostPicker").then(m => ({ default: m.CompostPicker })));
+const HarvestSessionModal = lazy(() => import("./game/features/field/HarvestSessionModal").then(m => ({ default: m.HarvestSessionModal })));
+const TutorialPanel = lazy(() => import("./game/features/tutorial/TutorialPanel").then(m => ({ default: m.TutorialPanel })));
+const TutorialArrows = lazy(() => import("./game/features/tutorial/TutorialArrows").then(m => ({ default: m.TutorialArrows })));
 
 // ─── Ustawienia gry (nie wydzielone — używane bezpośrednio w komponencie) ─────
 const DEFAULT_GAME_SETTINGS: GameSettings = { musicEnabled: true, soundEnabled: true, graphicsQuality: "high", musicVolume: 0.4 };
@@ -8315,8 +8313,7 @@ export default function Page() {
                 profile={profile}
                 avatarSkin={avatarSkin}
                 openComposeTo={openComposeTo}
-              />
-              </Suspense>
+              /></Suspense>
             )}
 
           {/* ═══ MODAL WIADOMOŚCI ═══ */}
@@ -8359,8 +8356,7 @@ export default function Page() {
               blockUser={blockUser}
               unblockUser={unblockUser}
               openComposeTo={openComposeTo}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
                       {/* ─── Modal startowy przewodnika dla nowego gracza ─── */}
@@ -8651,8 +8647,7 @@ export default function Page() {
               onBuyTree={handleShopBuyTree}
               onBuyHiveItem={handleShopBuyHiveItem}
               onBuySeeds={handleShopBuySeeds}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {/* ═══ DOM MODAL ═══ */}
@@ -10381,7 +10376,7 @@ export default function Page() {
           )}
 
           {/* ═══ POWIADOMIENIE KOMPOSTU ═══ */}
-          {compostNotice && <CompostNotificationPopup notice={compostNotice} />}
+          {compostNotice && <Suspense fallback={null}><CompostNotificationPopup notice={compostNotice} /></Suspense>}
 
           {showUlModal && (
             <Suspense fallback={null}><HiveModal
@@ -10392,8 +10387,7 @@ export default function Page() {
               onBuyHive={handleBuyHive}
               onAddBees={handleAddBees}
               onCollect={handleCollectHoney}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {showLadaModal && (
@@ -10426,8 +10420,7 @@ export default function Page() {
               setLadaView={setLadaView}
               setCarouselIdx={setCarouselIdx}
               completeCustomerOrder={completeCustomerOrder}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {customerLootDrop && (() => {
@@ -10670,8 +10663,7 @@ export default function Page() {
               onFeed={handleBarnFeed}
               onCollect={handleBarnCollect}
               onCollectAll={handleBarnCollectAll}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {showSadModal && (
@@ -10686,8 +10678,7 @@ export default function Page() {
               onClose={() => setShowSadModal(false)}
               onHarvestTree={handleOrchardHarvestTree}
               onHarvestAll={handleOrchardHarvestAll}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {showSkinModal && (
@@ -10705,8 +10696,7 @@ export default function Page() {
               setHoveredNormalSkin={setHoveredNormalSkin}
               setHoveredEpicSkin={setHoveredEpicSkin}
               setEpicPurchaseTarget={setEpicPurchaseTarget}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {/* ═══ TOOLTIP EPICKIEGO SKINA ═══ */}
@@ -10815,8 +10805,7 @@ export default function Page() {
               seedInventory={seedInventory}
               playerMoney={profile?.money ?? 0}
               onConfirm={handleBuyEpicAvatar}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {isFieldViewOpen && isOnFarmMap && (
@@ -11148,7 +11137,7 @@ export default function Page() {
 
                   {/* ─── Picker: Nasiona ─── */}
                   {fvSeedPickerOpen && !fvToolEditMode && (
-                    <SeedPicker
+                    <Suspense fallback={null}><SeedPicker
                       fvSeedPickerOpen={fvSeedPickerOpen}
                       fvToolEditMode={fvToolEditMode}
                       setFvSeedPickerOpen={setFvSeedPickerOpen}
@@ -11165,12 +11154,12 @@ export default function Page() {
                       effectiveStats={effectiveStats}
                       charEquipped={charEquipped}
                       hiveData={hiveData}
-                    />
+                    /></Suspense>
                   )}
 
                   {/* ─── Picker: Kompost ─── */}
                   {fvCompostPickerOpen && !fvToolEditMode && (
-                    <CompostPicker
+                    <Suspense fallback={null}><CompostPicker
                       fvCompostPickerOpen={fvCompostPickerOpen}
                       fvToolEditMode={fvToolEditMode}
                       setFvCompostPickerOpen={setFvCompostPickerOpen}
@@ -11181,7 +11170,7 @@ export default function Page() {
                       advanceTutorialStep={advanceTutorialStep}
                       tutorialStep={tutorialStep}
                       setCardTip={setCardTip}
-                    />
+                    /></Suspense>
                   )}
 
                   {/* ─── Prawa kolumna: narzędzia masowe ─── */}
@@ -11974,8 +11963,7 @@ export default function Page() {
               effectiveStats={effectiveStats}
               charEquipped={charEquipped}
               hiveData={hiveData}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {/* Fixed tooltip dla ikon jakości w tutorialu krok 12 — fixed ignoruje overflow-hidden */}
@@ -12000,16 +11988,14 @@ export default function Page() {
               userZoomFactor={userZoomFactor}
               setUserZoomFactor={setUserZoomFactor}
               isMobileLayout={isMobileLayout}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
           {showLogoutConfirm && (
             <Suspense fallback={null}><LogoutConfirmModal
               onClose={() => setShowLogoutConfirm(false)}
               onConfirm={() => { setShowLogoutConfirm(false); void handleLogout(); }}
-            />
-            </Suspense>
+            /></Suspense>
           )}
 
         </div>
@@ -12252,7 +12238,7 @@ export default function Page() {
       {/* ─── TARG GRACZY: przycisk wejścia — usunięty, otwiera się bezpośrednio ─── */}
 
       {/* ─── TARG GRACZY: modal ──────────────────────────────────────────────── */}
-      <Suspense fallback={null}><MarketModal
+      {showMarketModal && <Suspense fallback={null}><MarketModal
         showMarketModal={showMarketModal}
         marketPickerOpen={marketPickerOpen}
         marketTab={marketTab}
@@ -12309,7 +12295,7 @@ export default function Page() {
         handleClaimAllReturns={handleClaimAllReturns}
         buildSellableItems={buildSellableItems}
         getItemUpg={getItemUpg}
-      /></Suspense>
+      /></Suspense>}
 
 
         {/* ─── Panel Przewodnika (globalny fixed overlay) ─── */}
@@ -12338,15 +12324,17 @@ export default function Page() {
         )}
 
         {/* Tutorial: strzałki wskazujące aktywny element */}
-        <TutorialArrows
-          profile={profile}
-          tutorialStep={tutorialStep}
-          tutorialArrow={tutorialArrow}
-          isFvHarvestModalOpen={isFvHarvestModalOpen}
-          fvZbioryPos={fvZbioryPos}
-          fvTutArrow12Pos={fvTutArrow12Pos}
-          fvTutArrow13Pos={fvTutArrow13Pos}
-        />
+        {!!profile?.id && profile.tutorial_started === true && profile.tutorial_completed !== true && profile.tutorial_skipped !== true && (
+          <Suspense fallback={null}><TutorialArrows
+            profile={profile}
+            tutorialStep={tutorialStep}
+            tutorialArrow={tutorialArrow}
+            isFvHarvestModalOpen={isFvHarvestModalOpen}
+            fvZbioryPos={fvZbioryPos}
+            fvTutArrow12Pos={fvTutArrow12Pos}
+            fvTutArrow13Pos={fvTutArrow13Pos}
+          /></Suspense>
+        )}
 
         {/* TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych */}
         {showRotateNotice && !rotateNoticeDismissed && (
