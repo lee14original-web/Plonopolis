@@ -109,11 +109,19 @@ http.createServer((req, res) => {
       const ext  = path.extname(filePath).toLowerCase();
       const mime = MIME[ext] || 'application/octet-stream';
       const acceptsGzip = (req.headers['accept-encoding'] || '').includes('gzip');
+      // Immutable cache for hashed assets (JS/CSS bundles have content-hash filenames)
+      const isHashed = /assets\/[^/]+-[a-f0-9]{8,}\.(js|css)$/.test(pathname);
+      const cacheControl = isHashed
+        ? 'public, max-age=31536000, immutable'
+        : ['.png','.webp','.jpg','.gif','.svg','.ico','.woff','.woff2','.mp3','.ogg','.wav'].includes(ext)
+          ? 'public, max-age=86400'
+          : 'no-cache';
+      const headers = { 'Content-Type': mime, 'Cache-Control': cacheControl };
       if (acceptsGzip && GZIP_TYPES.has(mime)) {
-        res.writeHead(200, { 'Content-Type': mime, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding' });
+        res.writeHead(200, { ...headers, 'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding' });
         fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res, { end: true });
       } else {
-        res.writeHead(200, { 'Content-Type': mime });
+        res.writeHead(200, headers);
         fs.createReadStream(filePath).pipe(res, { end: true });
       }
     } else {
