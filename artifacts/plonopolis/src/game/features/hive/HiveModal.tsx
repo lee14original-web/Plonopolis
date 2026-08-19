@@ -93,14 +93,14 @@ export function HiveModal({ hiveData, hiveNow, displayMoney, onClose, onBuyHive,
               {/* Zasoby */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                  <img src="/przedmioty/jar_empty.png" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                  <img src="/przedmioty/jar_empty.webp" alt="Słoiki" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
                   <div>
                     <p className="text-xs text-[#8b6a3e]">Puste słoiki</p>
                     <p className="font-black text-[#f9e7b2]">{hiveData.empty_jars}</p>
                   </div>
                 </div>
                 <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3 flex items-center gap-3">
-                  <img src="/przedmioty/jar_honey.png" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
+                  <img src="/przedmioty/jar_honey.webp" alt="Miód" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0";}} />
                   <div>
                     <p className="text-xs text-[#8b6a3e]">Słoiki z miodem</p>
                     <p className="font-black text-[#f9e7b2]">{hiveData.honey_jars}</p>
@@ -110,7 +110,7 @@ export function HiveModal({ hiveData, hiveNow, displayMoney, onClose, onBuyHive,
               {/* Strój pszczelarza */}
               <div className="rounded-xl border border-[#8b6a3e]/30 bg-black/20 p-3">
                 <div className="flex items-center gap-3 mb-2">
-                  <img src="/przedmioty/beekeeper_suit.png" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
+                  <img src="/przedmioty/beekeeper_suit.webp" alt="Strój" className="w-8 h-8 object-contain" style={{imageRendering:"pixelated"}} onError={e=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3";}} />
                   <div className="flex-1">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-[#dfcfab]">Strój pszczelarza</span>

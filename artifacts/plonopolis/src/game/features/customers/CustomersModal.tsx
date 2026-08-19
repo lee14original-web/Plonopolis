@@ -28,7 +28,7 @@ import { isCompostKey, compostTypeFromKey, compostValueFromKey } from "../../uti
   }
 
   function getOrderItemDisplay(id: string): { name: string; icon: string; spritePath?: string; qualityBadge?: React.ReactNode } {
-    if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯', spritePath: '/przedmioty/jar_honey.png' };
+    if (id === 'honey_jar') return { name: 'Słoik miodu', icon: '🍯', spritePath: '/przedmioty/jar_honey.webp' };
     const ai = ANIMAL_ITEMS.find(a => a.id === id);
     if (ai) return { name: ai.name, icon: ai.icon };
     const cropM = id.match(/^(.+)_(good|epic|legendary)$/);

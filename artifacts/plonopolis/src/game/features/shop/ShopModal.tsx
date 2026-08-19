@@ -133,10 +133,10 @@ export function ShopModal({ profileId, displayMoney, displayLevel, dailyPromos, 
             )}
             {shopTab === "przedmioty" && (() => {
               const SHOP_ITEMS = [
-                { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/przedmioty/beekeeper_suit.png", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
-                { id:"jar_empty_1",    label:"Słoik × 1",         img:"/przedmioty/jar_pack_1.png",     desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
-                { id:"jar_empty_8",    label:"Słoik × 8",         img:"/przedmioty/jar_pack_8.png",     desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
-                { id:"jar_empty_15",   label:"Słoik × 15",        img:"/przedmioty/jar_pack_15.png",    desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
+                { id:"beekeeper_suit", label:"Strój pszczelarza", img:"/przedmioty/beekeeper_suit.webp", desc:"100 zbiorów miodu", price:150, qty:100, type:"suit" as const },
+                { id:"jar_empty_1",    label:"Słoik × 1",         img:"/przedmioty/jar_pack_1.webp",     desc:"1 sztuka",       price:4,   qty:1,   type:"jar" as const },
+                { id:"jar_empty_8",    label:"Słoik × 8",         img:"/przedmioty/jar_pack_8.webp",     desc:"8 sztuk",        price:30,  qty:8,   type:"jar" as const },
+                { id:"jar_empty_15",   label:"Słoik × 15",        img:"/przedmioty/jar_pack_15.webp",    desc:"15 sztuk",       price:55,  qty:15,  type:"jar" as const },
               ];
               return (
                 <div className="flex flex-col gap-3 p-4 overflow-y-auto">

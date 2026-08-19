@@ -20,6 +20,9 @@ const DIRS = [
   join(PUBLIC, "zwierzeta"),
   join(PUBLIC, "avatary"),
   join(PUBLIC, "ekwipunek"),
+  join(PUBLIC, "przedmioty"),
+  join(PUBLIC, "klienci"),
+  join(PUBLIC, "owoce"),
 ];
 
 async function findPngs(dir) {

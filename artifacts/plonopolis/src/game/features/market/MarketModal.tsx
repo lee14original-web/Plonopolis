@@ -75,8 +75,8 @@ import { isCompostKey } from "../../utils/compost";
       if (quality === "rotten"    && crop.rottenSpritePath)    return crop.rottenSpritePath;
       return crop.spritePath;
     }
-    if (type === "barn_item") return `/przedmioty/item_${key}.png`;
-    if (type === "honey")     return `/przedmioty/jar_honey.png`;
+    if (type === "barn_item") return `/przedmioty/item_${key}.webp`;
+    if (type === "honey")     return `/przedmioty/jar_honey.webp`;
     if (type === "compost") {
       const ct = compostTypeFromKey(key);
       const val = compostValueFromKey(key);
