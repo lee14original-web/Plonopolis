@@ -16,6 +16,48 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ── Statyczne preloady: zasoby zawsze widoczne powyżej fold ────────── -->
+    <!-- Ekran lobby (przed zalogowaniem) -->
+    <link rel="preload" as="image" href="/mapy/assetsmain-lobby.webp" type="image/webp" />
+    <!-- Domyślna mapa farmy (poziomy 1-2, najczęściej pierwsze uruchomienie) -->
+    <link rel="preload" as="image" href="/mapy/farm1.webp" type="image/webp" />
+    <!-- Najczęstsze sprity upraw widoczne w plecaku/polu od razu po logowaniu -->
+    <link rel="preload" as="image" href="/uprawy/carrot_icon_transparent.webp" type="image/webp" />
+    <link rel="preload" as="image" href="/uprawy/potato.webp" type="image/webp" />
+    <link rel="preload" as="image" href="/uprawy/tomato.webp" type="image/webp" />
+
+    <!-- ── Dynamiczny preload avatara gracza (odczyt z localStorage) ─────── -->
+    <script>
+      (function () {
+        try {
+          var uid = localStorage.getItem('plonopolis_active_user');
+          if (!uid) return;
+          var skin = parseInt(localStorage.getItem('plonopolis_skin_' + uid) || '-1', 10);
+          if (skin < 0 || isNaN(skin)) return;
+          // Kolejność identyczna z ALL_SKINS w constants/avatars.ts
+          var names = [
+            'avatar_m1','avatar_m2','avatar_m3','avatar_m4','avatar_m5',
+            'avatar_m6','avatar_m7','avatar_m8','avatar_m9','avatar_m10',
+            'avatar_f1','avatar_f2','avatar_f3','avatar_f4','avatar_f5',
+            'avatar_f6','avatar_f7','avatar_f8','avatar_f9','avatar_f10',
+            'avatar_epic1','avatar_epic2','avatar_epic3','avatar_epic4','avatar_epic5',
+            'avatar_epic6','avatar_epic7','avatar_epic8','avatar_epic9','avatar_epic10',
+            'avatar_epic11','avatar_epic12','avatar_epic13','avatar_epic14','avatar_epic15',
+            'avatar_epic16','avatar_epic17','avatar_epic18','avatar_epic19','avatar_epic20',
+            'avatar_epic21',
+          ];
+          var name = names[skin];
+          if (!name) return;
+          var link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.type = 'image/webp';
+          link.href = '/avatary/' + name + '.webp';
+          document.head.appendChild(link);
+        } catch (e) { /* localStorage niedostępny — ignoruj */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
