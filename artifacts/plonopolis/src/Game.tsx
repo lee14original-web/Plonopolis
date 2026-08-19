@@ -91,10 +91,20 @@ function saveAvatarData(userId: string, skin: number, stats: PlayerStatsMap, fsp
   });
 }
 
+const SERVERS: { id: string; name: string; active: boolean }[] = [
+  { id: "testy", name: "Testy", active: true },
+  { id: "zielona_dolina", name: "Zielona Dolina", active: false },
+  { id: "sloneczne_pola", name: "Słoneczne Pola", active: false },
+  { id: "zlote_zniwa", name: "Złote Żniwa", active: false },
+  { id: "miodowy_zakatek", name: "Miodowy Zakątek", active: false },
+  { id: "kraina_sadow", name: "Kraina Sadów", active: false },
+];
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [selectedServer, setSelectedServer] = useState<string>("testy");
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const serverDropdownRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!serverDropdownOpen) return;
@@ -106,6 +116,11 @@ export default function Page() {
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [serverDropdownOpen]);
+  React.useEffect(() => {
+    if (!SERVERS.some(s => s.id === selectedServer)) {
+      setSelectedServer("testy");
+    }
+  }, []);
   const [ready, setReady] = useState(false);
   const [sessionTimeLeft, setSessionTimeLeft] = useState<number | null>(null);
   const [message, setMessage] = useState<Message | null>(null);
@@ -4313,40 +4328,45 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Wymagany adres email",
-        text: "Zaloguj się adresem email. Logowanie loginem zostało wyłączone ze względów bezpieczeństwa.",
+        text: "Podaj adres email, nie login.",
       });
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: identifier.trim(),
-      password,
-    });
+    setIsLoggingIn(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: identifier.trim(),
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        setMessage({
+          type: "error",
+          title: "Błędne logowanie",
+          text: translateAuthError(error.message),
+        });
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        await loadProfile(session.user.id);
+      }
+
+      startSessionTimer();
+      setLoginForm({ identifier: "", password: "" });
       setMessage({
-        type: "error",
-        title: "Błędne logowanie",
-        text: translateAuthError(error.message),
+        type: "success",
+        title: "Witaj ponownie",
+        text: "Sesja gracza została wczytana.",
       });
-      return;
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (session?.user) {
-      await loadProfile(session.user.id);
-    }
-
-    startSessionTimer();
-    setLoginForm({ identifier: "", password: "" });
-    setMessage({
-      type: "success",
-      title: "Witaj ponownie",
-      text: "Sesja gracza została wczytana.",
-    });
   }
 
   function startSessionTimer(startedAt?: number) {
@@ -7768,7 +7788,7 @@ export default function Page() {
                           className="flex w-full items-center justify-between rounded-xl border border-[#f4cf78] bg-[rgba(212,166,79,0.15)] px-4 py-2.5 text-left text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(212,166,79,0.25)] shadow-[0_0_8px_rgba(244,207,120,0.25)]"
                         >
                           <span className="flex items-center gap-2">
-                            <span>{selectedServer === "testy" ? "Testy" : selectedServer}</span>
+                            <span>{SERVERS.find(s => s.id === selectedServer)?.name ?? selectedServer}</span>
                             <span className="rounded-full bg-[#2d4a1e]/80 px-1.5 py-0.5 text-xs font-black uppercase tracking-wider text-[#7ecb5e]">● Aktywny</span>
                           </span>
                           <span className="text-[#d8ba7a] text-lg">{serverDropdownOpen ? "▲" : "▼"}</span>
@@ -7780,14 +7800,7 @@ export default function Page() {
                             className="absolute left-0 right-0 top-full z-[200] mt-1 rounded-xl border border-[#8b6a3e] bg-[rgba(24,14,7,0.98)] shadow-2xl"
                             style={{ maxHeight: "248px", overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "#8b6a3e #1a0e07" }}
                           >
-                            {([
-                              { id: "testy", name: "Testy", active: true },
-                              { id: "zielona_dolina", name: "Zielona Dolina", active: false },
-                              { id: "sloneczne_pola", name: "Słoneczne Pola", active: false },
-                              { id: "zlote_zniwa", name: "Złote Żniwa", active: false },
-                              { id: "miodowy_zakatek", name: "Miodowy Zakątek", active: false },
-                              { id: "kraina_sadow", name: "Kraina Sadów", active: false },
-                            ] as { id: string; name: string; active: boolean }[]).map((srv, i, arr) => (
+                            {SERVERS.map((srv, i, arr) => (
                               <button
                                 key={srv.id}
                                 type="button"
@@ -7817,8 +7830,9 @@ export default function Page() {
                         <div>
                           <label className="mb-1 block text-lg font-semibold">Email</label>
                           <input
-                            type="email"
-                            placeholder="adres@email.pl"
+                            type="text"
+                            inputMode="email"
+                            placeholder="Adres email (nie login)"
                             autoComplete="email"
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
@@ -7840,9 +7854,10 @@ export default function Page() {
 
                         <button
                           type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          disabled={isLoggingIn}
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          Zaloguj i wczytaj sesję
+                          {isLoggingIn ? "Logowanie…" : "Zaloguj i wczytaj sesję"}
                         </button>
                       </form>
                     ) : (
