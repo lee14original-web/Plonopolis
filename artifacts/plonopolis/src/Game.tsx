@@ -331,10 +331,11 @@ export default function Page() {
   function computeSmartDefaultZoom(): number {
     if (typeof window === "undefined") return 1;
     const mobile = window.innerWidth < 768;
-    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    // Na mobile celujemy w 100% wypełnienia (zoom = 1/raw), na desktop 90%
+    // gameScale = raw × zoom, a raw dopasowuje canvas do viewportu w wymiarze
+    // ograniczającym — więc ułamek wypełnienia viewportu = wartość zoomu.
+    // Domyślny zoom to po prostu docelowe wypełnienie: 90% desktop / 100% mobile.
     const target = mobile ? 1.00 : 0.90;
-    return Math.min(getZoomMax(), Math.max(ZOOM_MIN, target / raw));
+    return Math.min(getZoomMax(), Math.max(ZOOM_MIN, target));
   }
   const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
@@ -351,9 +352,11 @@ export default function Page() {
     const zoom = stored === null
       ? computeSmartDefaultZoom()
       : Math.max(ZOOM_MIN, Math.min(getZoomMax(), parseFloat(stored) || 1));
-    return Math.max(0.20, raw * zoom);
+    // Start = ekran logowania (brak profilu) → cały canvas musi mieścić się w viewporcie (zoom ≤ 1)
+    return Math.max(0.20, raw * Math.min(zoom, 1));
   });
   const gameScaleRef = React.useRef(gameScale);
+  const isLoggedInRef = React.useRef(false);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
 
@@ -2720,14 +2723,18 @@ export default function Page() {
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
   useEffect(() => { userZoomFactorRef.current = userZoomFactor; }, [userZoomFactor]);
   useEffect(() => {
+    isLoggedInRef.current = !!profile?.id;
     const mobile = window.innerWidth < 768;
     const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
-    const clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactor));
+    let clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactor));
+    // Ekran logowania: wymuś dopasowanie całego canvasa 1920×1280 do viewportu,
+    // niezależnie od zoomu zapisanego w localStorage. Po zalogowaniu pełny zakres.
+    if (!profile?.id) clamped = Math.min(clamped, 1);
     const s = Math.max(0.20, raw * clamped);
     setGameScale(s);
     gameScaleRef.current = s;
-  }, [userZoomFactor]);
+  }, [userZoomFactor, profile?.id]);
   useEffect(() => {
     try { localStorage.setItem("plonopolis_zoom", String(userZoomFactor)); } catch { /* ignore */ }
   }, [userZoomFactor]);
@@ -2758,7 +2765,9 @@ export default function Page() {
       setIsDesktop(window.innerWidth >= 1024);
       const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
       const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
-      const clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactorRef.current));
+      let clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactorRef.current));
+      // Ta sama logika co w efekcie [userZoomFactor, profile?.id] — przed zalogowaniem zoom ≤ 1
+      if (!isLoggedInRef.current) clamped = Math.min(clamped, 1);
       const s = Math.max(0.20, raw * clamped);
       setGameScale(s);
       gameScaleRef.current = s;
