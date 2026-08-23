@@ -10,6 +10,39 @@ import { supabase } from "@/lib/supabase";
 
 type RankingSort = "level" | "money" | "farmpower" | "customers";
 
+const MONEY_FORMATTER = new Intl.NumberFormat("pl-PL", {
+  style: "currency",
+  currency: "PLN",
+  minimumFractionDigits: 0,
+});
+
+const RANKING_COLUMNS: Record<RankingSort, {
+  label: string;
+  sortValue: (player: RankingPlayer) => number;
+  formatValue: (player: RankingPlayer) => string;
+}> = {
+  farmpower: {
+    label: "Moc farmy",
+    sortValue: player => player.farm_power ?? 0,
+    formatValue: player => (player.farm_power ?? 0).toLocaleString("pl-PL"),
+  },
+  level: {
+    label: "Poziom",
+    sortValue: player => player.ranking_score ?? 0,
+    formatValue: player => player.level.toLocaleString("pl-PL"),
+  },
+  money: {
+    label: "Pieniądze",
+    sortValue: player => player.money,
+    formatValue: player => MONEY_FORMATTER.format(player.money),
+  },
+  customers: {
+    label: "😊 Klienci",
+    sortValue: player => player.customer_orders_completed ?? 0,
+    formatValue: player => (player.customer_orders_completed ?? 0).toLocaleString("pl-PL"),
+  },
+};
+
 interface PlayerDetail {
   player_stats?: Record<string, number> | null;
   char_equipped?: CharEquipped | null;
@@ -169,12 +202,11 @@ export function RankingModal({
 
   const isViewingOther = selectedPlayer !== null && selectedPlayer.user_id !== profile?.id;
 
-  const sorted = [...rankingData].sort((a, b) => {
-    if (rankingSort === "level") return (b.ranking_score ?? 0) - (a.ranking_score ?? 0);
-    if (rankingSort === "money") return b.money - a.money;
-    if (rankingSort === "customers") return (b.customer_orders_completed ?? 0) - (a.customer_orders_completed ?? 0);
-    return (b.farm_power ?? 0) - (a.farm_power ?? 0);
-  }).filter(p =>
+  const rankingColumn = RANKING_COLUMNS[rankingSort];
+
+  const sorted = [...rankingData].sort((a, b) =>
+    rankingColumn.sortValue(b) - rankingColumn.sortValue(a)
+  ).filter(p =>
     rankingSearch.trim() === "" || p.player_name.toLowerCase().includes(rankingSearch.trim().toLowerCase())
   );
 
@@ -395,7 +427,7 @@ export function RankingModal({
                     <th className="pb-3 pt-2 pr-2">#</th>
                     <th className="pb-3 pt-2 pr-3">Gracz</th>
                     <th className="pb-3 pt-2 pr-2 text-right">Poziom</th>
-                    <th className="pb-3 pt-2 text-right">Moc farmy</th>
+                    <th className="pb-3 pt-2 text-right">{rankingColumn.label}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -433,7 +465,7 @@ export function RankingModal({
                         <td className="py-3 pr-2 text-right font-black text-[#f2ca69] text-[14px]">⭐ {p.level}</td>
                         <td className="py-3 text-right tabular-nums">
                           <span className={`font-black text-[14px] ${isMe ? "text-yellow-300" : "text-[#f3e6c8]"}`}>
-                            {(p.farm_power ?? 0).toLocaleString("pl-PL")}
+                            {rankingColumn.formatValue(p)}
                           </span>
                         </td>
                       </tr>
