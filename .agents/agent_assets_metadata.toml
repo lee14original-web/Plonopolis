@@ -68,3 +68,17 @@ mtime_ms = 1788467316863
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:5374db45-fa2b-42e5-b7e9-2c6a8eb23546/a1b03dbe-a316-4f88-9a92-7870676a57b8/ecb0d764-0568-4c2d-bd02-3d70466b502c"
 storage_version_token = "1788467380740123"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "i6PeT1otIDB0ivTKXyodM"
+uri = "file://attached_assets/sql_repair_secure_harvest_rpc_v2.sql"
+type = "unspecified"
+title = "Naprawa bezpiecznego zbioru RPC"
+description = "Uruchom cały skrypt w Supabase SQL Editor. Odtwarza brakującą funkcję zbioru i odświeża cache schematu bez usuwania limitów wzrostu."
+logical_id = "a9f8f638-8634-44ec-8c19-ce1c6ceda4d9"
+content_hash = "sha256:a87bc04f953e3d9b00dc73ddb40bd7e65056d553bcd607402a596e481ed7594b"
+size = 3713
+mtime_ms = 1788472646762
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:5374db45-fa2b-42e5-b7e9-2c6a8eb23546/a9f8f638-8634-44ec-8c19-ce1c6ceda4d9/14960c3c-1330-4c9b-adc4-ca5c302d0903"
+storage_version_token = "1788472651652637"
+content_type = "application/octet-stream"
