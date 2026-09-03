@@ -352,6 +352,9 @@ GRANT EXECUTE ON FUNCTION public.game_harvest_plot_secure(
   integer, bigint, integer, text, integer, integer, numeric, numeric, integer, numeric
 ) TO authenticated;
 
+-- PostgREST może nadal trzymać starą listę RPC po utworzeniu funkcji.
+NOTIFY pgrst, 'reload schema';
+
 -- Kontrola po wdrożeniu:
 -- SELECT tgname
 -- FROM pg_trigger

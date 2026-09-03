@@ -168,6 +168,8 @@ export default function Page() {
   }, [message]);
   // Preload avatarów usunięty — przeglądarka cache'uje obrazy przy pierwszym renderze
   const [profile, setProfile] = useState<Profile | null>(null);
+  // Globalny czas utworzenia konta z auth.users (nie czas utworzenia profilu serwera).
+  const [accountCreatedAtMs, setAccountCreatedAtMs] = useState<number | null>(null);
 
   const [registerForm, setRegisterForm] = useState({
     login: "",
@@ -1170,6 +1172,7 @@ export default function Page() {
     try { localStorage.removeItem(ACTIVE_USER_KEY); } catch { /* ignore */ }
     // Resetuj React state
     setProfile(null);
+    setAccountCreatedAtMs(null);
     setSelectedPlotId(null);
     setUnlockedPlots(getDefaultUnlockedPlots());
     setPlotObstacles({});
@@ -2719,6 +2722,8 @@ export default function Page() {
         if (!mounted) return;
 
         if (session?.user) {
+          const createdAtMs = Date.parse(session.user.created_at);
+          setAccountCreatedAtMs(Number.isFinite(createdAtMs) ? createdAtMs : null);
           // Sprawdź czas poprzedniej sesji (hard 2h timeout)
           let storedStart: number | null = null;
           try { storedStart = Number(sessionStorage.getItem("plono_session_start")) || null; } catch { /* ignore */ }
@@ -4477,6 +4482,8 @@ export default function Page() {
         });
         return;
       }
+      const createdAtMs = Date.parse(signUpData.user?.created_at ?? "");
+      setAccountCreatedAtMs(Number.isFinite(createdAtMs) ? createdAtMs : null);
 
       setAuthStage("register", 58, "Konfigurowanie gospodarstwa");
       // Nadpisz login w profilu — trigger tworzy go z emailem, tu ustawiamy właściwy login gracza
@@ -4585,6 +4592,8 @@ export default function Page() {
       } = await supabase.auth.getSession();
 
       if (session?.user) {
+        const createdAtMs = Date.parse(session.user.created_at);
+        setAccountCreatedAtMs(Number.isFinite(createdAtMs) ? createdAtMs : null);
         setAuthStage("login", 68, "Wczytywanie gospodarstwa");
         const loadedProfile = await loadProfile(session.user.id);
         if (!loadedProfile) return;
@@ -6586,12 +6595,11 @@ export default function Page() {
     setBlockedUsers(updated);
   }
 
-  const profileCreatedAtMs = profile?.created_at ? Date.parse(profile.created_at) : Number.NaN;
-  const newPlayerGrowthBonusRemainingMs = Number.isFinite(profileCreatedAtMs)
+  const newPlayerGrowthBonusRemainingMs = accountCreatedAtMs !== null
     ? Math.max(
         0,
         NEW_PLAYER_GROWTH_BONUS_DURATION_MS
-          - (barnNow + hiveClockOffsetRef.current - profileCreatedAtMs),
+          - (barnNow + hiveClockOffsetRef.current - accountCreatedAtMs),
       )
     : 0;
 

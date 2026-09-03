@@ -59,14 +59,14 @@ logical_id = "d08ccfa9-2562-4d2b-b69b-77d3d13dedf9"
 id = "_g41uh6ena-bD0URW2Tph"
 uri = "file://attached_assets/sql_new_account_growth_bonus_v1.sql"
 type = "unspecified"
-title = "SQL — bonus wzrostu nowego konta"
-description = "Migracja Supabase: 15 minut, mnożnik 0.25, wyłączenie przewodnika i bezpieczny zbiór. Uruchom cały plik w SQL Editor."
+title = "Pełna instalacja bonusu nowego konta"
+description = "Uruchom cały skrypt w Supabase SQL Editor. Instaluje trigger faktycznie nadający mnożnik 0.25, bezpieczny zbiór i odświeżenie cache RPC."
 logical_id = "a1b03dbe-a316-4f88-9a92-7870676a57b8"
-content_hash = "sha256:2ab62167d736255e7a4571491b6db1c42deefaa92f27d30f47742021966b3047"
-size = 11497
-mtime_ms = 1788467316863
-storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:5374db45-fa2b-42e5-b7e9-2c6a8eb23546/a1b03dbe-a316-4f88-9a92-7870676a57b8/ecb0d764-0568-4c2d-bd02-3d70466b502c"
-storage_version_token = "1788467380740123"
+content_hash = "sha256:221d8a5f388678cef148278e8f2f3491329d61a6fd2681517d50cadc2cbd99b4"
+size = 11604
+mtime_ms = 1788473193434
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:5374db45-fa2b-42e5-b7e9-2c6a8eb23546/a1b03dbe-a316-4f88-9a92-7870676a57b8/76348ea2-ae1d-46f4-b8f4-429be3f3099b"
+storage_version_token = "1788473222156648"
 content_type = "application/octet-stream"
 
 [[outputs]]
