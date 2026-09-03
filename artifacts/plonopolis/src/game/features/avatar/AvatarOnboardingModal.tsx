@@ -69,10 +69,10 @@ export function AvatarOnboardingModal({
         {/* LEFT PANEL - PREVIEW & ACTIONS */}
         <div className="w-full md:w-[40%] lg:w-[35%] flex flex-col border-b md:border-b-0 md:border-r border-[#8b6a3e]/30 bg-black/20 p-6 lg:p-8 relative shrink-0">
           <div className="flex-1 flex flex-col">
-            <h1 className="text-3xl font-black text-[#f9e7b2] tracking-wide mb-1 uppercase text-center md:text-left">
+            <h1 className="text-4xl font-black text-[#f9e7b2] tracking-wide mb-1 uppercase text-center md:text-left lg:text-5xl">
               Plonopolis
             </h1>
-            <h2 id="avatar-onboarding-title" className="text-sm font-medium text-[#dfcfab]/70 uppercase tracking-widest mb-6 text-center md:text-left">
+            <h2 id="avatar-onboarding-title" className="mb-6 text-center text-xl font-medium uppercase tracking-widest text-[#dfcfab]/70 md:text-left lg:text-2xl">
               Twój reprezentant
             </h2>
 
@@ -110,7 +110,7 @@ export function AvatarOnboardingModal({
               ) : (
                 <div className="flex h-52 w-36 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#8b6a3e]/40 bg-black/20 p-4 text-center opacity-70 sm:h-72 sm:w-48 md:h-[21rem] md:w-56 md:p-6">
                   <User className="w-16 h-16 text-[#8b6a3e]/60 mb-4" />
-                  <p className="text-sm font-medium text-[#dfcfab]/60">
+                  <p className="text-xl font-medium text-[#dfcfab]/60">
                     Wybierz postać z listy po prawej, aby kontynuować
                   </p>
                 </div>
@@ -119,16 +119,16 @@ export function AvatarOnboardingModal({
 
             {/* Error Message */}
             {error && (
-              <div className="mt-4 flex items-start gap-3 rounded-xl bg-red-950/40 border border-red-900/50 p-4 text-red-200 text-sm">
+              <div className="mt-4 flex items-start gap-3 rounded-xl bg-red-950/40 border border-red-900/50 p-4 text-red-200 text-xl">
                 <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <p>{error}</p>
               </div>
             )}
 
             {/* Context Box */}
-            <div className="mt-6 rounded-xl bg-[#8b6a3e]/10 border border-[#8b6a3e]/20 p-4 flex gap-3 text-sm">
+            <div className="mt-6 rounded-xl bg-[#8b6a3e]/10 border border-[#8b6a3e]/20 p-4 flex gap-3 text-xl">
               <Info className="w-5 h-5 text-[#dfcfab] shrink-0 mt-0.5" />
-              <p className="text-[#dfcfab]/80 leading-relaxed text-xs">
+              <p className="text-lg leading-relaxed text-[#dfcfab]/80">
                 Twój awatar oraz przyszła waluta premium są przypisane do całego konta. 
                 Poziom, zarobki, plony i ekwipunek pozostają oddzielne dla każdego serwera.
               </p>
@@ -139,7 +139,7 @@ export function AvatarOnboardingModal({
               type="button"
               onClick={onConfirm}
               disabled={selectedSkin === null || isSaving}
-              className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-4 text-sm font-black uppercase tracking-widest transition-all duration-300 ${
+              className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-5 text-xl font-black uppercase tracking-widest transition-all duration-300 ${
                 selectedSkin === null
                   ? "bg-white/5 text-white/20 cursor-not-allowed border border-white/5"
                   : isSaving
@@ -172,7 +172,7 @@ export function AvatarOnboardingModal({
             <button
               type="button"
               onClick={() => setActiveTab("mezczyzni")}
-              className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xs sm:tracking-widest ${
+              className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-lg font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xl sm:tracking-widest ${
                 activeTab === "mezczyzni"
                   ? "bg-yellow-900/30 text-yellow-300 border border-yellow-500/50"
                   : "bg-black/30 text-[#8b6a3e] border border-[#8b6a3e]/30 hover:bg-black/50 hover:text-[#dfcfab]"
@@ -183,7 +183,7 @@ export function AvatarOnboardingModal({
             <button
               type="button"
               onClick={() => setActiveTab("kobiety")}
-              className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xs sm:tracking-widest ${
+              className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-lg font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xl sm:tracking-widest ${
                 activeTab === "kobiety"
                   ? "bg-yellow-900/30 text-yellow-300 border border-yellow-500/50"
                   : "bg-black/30 text-[#8b6a3e] border border-[#8b6a3e]/30 hover:bg-black/50 hover:text-[#dfcfab]"
@@ -195,7 +195,7 @@ export function AvatarOnboardingModal({
               <button
                 type="button"
                 onClick={() => setActiveTab("epickie")}
-                className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-[10px] font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xs sm:tracking-widest ${
+                className={`flex items-center justify-center gap-1 rounded-xl px-2 py-3 text-lg font-black uppercase tracking-[0.08em] transition-colors whitespace-nowrap sm:gap-2 sm:px-5 sm:text-xl sm:tracking-widest ${
                   activeTab === "epickie"
                     ? "bg-green-900/30 text-green-300 border border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
                     : "bg-black/30 text-green-700 border border-green-900/50 hover:bg-black/50 hover:text-green-500"
@@ -210,7 +210,7 @@ export function AvatarOnboardingModal({
           <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-2 fv-scroll">
             
             {activeTab === "mezczyzni" && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
                 {SKINS_MALE.map((src, i) => (
                   <AvatarCard
                     key={i}
@@ -225,7 +225,7 @@ export function AvatarOnboardingModal({
             )}
 
             {activeTab === "kobiety" && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
                 {SKINS_FEMALE.map((src, i) => {
                   const idx = i + 10;
                   return (
@@ -243,7 +243,7 @@ export function AvatarOnboardingModal({
             )}
 
             {activeTab === "epickie" && hasEpic && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
                 {unlockedEpicAvatars.map((idx) => {
                   const epicIdx = idx - EPIC_SKIN_START;
                   const src = EPIC_SKINS[epicIdx]?.path;
@@ -312,7 +312,7 @@ function AvatarCard({
       )}
       
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-6 text-center">
-        <span className={`block text-[10px] sm:text-xs font-bold leading-tight ${isSelected ? "text-white" : "text-[#dfcfab]/80"}`}>
+        <span className={`block text-lg font-bold leading-tight sm:text-xl ${isSelected ? "text-white" : "text-[#dfcfab]/80"}`}>
           {meta?.name}
         </span>
       </div>
