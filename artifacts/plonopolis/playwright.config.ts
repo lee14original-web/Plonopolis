@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? "line" : "list",
+  reporter: process.env.CI ? [["github"], ["line"]] : "list",
   webServer: externalBaseUrl
     ? undefined
     : {
