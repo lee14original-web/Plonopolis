@@ -330,15 +330,17 @@ export default function Page() {
   const dragEndedRef = React.useRef(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [isMobileLayout, setIsMobileLayout] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
-  // TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych
-  const [rotateNoticeDismissed, setRotateNoticeDismissed] = useState(false);
-  const [showRotateNotice, setShowRotateNotice] = useState(false);
+  const [isPortraitMobile, setIsPortraitMobile] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 && window.innerHeight > window.innerWidth
+  );
   // Inteligentny domyślny zoom: na małych ekranach automatycznie większy,
   // żeby gra zajmowała ~90% ekranu niezależnie od rozdzielczości.
   // Na mobile (< 768px) zakres zooma rozszerzony do 3.0×.
   const ZOOM_MAX_DESKTOP = 1.60;
   const ZOOM_MAX_MOBILE  = 3.00;
   const ZOOM_MIN         = 0.70;
+  // Typowa kontrolka 64 px zachowuje w portrecie dotykowy rozmiar ok. 51 px.
+  const PORTRAIT_MIN_GAME_SCALE = 0.80;
   function getZoomMax(): number {
     if (typeof window === "undefined") return ZOOM_MAX_DESKTOP;
     return window.innerWidth < 768 ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
@@ -362,15 +364,21 @@ export default function Page() {
   const userZoomFactorRef = React.useRef(userZoomFactor);
   const [gameScale, setGameScale] = useState(() => {
     if (typeof window === "undefined") return 1;
-    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    const portraitMobile = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const raw = portraitMobile
+      ? window.innerWidth / BASE_W
+      : Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     const stored = localStorage.getItem("plonopolis_zoom");
     const zoom = stored === null
       ? computeSmartDefaultZoom()
       : Math.max(ZOOM_MIN, Math.min(getZoomMax(), parseFloat(stored) || 1));
     // Start = ekran logowania (brak profilu) → cały canvas musi mieścić się w viewporcie (zoom ≤ 1)
-    return Math.max(0.20, raw * Math.min(zoom, 1));
+    const scale = raw * Math.min(zoom, 1);
+    return portraitMobile ? Math.max(PORTRAIT_MIN_GAME_SCALE, scale) : Math.max(0.20, scale);
   });
   const gameScaleRef = React.useRef(gameScale);
+  const viewportRef = React.useRef<HTMLDivElement>(null);
+  const portraitViewCenteredRef = React.useRef(false);
   const isLoggedInRef = React.useRef(false);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
@@ -2747,13 +2755,17 @@ export default function Page() {
   useEffect(() => {
     isLoggedInRef.current = !!profile?.id;
     const mobile = window.innerWidth < 768;
-    const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+    const portraitMobile = mobile && window.innerHeight > window.innerWidth;
+    const raw = portraitMobile
+      ? window.innerWidth / BASE_W
+      : Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
     const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
     let clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactor));
     // Ekran logowania: wymuś dopasowanie całego canvasa 1920×1280 do viewportu,
     // niezależnie od zoomu zapisanego w localStorage. Po zalogowaniu pełny zakres.
     if (!profile?.id) clamped = Math.min(clamped, 1);
-    const s = Math.max(0.20, raw * clamped);
+    const scaled = raw * clamped;
+    const s = portraitMobile ? Math.max(PORTRAIT_MIN_GAME_SCALE, scaled) : Math.max(0.20, scaled);
     setGameScale(s);
     gameScaleRef.current = s;
   }, [userZoomFactor, profile?.id]);
@@ -2774,6 +2786,13 @@ export default function Page() {
 
   function toGameCoords(clientX: number, clientY: number) {
     const s = gameScaleRef.current;
+    const rect = mapContainerRef.current?.getBoundingClientRect();
+    if (rect) {
+      return {
+        x: (clientX - rect.left) / s,
+        y: (clientY - rect.top) / s,
+      };
+    }
     return {
       x: BASE_W / 2 + (clientX - window.innerWidth / 2) / s,
       y: BASE_H / 2 + (clientY - window.innerHeight / 2) / s,
@@ -2783,14 +2802,19 @@ export default function Page() {
   useEffect(() => {
     const checkScreen = () => {
       const mobile = window.innerWidth < 768;
+      const portraitMobile = mobile && window.innerHeight > window.innerWidth;
       setIsMobileLayout(mobile);
+      setIsPortraitMobile(portraitMobile);
       setIsDesktop(window.innerWidth >= 1024);
-      const raw = Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
+      const raw = portraitMobile
+        ? window.innerWidth / BASE_W
+        : Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
       const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
       let clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactorRef.current));
       // Ta sama logika co w efekcie [userZoomFactor, profile?.id] — przed zalogowaniem zoom ≤ 1
       if (!isLoggedInRef.current) clamped = Math.min(clamped, 1);
-      const s = Math.max(0.20, raw * clamped);
+      const scaled = raw * clamped;
+      const s = portraitMobile ? Math.max(PORTRAIT_MIN_GAME_SCALE, scaled) : Math.max(0.20, scaled);
       setGameScale(s);
       gameScaleRef.current = s;
     };
@@ -2801,21 +2825,20 @@ export default function Page() {
     return () => window.removeEventListener("resize", checkScreen);
   }, []);
 
-  // TYMCZASOWE — detekcja orientacji pionowej na telefonie
   useEffect(() => {
-    const checkOrientation = () => {
-      const isMobile = window.innerWidth < 768;
-      const isPortrait = window.innerHeight > window.innerWidth;
-      setShowRotateNotice(isMobile && isPortrait);
-    };
-    checkOrientation();
-    window.addEventListener("resize", checkOrientation);
-    window.addEventListener("orientationchange", checkOrientation);
-    return () => {
-      window.removeEventListener("resize", checkOrientation);
-      window.removeEventListener("orientationchange", checkOrientation);
-    };
-  }, []);
+    if (!isPortraitMobile) {
+      portraitViewCenteredRef.current = false;
+      return;
+    }
+    if (portraitViewCenteredRef.current) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const frame = window.requestAnimationFrame(() => {
+      viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2);
+      portraitViewCenteredRef.current = true;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isPortraitMobile, gameScale]);
 
   // ─── Licznik czasu sesji (aktualizacja co sekundę) ────────────────────
   useEffect(() => {
@@ -6381,7 +6404,15 @@ export default function Page() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflow: isMobileLayout ? "auto" : "hidden", background: "#000" }}>
+    <div ref={viewportRef} style={{
+      position: "fixed",
+      inset: 0,
+      overflowX: isMobileLayout ? "auto" : "hidden",
+      overflowY: isMobileLayout ? "auto" : "hidden",
+      WebkitOverflowScrolling: "touch",
+      touchAction: isPortraitMobile ? "pan-x pan-y" : undefined,
+      background: "#000",
+    }}>
       <style>{`
         @keyframes plono-map-fade-out {
           0%   { opacity: 1; }
@@ -6430,6 +6461,16 @@ export default function Page() {
           transform: "scale(1.12)",
         }} />
       )}
+        {isMobileLayout && (
+          <div
+            aria-hidden="true"
+            style={{
+              width: Math.max(window.innerWidth, Math.ceil(BASE_W * gameScale)),
+              height: Math.max(window.innerHeight, Math.ceil(BASE_H * gameScale)),
+              pointerEvents: "none",
+            }}
+          />
+        )}
         <main
           className="overflow-hidden"
           style={isMobileLayout
@@ -6440,7 +6481,7 @@ export default function Page() {
         <div
           ref={mapContainerRef}
           className="relative overflow-hidden"
-          style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none", touchAction: isOnPanMap ? "none" : undefined } as React.CSSProperties}
+          style={{ width: "100%", height: "100%", cursor: isOnPanMap ? "grab" : undefined, userSelect: "none", WebkitUserSelect: "none", touchAction: isPortraitMobile ? "pan-x pan-y" : (isOnPanMap ? "none" : undefined) } as React.CSSProperties}
           onDragStart={(e) => e.preventDefault()}
           onMouseDown={(e) => {
             if (showSettingsModal) return;
@@ -6478,6 +6519,9 @@ export default function Page() {
           }}
           // TYMCZASOWE — touch support do testów mobilnych
           onTouchStart={(e) => {
+            // W portrecie cały canvas jest natywnie przewijany w obu osiach.
+            // Nie uruchamiamy równolegle wewnętrznego przesuwania samej mapy.
+            if (isPortraitMobile) return;
             if (showSettingsModal) return;
             if (!isOnPanMap) return;
             const tgt = e.target as HTMLElement;
@@ -6487,6 +6531,7 @@ export default function Page() {
             panDragRef.current = { active: true, startX: t.clientX, startY: t.clientY, startPanX: panX, startPanY: panY, moved: false };
           }}
           onTouchMove={(e) => {
+            if (isPortraitMobile) return;
             if (showSettingsModal) { panDragRef.current.active = false; return; }
             if (!panDragRef.current.active) return;
             const t = e.touches[0];
@@ -6502,12 +6547,14 @@ export default function Page() {
             }
           }}
           onTouchEnd={() => {
+            if (isPortraitMobile) return;
             document.body.classList.remove("plono-dragging");
             panDragRef.current.active = false;
             setIsPanDragging(false);
             if (panDragRef.current.moved) { setTimeout(() => { panDragRef.current.moved = false; }, 100); }
           }}
           onTouchCancel={() => {
+            if (isPortraitMobile) return;
             document.body.classList.remove("plono-dragging");
             panDragRef.current.active = false;
             setIsPanDragging(false);
@@ -12514,52 +12561,6 @@ export default function Page() {
             fvTutArrow12Pos={fvTutArrow12Pos}
             fvTutArrow13Pos={fvTutArrow13Pos}
           /></Suspense>
-        )}
-
-        {/* TYMCZASOWE — powiadomienie "obróć telefon" dla testów mobilnych */}
-        {showRotateNotice && !rotateNoticeDismissed && (
-          <div
-            style={{
-              position: "fixed",
-              top: 16,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 999998,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "10px 16px",
-              borderRadius: 14,
-              background: "rgba(26,19,13,0.93)",
-              border: "1.5px solid rgba(200,160,60,0.55)",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.55)",
-              maxWidth: "calc(100vw - 32px)",
-              backdropFilter: "blur(6px)",
-            }}
-          >
-            <span style={{ fontSize: 22 }}>📱</span>
-            <span style={{ color: "#f3e6c8", fontSize: 13, fontWeight: 600, lineHeight: 1.4, whiteSpace: "nowrap" }}>
-              Obróć telefon poziomo,<br />aby wygodniej grać.
-            </span>
-            <button
-              type="button"
-              onClick={() => setRotateNoticeDismissed(true)}
-              style={{
-                marginLeft: 4,
-                padding: "5px 12px",
-                borderRadius: 8,
-                background: "rgba(200,150,40,0.85)",
-                border: "none",
-                color: "#1a130d",
-                fontWeight: 800,
-                fontSize: 12,
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              OK
-            </button>
-          </div>
         )}
 
         </main>
