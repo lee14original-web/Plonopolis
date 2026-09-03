@@ -29,6 +29,8 @@ export type Profile = {
   plot_crops?: Record<string, PlotCropState> | null;
   seed_inventory?: Record<string, number> | null;
   avatar_skin?: number | null;
+  avatar_change_count?: number | null;
+  last_avatar_change_at?: number | null;
   player_stats?: Record<string, number> | null;
   free_skill_points?: number | null;
   prev_level?: number | null;
@@ -36,6 +38,7 @@ export type Profile = {
   equipment?: string[] | null;
   blocked_users?: string[] | null;
   unlocked_epic_avatars?: number[] | null;
+  premium_currency?: number | null;
   hive_data?: Record<string, unknown> | null;
   barn_items?: Record<string, number> | null;
   fruit_inventory?: Record<string, number> | null;

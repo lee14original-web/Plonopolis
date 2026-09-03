@@ -5,6 +5,15 @@
 -- Wgraj w Supabase SQL Editor
 -- ============================================================
 
+DO $$
+BEGIN
+  IF to_regclass('public.account_profiles') IS NOT NULL THEN
+    RAISE EXCEPTION
+      'Ten patch został zastąpiony przez sql_global_account_avatar_v1.sql i nie może nadpisać globalnej obsługi avatarów.';
+  END IF;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.game_change_avatar_skin(p_avatar_skin integer)
 RETURNS jsonb
 LANGUAGE plpgsql

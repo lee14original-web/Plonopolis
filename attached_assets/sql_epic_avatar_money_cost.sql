@@ -4,6 +4,15 @@
 -- Wgraj w Supabase SQL Editor
 -- ============================================================
 
+DO $$
+BEGIN
+  IF to_regclass('public.account_profiles') IS NOT NULL THEN
+    RAISE EXCEPTION
+      'Ten patch został zastąpiony przez sql_global_account_avatar_v1.sql i nie może nadpisać globalnych odblokowań.';
+  END IF;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.buy_epic_avatar(p_avatar_id integer)
 RETURNS jsonb
 LANGUAGE plpgsql

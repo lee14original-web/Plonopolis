@@ -350,7 +350,18 @@ DECLARE
   v_profile profiles%rowtype;
   v_inv     jsonb;
   v_current integer;
+  v_avatar  integer;
 BEGIN
+  IF to_regclass('public.account_profiles') IS NOT NULL THEN
+    EXECUTE
+      'SELECT avatar_skin FROM public.account_profiles WHERE user_id = $1'
+      INTO v_avatar
+      USING v_uid;
+    IF v_avatar IS NULL THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'avatar_required');
+    END IF;
+  END IF;
+
   SELECT * INTO v_profile FROM profiles WHERE id = v_uid FOR UPDATE;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'error', 'profile_not_found');

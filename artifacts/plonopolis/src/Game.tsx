@@ -58,6 +58,7 @@ const LogoutConfirmModal = lazy(() => import("./game/features/settings/LogoutCon
 const RankingModal = lazy(() => import("./game/features/ranking/RankingModal").then(m => ({ default: m.RankingModal })));
 const MessagesModal = lazy(() => import("./game/features/messages/MessagesModal").then(m => ({ default: m.MessagesModal })));
 const SkinPickerModal = lazy(() => import("./game/features/avatar/SkinPickerModal").then(m => ({ default: m.SkinPickerModal })));
+const AvatarOnboardingModal = lazy(() => import("./game/features/avatar/AvatarOnboardingModal").then(m => ({ default: m.AvatarOnboardingModal })));
 const EpicPurchaseModal = lazy(() => import("./game/features/avatar/EpicPurchaseModal").then(m => ({ default: m.EpicPurchaseModal })));
 const CompostNotificationPopup = lazy(() => import("./game/features/compost/CompostNotificationPopup").then(m => ({ default: m.CompostNotificationPopup })));
 const HiveModal = lazy(() => import("./game/features/hive/HiveModal").then(m => ({ default: m.HiveModal })));
@@ -99,6 +100,19 @@ const SERVERS: { id: string; name: string; active: boolean }[] = [
   { id: "miodowy_zakatek", name: "Miodowy Zakątek", active: false },
   { id: "kraina_sadow", name: "Kraina Sadów", active: false },
 ];
+
+const AVATAR_ONBOARDING_PREVIEW =
+  import.meta.env.DEV &&
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("preview-avatar-onboarding");
+
+type GlobalAccountProfile = {
+  avatar_skin?: number | null;
+  unlocked_epic_avatars?: number[] | null;
+  premium_currency?: number | null;
+  avatar_change_count?: number | null;
+  last_avatar_change_at?: number | null;
+};
 
 type AuthProgress = {
   mode: "login" | "register";
@@ -487,6 +501,11 @@ export default function Page() {
   const thTextDragRef = React.useRef<{prop:"startX"|"startY"|"rowHeight"|"nameX"|"scoreRight"; startMX:number; startMY:number; startVal:number} | null>(null);
   const [hoveredSickle, setHoveredSickle] = React.useState(false);
   const [avatarSkin, setAvatarSkin] = React.useState<number>(-1);
+  const [onboardingSelectedSkin, setOnboardingSelectedSkin] = React.useState<number | null>(
+    AVATAR_ONBOARDING_PREVIEW ? 0 : null,
+  );
+  const [avatarOnboardingSaving, setAvatarOnboardingSaving] = React.useState(false);
+  const [avatarOnboardingError, setAvatarOnboardingError] = React.useState<string | null>(null);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
   const [unlockedEpicAvatars, setUnlockedEpicAvatars] = React.useState<number[]>([]);
@@ -1148,6 +1167,11 @@ export default function Page() {
     setPlotObstacles({});
     setPlotCrops({});
     setSeedInventory(getDefaultSeedInventory());
+    setAvatarSkin(-1);
+    setUnlockedEpicAvatars([]);
+    setOnboardingSelectedSkin(null);
+    setAvatarOnboardingError(null);
+    setAvatarOnboardingSaving(false);
     setPlotToBuy(null);
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
@@ -1315,9 +1339,13 @@ export default function Page() {
       const hasStatsLS = localStorage.getItem(`plonopolis_stats_${source.id}`) !== null;
       const hasFspLS   = localStorage.getItem(`plonopolis_fsp_${source.id}`) !== null;
       const hasPrevLS  = localStorage.getItem(`plonopolis_prevlv_${source.id}`) !== null;
-      const skin = hasSkinLS ? d.skin
-        : (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
-          ? source.avatar_skin : -1;
+      // Globalny avatar z konta jest źródłem prawdy. Cache przeglądarki służy
+      // wyłącznie jako fallback dla instalacji sprzed migracji globalnego konta.
+      const skin = (source.avatar_skin !== null && source.avatar_skin !== undefined && source.avatar_skin >= 0)
+        ? source.avatar_skin
+        : hasSkinLS
+          ? d.skin
+          : -1;
       const stats: PlayerStatsMap = hasStatsLS ? d.stats
         : (source.player_stats && typeof source.player_stats === "object" && !Array.isArray(source.player_stats))
           ? source.player_stats as PlayerStatsMap : { ...DEFAULT_STATS };
@@ -1331,8 +1359,14 @@ export default function Page() {
       setPlayerStats(stats);
       setFreeSkillPoints(fsp);
       prevLevelRef.current = prevLevel;
-      setAvatarChangeCount(d.changeCount);
-      setLastAvatarChangeAt(d.lastChangeAt);
+      const changeCount = typeof source.avatar_change_count === "number"
+        ? source.avatar_change_count
+        : d.changeCount;
+      const lastChangeAt = typeof source.last_avatar_change_at === "number"
+        ? source.last_avatar_change_at
+        : d.lastChangeAt;
+      setAvatarChangeCount(changeCount);
+      setLastAvatarChangeAt(lastChangeAt);
       // Historia nagród kompostownika — wczytaj z localStorage (persystencja między sesjami)
       try {
         const _rawHist = localStorage.getItem(lsKey(KOMPOST_HISTORY_KEY, source.id));
@@ -1358,7 +1392,7 @@ export default function Page() {
       // Epickie avatary — zawsze z DB (nie z localStorage)
       setUnlockedEpicAvatars(Array.isArray(source.unlocked_epic_avatars) ? source.unlocked_epic_avatars : []);
       // Zawsze aktualizuj localStorage
-      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel, d.changeCount, d.lastChangeAt);
+      saveAvatarDataLS(source.id, skin, stats, fsp, prevLevel, changeCount, lastChangeAt);
       // Zsynchronizuj Supabase tylko gdy skin jest prawidłowy (nie zapisuj -1 do bazy)
       if (skin >= 0) {
         void supabase.rpc("game_save_avatar_data", {
@@ -2728,11 +2762,15 @@ export default function Page() {
   // ─── Powitanie nowego gracza ───
   useEffect(() => {
     if (!profile?.id) return;
+    if (avatarSkin < 0) {
+      setShowWelcome(false);
+      return;
+    }
     if (!profile.tutorial_started && !profile.tutorial_completed && !profile.tutorial_skipped) {
       setShowWelcome(true);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id]);
+  }, [profile?.id, avatarSkin]);
 
   // ─── Klawiatura dla potwierdzeń wyjścia z przewodnika ───
   useEffect(() => {
@@ -3642,8 +3680,9 @@ export default function Page() {
     });
   }
   async function loadProfile(_userId?: string) {
-    const [profileResult, timeResult, eqResult] = await Promise.all([
+    const [profileResult, globalAccountResult, timeResult, eqResult] = await Promise.all([
       supabase.rpc("game_get_my_profile"),
+      supabase.rpc("game_get_global_account"),
       supabase.rpc("get_server_time_ms"),
       supabase.from("profiles").select("char_equipped, owned_eq_items, extra_eq_items, item_upg_registry").limit(1).maybeSingle(),
     ]);
@@ -3657,14 +3696,42 @@ export default function Page() {
       return null;
     }
 
+    const globalRpcMissing = globalAccountResult.error && (
+      globalAccountResult.error.code === "PGRST202" ||
+      globalAccountResult.error.message.toLowerCase().includes("game_get_global_account")
+    );
+    if (globalAccountResult.error && !globalRpcMissing) {
+      setMessage({
+        type: "error",
+        title: "Błąd danych konta",
+        text: globalAccountResult.error.message,
+      });
+      return null;
+    }
+
     if (typeof timeResult.data === "number") {
       hiveClockOffsetRef.current = timeResult.data - Date.now();
     }
 
     // Scal dane ekwipunku (pobrane bezpośrednio z tabeli) z danymi RPC
     const rpcProfile = extractRpcProfile(profileResult.data);
-    const mergedProfile = (rpcProfile && eqResult.data)
-      ? { ...rpcProfile, ...eqResult.data }
+    const globalAccount = globalRpcMissing
+      ? null
+      : extractRpcProfile(globalAccountResult.data) as GlobalAccountProfile | null;
+    const mergedProfile = rpcProfile
+      ? {
+          ...rpcProfile,
+          ...(eqResult.data ?? {}),
+          ...(globalAccount
+            ? {
+                avatar_skin: globalAccount.avatar_skin,
+                unlocked_epic_avatars: globalAccount.unlocked_epic_avatars ?? [],
+                premium_currency: globalAccount.premium_currency ?? 0,
+                avatar_change_count: globalAccount.avatar_change_count ?? 0,
+                last_avatar_change_at: globalAccount.last_avatar_change_at ?? 0,
+              }
+            : {}),
+        }
       : rpcProfile;
 
     return applyProfileState(mergedProfile);
@@ -4656,6 +4723,86 @@ export default function Page() {
     );
     await loadProfile(profile.id);
     setShowSkinModal(false);
+  }
+
+  async function handleInitialAvatarConfirm() {
+    if (onboardingSelectedSkin === null || avatarOnboardingSaving) return;
+    if (AVATAR_ONBOARDING_PREVIEW && !profile?.id) return;
+    if (!profile?.id) return;
+
+    setAvatarOnboardingSaving(true);
+    setAvatarOnboardingError(null);
+
+    try {
+      const { data, error } = await supabase.rpc("game_set_initial_avatar", {
+        p_avatar_skin: onboardingSelectedSkin,
+      });
+
+      const initialAvatarRpcMissing = error && (
+        error.code === "PGRST202" ||
+        error.message.toLowerCase().includes("game_set_initial_avatar")
+      );
+
+      if (initialAvatarRpcMissing) {
+        throw new Error(
+          "Baza gry wymaga aktualizacji globalnego konta. Uruchom najnowszy skrypt SQL i spróbuj ponownie.",
+        );
+      }
+
+      if (error) throw error;
+
+      const response = data as {
+        ok?: boolean;
+        error?: string;
+        avatar_skin?: number;
+        avatar_change_count?: number;
+        last_avatar_change_at?: number;
+        unlocked_epic_avatars?: number[];
+      } | null;
+
+      if (response?.ok === false) {
+        const errorText = response.error === "epic_not_unlocked"
+          ? "Ten epicki avatar nie jest odblokowany na Twoim koncie."
+          : response.error === "avatar_already_selected"
+            ? "Avatar został już wybrany na tym koncie. Odśwież grę."
+            : response.error ?? "Nie udało się zapisać avatara.";
+        throw new Error(errorText);
+      }
+
+      const selected = response?.avatar_skin ?? onboardingSelectedSkin;
+      const changeCount = response?.avatar_change_count ?? avatarChangeCount;
+      const lastChangedAt = response?.last_avatar_change_at ?? lastAvatarChangeAt;
+
+      setAvatarSkin(selected);
+      setAvatarChangeCount(changeCount);
+      setLastAvatarChangeAt(lastChangedAt);
+      if (Array.isArray(response?.unlocked_epic_avatars)) {
+        setUnlockedEpicAvatars(response.unlocked_epic_avatars);
+      }
+      setProfile(current => current ? { ...current, avatar_skin: selected } : current);
+      saveAvatarDataLS(
+        profile.id,
+        selected,
+        playerStats,
+        freeSkillPoints,
+        prevLevelRef.current,
+        changeCount,
+        lastChangedAt,
+      );
+      setOnboardingSelectedSkin(null);
+      await loadProfile(profile.id);
+      setMessage({
+        type: "success",
+        title: "Avatar zapisany",
+        text: "Ta postać będzie reprezentować Twoje konto na każdym serwerze.",
+      });
+    } catch (error) {
+      setAvatarOnboardingError(
+        error instanceof Error ? error.message : "Nie udało się zapisać avatara. Spróbuj ponownie.",
+      );
+    } finally {
+      setAvatarOnboardingSaving(false);
+    }
   }
 
   async function handleBuyEpicAvatar(epicAvatarId: number) {
@@ -6490,6 +6637,26 @@ export default function Page() {
             <p className="mt-3 text-xs text-[#b69d74]">Nie zamykaj okna — za chwilę zaczynamy.</p>
           </div>
         </div>
+      )}
+      {((profile && avatarSkin < 0 && !authProgress) || AVATAR_ONBOARDING_PREVIEW) && (
+        <Suspense fallback={null}>
+          <AvatarOnboardingModal
+            avatarSkin={avatarSkin >= 0 ? avatarSkin : null}
+            selectedSkin={onboardingSelectedSkin}
+            onSelect={skin => {
+              setOnboardingSelectedSkin(skin);
+              setAvatarOnboardingError(null);
+            }}
+            onConfirm={handleInitialAvatarConfirm}
+            isSaving={avatarOnboardingSaving}
+            unlockedEpicAvatars={
+              AVATAR_ONBOARDING_PREVIEW && unlockedEpicAvatars.length === 0
+                ? [20, 21, 22]
+                : unlockedEpicAvatars
+            }
+            error={avatarOnboardingError}
+          />
+        </Suspense>
       )}
       {/* Ambient backdrop — rozmyte tło farmy/miasta/lobby zasłania czarne paski po bokach */}
       {(isOnFarmMap || isOnCityMap || !profile) && (
