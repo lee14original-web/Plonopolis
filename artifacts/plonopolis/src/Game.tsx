@@ -423,6 +423,7 @@ export default function Page() {
   const gameScaleRef = React.useRef(gameScale);
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const portraitViewCenteredRef = React.useRef(false);
+  const desktopZoomCenteredRef = React.useRef(false);
   const isLoggedInRef = React.useRef(false);
   const [backpackPosition, setBackpackPosition] = useState({ x: 0, y: 0 });
   const [isDraggingBackpack, setIsDraggingBackpack] = useState(false);
@@ -2917,6 +2918,29 @@ export default function Page() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [isPortraitMobile, gameScale]);
+
+  const isDesktopZoomPannable = !isMobileLayout && !!profile?.id && userZoomFactor > 1;
+
+  useEffect(() => {
+    if (!isDesktopZoomPannable) {
+      desktopZoomCenteredRef.current = false;
+      const viewport = viewportRef.current;
+      if (viewport && !isMobileLayout) {
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
+      }
+      return;
+    }
+    if (desktopZoomCenteredRef.current) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const frame = window.requestAnimationFrame(() => {
+      viewport.scrollLeft = Math.max(0, (viewport.scrollWidth - viewport.clientWidth) / 2);
+      viewport.scrollTop = Math.max(0, (viewport.scrollHeight - viewport.clientHeight) / 2);
+      desktopZoomCenteredRef.current = true;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isDesktopZoomPannable, isMobileLayout, gameScale]);
 
   // ─── Licznik czasu sesji (aktualizacja co sekundę) ────────────────────
   useEffect(() => {
@@ -6594,8 +6618,8 @@ export default function Page() {
     <div ref={viewportRef} data-testid="game-viewport" style={{
       position: "fixed",
       inset: 0,
-      overflowX: isMobileLayout ? "auto" : "hidden",
-      overflowY: isMobileLayout ? "auto" : "hidden",
+      overflowX: isMobileLayout || isDesktopZoomPannable ? "auto" : "hidden",
+      overflowY: isMobileLayout || isDesktopZoomPannable ? "auto" : "hidden",
       WebkitOverflowScrolling: "touch",
       touchAction: isPortraitMobile ? "pan-x pan-y" : undefined,
       background: "#000",
@@ -6668,7 +6692,7 @@ export default function Page() {
           transform: "scale(1.12)",
         }} />
       )}
-        {isMobileLayout && (
+        {(isMobileLayout || isDesktopZoomPannable) && (
           <div
             aria-hidden="true"
             style={{
@@ -6683,6 +6707,8 @@ export default function Page() {
           className="overflow-hidden"
           style={isMobileLayout
             ? { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, zIndex: 1 }
+            : isDesktopZoomPannable
+              ? { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, zIndex: 1 }
             : { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "center center", position: "absolute", top: "50%", left: "50%", marginLeft: -BASE_W / 2, marginTop: -BASE_H / 2, zIndex: 1 }}
           onMouseMove={(e) => { const gc = toGameCoords(e.clientX, e.clientY); setMousePos(gc); setMouseScreenPos({ x: e.clientX, y: e.clientY }); }}
         >
