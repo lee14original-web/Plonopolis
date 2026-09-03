@@ -64,6 +64,9 @@ export function parsePlotCrops(value: unknown): Record<number, PlotCropState> {
         frozenStatMult: typeof (item as { frozenStatMult?: unknown })?.frozenStatMult === "number"
           ? (item as { frozenStatMult: number }).frozenStatMult
           : null,
+        newPlayerGrowthMult: (item as { newPlayerGrowthMult?: unknown })?.newPlayerGrowthMult === 0.25
+          ? 0.25
+          : null,
       },
     ]);
   }
@@ -81,6 +84,7 @@ export function serializePlotCrops(value: Record<number, PlotCropState>): Record
         plantedQuality: v.plantedQuality ?? null,
         compostBonus: v.compostBonus ?? null,
         frozenStatMult: v.frozenStatMult ?? null,
+        newPlayerGrowthMult: v.newPlayerGrowthMult === 0.25 ? 0.25 : null,
       },
     ])
   );

@@ -23,6 +23,7 @@ export type PlotCropState = {
   plantedQuality?: string | null;
   compostBonus?: CompostBonus | null;
   frozenStatMult?: number | null;
+  newPlayerGrowthMult?: number | null;
 };
 
 export type SeedInventory = Record<string, number>;

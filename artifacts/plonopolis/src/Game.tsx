@@ -50,6 +50,7 @@ import { isCompostKey, isGuideCompostKey, compostTypeFromKey, compostValueFromKe
 import { clearPerSessionLocalStorage, lsKey, lsLoadMigrate, loadAvatarDataLS, saveAvatarDataLS } from "./game/utils/storage";
 import { todayStr, emptyDP, loadDP, saveDP } from "./game/utils/daily-progress";
 import { computeFarmPower } from "./game/utils/farm-power";
+import { getNewPlayerGrowthMultiplier, getGrowthTimeWithMinimum } from "./game/utils/growth";
 import { ttStyle, getLigaTier, compostTierColor, fmtK, fmtFull } from "./game/utils/ui";
 import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
@@ -1889,6 +1890,9 @@ export default function Page() {
       : (plot.compostBonus?.type === "growth")
       ? Math.max(COMPOST_MULT_MIN, 1 - (plot.compostBonus.value * compostBoost / 100))
       : 1;
+    // Bonus startowy jest nadawany i utrwalany przez trigger SQL w momencie sadzenia.
+    // Kompost Przewodnika zawsze wyłącza ten bonus.
+    const newPlayerGrowthMult = getNewPlayerGrowthMultiplier(plot);
     let totalMult: number;
     if (plot.watered) {
       const zaradnoscEff = effectiveStats.zaradnosc + getEquipFlatBonus(" pkt Zaradnosci", charEquipped);
@@ -1897,12 +1901,18 @@ export default function Page() {
       const waterEqPct = getEquipBonusPct("% efekt podlewania", charEquipped) / 100;
       const totalWaterReduction = WATER_BASE + zaradnoscBonus + waterEqPct; // addytywny, bez capa
       const waterMult = Math.max(WATER_MULT_MIN, 1 - totalWaterReduction);
-      totalMult = waterMult * statMult * compostMult;
+      totalMult = waterMult * statMult * compostMult * newPlayerGrowthMult;
     } else {
-      totalMult = statMult * compostMult;
+      totalMult = statMult * compostMult * newPlayerGrowthMult;
     }
     // Globalne minimum: nawet z full buildem nie schodzimy poniżej GROWTH_GLOBAL_MIN_MULT bazowego czasu
-    return Math.round(crop.growthTimeMs * Math.max(GROWTH_GLOBAL_MIN_MULT, totalMult));
+    // Wyjątek: zweryfikowany serwerowo bonus nowego konta ma własne minimum 25%.
+    return getGrowthTimeWithMinimum(
+      crop.growthTimeMs,
+      totalMult,
+      newPlayerGrowthMult === 0.25,
+      GROWTH_GLOBAL_MIN_MULT,
+    );
   }
 
   function getGrowthProgress(plotId: number) {
@@ -5871,7 +5881,7 @@ export default function Page() {
     const _compostExpPctForRpc = (_compostBonusForRpc?.type === "exp") ? (_compostBonusForRpc.value ?? 0) : 0;
     const _expBonusPctForRpc  = _expEqPctForRpc + _compostExpPctForRpc;
 
-    const { data, error } = await supabase.rpc("game_harvest_plot", {
+    const { data, error } = await supabase.rpc("game_harvest_plot_secure", {
       p_plot_id: plotId,
       p_effective_grow_ms: effectiveGrowMs,
       p_zrecznosc: effectiveStats.zrecznosc ?? 0,
@@ -8840,6 +8850,9 @@ export default function Page() {
                               {/* Treść */}
                               <div className="space-y-4 text-[22px] leading-relaxed text-[#dfcfab]/90">
                                 <p>Twoje ranczo dopiero zaczyna działać. Przewodnik pokaże Ci krok po kroku, jak siać, zbierać plony, korzystać z mapy i rozwijać farmę.</p>
+                                <p className="rounded-xl border border-emerald-700/50 bg-emerald-950/30 px-4 py-3 text-[19px] text-emerald-200">
+                                  Bonus nowego gospodarstwa: przez pierwsze 15 minut od rejestracji zwykłe uprawy mają czas wzrostu skrócony o 75%. Bonus nie obejmuje upraw w krokach przewodnika.
+                                </p>
                                 <p className="text-[20px] text-[#b89a60]">Po ukończeniu przewodnika otrzymasz nagrodę startową: Konto Premium na 7 dni.</p>
                               </div>
                               {/* Stopka */}
