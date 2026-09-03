@@ -5,3 +5,4 @@
 - [Fixed-position + scale bug](plonopolis-fixed-position-scale-bug.md) — `position:fixed` overlays inside the scaled `<main>` double-scale; portal them to `document.body`.
 - [Tutorial step advance race](tutorial-step-advance-race.md) — applyProfileState must use Math.max to never downgrade tutorialStep; stale RPC data resets local state.
 - [Tutorial step 9 advance bug](tutorial-step9-advance.md) — tutorialPlotIds accumulates empty slots; filter to withCrop before every(isCropReady). Step 8 also needs auto-advance useEffect.
+- [Playwright on NixOS](playwright-nixos-runtime.md) — Chromium needs its downloaded browser binary plus Nix runtime libraries before local E2E tests can launch.

@@ -6444,7 +6444,7 @@ export default function Page() {
   }
 
   return (
-    <div ref={viewportRef} style={{
+    <div ref={viewportRef} data-testid="game-viewport" style={{
       position: "fixed",
       inset: 0,
       overflowX: isMobileLayout ? "auto" : "hidden",
@@ -6512,6 +6512,7 @@ export default function Page() {
           />
         )}
         <main
+          data-testid="game-canvas"
           className="overflow-hidden"
           style={isMobileLayout
             ? { width: BASE_W, height: BASE_H, transform: `scale(${gameScale})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0, zIndex: 1 }

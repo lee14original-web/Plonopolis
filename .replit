@@ -34,6 +34,7 @@ VITE_SUPABASE_ANON_KEY = "sb_publishable_ikeRxy6AzoNQuIeoeF9aww_4FideNeP"
 
 [nix]
 channel = "stable-25_05"
+packages = ["glib", "nspr", "nss", "atk", "at-spi2-atk", "at-spi2-core", "cairo", "cups", "dbus", "expat", "fontconfig", "freetype", "libdrm", "libxkbcommon", "pango", "gtk3", "mesa", "alsa-lib", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXi", "xorg.libXrandr", "xorg.libxcb", "xorg.libxshmfence", "libgbm"]
 
 [[ports]]
 localPort = 8080
