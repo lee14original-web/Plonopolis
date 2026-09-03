@@ -100,12 +100,27 @@ const SERVERS: { id: string; name: string; active: boolean }[] = [
   { id: "kraina_sadow", name: "Kraina Sadów", active: false },
 ];
 
+type AuthProgress = {
+  mode: "login" | "register";
+  percent: number;
+  label: string;
+};
+
 export default function Page() {
   const [tab, setTab] = useState<"login" | "register">("login");
   const [selectedServer, setSelectedServer] = useState<string>("testy");
   const [serverDropdownOpen, setServerDropdownOpen] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authProgress, setAuthProgress] = useState<AuthProgress | null>(null);
   const serverDropdownRef = React.useRef<HTMLDivElement>(null);
+  const setAuthStage = (mode: AuthProgress["mode"], percent: number, label: string) => {
+    setAuthProgress({ mode, percent, label });
+  };
+  const finishAuthProgress = async (mode: AuthProgress["mode"]) => {
+    setAuthStage(mode, 94, "Przygotowywanie farmy");
+    await new Promise<void>(resolve => window.setTimeout(resolve, 140));
+    setAuthStage(mode, 100, "Gospodarstwo gotowe");
+    await new Promise<void>(resolve => window.setTimeout(resolve, 180));
+  };
   React.useEffect(() => {
     if (!serverDropdownOpen) return;
     function handleOutside(e: MouseEvent) {
@@ -2606,6 +2621,7 @@ export default function Page() {
 
     const bootstrap = async () => {
       try {
+        setAuthStage("login", 8, "Łączenie z serwerem");
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -2620,10 +2636,15 @@ export default function Page() {
             // Sesja przeterminowana — wyloguj bez ładowania profilu
             await supabase.auth.signOut();
             if (mounted) setReady(true);
+            setAuthProgress(null);
             return;
           }
+          setAuthStage("login", 64, "Wczytywanie gospodarstwa");
           await loadProfile(session.user.id);
           if (mounted) startSessionTimer(storedStart ?? undefined);
+          await finishAuthProgress("login");
+        } else {
+          setAuthProgress(null);
         }
       } catch (error) {
         console.error("BOOTSTRAP ERROR:", error);
@@ -2635,6 +2656,7 @@ export default function Page() {
           });
         }
       } finally {
+        setAuthProgress(null);
         if (mounted) setReady(true);
       }
     };
@@ -4152,6 +4174,7 @@ export default function Page() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (authProgress) return;
     setMessage(null);
 
     const login = registerForm.login.trim();
@@ -4180,8 +4203,8 @@ export default function Page() {
     if (!isEmailValid(email)) {
       setMessage({
         type: "error",
-        title: "Nieprawidłowy email",
-        text: "Podaj poprawny adres email.",
+        title: "Nieprawidłowy adres e-mail",
+        text: "Podaj poprawny adres e-mail.",
       });
       return;
     }
@@ -4204,121 +4227,139 @@ export default function Page() {
       return;
     }
 
-    const { data: availData, error: availError } = await supabase.rpc("check_registration_available", {
-      p_login: login,
-      p_email: email,
-    });
+    setAuthStage("register", 10, "Sprawdzanie danych");
+    try {
+      const { data: availData, error: availError } = await supabase.rpc("check_registration_available", {
+        p_login: login,
+        p_email: email,
+      });
 
-    if (availError) {
+      if (availError) {
+        setMessage({
+          type: "error",
+          title: "Nie udało się sprawdzić danych",
+          text: translateAuthError(availError.message),
+        });
+        return;
+      }
+
+      const availResponse = availData as { ok?: boolean; error?: string; login_available?: boolean; email_available?: boolean } | null;
+
+      if (availResponse?.ok === false) {
+        setMessage({
+          type: "error",
+          title: "Nie udało się sprawdzić danych",
+          text: translateAuthError(availResponse.error ?? "Nieznany błąd"),
+        });
+        return;
+      }
+
+      if (availResponse?.login_available === false) {
+        setMessage({
+          type: "error",
+          title: "Login jest już zajęty",
+          text: "Ten login już istnieje. Wybierz inny.",
+        });
+        return;
+      }
+
+      if (availResponse?.email_available === false) {
+        setMessage({
+          type: "error",
+          title: "Adres e-mail jest już zajęty",
+          text: "Na ten adres e-mail konto już zostało utworzone.",
+        });
+        return;
+      }
+
+      setAuthStage("register", 32, "Tworzenie konta");
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { login } },
+      });
+
+      if (signUpError) {
+        setMessage({
+          type: "error",
+          title: "Nie udało się utworzyć konta",
+          text: translateAuthError(signUpError.message),
+        });
+        return;
+      }
+
+      const userId = signUpData.user?.id;
+      if (!userId) {
+        setMessage({
+          type: "info",
+          title: "Sprawdź pocztę",
+          text: "Konto zostało utworzone. Dokończ aktywację z linku w e-mailu, jeśli masz włączone potwierdzanie adresu.",
+        });
+        return;
+      }
+
+      setAuthStage("register", 58, "Konfigurowanie gospodarstwa");
+      // Nadpisz login w profilu — trigger tworzy go z emailem, tu ustawiamy właściwy login gracza
+      const { data: loginData, error: loginRpcError } = await supabase.rpc("set_my_login_after_signup", {
+        p_login: login,
+      });
+
+      if (loginRpcError) {
+        setMessage({
+          type: "error",
+          title: "Nie udało się skonfigurować gospodarstwa",
+          text: translateAuthError(loginRpcError.message),
+        });
+        return;
+      }
+
+      const loginResponse = loginData as { ok?: boolean; error?: string; login?: string } | null;
+
+      if (loginResponse?.ok === false) {
+        setMessage({
+          type: "error",
+          title: "Nie udało się skonfigurować gospodarstwa",
+          text: translateAuthError(loginResponse.error ?? "Nieznany błąd"),
+        });
+        return;
+      }
+
+      setUnlockedPlots(getDefaultUnlockedPlots());
+      setPlotCrops({});
+      setSeedInventory(getDefaultSeedInventory());
+      setAuthStage("register", 78, "Wczytywanie gospodarstwa");
+      const loadedProfile = await loadProfile(userId);
+      if (!loadedProfile) return;
+
+      await finishAuthProgress("register");
+
+      setRegisterForm({
+        login: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setTab("login");
+      setMessage({
+        type: "success",
+        title: "Gospodarstwo gotowe",
+        text: "Konto utworzone. Otrzymujesz 3 darmowe pola na start.",
+      });
+    } catch (error) {
       setMessage({
         type: "error",
-        title: "Błąd sprawdzania danych",
-        text: availError.message,
+        title: "Nie udało się utworzyć konta",
+        text: translateAuthError(error instanceof Error ? error.message : "Spróbuj ponownie za chwilę."),
       });
-      return;
+    } finally {
+      setAuthProgress(null);
     }
-
-    const availResponse = availData as { ok?: boolean; error?: string; login_available?: boolean; email_available?: boolean } | null;
-
-    if (availResponse?.ok === false) {
-      setMessage({
-        type: "error",
-        title: "Błąd sprawdzania danych",
-        text: availResponse.error ?? "Nieznany błąd",
-      });
-      return;
-    }
-
-    if (availResponse?.login_available === false) {
-      setMessage({
-        type: "error",
-        title: "Login zajęty",
-        text: "Ten login już istnieje. Wybierz inny.",
-      });
-      return;
-    }
-
-    if (availResponse?.email_available === false) {
-      setMessage({
-        type: "error",
-        title: "Email zajęty",
-        text: "Na ten adres email konto już zostało utworzone.",
-      });
-      return;
-    }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { login } },
-    });
-
-    if (signUpError) {
-      setMessage({
-        type: "error",
-        title: "Błąd rejestracji",
-        text: translateAuthError(signUpError.message),
-      });
-      return;
-    }
-
-    const userId = signUpData.user?.id;
-    if (!userId) {
-      setMessage({
-        type: "info",
-        title: "Sprawdź pocztę",
-        text: "Konto zostało utworzone. Dokończ aktywację z linku w emailu, jeśli masz włączone potwierdzanie adresu.",
-      });
-      return;
-    }
-
-    // Nadpisz login w profilu — trigger tworzy go z emailem, tu ustawiamy właściwy login gracza
-    const { data: loginData, error: loginRpcError } = await supabase.rpc("set_my_login_after_signup", {
-      p_login: login,
-    });
-
-    if (loginRpcError) {
-      setMessage({
-        type: "error",
-        title: "Błąd ustawiania loginu",
-        text: loginRpcError.message,
-      });
-      return;
-    }
-
-    const loginResponse = loginData as { ok?: boolean; error?: string; login?: string } | null;
-
-    if (loginResponse?.ok === false) {
-      setMessage({
-        type: "error",
-        title: "Błąd ustawiania loginu",
-        text: loginResponse.error ?? "Nieznany błąd",
-      });
-      return;
-    }
-
-    setUnlockedPlots(getDefaultUnlockedPlots());
-    setPlotCrops({});
-    setSeedInventory(getDefaultSeedInventory());
-    await loadProfile(userId);
-
-    setRegisterForm({
-      login: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
-
-    setTab("login");
-    setMessage({
-      type: "success",
-      title: "Konto utworzone",
-      text: "Nowy gracz startuje z 3 darmowymi polami.",
-    });
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (authProgress) return;
     setMessage(null);
 
     const identifier = loginForm.identifier.trim();
@@ -4328,7 +4369,7 @@ export default function Page() {
       setMessage({
         type: "error",
         title: "Brak danych",
-        text: "Podaj email oraz hasło.",
+        text: "Podaj adres e-mail oraz hasło.",
       });
       return;
     }
@@ -4336,13 +4377,13 @@ export default function Page() {
     if (!identifier.includes("@")) {
       setMessage({
         type: "error",
-        title: "Wymagany adres email",
-        text: "Podaj adres email, nie login.",
+        title: "Wymagany adres e-mail",
+        text: "Podaj adres e-mail, nie login.",
       });
       return;
     }
 
-    setIsLoggingIn(true);
+    setAuthStage("login", 10, "Łączenie z serwerem");
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: identifier.trim(),
@@ -4352,29 +4393,46 @@ export default function Page() {
       if (error) {
         setMessage({
           type: "error",
-          title: "Błędne logowanie",
+          title: "Nie udało się zalogować",
           text: translateAuthError(error.message),
         });
         return;
       }
 
+      setAuthStage("login", 42, "Sprawdzanie danych logowania");
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session?.user) {
-        await loadProfile(session.user.id);
+        setAuthStage("login", 68, "Wczytywanie gospodarstwa");
+        const loadedProfile = await loadProfile(session.user.id);
+        if (!loadedProfile) return;
+      } else {
+        setMessage({
+          type: "error",
+          title: "Nie udało się wczytać sesji",
+          text: "Spróbuj zalogować się ponownie.",
+        });
+        return;
       }
 
+      await finishAuthProgress("login");
       startSessionTimer();
       setLoginForm({ identifier: "", password: "" });
       setMessage({
         type: "success",
         title: "Witaj ponownie",
-        text: "Sesja gracza została wczytana.",
+        text: "Twoje gospodarstwo jest gotowe.",
+      });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        title: "Nie udało się zalogować",
+        text: translateAuthError(error instanceof Error ? error.message : "Spróbuj ponownie za chwilę."),
       });
     } finally {
-      setIsLoggingIn(false);
+      setAuthProgress(null);
     }
   }
 
@@ -6308,7 +6366,15 @@ export default function Page() {
       <main className="flex h-screen items-center justify-center bg-[#1a130d] text-[#f3e6c8]">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-wide">Plonopolis</h1>
-          <p className="mt-3 text-sm opacity-80">Ładowanie bramy do gospodarstwa...</p>
+          <p className="mt-3 text-sm opacity-80">{authProgress?.label ?? "Ładowanie bramy do gospodarstwa..."}</p>
+          {authProgress && (
+            <div className="mx-auto mt-4 h-1.5 w-56 overflow-hidden rounded-full bg-black/40">
+              <div
+                className="h-full rounded-full bg-[#d4a64f] transition-[width] duration-300"
+                style={{ width: `${authProgress.percent}%` }}
+              />
+            </div>
+          )}
         </div>
       </main>
     );
@@ -6329,6 +6395,31 @@ export default function Page() {
           100% { opacity: 0; }
         }
       `}</style>
+      {authProgress && profile && (
+        <div
+          className="pointer-events-auto fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 px-5 backdrop-blur-[2px]"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="w-full max-w-sm rounded-[24px] border border-[#8b6a3e] bg-[rgba(38,24,14,0.97)] p-6 text-center text-[#f3e6c8] shadow-2xl">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-[#d4a64f]/60 bg-[#d4a64f]/15 text-2xl">
+              {authProgress.mode === "register" ? "🌱" : "🌾"}
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#d8ba7a]">
+              {authProgress.mode === "register" ? "Nowe gospodarstwo" : "Powrót na farmę"}
+            </p>
+            <p className="mt-2 text-lg font-black text-[#f9e7b2]">{authProgress.label}</p>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-black/50">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#c9952f,#f2ca69)] transition-[width] duration-300"
+                style={{ width: `${authProgress.percent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm font-bold text-[#d8ba7a]">{authProgress.percent}%</p>
+            <p className="mt-3 text-xs text-[#b69d74]">Nie zamykaj okna — za chwilę zaczynamy.</p>
+          </div>
+        </div>
+      )}
       {/* Ambient backdrop — rozmyte tło farmy/miasta/lobby zasłania czarne paski po bokach */}
       {(isOnFarmMap || isOnCityMap || !profile) && (
         <div style={{
@@ -7769,16 +7860,20 @@ export default function Page() {
                   <div className="p-4 md:p-5">
                     <div className="mb-3 grid grid-cols-2 rounded-2xl border border-[#8b6a3e] bg-[rgba(20,12,8,0.55)] p-1">
                       <button
-                        onClick={() => setTab("login")}
-                        className={`rounded-xl px-4 py-2 text-lg font-bold transition ${
+                        type="button"
+                        disabled={!!authProgress}
+                        onClick={() => { setTab("login"); setMessage(null); }}
+                        className={`rounded-xl px-4 py-2 text-lg font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                           tab === "login" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
                         Logowanie
                       </button>
                       <button
-                        onClick={() => setTab("register")}
-                        className={`rounded-xl px-4 py-2 text-lg font-bold transition ${
+                        type="button"
+                        disabled={!!authProgress}
+                        onClick={() => { setTab("register"); setMessage(null); }}
+                        className={`rounded-xl px-4 py-2 text-lg font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                           tab === "register" ? "bg-[#d4a64f] text-[#2b180c]" : "text-[#f1dfb5] hover:bg-white/5"
                         }`}
                       >
@@ -7793,8 +7888,9 @@ export default function Page() {
                         {/* Trigger */}
                         <button
                           type="button"
+                          disabled={!!authProgress}
                           onClick={() => setServerDropdownOpen(o => !o)}
-                          className="flex w-full items-center justify-between rounded-xl border border-[#f4cf78] bg-[rgba(212,166,79,0.15)] px-4 py-2.5 text-left text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(212,166,79,0.25)] shadow-[0_0_8px_rgba(244,207,120,0.25)]"
+                          className="flex w-full items-center justify-between rounded-xl border border-[#f4cf78] bg-[rgba(212,166,79,0.15)] px-4 py-2.5 text-left text-base font-bold text-[#f9e7b2] transition hover:bg-[rgba(212,166,79,0.25)] shadow-[0_0_8px_rgba(244,207,120,0.25)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <span className="flex items-center gap-2">
                             <span>{SERVERS.find(s => s.id === selectedServer)?.name ?? selectedServer}</span>
@@ -7834,18 +7930,36 @@ export default function Page() {
                       </div>
                     </div>
 
+                    {message && !message.fieldOnly && (
+                      <div
+                        role={message.type === "error" ? "alert" : "status"}
+                        aria-live="polite"
+                        className={`mb-3 rounded-xl border px-3 py-2.5 ${
+                          message.type === "error"
+                            ? "border-red-400/60 bg-red-950/55 text-red-100"
+                            : message.type === "success"
+                              ? "border-emerald-400/60 bg-emerald-950/50 text-emerald-100"
+                              : "border-sky-400/60 bg-sky-950/50 text-sky-100"
+                        }`}
+                      >
+                        <p className="text-sm font-black">{message.title}</p>
+                        <p className="mt-0.5 text-xs leading-snug opacity-90">{message.text}</p>
+                      </div>
+                    )}
+
                     {tab === "login" ? (
-                      <form onSubmit={handleLogin} className="space-y-3 text-[#f3e6c8]">
+                      <form onSubmit={handleLogin} className="space-y-3 text-[#f3e6c8]" aria-busy={authProgress?.mode === "login"}>
                         <div>
-                          <label className="mb-1 block text-lg font-semibold">Email</label>
+                          <label className="mb-1 block text-lg font-semibold">E-mail</label>
                           <input
                             type="text"
                             inputMode="email"
-                            placeholder="Adres email (nie login)"
+                            placeholder="Adres e-mail (nie login)"
                             autoComplete="email"
+                            disabled={!!authProgress}
                             value={loginForm.identifier}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, identifier: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                           />
                         </div>
 
@@ -7855,43 +7969,64 @@ export default function Page() {
                             type="password"
                             placeholder="Wpisz hasło"
                             autoComplete="current-password"
+                            disabled={!!authProgress}
                             value={loginForm.password}
                             onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                           />
                         </div>
 
                         <button
                           type="submit"
-                          disabled={isLoggingIn}
+                          disabled={!!authProgress}
                           className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          {isLoggingIn ? "Logowanie…" : "Zaloguj i wczytaj sesję"}
+                          {authProgress?.mode === "login"
+                            ? `${authProgress.label} ${authProgress.percent}%`
+                            : "Zaloguj i wczytaj sesję"}
                         </button>
+                        {authProgress?.mode === "login" && (
+                          <div className="rounded-xl border border-[#8b6a3e]/70 bg-black/25 px-3 py-2" role="status" aria-live="polite">
+                            <div className="h-1.5 overflow-hidden rounded-full bg-black/50">
+                              <div
+                                className="h-full rounded-full bg-[linear-gradient(90deg,#c9952f,#f2ca69)] transition-[width] duration-300"
+                                style={{ width: `${authProgress.percent}%` }}
+                              />
+                            </div>
+                            <p className="mt-1.5 text-center text-xs font-semibold text-[#d8ba7a]">
+                              {authProgress.label} — {authProgress.percent}%
+                            </p>
+                          </div>
+                        )}
+                        {!authProgress && (
+                          <p className="text-center text-xs text-[#b69d74]">Twoje postępy zostaną bezpiecznie wczytane.</p>
+                        )}
                       </form>
                     ) : (
-                      <form onSubmit={handleRegister} className="space-y-3 text-[#f3e6c8]">
+                      <form onSubmit={handleRegister} className="space-y-3 text-[#f3e6c8]" aria-busy={authProgress?.mode === "register"}>
                         <div>
                           <label className="mb-1 block text-lg font-semibold">Login</label>
                           <input
                             type="text"
                             placeholder="Unikalny login"
                             autoComplete="username"
+                            disabled={!!authProgress}
                             value={registerForm.login}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, login: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-lg font-semibold">Email</label>
+                          <label className="mb-1 block text-lg font-semibold">E-mail</label>
                           <input
                             type="email"
                             placeholder="twoj@email.pl"
                             autoComplete="email"
+                            disabled={!!authProgress}
                             value={registerForm.email}
                             onChange={(e) => setRegisterForm((prev) => ({ ...prev, email: e.target.value }))}
-                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                            className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                           />
                         </div>
 
@@ -7902,9 +8037,10 @@ export default function Page() {
                               type="password"
                               placeholder="Minimum 6 znaków"
                               autoComplete="new-password"
+                              disabled={!!authProgress}
                               value={registerForm.password}
                               onChange={(e) => setRegisterForm((prev) => ({ ...prev, password: e.target.value }))}
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                             />
                           </div>
 
@@ -7914,6 +8050,7 @@ export default function Page() {
                               type="password"
                               placeholder="Powtórz hasło"
                               autoComplete="new-password"
+                              disabled={!!authProgress}
                               value={registerForm.confirmPassword}
                               onChange={(e) =>
                                 setRegisterForm((prev) => ({
@@ -7921,17 +8058,36 @@ export default function Page() {
                                   confirmPassword: e.target.value,
                                 }))
                               }
-                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f]"
+                              className="w-full rounded-2xl border border-[#8b6a3e] bg-[rgba(17,10,6,0.7)] px-4 py-2 text-base text-white outline-none placeholder:text-[#b69d74] focus:border-[#d4a64f] disabled:cursor-not-allowed disabled:opacity-60"
                             />
                           </div>
                         </div>
 
                         <button
                           type="submit"
-                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105"
+                          disabled={!!authProgress}
+                          className="w-full rounded-2xl border border-[#f4cf78] bg-[linear-gradient(180deg,#f2ca69,#c9952f)] px-4 py-2.5 text-xl font-black text-[#2f1b0c] shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Utwórz konto
+                          {authProgress?.mode === "register"
+                            ? `${authProgress.label} ${authProgress.percent}%`
+                            : "Utwórz gospodarstwo"}
                         </button>
+                        {authProgress?.mode === "register" && (
+                          <div className="rounded-xl border border-[#8b6a3e]/70 bg-black/25 px-3 py-2" role="status" aria-live="polite">
+                            <div className="h-1.5 overflow-hidden rounded-full bg-black/50">
+                              <div
+                                className="h-full rounded-full bg-[linear-gradient(90deg,#c9952f,#f2ca69)] transition-[width] duration-300"
+                                style={{ width: `${authProgress.percent}%` }}
+                              />
+                            </div>
+                            <p className="mt-1.5 text-center text-xs font-semibold text-[#d8ba7a]">
+                              {authProgress.label} — {authProgress.percent}%
+                            </p>
+                          </div>
+                        )}
+                        {!authProgress && (
+                          <p className="text-center text-xs text-[#b69d74]">Po utworzeniu konta od razu otrzymasz swoją pierwszą farmę.</p>
+                        )}
                       </form>
                     )}
                   </div>
