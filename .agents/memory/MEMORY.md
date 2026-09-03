@@ -8,3 +8,4 @@
 - [Playwright on NixOS](playwright-nixos-runtime.md) — Chromium needs its downloaded browser binary plus Nix runtime libraries before local E2E tests can launch.
 - [SQL RPC replacement order](sql-rpc-replacement-order.md) — every legacy patch redefining a guarded RPC must preserve newer authorization checks.
 - [Server-stamped crop bonuses](server-stamped-crop-bonuses.md) — timed crop entitlements need server timestamps, immutable exemptions, and a guarded harvest RPC.
+- [Global avatar onboarding race](global-avatar-onboarding-race.md) — onboarding eligibility must come from the global account, not a transient server-profile avatar or browser cache.

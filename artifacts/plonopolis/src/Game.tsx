@@ -50,7 +50,12 @@ import { isCompostKey, isGuideCompostKey, compostTypeFromKey, compostValueFromKe
 import { clearPerSessionLocalStorage, lsKey, lsLoadMigrate, loadAvatarDataLS, saveAvatarDataLS } from "./game/utils/storage";
 import { todayStr, emptyDP, loadDP, saveDP } from "./game/utils/daily-progress";
 import { computeFarmPower } from "./game/utils/farm-power";
-import { getNewPlayerGrowthMultiplier, getGrowthTimeWithMinimum } from "./game/utils/growth";
+import {
+  formatNewPlayerBonusRemaining,
+  getNewPlayerGrowthMultiplier,
+  getGrowthTimeWithMinimum,
+  NEW_PLAYER_GROWTH_BONUS_DURATION_MS,
+} from "./game/utils/growth";
 import { ttStyle, getLigaTier, compostTierColor, fmtK, fmtFull } from "./game/utils/ui";
 import { ModalOverlay } from "./game/components/ModalOverlay";
 import { AnimalImg } from "./game/components/AnimalImg";
@@ -508,6 +513,7 @@ export default function Page() {
   );
   const [avatarOnboardingSaving, setAvatarOnboardingSaving] = React.useState(false);
   const [avatarOnboardingError, setAvatarOnboardingError] = React.useState<string | null>(null);
+  const [requiresInitialAvatar, setRequiresInitialAvatar] = React.useState<boolean | null>(null);
   const [showSkinModal, setShowSkinModal] = React.useState(false);
   const [showAvatarHover, setShowAvatarHover] = React.useState(false);
   const [unlockedEpicAvatars, setUnlockedEpicAvatars] = React.useState<number[]>([]);
@@ -1174,6 +1180,7 @@ export default function Page() {
     setOnboardingSelectedSkin(null);
     setAvatarOnboardingError(null);
     setAvatarOnboardingSaving(false);
+    setRequiresInitialAvatar(null);
     setPlotToBuy(null);
     setIsFieldViewOpen(false);
     setSelectedSeedId(null);
@@ -3752,6 +3759,15 @@ export default function Page() {
     const globalAccount = globalRpcMissing
       ? null
       : extractRpcProfile(globalAccountResult.data) as GlobalAccountProfile | null;
+    const globalAvatar = globalAccount?.avatar_skin;
+    setRequiresInitialAvatar(
+      globalRpcMissing
+        ? !(
+            typeof rpcProfile?.avatar_skin === "number"
+            && rpcProfile.avatar_skin >= 0
+          )
+        : !(typeof globalAvatar === "number" && globalAvatar >= 0),
+    );
     const mergedProfile = rpcProfile
       ? {
           ...rpcProfile,
@@ -4808,6 +4824,7 @@ export default function Page() {
       const lastChangedAt = response?.last_avatar_change_at ?? lastAvatarChangeAt;
 
       setAvatarSkin(selected);
+      setRequiresInitialAvatar(false);
       setAvatarChangeCount(changeCount);
       setLastAvatarChangeAt(lastChangedAt);
       if (Array.isArray(response?.unlocked_epic_avatars)) {
@@ -6569,6 +6586,15 @@ export default function Page() {
     setBlockedUsers(updated);
   }
 
+  const profileCreatedAtMs = profile?.created_at ? Date.parse(profile.created_at) : Number.NaN;
+  const newPlayerGrowthBonusRemainingMs = Number.isFinite(profileCreatedAtMs)
+    ? Math.max(
+        0,
+        NEW_PLAYER_GROWTH_BONUS_DURATION_MS
+          - (barnNow + hiveClockOffsetRef.current - profileCreatedAtMs),
+      )
+    : 0;
+
   async function markAsRead(category: "received" | "market" = "received") {
     if (!profile) return;
     const unreadIds = gameMessages
@@ -6672,7 +6698,10 @@ export default function Page() {
           </div>
         </div>
       )}
-      {((profile && avatarSkin < 0 && !authProgress) || AVATAR_ONBOARDING_PREVIEW) && (
+      {((profile
+        && !authProgress
+        && (requiresInitialAvatar === true || (requiresInitialAvatar === null && avatarSkin < 0)))
+        || AVATAR_ONBOARDING_PREVIEW) && (
         <Suspense fallback={null}>
           <AvatarOnboardingModal
             avatarSkin={avatarSkin >= 0 ? avatarSkin : null}
@@ -6901,6 +6930,17 @@ export default function Page() {
                 >
                   ⚙️
                 </button>
+                {newPlayerGrowthBonusRemainingMs > 0 && (
+                  <div
+                    title="Pozostały czas bonusu: uprawy rosną o 75% szybciej"
+                    className="flex min-w-[112px] cursor-default items-center justify-center gap-1.5 rounded-xl border border-emerald-500/60 bg-emerald-950/80 px-2.5 py-1.5 text-xs font-black tabular-nums text-emerald-200 shadow-lg backdrop-blur-sm"
+                    data-testid="new-player-growth-bonus-timer"
+                  >
+                    <span aria-hidden="true">🌱</span>
+                    <span>-75%</span>
+                    <span>{formatNewPlayerBonusRemaining(newPlayerGrowthBonusRemainingMs)}</span>
+                  </div>
+                )}
               </div>
 
               {/* ═══ TESTY GRY BUTTON ═══ */}

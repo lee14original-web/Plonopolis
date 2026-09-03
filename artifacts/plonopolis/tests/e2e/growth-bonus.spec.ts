@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  formatNewPlayerBonusRemaining,
   getGrowthTimeWithMinimum,
   getNewPlayerGrowthMultiplier,
 } from "../../src/game/utils/growth";
@@ -27,4 +28,10 @@ test("uprawa przewodnika nie korzysta z bonusu nowego konta", () => {
 
   expect(multiplier).toBe(1);
   expect(getGrowthTimeWithMinimum(100_000, multiplier, false, 0.35)).toBe(100_000);
+});
+
+test("timer bonusu pokazuje minuty i sekundy", () => {
+  expect(formatNewPlayerBonusRemaining(15 * 60_000)).toBe("15:00");
+  expect(formatNewPlayerBonusRemaining(3 * 60_000 + 45_000)).toBe("03:45");
+  expect(formatNewPlayerBonusRemaining(-1)).toBe("00:00");
 });
