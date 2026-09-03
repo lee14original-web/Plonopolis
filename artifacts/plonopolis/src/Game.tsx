@@ -339,8 +339,20 @@ export default function Page() {
   const ZOOM_MAX_DESKTOP = 1.60;
   const ZOOM_MAX_MOBILE  = 3.00;
   const ZOOM_MIN         = 0.70;
+  const ZOOM_LEGACY_KEY = "plonopolis_zoom";
+  const ZOOM_MIGRATION_KEY = "plonopolis_zoom_profile_migrated";
+  type ZoomProfile = "mobile" | "laptop" | "desktop" | "large";
   // Typowa kontrolka 64 px zachowuje w portrecie dotykowy rozmiar ok. 51 px.
   const PORTRAIT_MIN_GAME_SCALE = 0.80;
+  function getZoomProfile(width = typeof window === "undefined" ? 1440 : window.innerWidth): ZoomProfile {
+    if (width < 768) return "mobile";
+    if (width < 1440) return "laptop";
+    if (width < 1920) return "desktop";
+    return "large";
+  }
+  function getZoomStorageKey(profile: ZoomProfile): string {
+    return `${ZOOM_LEGACY_KEY}_${profile}`;
+  }
   function getZoomMax(): number {
     if (typeof window === "undefined") return ZOOM_MAX_DESKTOP;
     return window.innerWidth < 768 ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
@@ -354,12 +366,33 @@ export default function Page() {
     const target = mobile ? 1.00 : 0.90;
     return Math.min(getZoomMax(), Math.max(ZOOM_MIN, target));
   }
+  function readZoomForProfile(profile: ZoomProfile, migrateLegacy = false): number {
+    if (typeof window === "undefined") return 1;
+    const profileKey = getZoomStorageKey(profile);
+    let stored = localStorage.getItem(profileKey);
+
+    // Zachowaj dotychczasowy świadomy zoom na pierwszym użytym profilu.
+    // Kolejne rozmiary ekranu dostają własny, bezpieczny zoom domyślny.
+    if (stored === null && migrateLegacy && localStorage.getItem(ZOOM_MIGRATION_KEY) === null) {
+      const legacy = localStorage.getItem(ZOOM_LEGACY_KEY);
+      const legacyValue = legacy === null ? Number.NaN : parseFloat(legacy);
+      if (Number.isFinite(legacyValue)) {
+        stored = String(legacyValue);
+        localStorage.setItem(profileKey, stored);
+      }
+      localStorage.setItem(ZOOM_MIGRATION_KEY, profile);
+    }
+
+    if (stored === null) return computeSmartDefaultZoom();
+    const value = parseFloat(stored);
+    const max = profile === "mobile" ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
+    return Number.isFinite(value) ? Math.max(ZOOM_MIN, Math.min(max, value)) : computeSmartDefaultZoom();
+  }
+  const [zoomProfile, setZoomProfile] = useState<ZoomProfile>(() => getZoomProfile());
+  const zoomProfileRef = React.useRef(zoomProfile);
   const [userZoomFactor, setUserZoomFactor] = useState<number>(() => {
     if (typeof window === "undefined") return 1;
-    const stored = localStorage.getItem("plonopolis_zoom");
-    if (stored === null) return computeSmartDefaultZoom();
-    const v = parseFloat(stored);
-    return isNaN(v) ? computeSmartDefaultZoom() : Math.max(ZOOM_MIN, Math.min(getZoomMax(), v));
+    return readZoomForProfile(zoomProfile, true);
   });
   const userZoomFactorRef = React.useRef(userZoomFactor);
   const [gameScale, setGameScale] = useState(() => {
@@ -368,10 +401,7 @@ export default function Page() {
     const raw = portraitMobile
       ? window.innerWidth / BASE_W
       : Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
-    const stored = localStorage.getItem("plonopolis_zoom");
-    const zoom = stored === null
-      ? computeSmartDefaultZoom()
-      : Math.max(ZOOM_MIN, Math.min(getZoomMax(), parseFloat(stored) || 1));
+    const zoom = readZoomForProfile(zoomProfile);
     // Start = ekran logowania (brak profilu) → cały canvas musi mieścić się w viewporcie (zoom ≤ 1)
     const scale = raw * Math.min(zoom, 1);
     return portraitMobile ? Math.max(PORTRAIT_MIN_GAME_SCALE, scale) : Math.max(0.20, scale);
@@ -2752,6 +2782,7 @@ export default function Page() {
 
   useEffect(() => { gameScaleRef.current = gameScale; }, [gameScale]);
   useEffect(() => { userZoomFactorRef.current = userZoomFactor; }, [userZoomFactor]);
+  useEffect(() => { zoomProfileRef.current = zoomProfile; }, [zoomProfile]);
   useEffect(() => {
     isLoggedInRef.current = !!profile?.id;
     const mobile = window.innerWidth < 768;
@@ -2770,8 +2801,8 @@ export default function Page() {
     gameScaleRef.current = s;
   }, [userZoomFactor, profile?.id]);
   useEffect(() => {
-    try { localStorage.setItem("plonopolis_zoom", String(userZoomFactor)); } catch { /* ignore */ }
-  }, [userZoomFactor]);
+    try { localStorage.setItem(getZoomStorageKey(zoomProfile), String(userZoomFactor)); } catch { /* ignore */ }
+  }, [userZoomFactor, zoomProfile]);
 
   const fetchDailyHarvest = React.useCallback(async () => {
     setIsDailyHarvestLoading(true);
@@ -2803,6 +2834,15 @@ export default function Page() {
     const checkScreen = () => {
       const mobile = window.innerWidth < 768;
       const portraitMobile = mobile && window.innerHeight > window.innerWidth;
+      const nextZoomProfile = getZoomProfile();
+      let zoomForViewport = userZoomFactorRef.current;
+      if (nextZoomProfile !== zoomProfileRef.current) {
+        zoomForViewport = readZoomForProfile(nextZoomProfile);
+        zoomProfileRef.current = nextZoomProfile;
+        userZoomFactorRef.current = zoomForViewport;
+        setZoomProfile(nextZoomProfile);
+        setUserZoomFactor(zoomForViewport);
+      }
       setIsMobileLayout(mobile);
       setIsPortraitMobile(portraitMobile);
       setIsDesktop(window.innerWidth >= 1024);
@@ -2810,7 +2850,7 @@ export default function Page() {
         ? window.innerWidth / BASE_W
         : Math.min(window.innerWidth / BASE_W, window.innerHeight / BASE_H);
       const zMax = mobile ? ZOOM_MAX_MOBILE : ZOOM_MAX_DESKTOP;
-      let clamped = Math.max(ZOOM_MIN, Math.min(zMax, userZoomFactorRef.current));
+      let clamped = Math.max(ZOOM_MIN, Math.min(zMax, zoomForViewport));
       // Ta sama logika co w efekcie [userZoomFactor, profile?.id] — przed zalogowaniem zoom ≤ 1
       if (!isLoggedInRef.current) clamped = Math.min(clamped, 1);
       const scaled = raw * clamped;
