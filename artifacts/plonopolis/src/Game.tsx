@@ -6708,6 +6708,8 @@ export default function Page() {
       )}
       {((profile
         && !authProgress
+        && !showSettingsModal
+        && !showLogoutConfirm
         && (requiresInitialAvatar === true || (requiresInitialAvatar === null && avatarSkin < 0)))
         || AVATAR_ONBOARDING_PREVIEW) && (
         <Suspense fallback={null}>
@@ -6719,6 +6721,7 @@ export default function Page() {
               setAvatarOnboardingError(null);
             }}
             onConfirm={handleInitialAvatarConfirm}
+            onOpenSettings={() => setShowSettingsModal(true)}
             isSaving={avatarOnboardingSaving}
             unlockedEpicAvatars={
               AVATAR_ONBOARDING_PREVIEW && unlockedEpicAvatars.length === 0

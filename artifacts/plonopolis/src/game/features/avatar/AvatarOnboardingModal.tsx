@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SKINS_MALE, SKINS_FEMALE, EPIC_SKINS, EPIC_SKIN_START, AVATAR_META } from "../../constants/avatars";
 import { getAvatarBonus } from "../../utils/avatar";
-import { User, Users, Star, Info, Check, AlertCircle, Loader2 } from "lucide-react";
+import { User, Users, Star, Info, Check, AlertCircle, Loader2, Settings } from "lucide-react";
 
 type SkinTab = "mezczyzni" | "kobiety" | "epickie";
 
@@ -10,6 +10,7 @@ interface AvatarOnboardingModalProps {
   selectedSkin: number | null;
   onSelect: (index: number) => void;
   onConfirm: () => Promise<void>;
+  onOpenSettings: () => void;
   isSaving: boolean;
   unlockedEpicAvatars: number[];
   error?: string | null;
@@ -29,6 +30,7 @@ export function AvatarOnboardingModal({
   selectedSkin,
   onSelect,
   onConfirm,
+  onOpenSettings,
   isSaving,
   unlockedEpicAvatars,
   error,
@@ -64,7 +66,16 @@ export function AvatarOnboardingModal({
       aria-modal="true"
       aria-labelledby="avatar-onboarding-title"
     >
-      <div className="flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-y-auto rounded-3xl border border-[#8b6a3e]/60 bg-gradient-to-br from-[#20140b] to-[#120a04] shadow-2xl shadow-black/80 md:max-h-[900px] md:flex-row md:overflow-hidden">
+      <div className="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-y-auto rounded-3xl border border-[#8b6a3e]/60 bg-gradient-to-br from-[#20140b] to-[#120a04] shadow-2xl shadow-black/80 md:max-h-[900px] md:flex-row md:overflow-hidden">
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="absolute right-3 top-3 z-30 flex h-12 w-12 items-center justify-center rounded-full border border-[#8b6a3e]/60 bg-[#211309]/95 text-[#d8ba7a] shadow-lg transition hover:border-yellow-400/70 hover:bg-[#34200f] hover:text-yellow-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400 sm:right-5 sm:top-5"
+          title="Ustawienia"
+          aria-label="Otwórz ustawienia"
+        >
+          <Settings className="h-7 w-7" />
+        </button>
         
         {/* LEFT PANEL - PREVIEW & ACTIONS */}
         <div className="w-full md:w-[40%] lg:w-[35%] flex flex-col border-b md:border-b-0 md:border-r border-[#8b6a3e]/30 bg-black/20 p-6 lg:p-8 relative shrink-0">
