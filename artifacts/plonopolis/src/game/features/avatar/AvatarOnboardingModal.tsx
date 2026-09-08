@@ -322,11 +322,6 @@ function AvatarCard({
         <div className="absolute inset-0 border-2 border-white/20 rounded-xl pointer-events-none mix-blend-overlay" />
       )}
       
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-6 text-center">
-        <span className={`block text-lg font-bold leading-tight sm:text-xl ${isSelected ? "text-white" : "text-[#dfcfab]/80"}`}>
-          {meta?.name}
-        </span>
-      </div>
     </button>
   );
 }
