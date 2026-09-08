@@ -99,12 +99,6 @@ export function AvatarOnboardingModal({
                     style={{ imageRendering: "pixelated" }} 
                   />
                   <div className="absolute bottom-0 inset-x-0 p-4 z-20 flex flex-col items-center">
-                    <span className="text-lg font-bold text-[#f9e7b2] text-center drop-shadow-md">
-                      {selectedMeta?.name}
-                    </span>
-                    <span className="text-xs font-semibold text-yellow-400/90 tracking-wider uppercase mb-2">
-                      {selectedMeta?.style}
-                    </span>
                     <div className="flex flex-wrap justify-center gap-1.5 w-full">
                       {selectedBonus && Object.entries(selectedBonus).map(([key, val]) => {
                         if (!val) return null;
@@ -168,7 +162,7 @@ export function AvatarOnboardingModal({
               ) : (
                 <>
                   <Check className="w-5 h-5" />
-                  Graj jako {selectedMeta?.name?.split(" ")[0]}
+                  Graj
                 </>
               )}
             </button>
